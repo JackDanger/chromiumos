@@ -1,0 +1,8 @@
+URL:  http://test.kernel.org/svn/autotest/trunk
+Version: svn rev 3781
+License: GPLv2
+License File: LICENSE
+
+Description:
+    Copy of autotest for our use. Will get merged back when we open.
+

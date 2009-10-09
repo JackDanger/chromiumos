@@ -1,0 +1,37 @@
+.gwt-TabBar .gwt-TabBarItem {
+  background: #f4f4f4;
+  margin-right: 2px;
+  padding: 0.2em;
+  padding-left: 0.4em;
+  padding-right: 0.4em;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.gwt-TabBar .gwt-TabBarItem-selected {
+  background: #55679e;
+  color: white;
+  cursor: default;
+}
+
+.gwt-TabPanelBottom {
+  border: 2px solid #55679e;
+  padding: 5px;
+}
+
+.custom-tab-panel {
+  width: 100%;
+}
+
+/* The addition of "body" here gives this priority over the default rule in standard.css, which
+ * would otherwise have the same specificity.
+ */
+body .menubar-hand-cursor .gwt-MenuItem { 
+  cursor: pointer;
+}
+
+.code {
+  white-space: pre;
+  font-family: Courier New, Courier, monospace;
+}
+

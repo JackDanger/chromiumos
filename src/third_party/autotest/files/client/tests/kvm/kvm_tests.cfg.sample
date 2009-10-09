@@ -1,0 +1,746 @@
+# Define the objects we'll be using
+vms = vm1
+images = image1
+nics = nic1
+
+# Choose the main VM
+main_vm = vm1
+
+# Some preprocessor/postprocessor params
+start_vm = yes
+convert_ppm_files_to_png_on_error = yes
+#keep_ppm_files = yes
+#keep_ppm_files_on_error = yes
+kill_vm = no
+kill_vm_gracefully = yes
+
+# Some default VM params
+qemu_binary = qemu
+qemu_img_binary = qemu-img
+mem = 512
+image_size = 10G
+shell_port = 22
+display = vnc
+
+# Default scheduler params
+used_cpus = 1
+used_mem = 512
+
+# Port redirections
+redirs = remote_shell
+guest_port_remote_shell = 22
+
+# NIC parameters
+nic_mode = user
+#nic_mode = tap
+nic_script = scripts/qemu-ifup
+address_index = 0
+
+
+# Tests
+variants:
+    - install:
+        type = steps
+        fail_if_stuck_for = 300
+        stuck_detection_history = 2
+        keep_screendump_history = yes
+        force_create_image = yes
+        kill_vm = yes
+        kill_vm_timeout = 60
+        kill_vm_timeout_on_error = 0
+
+    - setup:        install
+        type = steps
+        fail_if_stuck_for = 300
+        stuck_detection_history = 2
+        kill_vm_on_error = yes
+        keep_screendump_history = yes
+
+    - boot:         install setup
+        type = boot
+        kill_vm_on_error = yes
+
+    - reboot:       install setup
+        type = boot
+        reboot_method = shell
+        kill_vm_on_error = yes
+
+    - migrate:      install setup
+        type = migration
+        migration_test_command = help
+        kill_vm_on_error = yes
+        iterations = 2
+        used_mem = 1024
+
+    - autotest:     install setup
+        type = autotest
+        test_timeout = 720
+        variants:
+            - sleeptest:
+                test_name = sleeptest
+                test_timeout = 30
+                test_control_file = sleeptest.control
+            - dbench:
+                test_name = dbench
+                test_control_file = dbench.control
+            - bonnie:
+                test_name = bonnie
+                test_control_file = bonnie.control
+            - ebizzy:
+                test_name = ebizzy
+                test_control_file = ebizzy.control
+            - stress:
+                test_name = stress
+                test_control_file = stress.control
+            - disktest:
+                test_name = disktest
+                test_control_file = disktest.control
+            - ctcs2:
+                test_name = cerberus
+                # If you think this is too lengthy, please change the cerberus
+                # control file and set this timeout appropriately.
+                test_timeout = 3900
+                test_control_file = cerberus.control
+
+    - linux_s3:     install setup
+        type = linux_s3
+
+    - timedrift:    install setup
+        type = timedrift
+        extra_params += " -rtc-td-hack"
+        # Pin the VM and host load to CPU #0
+        cpu_mask = 0x1
+        # Set the load and rest durations
+        load_duration = 20
+        rest_duration = 20
+        # Fail if the drift after load is higher than 50%
+        drift_threshold = 50
+        # Fail if the drift after the rest period is higher than 10%
+        drift_threshold_after_rest = 10
+        # For now, make sure this test is executed alone
+        used_cpus = 100
+
+
+    - stress_boot:  install setup
+        type = stress_boot
+        max_vms = 5    
+        alive_test_cmd = uname -a
+        clone_address_index_base = 10
+        kill_vm = yes
+        kill_vm_vm1 = no
+        kill_vm_gracefully = no
+        extra_params += " -snapshot"
+        used_cpus = 5
+        used_mem = 2560
+
+
+    - autoit:       install setup
+        type = autoit
+        autoit_binary = D:\AutoIt3.exe
+        autoit_script_timeout = 600
+        autoit_script_params =
+        variants:
+            - notepad:
+                autoit_script = autoit/notepad1.au3
+
+    - nic_hotplug:       install setup
+        type = pci_hotplug
+        pci_type = nic
+        modprobe_acpiphp = no
+        reference_cmd = lspci
+        find_pci_cmd = 'lspci | tail -n1'
+        pci_test_cmd = 'nslookup www.redhat.com'
+        wait_secs_for_hook_up = 3
+        variants:
+            - nic_8139:
+                pci_model = rtl8139
+                match_string = "8139"
+            - nic_virtio:
+                pci_model = virtio
+                match_string = "Virtio network device"
+            - nic_e1000:
+                pci_model = e1000
+                match_string = "Gigabit Ethernet Controller"
+
+    - block_hotplug:       install setup
+        type = pci_hotplug
+        pci_type = block
+        reference_cmd = lspci
+        find_pci_cmd = 'lspci | tail -n1'
+        images += " stg"
+        boot_drive_stg = no
+        image_name_stg = storage
+        image_size_stg = 1G
+        remove_image_stg = yes
+        force_create_image_stg = yes
+        pci_test_cmd = "yes | mke2fs `fdisk -l 2>&1 | awk '/\/dev\/[sv]d[a-z] doesn/ {print $2}'`"
+        wait_secs_for_hook_up = 3
+        kill_vm_on_error = yes
+        variants:
+            - block_virtio:
+                pci_model = virtio
+                match_string = "Virtio block device"
+            - block_scsi:
+                pci_model = scsi
+                match_string = "SCSI"
+        variants:
+            - fmt_qcow2:
+                image_format_stg = qcow2
+            - fmt_raw:
+                image_format_stg = raw
+                only Fedora Ubuntu Windows
+
+    - system_reset: install setup
+        type = boot
+        reboot_method = system_reset
+        sleep_before_reset = 20
+        kill_vm_on_error = yes
+
+    - system_powerdown: install setup
+        type = shutdown
+        shutdown_method = system_powerdown
+        sleep_before_powerdown = 20
+        kill_vm = yes
+        kill_vm_gracefully = no
+
+    - shutdown:     install setup
+        type = shutdown
+        shutdown_method = shell
+        kill_vm = yes
+        kill_vm_gracefully = no
+
+# NICs
+variants:
+    - @rtl8139:
+    - virtio:       rtl8139.install rtl8139.setup
+        no install setup
+        nic_model = virtio
+    - e1000:        rtl8139.install rtl8139.setup
+        no install setup
+        nic_model = e1000
+
+
+# Guests
+variants:
+    # Linux section
+    - @Linux:
+        no timedrift autoit
+        shutdown_command = shutdown -h now
+        reboot_command = shutdown -r now
+        status_test_command = echo $?
+        username = root
+        password = 123456
+        shell_client = ssh
+        shell_port = 22
+        file_transfer_client = scp
+        file_transfer_port = 22
+
+        variants:
+            - Fedora:
+                no setup
+                shell_prompt = "^\[.*\][\#\$]\s*$"
+
+                variants:
+                    - 8.32:
+                        no setup
+                        image_name = fc8-32
+                        install:
+                            steps = Fedora-8-i386.steps
+                            cdrom = linux/Fedora-8-i386-DVD.iso
+                            md5sum = dd6c79fddfff36d409d02242e7b10189
+                            md5sum_1m = dabae451bb69fbbad0e505b25144b1f9
+
+                    - 8.64:
+                        no setup
+                        image_name = fc8-64
+                        install:
+                            steps = Fedora-8-64.steps
+                            cdrom = linux/Fedora-8-x86_64-DVD.iso
+                            md5sum = 2cb231a86709dec413425fd2f8bf5295
+                            md5sum_1m = 145f6414e19492649a56c89f0a45e719
+
+                    - 9.32:
+                        image_name = fc9-32
+                        install:
+                            steps = Fedora-9-i386.steps
+                            cdrom = linux/Fedora-9-i386-DVD.iso
+                            md5sum = 72601f685ea8c808c303353d8bf4d307
+                            md5sum_1m = f24fa25689e5863f1b99984c6feb787f
+
+                    - 9.64:
+                        image_name = fc9-64
+                        install:
+                            steps = Fedora-9-64.steps
+                            cdrom = linux/Fedora-9-x86_64-DVD.iso
+                            md5sum = 05b2ebeed273ec54d6f9ed3d61ea4c96
+                            md5sum_1m = 9822ab5097e37e8fe306ef2192727db4
+
+            - DSL-4.2.5:
+                no setup dbench bonnie linux_s3
+                image_name = dsl-4.2.5
+                install:
+                    steps = DSL-4.2.5.steps
+                    cdrom = linux/dsl-4.2.5.iso
+                    md5sum = 61694888aede3e01229865b8e6acd4a1
+                    md5sum_1m = 527f2481bd25310f2e3a6e5345ff3d12
+
+            - Mandriva-One-2007:
+                only install
+                image_name = mandriva-one-2007
+                steps = Mandriva-One-2007-32.steps
+                cdrom = linux/mandriva-one-2007-i386.iso
+                md5sum = 7e9e183dc11b9d39f480238e4e12bb05
+                md5sum_1m = dc7865a75db665efc86d59bca7c1fe07
+
+            - openSUSE-11.0.32:
+                no setup dbench bonnie
+                image_name = openSUSE-11.0-32
+                install:
+                    steps = openSUSE-11.0-32.steps
+                    cdrom = linux/openSUSE-11.0-DVD-i386.iso
+                    md5sum = ed6a5b3feb668866df812b1c2aed9d7f
+                    md5sum_1m = c720b30557af758e69de450409516369
+
+            - openSUSE-11.1.32:
+                no setup dbench bonnie
+                image_name = openSUSE-11.1-32
+                install:
+                    steps = openSUSE-11.1-32-and-64.steps
+                    cdrom = linux/openSUSE-11.1-DVD-i586.iso
+                    md5sum = 8f51b278c0415be28c5699e465444bd3
+                    md5sum_1m = b70217417468389083429f81ba7ce2bd
+
+            - openSUSE-11.1.64:
+                no setup dbench bonnie
+                image_name = openSUSE-11.1-64
+                install:
+                    steps = openSUSE-11.1-32-and-64.steps
+                    cdrom = linux/openSUSE-11.1-DVD-x86_64.iso
+                    md5sum = 2afee1b8a87175e6dee2b8dbbd1ad8e8
+                    md5sum_1m = 768ca32503ef92c28f2d144f2a87e4d0
+
+            - @Ubuntu:
+                shell_prompt = "^root@.*[\#\$]\s*$"
+
+                variants:
+                    - Ubuntu-6.10-32:
+                        only install
+                        image_name = ubuntu-6.10-32
+                        steps = Ubuntu-6.10-32.steps
+                        cdrom = linux/ubuntu-6.10-desktop-i386.iso
+                        md5sum = 17fb825641571ce5888a718329efd016
+                        md5sum_1m = 7531d0a84e7451d17c5d976f1c3f8509
+
+                    - Ubuntu-8.04-32:
+                        skip = yes
+                        image_name = ubuntu-8.04-32
+                        install:
+                            steps = Ubuntu-8.04-32.steps
+                            cdrom = linux/ubuntu-8.04.1-desktop-i386.iso
+                        setup:
+                            steps = Ubuntu-8.04-32-setupssh.steps
+
+                    - Ubuntu-8.10-server-32:
+                        image_name = ubuntu-8.10-server-32
+                        install:
+                            steps = Ubuntu-8.10-server-32.steps
+                            cdrom = linux/ubuntu-8.10-server-i386.iso
+                            md5sum = a2ec9975a91e1228c8292ed9799dc302
+                            md5sum_1m = ea493eb8ef7722ead693492fd9f8a13f
+                        setup:
+                            steps = Ubuntu-8.10-server-32-gcc.steps
+
+            - RHEL:
+                no setup
+                shell_prompt = "^\[.*\][\#\$]\s*$"
+                nic_hotplug:
+                    modprobe_module = acpiphp
+                block_hotplug:
+                    modprobe_module = acpiphp
+
+                variants:
+                    - 5.3.i386:
+                        no setup
+                        image_name = rhel5-32
+                        install:
+                            steps=RHEL-5.3-i386.steps
+                            cdrom=linux/RHEL-5.3-i386-DVD.iso
+                            md5sum=371c62851611fd32ead440df6f24a296
+                            md5sum_1m=242318dd44152210f6ff6cdda1bfbf51
+
+                    - 5.3.x86_64:
+                        no setup
+                        image_name = rhel5-64
+                        install:
+                            steps=RHEL-5.3-x86_64.steps
+                            cdrom=linux/RHEL-5.3-x86_64-DVD.iso
+                            md5sum=c5ed6b284410f4d8212cafc78fd7a8c5
+                            md5sum_1m=b999f437583098ea5bbd56fb1de1d011
+
+                    - 4.7.i386:
+                        no setup autotest
+                        image_name = rhel4-32
+                        install:
+                            steps=RHEL-4.7-i386.steps
+                            cdrom=linux/RHEL-4.7-i386-DVD.iso
+                            md5sum=ee5092653732a88ddbaf8eef2484c500
+                            md5sum_1m=127081cbed825d7232331a2083975528
+
+                    - 4.7.x86_64:
+                        no setup autotest
+                        image_name = rhel4-64
+                        install:
+                            steps=RHEL-4.7-x86_64.steps
+                            cdrom=linux/RHEL-4.7-x86_64-DVD.iso
+                            md5sum=ea9dae16dd86f7d94092d0e672333292
+                            md5sum_1m=58fa63eaee68e269f4cb1d2edf479792
+
+                    - 3.9.i386:
+                        no setup autotest linux_s3
+                        image_name = rhel3-32
+                        install:
+                            steps=RHEL-3.9-i386.steps
+                            cdrom=linux/RHEL-3.9-i386-DVD.iso
+                            md5sum=ddd11a1cb104119039b0fa05df6d52b8
+                            md5sum_1m=5f10c9417c7b8372b3456c1b5f3f9ed0
+
+                    - 3.9.x86_64:
+                        no setup autotest linux_s3
+                        image_name = rhel3-64
+                        install:
+                            steps=RHEL-3.9-x86_64.steps
+                            cdrom=linux/RHEL-3.9-x86_64-DVD.iso
+                            md5sum=bf4635e4a4bd3b43838e72bc8c329d55
+                            md5sum_1m=18ecd37b639109f1b2af05cfb57dfeaf
+
+    # Windows section
+    - @Windows:
+        no autotest linux_s3
+        shutdown_command = shutdown /s /t 0
+        reboot_command = shutdown /r /t 0
+        status_test_command = echo %errorlevel%
+        shell_prompt = "^\w:\\.*>\s*$"
+        username = Administrator
+        password = 123456
+        shell_client = nc
+        shell_port = 22
+        # File transfers are currently unsupported
+        # file_transfer_client = scp
+        # file_transfer_port = 22
+
+        # This ISO will be used for all tests except install:
+        cdrom = windows/winutils.iso
+
+        migrate:
+            migration_test_command = ver && vol
+        stress_boot:
+            alive_test_cmd = systeminfo
+        timedrift:
+            time_command = "echo TIME: %date% %time%"
+            time_filter_re = "(?<=TIME: \w\w\w ).{19}(?=\.\d\d)"
+            time_format = "%m/%d/%Y %H:%M:%S"
+            # For this to work, the cdrom at d: should contain vlc (d:\vlc\vlc.exe) and a video (d:\ED_1024.avi)
+            guest_load_command = 'cmd /c "d:\vlc\vlc -f --loop --no-qt-privacy-ask --no-qt-system-tray d:\ED_1024.avi"'
+            # Alternative guest load:
+            #guest_load_command = "(dir /s && dir /s && dir /s && dir /s) > nul"
+            guest_load_stop_command = "taskkill /F /IM vlc.exe"
+            guest_load_instances = 2
+            host_load_command = "bzip2 -c --best /dev/urandom > /dev/null"
+            # Alternative host load:
+            #host_load_command = "dd if=/dev/urandom of=/dev/null"
+            host_load_instances = 8
+        nic_hotplug:
+            reference_cmd = ipconfig /all
+            find_pci_cmd = ipconfig /all | find "Description"
+            wait_secs_for_hook_up = 10
+            nic_e1000:
+                match_string = "Intel(R) PRO/1000 MT Network Connection"
+            nic_virtio:
+                match_string = "VirtIO Ethernet"
+        block_hotplug:
+            use_telnet = yes
+            ssh_port = 23
+            guest_port_ssh = 23
+            wait_secs_for_hook_up = 10
+            reference_cmd = wmic diskdrive list brief
+            find_pci_cmd = wmic diskdrive list brief
+            pci_test_cmd = echo select disk 1 > dt && echo online disk >> dt && echo detail disk >> dt && echo exit >> dt && diskpart /s dt
+
+        variants:
+            - Win2000:
+                no reboot
+                image_name = win2000-32
+                kill_vm_gracefully = no
+                install:
+                    steps = Win2000-32.steps
+                    cdrom = windows/Windows2000_sp4.iso
+                    md5sum = dda6039f3a9173f0f6bfae40f5efdfea
+                    md5sum_1m = dd28fba196d366d56fe774bd93df5527
+                    user = user
+                setup:
+                    steps = Win2000-32-rss.steps
+
+            - WinXP.32:
+                image_name = winXP-32
+                install:
+                    steps = WinXP-32.steps
+                    cdrom = windows/WindowsXP-sp2-vlk.iso
+                    md5sum = 743450644b1d9fe97b3cf379e22dceb0
+                    md5sum_1m = b473bf75af2d1269fec8958cf0202bfd
+                    user = user
+                setup:
+                    steps = WinXP-32-rss.steps
+
+            - WinXP.64:
+                no reboot
+                image_name = winXP-64
+                install:
+                    steps = WinXP-64.steps
+                    cdrom = windows/WindowsXP-64.iso
+                    md5sum = 8d3f007ec9c2060cec8a50ee7d7dc512
+                    md5sum_1m = e812363ff427effc512b7801ee70e513
+                    user = user
+                setup:
+                    steps = WinXP-64-rss.steps
+
+            - Win2003:
+                image_size = 20G
+                shutdown_command = shutdown /s /f /t 0
+                reboot_command = shutdown /r /f /t 0
+
+                variants:
+                    - 32:
+                        image_name = win2003-32
+                        install:
+                            steps = Win2003-32.steps
+                            cdrom = windows/Windows2003_r2_VLK.iso
+                            md5sum = 03e921e9b4214773c21a39f5c3f42ef7
+                            md5sum_1m = 37c2fdec15ac4ec16aa10fdfdb338aa3
+                            user = user
+                        setup:
+                            steps = Win2003-32-rss.steps
+
+                    - 64:
+                        image_name = win2003-64
+                        install:
+                            steps = Win2003-64.steps
+                            cdrom = windows/Windows2003-x64.iso
+                            md5sum = 5703f87c9fd77d28c05ffadd3354dbbd
+                            md5sum_1m = 439393c384116aa09e08a0ad047dcea8
+                            user = user
+                        setup:
+                            steps = Win2003-64-rss.steps
+
+            - WinVista:
+                image_name = winvista
+                image_size = 20G
+
+                variants:
+                    - 32:
+                        image_name += -32
+                        install:
+                            steps = Win-Vista-32.steps
+                            cdrom = windows/WindowsVista-32.iso
+                            md5sum = 1008f323d5170c8e614e52ccb85c0491
+                            md5sum_1m = c724e9695da483bc0fd59e426eaefc72
+                        setup:
+                            steps = WinVista-32-rss.steps
+
+                    - 64:
+                        image_name += -64
+                        install:
+                            steps = Win-Vista-64.steps
+                            cdrom = windows/WindowsVista-64.iso
+                            md5sum = 11e2010d857fffc47813295e6be6d58d
+                            md5sum_1m = 0947bcd5390546139e25f25217d6f165
+                        setup:
+                            steps = WinVista-64-rss.steps
+
+            - Win2008:
+                image_name = win2008
+                image_size = 20G
+                shutdown_command = shutdown /s /f /t 0
+                reboot_command = shutdown /r /f /t 0
+
+                variants:
+                    - 32:
+                        image_name += -32
+                        install:
+                            steps = Win2008-32.steps
+                            cdrom = windows/Windows2008-x86.iso
+                            #en_windows_server_2008_datacenter_enterprise_standard_x86_dvd_X14-26710.iso
+                            #sha1sum = 6CA018FF96F1E9B2B310A36546B6FDED99A421E6
+                            md5sum=0bfca49f0164de0a8eba236ced47007d
+                            md5sum_1m=07d7f5006393f74dc76e6e2e943e2440
+                        setup:
+                            steps = Win2008-32-rss.steps
+
+                    - 64:
+                        image_name += -64
+                        install:
+                            steps = Win2008-64.steps
+                            cdrom = windows/Windows2008-x64.iso
+                            #en_windows_server_2008_datacenter_enterprise_standard_x64_dvd_X14-26714.iso
+                            #sha1sum = BD000374709F67E9358814DB6EC8F0DDAAA16F70
+                            md5sum=27c58cdb3d620f28c36333a5552f271c
+                            md5sum_1m=efdcc11d485a1ef9afa739cb8e0ca766
+                            passwd = 1q2w3eP
+                        setup:
+                            steps = Win2008-64-rss.steps
+
+    # Unix/BSD section
+    - @Unix:
+        only install
+        kill_vm = yes
+        kill_vm_gracefully = no
+        kill_vm_timeout = 0
+
+        variants:
+            - NetBSD-1.6.2:
+                image_name = NetBSD-1.6.2
+                image_size = 4G
+                steps = NetBSD-1.6.2.steps
+                cdrom = bsd/netbsd-1.6.2-i386.iso
+                md5sum=72eb680300f77d529bfbc880ba8208f3
+                md5sum_1m=f1a9e1e825c90adfb1be35c6177bd9ac
+
+            - OpenBSD-4.1:
+                image_name = OpenBSD-4.1
+                steps = OpenBSD-4.1-32.steps
+                cdrom = unix/openbsd41-i386-07-05-06.iso
+                md5sum = 984790db10ebdd6fc7a9cf97abc7c967
+                md5sum_1m = 8fc234b4b0ecfe56843a32ac1d26ed55
+
+    # Live CD section
+    - @livecd:
+        only install
+        kill_vm = yes
+        kill_vm_gracefully = no
+        kill_vm_timeout = 0
+
+        variants:
+            - Belenix:
+                steps = Belenix-0.7.1.steps
+                cdrom = unix/belenix_0.7.1.iso
+                md5sum = 29cea6160cf5250de138e2820e53e342
+                md5sum_1m = 427bbef1b85d6d051799b825d686ae94
+
+            - Slax:
+                steps = Slax-6.0.7.steps
+                cdrom = linux/slax-6.0.7.iso
+                md5sum = cde0ecba3c8289d786e12c44666ded6e
+                md5sum_1m = ddf02bc7444f22d1160a6e5a8fc8723f
+
+            - FreeSBIE-2.0.1:
+                steps = FreeSBIE-2.0.1.steps
+                cdrom = unix/FreeSBIE-2.0.1-RELEASE.iso
+                md5sum = b2f680d27c21bbfaf4fb90dce090a118
+                md5sum_1m = 4d81ee7fe0101b0a14225963bfff60c1
+
+            - memtest:
+                mem = 128
+                steps = memtest86+.steps
+                cdrom = misc/memtest86+-2.01.iso
+                md5sum = 9fae22f2666369968a76ef59e9a81ced
+
+
+linux_s3:
+    only Linux
+
+
+variants:
+    - @up:
+    - smp2:
+        extra_params += " -smp 2"
+        used_cpus = 2
+        stress_boot: used_cpus = 10
+        timedrift: used_cpus = 100
+
+
+variants:
+    - @default:
+    - noacpi:
+        only Fedora Ubuntu Windows
+        no WinVista Win2008
+        no smp2.*Windows
+        extra_params += " -no-acpi"
+    - userirq:
+        only Fedora Ubuntu Windows
+        extra_params += " -no-kvm-irqchip -no-kvm-pit"
+
+
+variants:
+    - @ide:
+        drive_format=ide
+        image_boot=yes
+    - scsi:
+        drive_format=scsi
+        image_boot=yes
+    - virtio_blk:
+        drive_format=virtio
+        image_boot=yes
+
+
+virtio|virtio_blk|e1000:
+    only Fedora.9 openSUSE-11 Ubuntu-8.10-server
+
+
+variants:
+    - @qcow2:
+        image_format = qcow2
+    - vmdk:
+        only Fedora Ubuntu Windows
+        only smp2
+        only rtl8139
+        only default
+        image_format = vmdk
+    - raw:
+        only Fedora Ubuntu Windows
+        only smp2
+        only rtl8139
+        only default
+        image_format = raw
+
+
+variants:
+    - @smallpages:
+    - hugepages:
+        pre_command = "/usr/bin/python scripts/hugepage.py /mnt/kvm_hugepage"
+        extra_params += " -mem-path /mnt/kvm_hugepage"
+
+
+variants:
+    - @basic:
+        only Fedora Windows
+    - @full:
+    - @fc8_quick:
+        only qcow2
+        only ide
+        only default
+        only up
+        only Fedora.8.32
+        only install setup boot shutdown
+        only rtl8139
+        only hugepages
+    - @sample1:
+        only qcow2
+        only ide
+        only default
+        only up
+        only Fedora.9.* RHEL.5.* Windows
+        only rtl8139
+    - @custom:
+        only qcow2.*ide.*default.*up.*Ubuntu-8.10-server.*(autotest.sleeptest)
+        only rtl8139
+
+
+include kvm_cdkeys.cfg
+
+
+image_name.* ?<= images/
+cdrom.* ?<= isos/
+steps ?<= steps/
+
+
+# Choose your test list
+only fc8_quick

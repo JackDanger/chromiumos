@@ -1,0 +1,38 @@
+diff -urN ltp-full-20080229_vanilla/runtest/syscalls ltp-full-20080229/runtest/syscalls
+--- ltp-full-20080229_vanilla/runtest/syscalls	2008-02-28 23:55:41.000000000 -0800
++++ ltp-full-20080229/runtest/syscalls	2008-03-07 10:35:28.000000000 -0800
+@@ -981,7 +981,7 @@
+ vhangup02 vhangup02
+ 
+ #vmsplice test cases
+-vmsplice01 vmsplice01
++#vmsplice01 vmsplice01
+ 
+ wait02 wait02
+ 
+diff -urN ltp-full-20080229_vanilla/testcases/kernel/syscalls/paging/Makefile ltp-full-20080229/testcases/kernel/syscalls/paging/Makefile
+--- ltp-full-20080229_vanilla/testcases/kernel/syscalls/paging/Makefile	2008-02-28 23:55:46.000000000 -0800
++++ ltp-full-20080229/testcases/kernel/syscalls/paging/Makefile	2008-03-07 10:37:48.000000000 -0800
+@@ -25,7 +25,9 @@
+ all: $(TARGETS)
+
+ install:
++ifneq ($(TARGETS),)
+ 	@set -e; for i in $(TARGETS); do ln -f $$i ../../../bin/$$i ; done
++endif
+
+ clean:
+ 	rm -f $(TARGETS)
+diff -urN ltp-full-20080229_vanilla/testcases/network/nfsv4/acl/Makefile ltp-full-20080229/testcases/network/nfsv4/acl/Makefile
+--- ltp-full-20080229_vanilla/testcases/network/nfsv4/acl/Makefile	2008-02-28 23:55:52.000000000 -0800
++++ ltp-full-20080229/testcases/network/nfsv4/acl/Makefile	2008-03-07 10:38:23.000000000 -0800
+@@ -19,7 +19,9 @@
+ 	$(CC) $(CFLAGS) $(LDFLAGS) -o acl1 acl1.c $(LIBS)
+
+ install: $(ACLTESTS)
++ifneq ($(ACLTESTS),)
+ 	@set -e; for i in $(ACLTESTS); do ln -f $$i ../../../bin ; done
++endif
+
+ clean:
+ 	rm -f $(ACLTESTS)

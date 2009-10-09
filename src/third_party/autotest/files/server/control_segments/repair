@@ -1,0 +1,27 @@
+from autotest_lib.client.common_lib import host_protections
+
+
+def _call_repair(machine):
+    protection = host_protections.Protection
+
+    try:
+        level = protection.get_value(protection_level)
+    except ValueError:
+        raise NotImplementedError("Unknown host protection level %s" %
+                                  protection_level)
+
+    host = hosts.create_host(machine, initialize=False, auto_monitor=False)
+    host.repair_with_protection(level)
+
+
+def repair(machine):
+    try:
+        _call_repair(machine)
+        job.record('GOOD', None, 'repair', '%s repaired successfully' % machine)
+    except Exception, e:
+        msg = 'repair failed on %s: %s\n' % (machine, str(e))
+        job.record('FAIL', None, 'repair', msg)
+        raise
+
+
+job.parallel_simple(repair, machines)

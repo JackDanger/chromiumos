@@ -1,0 +1,19 @@
+Alias /results "/usr/local/autotest/results/"
+<Directory /usr/local/autotest/results/>
+    Options Indexes FollowSymLinks MultiViews
+    AllowOverride None
+    Order allow,deny
+    Allow from all
+    <FilesMatch "\.log$">
+        ForceType "text/plain; authoritative=true"
+    </FilesMatch>
+</Directory>
+
+Alias /tko "/usr/local/autotest/tko/"
+<Directory /usr/local/autotest/tko/>
+    Options ExecCGI Indexes MultiViews +SymLinksIfOwnerMatch
+    DirectoryIndex compose_query.cgi
+    AllowOverride None
+    Order allow,deny
+    Allow from all
+</Directory>

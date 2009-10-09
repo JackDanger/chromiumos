@@ -1,0 +1,194 @@
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>Autotest Frontend</title>
+    <script type='text/javascript' src='autotest.AfeClient.nocache.js'>
+    </script>
+  </head>
+
+  <body>
+    <!-- gwt history support -->
+    <iframe src="javascript:''" id="__gwt_historyFrame"
+            style="width:0;height:0;border:0"></iframe>
+
+
+    <span class="links-box" style="float: right;">
+      Frontend |
+      <a href="server/admin">Admin interface</a> |
+      <a href="/tko">Results database</a>
+      (<a href="/new_tko"><b>new</b> interface!</a>) |
+      <a href="http://autotest.kernel.org">Wiki</a> |
+      Feeds:
+      <a href="server/feeds/jobs/completed">Completed</a>,
+      <a href="server/feeds/jobs/failed">Failed</a>
+      <div id="motd" class="motd"></div>
+    </span>
+    <img src="header.png" />
+    <br /><br />
+
+    <div id="tabs" class="hidden">
+      <div id="job_list" title="Job List">
+        <div id="job_control_links" class="job-control"></div>
+        <!--  Table is necessary here to get the right layout with the filter widgets -->
+        <table class="job-control">
+          <tr>
+            <td>Owner:</td><td id="user_list"></td>
+            <td>Name:</td><td id="jl_name_search"></td>
+          </tr>
+        </table>
+        <div id="job_table"></div>
+      </div>
+
+      <div id="recurring_list" title="Recurring Job">
+        View recurring for user: <span id="recurring_user_list"></span>
+        <div id="recurring_table"></div>
+        <div id="recurring_create_panel" class="box" width="0"></div>
+      </div>
+
+      <div id="view_job"  title="View Job">
+        <span id="job_id_fetch" class="box-full">Fetch job by ID:
+          <span id="job_id_fetch_controls"></span>
+        </span><br><br>
+        <div id="view_title" class="title"></div><br>
+        <div id="view_data">
+          <span id="view_abort"></span><span id="view_clone"></span>
+          <span id="view_recurring"></span><br>
+          <span class="field-name">Label:</span>
+          <span id="view_label"></span><br>
+          <span class="field-name">Owner:</span>
+          <span id="view_owner"></span><br>
+          <span class="field-name">Priority:</span>
+          <span id="view_priority"></span><br>
+          <span class="field-name">Created:</span>
+          <span id="view_created"></span><br>
+          <span class="field-name">Timeout:</span>
+          <span id="view_timeout"></span> hours<br>
+          <span class="field-name">Max runtime:</span>
+          <span id="view_max_runtime"></span> hours<br>
+          <span class="field-name">Email List:</span>
+          <span id="view_email_list"></span><br>
+          <span class="field-name">Run verify:</span>
+          <span id="view_run_verify"></span><br>
+          <span class="field-name">Reboot options:</span>
+          <span id="view_reboot_before"></span> before job,
+          <span id="view_reboot_after"></span> after job<br>
+          <span class="field-name">Include failed repair results:</span>
+          <span id="view_parse_failed_repair"></span><br>
+          <span class="field-name">Dependencies:</span>
+          <span id="view_dependencies"></span><br>
+          <span class="field-name">Synchronization count:</span>
+          <span id="view_synch_count"></span><br>
+          <span class="field-name">Status:</span>
+          <span id="view_status"></span><br>
+
+          <div id="view_control_file"></div><br>
+          <span class="field-name">
+            Full results
+            <a id="old_results_link" target="_blank">(open in new window)</a>
+            <a id="results_link" target="_blank">(new results interface)</a>
+            <a id="triage_failures_link" target="_blank">(triage failures)</a>
+            <a id="raw_results_link" target="_blank">(raw results logs)</a><br>
+          </span>
+
+          <span id="tko_results"></span><br>
+
+          <span class="field-name">Hosts</span>
+          <div id="job_hosts_table"></div>
+        </div>
+      </div>
+
+      <div id="create_job"  title="Create Job">
+        <div class="links-box" style="float: right">
+          <a href="http://autotest.kernel.org/wiki/WebFrontendHowTo#Createjobparameters">
+            Create Job Help
+          </a>
+        </div>
+        <table class="form-table">
+          <tr><td class="field-name">Job name:</td>
+              <td id="create_job_name"></td><td></td></tr>
+          <tr><td class="field-name">Priority:</td>
+              <td id="create_priority"></td><td></td></tr>
+          <tr><td class="field-name">Kernel(s):</td>
+              <td id="create_kernel"></td>
+              <td class="help">Example: "2.6.18-rc3" or
+              "http://example.com/kernel-2.6.30.rpm"
+              Separate multiple kernels with a comma and/or space.
+              </td></tr>
+          <tr><td class="field-name">Kernel "cmdline":</td>
+              <td id="create_kernel_cmdline"></td></tr>
+          <tr><td class="field-name">Timeout (hours):</td>
+              <td id="create_timeout"></td><td></td></tr>
+          <tr><td class="field-name">Max runtime (hours):</td>
+              <td id="create_max_runtime"></td><td></td></tr>
+          <tr><td class="field-name">Email List:</td>
+              <td id="create_email_list"></td><td></td></tr>
+          <tr><td class="field-name">Skip verify:</td>
+              <td id="create_skip_verify"></td><td></td></tr>
+          <tr><td class="field-name">Reboot before:</td>
+              <td id="create_reboot_before"></td><td></td></tr>
+          <tr><td class="field-name">Reboot after:</td>
+              <td id="create_reboot_after"></td><td></td></tr>
+          <tr><td class="field-name">Include failed repair results:</td>
+              <td id="create_parse_failed_repair"></td><td></td></tr>
+          <tr><td class="field-name">Tests:</td>
+              <td id="create_tests" colspan="2"></td></tr>
+          <tr><td class="field-name">Profilers:</td>
+              <td id="create_profilers" colspan="2"></td></tr>
+          <tr><td id="help" colspan="3">
+              NOTE: One non-profile iteration runs first by default.
+              Add profile_only=True to job.run_test() in the control file
+              if you do not want this.</td></tr>
+          <tr><td colspan="3" id="create_edit_control"></td></tr>
+          <tr><td colspan="3" id="create_host_selector"></td></tr>
+          <tr>
+            <td id="create_submit"></td>
+            <td id="create_template_job"></td>
+            <td id="create_reset"></td>
+          </tr>
+        </table>
+      </div>
+
+      <div id="hosts" title="Host List">
+        <div id="hosts_list"></div>
+      </div>
+
+      <div id="view_host" title="View Host">
+        <span id="view_host_fetch" class="box-full">Fetch host:
+          <span id="view_host_fetch_controls"></span>
+        </span><br><br>
+        <div id="view_host_title" class="title"></div>
+        <div>
+          <span id="view_host_reverify_button"></span>
+          <span id="view_host_reinstall_button"></span>
+        </div>
+        <div id="view_host_data">
+          <span class="field-name">Platform:</span>
+          <span id="view_host_platform"></span><br>
+          <span class="field-name">Other labels:</span>
+          <span id="view_host_labels"></span><br>
+          <span class="field-name">ACLs:</span>
+          <span id="view_host_acls"></span><br>
+          <span class="field-name">Status:</span>
+          <span id="view_host_status"></span><br>
+          <span class="field-name">Locked:</span>
+          <span id="view_host_locked"></span>
+          <span id="view_host_lock_button"></span><br>
+          <span class="field-name">Protection level:</span>
+          <span id="view_host_protection"></span>
+          <br><br>
+          <span class="field-name">Jobs for this host:</span>
+          <div id="view_host_jobs_table"></div>
+        </div>
+      </div>
+
+      <div id="user_preferences" title="User Preferences">
+        <div id="user_preferences_table"></div>
+      </div>
+    </div>
+    <br>
+    <div id="error_log"></div>
+
+    <!--  for debugging only -->
+    <div id="error_display"></div>
+  </body>
+</html>
