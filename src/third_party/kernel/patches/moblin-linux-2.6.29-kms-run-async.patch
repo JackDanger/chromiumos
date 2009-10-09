@@ -1,0 +1,255 @@
+diff --git a/drivers/gpu/drm/drm_crtc_helper.c b/drivers/gpu/drm/drm_crtc_helper.c
+index 1c3a8c5..83f6069 100644
+--- a/drivers/gpu/drm/drm_crtc_helper.c
++++ b/drivers/gpu/drm/drm_crtc_helper.c
+@@ -29,6 +29,8 @@
+  *      Jesse Barnes <jesse.barnes@intel.com>
+  */
+ 
++#include <linux/async.h>
++
+ #include "drmP.h"
+ #include "drm_crtc.h"
+ #include "drm_crtc_helper.h"
+@@ -42,6 +44,8 @@ static struct drm_display_mode std_modes[] = {
+ 		   DRM_MODE_FLAG_PHSYNC | DRM_MODE_FLAG_PVSYNC) },
+ };
+ 
++LIST_HEAD(drm_async_list);
++
+ /**
+  * drm_helper_probe_connector_modes - get complete set of display modes
+  * @dev: DRM device
+@@ -137,6 +141,32 @@ int drm_helper_probe_connector_modes(struct drm_device *dev, uint32_t maxX,
+ }
+ EXPORT_SYMBOL(drm_helper_probe_connector_modes);
+ 
++int drm_helper_probe_connector_modes_fast(struct drm_device *dev, uint32_t maxX,
++				      uint32_t maxY)
++{
++	struct drm_connector *connector;
++	int count = 0;
++
++	list_for_each_entry(connector, &dev->mode_config.connector_list, head) {
++		count += drm_helper_probe_single_connector_modes(connector,
++								 maxX, maxY);
++		/*
++		 * If we found a 'good' connector, we stop probing futher.
++		 */
++		if (count > 0)
++			continue;
++
++		/*
++		 * one more probe if we have dual head
++		 */
++		if (count > 1)
++			break;
++	}
++
++	return count;
++}
++EXPORT_SYMBOL(drm_helper_probe_connector_modes_fast);
++
+ static void drm_helper_add_std_modes(struct drm_device *dev,
+ 				     struct drm_connector *connector)
+ {
+@@ -882,6 +912,24 @@ bool drm_helper_plugged_event(struct drm_device *dev)
+ 	/* FIXME: send hotplug event */
+ 	return true;
+ }
++
++static void async_notify_fb_changed(void *data, async_cookie_t cookie)
++{
++	struct drm_device *dev = data;
++	dev->mode_config.funcs->fb_changed(dev);
++}
++
++static void async_probe_hard(void *data, async_cookie_t cookie)
++{
++	struct drm_device *dev = data;
++	/* Need to wait for async_notify_fb_changed to be done */
++	async_synchronize_cookie_domain(cookie, &drm_async_list);
++	drm_helper_probe_connector_modes(dev,
++					dev->mode_config.max_width,
++					dev->mode_config.max_height);
++}
++
++
+ /**
+  * drm_initial_config - setup a sane initial connector configuration
+  * @dev: DRM device
+@@ -902,7 +950,7 @@ bool drm_helper_initial_config(struct drm_device *dev, bool can_grow)
+ 	struct drm_connector *connector;
+ 	int count = 0;
+ 
+-	count = drm_helper_probe_connector_modes(dev,
++	count = drm_helper_probe_connector_modes_fast(dev,
+ 						 dev->mode_config.max_width,
+ 						 dev->mode_config.max_height);
+ 
+@@ -921,7 +969,9 @@ bool drm_helper_initial_config(struct drm_device *dev, bool can_grow)
+ 	drm_setup_crtcs(dev);
+ 
+ 	/* alert the driver fb layer */
+-	dev->mode_config.funcs->fb_changed(dev);
++	async_schedule_domain(async_notify_fb_changed, dev, &drm_async_list);
++	/* probe further outputs */
++	async_schedule_domain(async_probe_hard, dev, &drm_async_list);
+ 
+ 	return 0;
+ }
+diff --git a/drivers/gpu/drm/drm_drv.c b/drivers/gpu/drm/drm_drv.c
+index 14c7a23..ef52021 100644
+--- a/drivers/gpu/drm/drm_drv.c
++++ b/drivers/gpu/drm/drm_drv.c
+@@ -48,6 +48,7 @@
+ 
+ #include "drmP.h"
+ #include "drm_core.h"
++#include <linux/async.h>
+ 
+ static int drm_version(struct drm_device *dev, void *data,
+ 		       struct drm_file *file_priv);
+@@ -345,6 +346,9 @@ void drm_exit(struct drm_driver *driver)
+ 	struct drm_device *dev, *tmp;
+ 	DRM_DEBUG("\n");
+ 
++	/* make sure all async DRM operations are finished */
++	async_synchronize_full_domain(&drm_async_list);
++
+ 	if (driver->driver_features & DRIVER_MODESET) {
+ 		pci_unregister_driver(&driver->pci_driver);
+ 	} else {
+diff --git a/include/drm/drmP.h b/include/drm/drmP.h
+index e5f4ae9..69ce4f4 100644
+--- a/include/drm/drmP.h
++++ b/include/drm/drmP.h
+@@ -304,6 +304,7 @@ struct drm_vma_entry {
+ 	pid_t pid;
+ };
+ 
++extern struct list_head drm_async_list;
+ /**
+  * DMA buffer.
+  */
+--- linux-2.6.29/include/drm/drm_crtc_helper.h.org	2009-06-22 12:54:40.000000000 -0700
++++ linux-2.6.29/include/drm/drm_crtc_helper.h	2009-06-22 12:55:02.000000000 -0700
+@@ -92,6 +92,7 @@
+ extern void drm_helper_disable_unused_functions(struct drm_device *dev);
+ extern int drm_helper_hotplug_stage_two(struct drm_device *dev);
+ extern bool drm_helper_initial_config(struct drm_device *dev);
++extern void drm_helper_initial_config_async(struct drm_device *dev);
+ extern int drm_crtc_helper_set_config(struct drm_mode_set *set);
+ extern bool drm_crtc_helper_set_mode(struct drm_crtc *crtc,
+ 				     struct drm_display_mode *mode,
+--- linux-2.6.29/drivers/gpu/drm/drm_crtc_helper.c.org	2009-06-22 12:46:34.000000000 -0700
++++ linux-2.6.29/drivers/gpu/drm/drm_crtc_helper.c	2009-06-22 12:54:22.000000000 -0700
+@@ -169,32 +169,6 @@
+ }
+ EXPORT_SYMBOL(drm_helper_probe_connector_modes);
+ 
+-int drm_helper_probe_connector_modes_fast(struct drm_device *dev, uint32_t maxX,
+-				      uint32_t maxY)
+-{
+-	struct drm_connector *connector;
+-	int count = 0;
+-
+-	list_for_each_entry(connector, &dev->mode_config.connector_list, head) {
+-		count += drm_helper_probe_single_connector_modes(connector,
+-								 maxX, maxY);
+-		/*
+-		 * If we found a 'good' connector, we stop probing futher.
+-		 */
+-		if (count > 0)
+-			continue;
+-
+-		/*
+-		 * one more probe if we have dual head
+-		 */
+-		if (count > 1)
+-			break;
+-	}
+-
+-	return count;
+-}
+-EXPORT_SYMBOL(drm_helper_probe_connector_modes_fast);
+-
+ static void drm_helper_add_std_modes(struct drm_device *dev,
+ 				     struct drm_connector *connector)
+ {
+@@ -945,23 +919,6 @@
+ 	return true;
+ }
+ 
+-static void async_notify_fb_changed(void *data, async_cookie_t cookie)
+-{
+-	struct drm_device *dev = data;
+-	dev->mode_config.funcs->fb_changed(dev);
+-}
+-
+-static void async_probe_hard(void *data, async_cookie_t cookie)
+-{
+-	struct drm_device *dev = data;
+-	/* Need to wait for async_notify_fb_changed to be done */
+-	async_synchronize_cookie_domain(cookie, &drm_async_list);
+-	drm_helper_probe_connector_modes(dev,
+-					dev->mode_config.max_width,
+-					dev->mode_config.max_height);
+-}
+-
+-
+ /**
+  * drm_initial_config - setup a sane initial connector configuration
+  * @dev: DRM device
+@@ -981,7 +938,7 @@
+ 	struct drm_connector *connector;
+ 	int count = 0;
+ 
+-	count = drm_helper_probe_connector_modes_fast(dev,
++	count = drm_helper_probe_connector_modes(dev,
+ 						 dev->mode_config.max_width,
+ 						 dev->mode_config.max_height);
+ 
+@@ -999,15 +956,26 @@
+ 
+ 	drm_setup_crtcs(dev);
+ 
+-	/* alert the driver fb layer */
+-	async_schedule_domain(async_notify_fb_changed, dev, &drm_async_list);
+-	/* probe further outputs */
+-	async_schedule_domain(async_probe_hard, dev, &drm_async_list);
+-
++	dev->mode_config.funcs->fb_changed(dev);
+ 	return 0;
+ }
+ EXPORT_SYMBOL(drm_helper_initial_config);
+ 
++static void drm_helper_initial_config_helper(void *ptr, async_cookie_t cookie)
++{
++	struct drm_device *dev = ptr;
++	drm_helper_initial_config(dev);
++}
++
++void drm_helper_initial_config_async(struct drm_device *dev)
++{
++	async_schedule_domain(drm_helper_initial_config_helper,
++				dev, &drm_async_list);
++}
++EXPORT_SYMBOL(drm_helper_initial_config_async);
++
++
++
+ static int drm_helper_choose_encoder_dpms(struct drm_encoder *encoder)
+ {
+ 	int dpms = DRM_MODE_DPMS_OFF;
+--- linux-2.6.29/drivers/gpu/drm/i915/i915_dma.c.org	2009-06-22 12:52:49.000000000 -0700
++++ linux-2.6.29/drivers/gpu/drm/i915/i915_dma.c	2009-06-22 12:52:42.000000000 -0700
+@@ -1044,7 +1044,7 @@
+ 
+ 	intel_modeset_init(dev);
+ 
+-	drm_helper_initial_config(dev);
++	drm_helper_initial_config_async(dev);
+ 
+ 	return 0;
+ 

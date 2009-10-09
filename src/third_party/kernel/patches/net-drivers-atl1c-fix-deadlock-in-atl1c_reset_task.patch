@@ -1,0 +1,127 @@
+From bfe44959696670ebd487ec9313e29063d476aecb Mon Sep 17 00:00:00 2001
+From: Mandeep Singh Baines <msb@google.com>
+Date: Thu, 17 Sep 2009 15:59:57 -0700
+Subject: [PATCH] net/drivers/atl1c: fix deadlock in atl1c_reset_task
+
+atl1c_reset_task called atl1c_down which synchronously waits for
+atl1c_reset_task to finish. Deadlock!
+
+There was a patch posted upstream to fix this:
+
+http://lkml.org/lkml/2009/8/3/501
+
+However, the upstream posted patch has a race as pointed out by apkm.
+
+Without adding locks, you can't set a global variable and rely on the next
+call to atl1c_down to be from the same context.
+
+Signed-off-by: Mandeep Singh Baines <msb@google.com>
+---
+ drivers/net/atl1c/atl1c.h      |    2 +-
+ drivers/net/atl1c/atl1c_main.c |   24 ++++++++++--------------
+ 2 files changed, 11 insertions(+), 15 deletions(-)
+
+diff --git a/drivers/net/atl1c/atl1c.h b/drivers/net/atl1c/atl1c.h
+index 2a1120a..3c19563 100644
+--- a/drivers/net/atl1c/atl1c.h
++++ b/drivers/net/atl1c/atl1c.h
+@@ -598,7 +598,7 @@ extern char atl1c_driver_name[];
+ extern char atl1c_driver_version[];
+ 
+ extern int atl1c_up(struct atl1c_adapter *adapter);
+-extern void atl1c_down(struct atl1c_adapter *adapter);
++extern void atl1c_down(struct atl1c_adapter *adapter, int in_reset_task);
+ extern void atl1c_reinit_locked(struct atl1c_adapter *adapter);
+ extern s32 atl1c_reset_hw(struct atl1c_hw *hw);
+ extern void atl1c_set_ethtool_ops(struct net_device *netdev);
+diff --git a/drivers/net/atl1c/atl1c_main.c b/drivers/net/atl1c/atl1c_main.c
+index a383122..d998a6d 100644
+--- a/drivers/net/atl1c/atl1c_main.c
++++ b/drivers/net/atl1c/atl1c_main.c
+@@ -200,7 +200,7 @@ void atl1c_reinit_locked(struct atl1c_adapter *adapter)
+ {
+ 
+ 	WARN_ON(in_interrupt());
+-	atl1c_down(adapter);
++	atl1c_down(adapter, 0);
+ 	atl1c_up(adapter);
+ 	clear_bit(__AT_RESETTING, &adapter->flags);
+ }
+@@ -214,7 +214,7 @@ static void atl1c_reset_task(struct work_struct *work)
+ 	netdev = adapter->netdev;
+ 
+ 	netif_device_detach(netdev);
+-	atl1c_down(adapter);
++	atl1c_down(adapter, 1);
+ 	atl1c_up(adapter);
+ 	netif_device_attach(netdev);
+ }
+@@ -319,12 +319,6 @@ static void atl1c_del_timer(struct atl1c_adapter *adapter)
+ 	del_timer_sync(&adapter->phy_config_timer);
+ }
+ 
+-static void atl1c_cancel_work(struct atl1c_adapter *adapter)
+-{
+-	cancel_work_sync(&adapter->reset_task);
+-	cancel_work_sync(&adapter->link_chg_task);
+-}
+-
+ /*
+  * atl1c_tx_timeout - Respond to a Tx Hang
+  * @netdev: network interface device structure
+@@ -474,7 +468,7 @@ static int atl1c_change_mtu(struct net_device *netdev, int new_mtu)
+ 		netdev->mtu = new_mtu;
+ 		adapter->hw.max_frame_size = new_mtu;
+ 		atl1c_set_rxbufsize(adapter, netdev);
+-		atl1c_down(adapter);
++		atl1c_down(adapter, 0);
+ 		atl1c_up(adapter);
+ 		clear_bit(__AT_RESETTING, &adapter->flags);
+ 		if (adapter->hw.ctrl_flags & ATL1C_FPGA_VERSION) {
+@@ -2203,12 +2197,14 @@ err_alloc_rx:
+ 	return err;
+ }
+ 
+-void atl1c_down(struct atl1c_adapter *adapter)
++void atl1c_down(struct atl1c_adapter *adapter, int in_reset_task)
+ {
+ 	struct net_device *netdev = adapter->netdev;
+ 
+ 	atl1c_del_timer(adapter);
+-	atl1c_cancel_work(adapter);
++	if (!in_reset_task)
++		cancel_work_sync(&adapter->reset_task);
++	cancel_work_sync(&adapter->link_chg_task);
+ 
+ 	/* signal that we're down so the interrupt handler does not
+ 	 * reschedule our watchdog timer */
+@@ -2291,7 +2287,7 @@ static int atl1c_close(struct net_device *netdev)
+ 	struct atl1c_adapter *adapter = netdev_priv(netdev);
+ 
+ 	WARN_ON(test_bit(__AT_RESETTING, &adapter->flags));
+-	atl1c_down(adapter);
++	atl1c_down(adapter, 0);
+ 	atl1c_free_ring_resources(adapter);
+ 	return 0;
+ }
+@@ -2314,7 +2310,7 @@ static int atl1c_suspend(struct pci_dev *pdev, pm_message_t state)
+ 
+ 	if (netif_running(netdev)) {
+ 		WARN_ON(test_bit(__AT_RESETTING, &adapter->flags));
+-		atl1c_down(adapter);
++		atl1c_down(adapter, 0);
+ 	}
+ 	netif_device_detach(netdev);
+ 	atl1c_disable_l0s_l1(hw);
+@@ -2679,7 +2675,7 @@ static pci_ers_result_t atl1c_io_error_detected(struct pci_dev *pdev,
+ 	netif_device_detach(netdev);
+ 
+ 	if (netif_running(netdev))
+-		atl1c_down(adapter);
++		atl1c_down(adapter, 0);
+ 
+ 	pci_disable_device(pdev);
+ 
+-- 
+1.5.4.3
+

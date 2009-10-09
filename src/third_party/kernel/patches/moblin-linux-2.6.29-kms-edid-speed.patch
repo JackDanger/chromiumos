@@ -1,0 +1,66 @@
+--- linux-2.6.29/drivers/gpu/drm/drm_edid.c.org	2009-06-22 13:24:38.000000000 -0700
++++ linux-2.6.29/drivers/gpu/drm/drm_edid.c	2009-06-22 13:26:04.000000000 -0700
+@@ -605,20 +605,21 @@
+ {
+ 	struct i2c_algo_bit_data *algo_data = adapter->algo_data;
+ 	int i, j;
++	int divider = 5;
+ 	int ret = -1;
+ 
+ 	algo_data->setscl(algo_data->data, 1);
+ 
+-	for (i = 0; i < 1; i++) {
++	for (i = 0; i < 2; i++) {
+ 		/* For some old monitors we need the
+ 		 * following process to initialize/stop DDC
+ 		 */
+ 		algo_data->setsda(algo_data->data, 1);
+-		msleep(13);
++		msleep(13 / divider);
+ 
+ 		algo_data->setscl(algo_data->data, 1);
+ 		for (j = 0; j < 5; j++) {
+-			msleep(10);
++			msleep(10 / divider);
+ 			if (algo_data->getscl(algo_data->data))
+ 				break;
+ 		}
+@@ -626,31 +627,32 @@
+ 			continue;
+ 
+ 		algo_data->setsda(algo_data->data, 0);
+-		msleep(15);
++		msleep(15 / divider);
+ 		algo_data->setscl(algo_data->data, 0);
+-		msleep(15);
++		msleep(15 / divider);
+ 		algo_data->setsda(algo_data->data, 1);
+-		msleep(15);
++		msleep(15 / divider);
+ 
+ 		/* Do the real work */
+ 		ret = drm_do_probe_ddc_edid(adapter, buf, len);
+ 		algo_data->setsda(algo_data->data, 0);
+ 		algo_data->setscl(algo_data->data, 0);
+-		msleep(15);
++		msleep(15 / divider);
+ 
+ 		algo_data->setscl(algo_data->data, 1);
+ 		for (j = 0; j < 10; j++) {
+-			msleep(10);
++			msleep(10 / divider);
+ 			if (algo_data->getscl(algo_data->data))
+ 				break;
+ 		}
+ 
+ 		algo_data->setsda(algo_data->data, 1);
+-		msleep(15);
++		msleep(15 / divider);
+ 		algo_data->setscl(algo_data->data, 0);
+ 		algo_data->setsda(algo_data->data, 0);
+ 		if (ret == 0)
+ 			break;
++		divider = 1;
+ 	}
+ 	/* Release the DDC lines when done or the Apple Cinema HD display
+ 	 * will switch off

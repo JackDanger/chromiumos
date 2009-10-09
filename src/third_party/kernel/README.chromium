@@ -1,0 +1,7 @@
+Ubuntu kernel source
+
+Checked in here since launchpad.net and archive.ubuntu.com are not
+guaranteed to keep around older versions.
+
+2.6.30-10.12
+  from https://launchpad.net/ubuntu/karmic/+source/linux/2.6.30-10.12

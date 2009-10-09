@@ -1,0 +1,88 @@
+diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+index 9714db3..24d2880 100644
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -1043,6 +1043,7 @@ static inline int ext4_valid_inum(struct super_block *sb, unsigned long ino)
+ #define EXT4_FEATURE_COMPAT_EXT_ATTR		0x0008
+ #define EXT4_FEATURE_COMPAT_RESIZE_INODE	0x0010
+ #define EXT4_FEATURE_COMPAT_DIR_INDEX		0x0020
++#define EXT4_FEATURE_COMPAT_LAZY_BG		0x0040
+ 
+ #define EXT4_FEATURE_RO_COMPAT_SPARSE_SUPER	0x0001
+ #define EXT4_FEATURE_RO_COMPAT_LARGE_FILE	0x0002
+diff --git a/fs/ext4/resize.c b/fs/ext4/resize.c
+index 68b0351..faf9263 100644
+--- a/fs/ext4/resize.c
++++ b/fs/ext4/resize.c
+@@ -183,7 +183,7 @@ static int setup_new_group_blocks(struct super_block *sb,
+ 	handle_t *handle;
+ 	ext4_fsblk_t block;
+ 	ext4_grpblk_t bit;
+-	int i;
++	int i, lazy = 0;
+ 	int err = 0, err2;
+ 
+ 	/* This transaction may be extended/restarted along the way */
+@@ -261,13 +261,31 @@ static int setup_new_group_blocks(struct super_block *sb,
+ 		   input->inode_bitmap - start);
+ 	ext4_set_bit(input->inode_bitmap - start, bh->b_data);
+ 
+-	/* Zero out all of the inode table blocks */
++	/* Zero out all of the inode table blocks except if the fs supports lazy
++	 * itables. */
++	lazy = EXT4_HAS_RO_COMPAT_FEATURE(sb,
++	         EXT4_FEATURE_RO_COMPAT_GDT_CSUM) &&
++	       EXT4_HAS_COMPAT_FEATURE(sb, EXT4_FEATURE_COMPAT_LAZY_BG);
++	if (lazy) {
++		ext4_debug("lazy_bg for inode blocks "
++			   "%#04llx (+%d) - %#04llx (+%d) ",
++			   input->inode_table, input->inode_table - start,
++			  input->inode_table + sbi->s_itb_per_group - 1,
++			  (input->inode_table - start) + sbi->s_itb_per_group - 1);
++	}
++
+ 	for (i = 0, block = input->inode_table, bit = block - start;
+ 	     i < sbi->s_itb_per_group; i++, bit++, block++) {
+ 		struct buffer_head *it;
+ 
+ 		ext4_debug("clear inode block %#04llx (+%d)\n", block, bit);
+ 
++		/* Even though we don't initialize the inode table, we need
++		 * to mark the blocks used by it for later init. */
++		if (lazy) {
++			ext4_set_bit(bit, bh->b_data);
++			continue;
++		}
+ 		if ((err = extend_or_restart_transaction(handle, 1, bh)))
+ 			goto exit_bh;
+ 
+@@ -286,6 +304,11 @@ static int setup_new_group_blocks(struct super_block *sb,
+ 	mark_bitmap_end(input->blocks_count, sb->s_blocksize * 8, bh->b_data);
+ 	ext4_handle_dirty_metadata(handle, NULL, bh);
+ 	brelse(bh);
++	/* If lazy, we're done since we are marked INODE_UNINIT and that
++	 * includes the inode bitmap. (ext4_init_inode_bitmap will do
++	 * this for us later). */
++	if (lazy)
++		goto exit_journal;
+ 	/* Mark unused entries in inode bitmap used */
+ 	ext4_debug("clear inode bitmap %#04llx (+%llu)\n",
+ 		   input->inode_bitmap, input->inode_bitmap - start);
+@@ -868,6 +891,17 @@ int ext4_group_add(struct super_block *sb, struct ext4_new_group_data *input)
+ 	ext4_free_blks_set(sb, gdp, input->free_blocks_count);
+ 	ext4_free_inodes_set(sb, gdp, EXT4_INODES_PER_GROUP(sb));
+ 	gdp->bg_flags = cpu_to_le16(EXT4_BG_INODE_ZEROED);
++	/* If we can do lazy initialization, we do. */
++	if (EXT4_HAS_RO_COMPAT_FEATURE(sb, EXT4_FEATURE_RO_COMPAT_GDT_CSUM) &&
++	    EXT4_HAS_COMPAT_FEATURE(sb, EXT4_FEATURE_COMPAT_LAZY_BG)) {
++		/* Only use EXT4_BG_INODE_UNINIT and not BLOCK_UNINIT
++		 * because we purposefully initialize the block bitmaps
++		 * to avoid managing super block backup decisions, making
++		 * sure the last block is init'd, etc.
++		 */
++		gdp->bg_flags = cpu_to_le16(EXT4_BG_INODE_UNINIT);
++		ext4_itable_unused_set(sb, gdp, EXT4_INODES_PER_GROUP(sb));
++	}
+ 	gdp->bg_checksum = ext4_group_desc_csum(sbi, input->group, gdp);
+ 
+ 	/*
