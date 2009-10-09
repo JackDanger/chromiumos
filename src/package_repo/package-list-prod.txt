@@ -1,0 +1,80 @@
+# Copyright (c) 2009 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# This file contains the list of packages we install on the production
+# machines (ie, end users). One package per line
+
+# To read these into a line in a script, do:
+# PKGS=`cat $PACKAGE_LIST_FILE | grep -v ' *#' | grep -v '^ *$' | tr '\n' ' '`
+# change "' '" to "','" for a comma separated list
+
+# xserver
+xserver-xorg
+
+# TODO: Something broke in the dependencies so we need to manually
+# ensure that we have some X input packages
+xserver-xorg-input-kbd
+xserver-xorg-input-mouse
+xserver-xorg-input-synaptics
+
+# Newer packages of chromium-browser don't seem to have libgconf2 as
+# part of their depends, but chrome won't run without.
+libgconf2-4
+
+# DRI drivers are needed to run the clutter-based WM.
+libgl1-mesa-dri
+
+# TODO: Remove. For now, install ssh server until things are farther
+# along in development.
+openssh-server
+
+# TODO: For Karmic, we might need to add squashfs-tools until they get
+# get updated.
+#squashfs-tools
+
+# Attempt to get nvidia drivers working
+# TODO: This currently does not work, so uncomment with caution.
+#nvidia-glx-180
+#nvidia-180-modaliases
+
+# People like the Android fonts
+ttf-droid
+
+# for power events (needed specifically to trap lid-close)
+acpid
+
+# for power management (battery monitor)
+devicekit-power
+
+# For sound (needed specifically for volume adjustment)
+alsa-utils
+
+# For firewalling
+iptables
+
+# For setting time
+ntp
+
+# For encrypted home directories
+dmsetup
+libhx18
+libpam-mount
+e4fsprogs-git
+
+# Chrome OS packages; keep alphabetized
+chromeos-chrome
+chromeos-connman
+chromeos-controlpanel
+chromeos-cryptohome
+chromeos-init
+chromeos-installer
+chromeos-login
+chromeos-pam-google
+chromeos-libcros
+chromeos-ply-image
+chromeos-screenlocker
+chromeos-wm
+chromeos-wpasupplicant
+memento-updater
+
