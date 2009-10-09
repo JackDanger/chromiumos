@@ -1,0 +1,37 @@
+This package was debianized by Mike Massonnet <mmassonnet@gmail.com> on
+Tue, 30 Jan 2007 00:03:45 +0100.
+
+It was downloaded from http://slim.berlios.de/
+
+Upstream Author: Simone Rota <sip@varlock.com>, Johannes Winkelmann
+
+Copyright: (C) 2004-06 by Simone Rota, Johannes Winkelmann
+
+License:
+
+   This package is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+
+   This package is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this package; if not, write to the Free Software
+   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+
+On Debian systems, the complete text of the GNU General
+Public License can be found in `/usr/share/common-licenses/GPL'.
+
+The Debian packaging is (C) 2007, Mike Massonnet <mmassonnet@gmail.com> 
+and is licensed under the GPL, see above.
+
+Image handling code adapted and extended from xplanet 1.0.1,
+copyright (c) 2002-04 by Hari Nair and is licensed through
+the GNU General Public License.
+
+Login.app is copyright (c) 1997, 1998 by Per Liden and is
+licensed through the GNU General Public License.

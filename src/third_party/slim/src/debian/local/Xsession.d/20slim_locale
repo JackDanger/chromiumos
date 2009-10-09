@@ -1,0 +1,9 @@
+#!/bin/sh
+. /etc/default/locale
+for lt_var in LANG LANGUAGE LC_ALL
+do
+	eval "if test \"\${$lt_var+set}\" = set; then
+		export $lt_var
+		fi"
+done
+

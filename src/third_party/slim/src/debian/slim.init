@@ -1,0 +1,79 @@
+#!/bin/sh
+
+# Largely adapted from xdm's init script:
+# Copyright 1998-2002, 2004, 2005 Branden Robinson <branden@debian.org>.
+# Copyright 2006 Eugene Konev <ejka@imfi.kspu.ru>
+
+### BEGIN INIT INFO
+# Provides:          slim
+# Required-Start:    $local_fs $remote_fs
+# Required-Stop:     $local_fs $remote_fs
+# Should-Start:      xfs $named slapd
+# Should-Stop:       xfs $named slapd
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Start/stop the SLiM daemon.
+### END INIT INFO
+
+test -z "$HEED_DEFAULT_DISPLAY_MANAGER" && HEED_DEFAULT_DISPLAY_MANAGER=true
+DEFAULT_DISPLAY_MANAGER_FILE=/etc/X11/default-display-manager
+
+DAEMON=/usr/bin/slim
+PIDFILE=/var/run/slim.lock
+
+SSD_START_ARGS="--pidfile $PIDFILE --name $(basename $DAEMON) --startas $DAEMON -- -d"
+SSD_STOP_ARGS="--pidfile $PIDFILE --name $(basename $DAEMON) --retry TERM/5/TERM/5"
+
+case $1 in
+  start)
+    if [ "$HEED_DEFAULT_DISPLAY_MANAGER" = "true" ] &&
+       [ -e $DEFAULT_DISPLAY_MANAGER_FILE ] &&
+       [ "$(cat $DEFAULT_DISPLAY_MANAGER_FILE)" != "$DAEMON" ]; then
+      echo "Not starting X display manager (slim); it is not the default display manager."
+    else
+      echo -n "Starting X display manager: slim"
+      start-stop-daemon --start --quiet $SSD_START_ARGS || echo -n " already running"
+      echo "."
+    fi
+  ;;
+
+  stop)
+    echo -n "Stopping X display manager: slim"
+    if ! [ -f $PIDFILE ]; then
+      echo -n " not running ($PIDFILE not found)"
+    else
+      start-stop-daemon --stop --quiet $SSD_STOP_ARGS
+      SSD_RES=$?
+      if [ $SSD_RES -eq 1 ]; then
+        echo -n " not running"
+      fi
+      if [ $SSD_RES -eq 2 ]; then
+        echo -n " not responding to TERM signals"
+      else
+    if [ -f $PIDFILE ]; then
+      echo -n " (removing stale $PIDFILE)"
+      rm $PIDFILE
+    fi
+      fi
+    fi
+    echo "."
+  ;;
+
+  restart)
+    $0 stop
+    sleep 2
+    $0 start
+  ;;
+
+  force-reload)
+    /etc/init.d/slim restart
+  ;;
+
+  *)
+    echo "Usage: /etc/init.d/slim {start|stop|restart|force-reload}"
+    exit 1
+  ;;
+esac
+
+# End of file
+

@@ -1,0 +1,6 @@
+etc
+etc/init.d
+etc/logrotate.d
+etc/X11/Xsession.d
+usr/share/slim/themes/debian-moreblue
+usr/share/slim/themes/debian-moreblue-orbit

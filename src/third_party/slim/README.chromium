@@ -1,0 +1,18 @@
+URL: http://prdownload.berlios.de/slim/slim-1.3.1.tar.gz
+Version: Current as of Tue Jun  9 15:04:54 PDT 2009
+License: GPL v2
+License File: src/COPYING
+
+Description:
+
+This is the Simple Login Manager, which we are using as a lightweight
+replacement for gdm on Chrome OS.
+
+Local Modifications:
+
+  * Tab now moves between the username and password fields (though we still 
+    require SOMETHING) to be entered in the username field
+  * We emit the login-prompt-ready signal to Upstart when the login prompt is
+    showing.
+  * We skip blanking the screen so that the transition between splash screen
+    and login screen can appear seamless.

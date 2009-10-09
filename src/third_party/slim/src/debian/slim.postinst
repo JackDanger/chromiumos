@@ -1,0 +1,37 @@
+#! /bin/sh
+
+set -e
+
+# source debconf library
+. /usr/share/debconf/confmodule
+
+DAEMON=/usr/bin/slim
+
+DEFAULT_DISPLAY_MANAGER_FILE=/etc/X11/default-display-manager
+
+if ! [ -e "$DEFAULT_DISPLAY_MANAGER_FILE" ]; then
+  DEFAULT_DISPLAY_MANAGER=
+  if db_get shared/default-x-display-manager; then
+    DEFAULT_DISPLAY_MANAGER="$RET"
+  fi
+  if [ -n "$DEFAULT_DISPLAY_MANAGER" ]; then
+    DAEMON_NAME=
+    if db_get "$DEFAULT_DISPLAY_MANAGER"/daemon_name; then
+      DAEMON_NAME="$RET"
+    fi
+    if [ -z "$DAEMON_NAME" ]; then
+      # if we were unable to determine the name of the selected daemon (for
+      # instance, if the selected default display manager doesn't provide a
+      # daemon_name question), guess
+      DAEMON_NAME=$(which "$DEFAULT_DISPLAY_MANAGER" 2>/dev/null)
+    fi
+    if [ -n "$DAEMON_NAME" ]; then
+      echo "$DAEMON_NAME" > "$DEFAULT_DISPLAY_MANAGER_FILE"
+    fi
+  fi
+fi
+
+db_stop
+
+##DEBHELPER##
+

@@ -1,0 +1,3 @@
+debian/debian-moreblue/background.png debian/debian-moreblue/panel.png debian/debian-moreblue/slim.theme usr/share/slim/themes/debian-moreblue
+debian/debian-moreblue-orbit/background.png debian/debian-moreblue-orbit/panel.png debian/debian-moreblue-orbit/slim.theme usr/share/slim/themes/debian-moreblue-orbit
+debian/local/Xsession.d/20slim_locale etc/X11/Xsession.d

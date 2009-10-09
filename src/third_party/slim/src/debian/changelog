@@ -1,0 +1,92 @@
+slim (1.3.1-chromeos3) karmic; urgency=low
+
+  * Includes Google Breakpad for crash dumping.
+
+ -- The Chromium OS Authors <chromium-os-dev@googlegroups.com>  Wed, 15 Jul 2009 23:13:15 -0700
+
+slim (1.3.1-chromeos2) jaunty; urgency=low
+
+  * Emits an event at boot time for upstart jobs to field.
+
+ -- The Chromium OS Authors <chromium-os-dev@googlegroups.com>  Wed, 15 Jul 2009 23:13:15 -0700
+
+slim (1.3.1-chromeos1) jaunty; urgency=low
+
+  * Forking for Chrome OS.  Adding support for tabbing between fields 
+
+ -- The Chromium OS Authors <chromium-os-dev@googlegroups.com>  Tue, 09 Jun 2009 10:02:23 -0700
+
+slim (1.3.0-2) unstable; urgency=low
+
+  * Minor changes:
+    - Move from dpatch to quilt.
+    - Export every possible locale env-var (updated
+      local/Xsession.d/20slim_locale). Closes: #441630
+      Note: Test and validate the patch that uses pam instead (#476248).
+    - Modifications to patches/slim-conf.patch:
+      - Replace X11R6/bin with bin/X11. Closes: #469401
+      - Add "default" to the start of the list of sessions. Closes: #476245
+      - Set default X server option -nolisten tcp. Closes: #478671
+      - Don't include the current path "." inside $PATH. Closes: #484773
+      - Switch from xterm to x-terminal-emulator. Closes: #499048
+        Note: now we recommend xterm at least.
+    - Add patches/fix-manpage.patch, lintian spewed an error on slim.1.
+    - Update clean rule to remove the .pc directory
+  * New theme:
+    - Add new theme debian-moreblue-orbit and set it as default. Closes: #495029
+  * Update translations:
+    - Portuguese. Closes: #497587
+    - Turkish. Closes: #499557
+
+ -- Mike Massonnet <mmassonnet@gmail.com>  Sun, 21 Sep 2008 16:15:15 +0200
+
+slim (1.3.0-1) unstable; urgency=low
+
+  [ Mike Massonnet <mmassonnet@gmail.com> ]
+
+  * Package new upstream version 1.3.0. Closes: #447913
+    - Build against libpam (add build dependency libpam0g-dev).
+    - DPatch cfg.cpp to include <stdlib.h> and fix FTBFS with GCC-4.3.
+      Closes: #455138
+    - Add /etc/X11/Xsession.d/20slim_locale to export the LANG.
+      Closes: #440862
+    - Replace xfce4-session with startxfce4 and add ion3. Closes: #426466
+    - Don't set the DPI. Closes: #428407
+  * The code concerning the environment init has drastically changed in this
+    new version, and Steve Kemp did a security audit over it. Closes: #435841
+  * Debconf translation:
+    - New Finnish translation. Closes: #457447
+    - Update Portuguese translation. Closes: #445495
+  * Minor changes:
+    - Suggest scrot as default screenshoter
+    - Refined the description
+    - Set the Homepage field
+    - Bump standards version to 3.7.3
+    - Patch Makefile (LDFLAGS) to remove unnecessary links
+
+  [ Christian Perrier <bubulle@debian.org> ]
+
+  * Debconf templates and debian/control reviewed by the debian-l10n-
+    english team as part of the Smith review project. Closes: #426233, #423279
+  * Debconf translation updates:
+    - German and all others taken from xdm. Closes: #426532, #424677
+    - Romanian. Closes: #428955
+    - Vietnamese. Closes: #427145
+
+ -- Mike Massonnet <mmassonnet@gmail.com>  Wed, 24 Oct 2007 22:44:07 +0200
+
+slim (1.2.6-1) unstable; urgency=low
+
+  * Initial release (Closes: #337578)
+  * Add default Debian theme.
+  * Add openbox to the sessions.
+  * Patched app.cpp to avoid a segfault (Darren Salt).
+  * Patched Makefile to set MANDIR to /usr/share/man instead of /usr/man.
+  * Use the Xsession script as default login script.  This changes the
+    behavior of slim where it now uses ~/.xsession instead of ~/.xinitrc.
+  * Adapted scripts from xdm to allow slim to be chosen as the default display
+    manager (Darren Salt).
+
+
+ -- Mike Massonnet <mmassonnet@gmail.com>  Thu,  5 Apr 2007 11:18:33 +0200
+
