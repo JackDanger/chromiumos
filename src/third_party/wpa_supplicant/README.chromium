@@ -1,0 +1,7 @@
+URL: http://hostap.epitest.fi/wpa_supplicant
+Version: Current as of Tue Jun  14 14:14:54 PDT 2009
+License: GPL v2
+License File: LICENSE 
+
+Description:
+  The source code for wpa_supplicant. No code changes have been made, but the CONFIG_DRIVER_TEST flag is set at build time. This will allow us to mock out the wifi connection on machines that don't have wireless hardware.

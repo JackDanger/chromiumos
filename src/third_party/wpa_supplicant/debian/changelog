@@ -1,0 +1,5 @@
+chromeos-wpasupplicant (0.1) karmic; urgency=low
+
+  * Bring in fix from hostap git repo for missing state transitions
+
+ -- The Chromium OS Authors <chromium-os-dev@googlegroups.com>  Tue, 11 Aug 2009 06:56:24 +0000
