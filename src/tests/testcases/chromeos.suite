@@ -1,0 +1,31 @@
+# Copyright (c) 2009 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+#
+# This is a definition file for running test cases.
+# Each line in this file is interpreted as a test case to be run.
+# The first field is the script name, followed by any arguments needed
+# to run the test case.
+
+home/home01.sh
+filesystem/copy1MB_stateful.sh
+filesystem/copy10MB_stateful.sh
+filesystem/copy100MB_stateful.sh
+filesystem/create1MB_stateful.sh
+filesystem/create10MB_stateful.sh
+filesystem/create100MB_stateful.sh
+filesystem/create1GB_stateful.sh
+filesystem/create1MB_tmp.sh
+filesystem/create10MB_tmp.sh
+filesystem/create100MB_tmp.sh
+filesystem/flimit1k.sh
+filesystem/flimit10k.sh
+filesystem/flimit100k.sh
+filesystem/rootro.sh
+filesystem/stateful01.sh
+filesystem/tempfs.sh
+net/net01.sh
+net/net02.sh
+net/net03.sh
+video/resolution.sh
+system/logcheck.sh
