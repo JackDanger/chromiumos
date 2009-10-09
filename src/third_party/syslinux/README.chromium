@@ -1,0 +1,23 @@
+URL: http://www.kernel.org/pub/linux/utils/boot/syslinux/syslinux-3.82.tar.bz2
+Version: 3.82
+License: GPL v2
+License File: LICENSE
+
+Description:
+
+This provides the extlinux bootloader, which is what we're using for
+USB key fobs and hard disk booting on stock PC hardware.
+
+Local Modifications:
+
+  * 01build_linux.patch
+      - Don't build the .exe file in the Makefile
+  * 02diable_banner.patch
+      - Remove display of the syslinux banner
+  * 03disable_cursor.patch
+      - Disable BIOS text mode blinking cursor as soon as possible
+  * 04honor_build_root.patch
+      - honor env var BUILD_ROOT for all output files
+
+All local modifications are pre applied and also stored in the ordered
+patch files.
