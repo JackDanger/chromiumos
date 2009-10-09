@@ -1,0 +1,12 @@
+URL: http://packages.ubuntu.com/karmic/xserver-xorg-video-intel
+Version: Current as of Fri July 17
+License: Xorg MIT-like license
+License File: LICENSE
+
+Description:
+
+The Intel Xorg video driver.
+
+Local Modifications:
+
+Modifications are in the form of patches. See the README files for each patch.

@@ -1,0 +1,9 @@
+The copy-fb patch copies the initial framebuffer contents when starting
+X so that we can have a seamless transition splash screen and the X session
+that is used for login.
+
+The patch has been updated to apply to a newer version of the Intel
+drivers. It is based on the copy-fb.patch found in the Fedora sources
+located here:
+
+http://cvs.fedoraproject.org/viewvc/F-11/xorg-x11-drv-intel/copy-fb.patch?revision=1.3
