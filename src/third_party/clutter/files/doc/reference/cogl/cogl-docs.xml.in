@@ -1,0 +1,112 @@
+<?xml version="1.0"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN"
+               "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd" [
+<!ENTITY version "@VERSION@">
+]>
+<book id="index" xmlns:xi="http://www.w3.org/2003/XInclude">
+
+  <bookinfo>
+    <title>COGL Reference Manual</title>
+    <releaseinfo>for COGL &version;</releaseinfo>
+
+    <copyright>
+      <year>2008</year>
+      <holder>OpenedHand LTD</holder>
+    </copyright>
+
+    <copyright>
+      <year>2009</year>
+      <holder>Intel Corporation</holder>
+    </copyright>
+
+    <legalnotice>
+      <para>
+        Permission is granted to copy, distribute and/or modify this
+        document under the terms of the <citetitle>GNU Free
+        Documentation License</citetitle>, Version 1.1 or any later
+        version published by the Free Software Foundation with no
+        Invariant Sections, no Front-Cover Texts, and no Back-Cover
+        Texts. You may obtain a copy of the <citetitle>GNU Free
+        Documentation License</citetitle> from the Free Software
+        Foundation by visiting <ulink type="http"
+        url="http://www.fsf.org">their Web site</ulink> or by writing
+        to:
+
+        <address>
+          The Free Software Foundation, Inc.,
+          <street>59 Temple Place</street> - Suite 330,
+          <city>Boston</city>, <state>MA</state> <postcode>02111-1307</postcode>
+,
+          <country>USA</country>
+        </address>
+      </para>
+    </legalnotice>
+
+  </bookinfo>
+
+  <chapter>
+    <title>COGL - GL Abstraction API</title>
+
+    <section id="cogl-intro">
+      <title>About COGL</title>
+
+      <para>COGL is a low level OpenGL abstraction library developed for (and
+      part of) Clutter. It is used primarily by Clutter to provide a common
+      rendering API that works transparently across OpenGL >=1.4,
+      OpenGL ES 1.1 and OpenGL ES 2.0.</para>
+
+    </section>
+
+    <xi:include href="xml/cogl.xml"/>
+    <xi:include href="xml/cogl-color.xml"/>
+    <xi:include href="xml/cogl-texture.xml"/>
+    <xi:include href="blend-strings.xml"/>
+    <xi:include href="xml/cogl-material.xml"/>
+    <xi:include href="xml/cogl-primitives.xml"/>
+    <xi:include href="xml/cogl-vertex-buffer.xml"/>
+    <xi:include href="xml/cogl-matrix.xml"/>
+    <xi:include href="xml/cogl-shaders.xml"/>
+    <xi:include href="xml/cogl-offscreen.xml"/>
+    <xi:include href="xml/cogl-fixed.xml"/>
+
+  </chapter>
+
+  <index>
+    <title>Index</title>
+  </index>
+
+  <appendix id="license">
+    <title>License</title>
+
+    <para>
+      This library is free software; you can redistribute it and/or
+      modify it under the terms of the <citetitle>GNU Library General
+      Public License</citetitle> as published by the Free Software
+      Foundation; either version 2 of the License, or (at your option)
+      any later version.
+    </para>
+
+    <para>
+      This library is distributed in the hope that it will be useful,
+      but WITHOUT ANY WARRANTY; without even the implied warranty of
+      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+      <citetitle>GNU Library General Public License</citetitle> for
+      more details.
+    </para>
+
+    <para>
+      You may obtain a copy of the <citetitle>GNU Library General
+      Public License</citetitle> from the Free Software Foundation by
+      visiting <ulink type="http" url="http://www.fsf.org">their Web
+      site</ulink> or by writing to:
+
+      <address>
+        Free Software Foundation, Inc.
+        <street>59 Temple Place</street> - Suite 330
+        <city>Boston</city>, <state>MA</state> <postcode>02111-1307</postcode>
+        <country>USA</country>
+      </address>
+    </para>
+  </appendix>
+
+</book>

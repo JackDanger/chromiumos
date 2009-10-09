@@ -1,0 +1,17 @@
+URL: git://git.clutter-project.org/clutter
+Version: commit 763f5a9d014656c09c4684bc69a0e45862882f43
+License: LGPL v2.1
+License File: files/COPYING
+
+Description:
+  The source code for Clutter, a middleware drawing and animation library used
+by the window manager.
+
+Local Modification:
+- Fixed autoconf to work with GLES libraries with non-standard names
+- Fixed autoconf to not link both GLES and GL at the same time
+- Fixed a NULL pointer reference in x11_set_stage_foreign
+- Implement cogl_get_proc_address and cogl_check_extension for Cogl GLES
+- Added ClutterEGLXEGLImage.
+- Addded a sample for masking.
+

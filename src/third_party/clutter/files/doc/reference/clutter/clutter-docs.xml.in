@@ -1,0 +1,255 @@
+<?xml version="1.0"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN"
+               "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd" [
+<!ENTITY version "@VERSION@">
+]>
+
+<book id="index" xmlns:xi="http://www.w3.org/2003/XInclude">
+  <bookinfo>
+    <title>Clutter Reference Manual</title>
+    <releaseinfo>for Clutter &version;</releaseinfo>
+
+    <copyright>
+      <year>2006,2007,2008</year>
+      <holder>OpenedHand LTD</holder>
+    </copyright>
+
+    <copyright>
+      <year>2009</year>
+      <holder>Intel Corporation</holder>
+    </copyright>
+
+    <legalnotice>
+      <para>
+        Permission is granted to copy, distribute and/or modify this
+        document under the terms of the <citetitle>GNU Free
+        Documentation License</citetitle>, Version 1.1 or any later
+        version published by the Free Software Foundation with no
+        Invariant Sections, no Front-Cover Texts, and no Back-Cover
+        Texts. You may obtain a copy of the <citetitle>GNU Free
+        Documentation License</citetitle> from the Free Software
+        Foundation by visiting <ulink type="http"
+        url="http://www.fsf.org">their Web site</ulink> or by writing
+        to:
+
+        <address>
+          The Free Software Foundation, Inc.,
+          <street>59 Temple Place</street> - Suite 330,
+          <city>Boston</city>, <state>MA</state> <postcode>02111-1307</postcode>,
+          <country>USA</country>
+        </address>
+      </para>
+    </legalnotice>
+  </bookinfo>
+
+  <xi:include href="xml/clutter-overview.xml"/>
+  <xi:include href="xml/building-clutter.xml"/>
+  <xi:include href="xml/running-clutter.xml"/>
+
+  <part id="clutterbase">
+    <title>Clutter Core Reference</title>
+
+    <chapter>
+      <title>Abstract classes and interfaces</title>
+      <xi:include href="xml/clutter-actor.xml"/>
+      <xi:include href="xml/clutter-container.xml"/>
+      <xi:include href="xml/clutter-child-meta.xml"/>
+      <xi:include href="xml/clutter-media.xml"/>
+    </chapter>
+
+    <chapter>
+      <title>Base actors</title>
+      <xi:include href="xml/clutter-rectangle.xml"/>
+      <xi:include href="xml/clutter-texture.xml"/>
+      <xi:include href="xml/clutter-clone.xml"/>
+      <xi:include href="xml/clutter-text.xml"/>
+      <xi:include href="xml/clutter-cairo-texture.xml"/>
+    </chapter>
+
+    <chapter>
+      <title>Container actors</title>
+
+      <xi:include href="xml/clutter-group.xml"/>
+      <xi:include href="xml/clutter-stage.xml"/>
+    </chapter>
+
+  </part>
+
+  <part id="clutteranimation">
+    <title>Clutter Animation Framework</title>
+
+    <partintro>
+      <para>Clutter has a fully extensible animation framework
+      providing support for explicit and implicit animations of
+      single actors as well as groups of actors.</para>
+    </partintro>
+
+    <chapter>
+      <title>Base classes</title>
+
+      <xi:include href="xml/clutter-timeline.xml"/>
+      <xi:include href="xml/clutter-score.xml"/>
+      <xi:include href="xml/clutter-alpha.xml"/>
+      <xi:include href="xml/clutter-behaviour.xml"/>
+    </chapter>
+
+    <chapter>
+      <title>Behaviours</title>
+
+      <xi:include href="xml/clutter-behaviour-depth.xml"/>
+      <xi:include href="xml/clutter-behaviour-ellipse.xml"/>
+      <xi:include href="xml/clutter-behaviour-opacity.xml"/>
+      <xi:include href="xml/clutter-behaviour-path.xml"/>
+      <xi:include href="xml/clutter-path.xml"/>
+      <xi:include href="xml/clutter-behaviour-rotate.xml"/>
+      <xi:include href="xml/clutter-behaviour-scale.xml"/>
+    </chapter>
+
+    <chapter>
+      <title>High Level API</title>
+
+      <xi:include href="xml/clutter-interval.xml"/>
+      <xi:include href="xml/clutter-animation.xml"/>
+      <xi:include href="xml/clutter-animatable.xml"/>
+    </chapter>
+
+  </part>
+
+  <part>
+    <title>Clutter Tools</title>
+
+    <chapter>
+      <title>General purpose API</title>
+
+      <xi:include href="xml/clutter-color.xml"/>
+      <xi:include href="xml/clutter-binding-pool.xml"/>
+      <xi:include href="xml/clutter-event.xml"/>
+      <xi:include href="xml/clutter-main.xml"/>
+      <xi:include href="xml/clutter-shader.xml"/>
+      <xi:include href="xml/clutter-units.xml"/>
+      <xi:include href="xml/clutter-util.xml"/>
+      <xi:include href="xml/clutter-version.xml"/>
+    </chapter>
+
+    <chapter>
+      <title>User interface definition</title>
+
+      <xi:include href="xml/clutter-script.xml"/>
+      <xi:include href="xml/clutter-scriptable.xml"/>
+    </chapter>
+
+    <chapter>
+      <title>Generic list model</title>
+
+      <xi:include href="xml/clutter-model.xml"/>
+      <xi:include href="xml/clutter-model-iter.xml"/>
+      <xi:include href="xml/clutter-list-model.xml"/>
+    </chapter>
+  </part>
+
+  <part>
+    <title>Clutter Backends</title>
+
+    <partintro>
+      <para>Clutter is usually compiled against a specific drawing backend.
+      All backends have a common API for querying the underlying platform,
+      and some of them might have specific API exposed by Clutter.</para>
+    </partintro>
+
+    <xi:include href="xml/clutter-backend.xml"/>
+    <xi:include href="xml/clutter-x11.xml"/>
+    <xi:include href="xml/clutter-glx.xml"/>
+    <xi:include href="xml/clutter-win32.xml"/>
+    <xi:include href="xml/clutter-eglnative.xml"/>
+    <xi:include href="xml/clutter-eglx.xml"/>
+  </part>
+
+  <part>
+    <title>Additional Documentation</title>
+
+    <partintro>
+      <para>This section contains additional useful documentation for
+      developing with Clutter.</para>
+    </partintro>
+
+    <xi:include href="xml/subclassing-ClutterActor.xml"/>
+    <xi:include href="xml/clutter-animation-tutorial.xml"/>
+    <xi:include href="xml/creating-behaviours.xml"/>
+  </part>
+
+  <part>
+    <title>Migrating from previous version of Clutter</title>
+
+    <partintro>
+      <part>This section describes the changes that need to be
+      done in applications using Clutter to use new features or
+      to migrate from old, deprecated API to the new ones.</part>
+    </partintro>
+
+    <xi:include href="xml/migrating-ClutterEffect.xml"/>
+
+  </part>
+
+  <index>
+    <title>Index</title>
+  </index>
+
+  <index role="deprecated">
+    <title>Index of deprecated symbols</title>
+  </index>
+
+  <index role="0.2">
+    <title>Index of new symbols in 0.2</title>
+  </index>
+
+  <index role="0.4">
+    <title>Index of new symbols in 0.4</title>
+  </index>
+
+  <index role="0.6">
+    <title>Index of new symbols in 0.6</title>
+  </index>
+
+  <index role="0.8">
+    <title>Index of new symbols in 0.8</title>
+  </index>
+
+  <index role="1.0">
+    <title>Index of new symbols in 1.0</title>
+  </index>
+
+  <appendix id="license">
+    <title>License</title>
+
+    <para>
+      This library is free software; you can redistribute it and/or
+      modify it under the terms of the <citetitle>GNU Library General
+      Public License</citetitle> as published by the Free Software
+      Foundation; either version 2 of the License, or (at your option)
+      any later version.
+    </para>
+
+    <para>
+      This library is distributed in the hope that it will be useful,
+      but WITHOUT ANY WARRANTY; without even the implied warranty of
+      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+      <citetitle>GNU Library General Public License</citetitle> for
+      more details.
+    </para>
+
+    <para>
+      You may obtain a copy of the <citetitle>GNU Library General
+      Public License</citetitle> from the Free Software Foundation by
+      visiting <ulink type="http" url="http://www.fsf.org">their Web
+      site</ulink> or by writing to:
+
+      <address>
+        Free Software Foundation, Inc.
+        <street>59 Temple Place</street> - Suite 330
+        <city>Boston</city>, <state>MA</state> <postcode>02111-1307</postcode>
+        <country>USA</country>
+      </address>
+    </para>
+  </appendix>
+
+</book>
