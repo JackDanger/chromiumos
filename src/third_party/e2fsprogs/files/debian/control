@@ -1,0 +1,20 @@
+Source: e4fsprogs-git
+Section: admin
+Priority: optional
+Maintainer: The Chromium OS Authors <chromium-os-dev@googlegroups.com>
+Build-Depends: pkg-config, debhelper
+Standards-Version: 3.8.3
+Homepage: http://e2fsprogs.sourceforge.net
+
+Package: e4fsprogs-git
+Version: 1.41.9-1chromeos1
+Architecture: i386
+Maintainer: The Chromium OS Authors <chromium-os-dev@googlegroups.com>
+Installed-Size: 768
+Depends: libc6 (>= 2.7)
+Recommends: sash | bash-static | zsh-static | busybox-static | zsh30-static
+Section: admin
+Priority: optional
+Homepage: http://e2fsprogs.sourceforge.net
+Description: statically-linked version of the ext2/ext3/ext4 filesystem checker,
+ ext4 defragmenter, and filesystem resizing tool.

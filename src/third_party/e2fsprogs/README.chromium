@@ -1,0 +1,17 @@
+URL: git://git.kernel.org/pub/scm/fs/ext2/e2fsprogs.git
+Version: commit dc615a21c3c43cd9071926df2633d5b23e2e726b
+License: GPL v2 and LGPL v2
+License File: files/COPYING
+
+Description:
+  The source code for e2fsprogs, EXT2 filesystem utilities.  This is used
+by the encrypted home directory package (chromeos-cryptohome) to handle
+EXT4 resizing and defragmentation.  This is transitionary until the EXT4
+utilities are including in standard upstream e2fsprogs package.
+
+Local Modification:
+- Custom control and rules to very simply build e4fsprogs-git containing
+  only static versions of e2fsck, mkfs.ext4, resize2fs.
+- mke2fs will mark a superblock with LAZY_BG if lazy_itable_init=1 is used.
+- resize2fs will honor LAZY_BG and lazily initialize inodes and blocks groups.
+
