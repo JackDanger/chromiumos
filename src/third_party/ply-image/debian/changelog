@@ -1,0 +1,5 @@
+chromeos-ply-image (0.1) unstable; urgency=low
+
+  * Initial Release, derived from plymouth package with Moblin mods.
+
+ -- The Chromium OS Authors <chromium-os-dev@googlegroups.com>  Mon, 05 Oct 2009 16:03:19 +0000

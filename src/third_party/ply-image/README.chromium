@@ -1,0 +1,13 @@
+URL: http://cgit.freedesktop.org/plymouth/snapshot/plymouth-0.7.1.tar.gz
+Version: 0.7.1
+License: GPL v2
+License File: LICENSE
+
+Description:
+  A heavily-modified version of ply-image, taken from the Plymouth
+graphical boot library (http://www.freedesktop.org/wiki/Software/Plymouth)
+  
+Local Modification:
+This is a standalone ply-image from the plymouth package (0.7.1) without
+all the stuff we don't need, which adds to compilation time and executable
+size.  It takes a .png file and centers it on the frame buffer.
