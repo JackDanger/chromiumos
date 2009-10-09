@@ -1,0 +1,8 @@
+URL:  http://www.jwz.org/xscreensaver
+Version: Current as of Mon Aug 17 12:00:00 PDT 2009
+License: X11
+License File: LICENSE
+
+Description:
+  The source code for xscreensaver with modified driver/lock.c, utils/logo.c and added images in src/utils/images
+

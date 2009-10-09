@@ -1,0 +1,71 @@
+#!/usr/bin/make -f
+# -*- makefile -*-
+# Sample debian/rules that uses debhelper.
+#
+# This file was originally written by Joey Hess and Craig Small.
+# As a special exception, when this file is copied by dh-make into a
+# dh-make output file, you may use that output file without restriction.
+# This special exception was added by Craig Small in version 0.37 of dh-make.
+#
+# Modified to make a template file for a multi-binary package with separated
+# build-arch and build-indep targets  by Bill Allombert 2001
+
+# Uncomment this to turn on verbose mode.
+#export DH_VERBOSE=1
+
+# This has to be exported to make some magic below work.
+export DH_OPTIONS
+
+config.status: configure
+	dh_testdir
+	./configure
+
+build: build-stamp
+
+build-stamp: config.status
+	dh_testdir
+	touch $@
+
+clean:
+	dh_testdir
+	dh_testroot
+	rm -f build-stamp	
+	-$(MAKE) clean
+	rm -f $(CURDIR)/config.status
+	dh_clean 
+
+install: build
+	dh_testdir
+	dh_testroot
+	dh_clean -k
+	dh_installdirs
+
+	$(MAKE) prefix=$(CURDIR)/debian/xscreensaver/usr install
+	cp $(CURDIR)/XScreenSaver $(CURDIR)/debian/xscreensaver/etc/X11/app-defaults/XScreenSaver
+
+
+
+# Must not depend on anything. This is to be called by
+# binary-arch/binary-indep
+# in another 'make' thread.
+binary-arch:  build install
+	dh_testdir
+	dh_testroot	
+	dh_installdebconf 
+	dh_installlogrotate
+	dh_installinit --no-restart-on-upgrade --no-start --update-rcd-params="start 99 2 3 4 5 . stop 1 0 1 6 ."
+	dh_installman
+	dh_install
+	dh_link
+	dh_strip
+	dh_compress
+	dh_fixperms
+	dh_installdeb
+	dh_shlibdeps
+	dh_gencontrol
+	dh_md5sums
+	dh_builddeb
+
+
+binary: binary-arch 
+.PHONY: build clean binary-arch binary install 
