@@ -1,0 +1,86 @@
+#!/usr/bin/python
+
+import dbus
+
+bus = dbus.SystemBus()
+
+manager = dbus.Interface(bus.get_object("org.moblin.connman", "/"),
+					"org.moblin.connman.Manager")
+
+properties = manager.GetProperties()
+
+def print_properties(key, value):
+	if key == "Profiles":
+		interface = "org.moblin.connman.Profile"
+	elif key == "Devices":
+		interface = "org.moblin.connman.Device"
+	elif key == "Connections":
+		interface = "org.moblin.connman.Connection"
+	elif key == "Services":
+		interface = "org.moblin.connman.Service"
+	else:
+		return
+
+	print "%s" % (key)
+	for path in value:
+		print "    %s" % (path)
+		obj = dbus.Interface(bus.get_object("org.moblin.connman", path),
+								interface)
+
+		properties = obj.GetProperties()
+
+		for key in properties.keys():
+			if key in ["Networks", "Services"]:
+				continue
+
+			if key in ["Powered", "Scanning", "Connected",
+					"Available", "Remember", "Default"]:
+				if properties[key] == dbus.Boolean(1):
+					val = "true"
+				else:
+					val = "false"
+			elif key in ["Strength", "Priority"]:
+				val = int(properties[key])
+			else:
+				val = str(properties[key])
+
+			print "        %s = %s" % (key, val)
+
+		if "Networks" in properties.keys():
+			list = ""
+			for path in properties["Networks"]:
+				val = str(path)
+				list = list + val[val.rfind("/") + 1:] + " "
+			print "        Networks = [ %s]" % (list)
+		if "Services" in properties.keys():
+			list = ""
+			for path in properties["Services"]:
+				val = str(path)
+				list = list + val[val.rfind("/") + 1:] + " "
+			print "        Services = [ %s]" % (list)
+
+for key in properties.keys():
+	if key in ["Profiles", "Devices", "Connections", "Services"]:
+		print_properties(key, properties[key])
+	elif key in ["AvailableTechnologies", "EnabledTechnologies",
+						"ConnectedTechnologies"]:
+		print "%s" % (key)
+		list = ""
+		for val in properties[key]:
+			list = list + val + " "
+		print "    [ %s]" % (list)
+	elif key in ["OfflineMode"]:
+		print "%s" % (key)
+		if properties[key] == dbus.Boolean(1):
+			print "    true"
+		else:
+			print "    false"
+	elif key in ["DefaultTechnology"]:
+		print "%s" % (key)
+		if properties[key] == "":
+			print "    <none>"
+		else:
+			print "    %s" % (properties[key])
+	else:
+		print "%s" % (key)
+		print "    %s" % (properties[key])

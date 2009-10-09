@@ -1,0 +1,17 @@
+# Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+usr/local
+usr/local/lib
+usr/local/lib/pkgconfig
+usr/local/lib/connman
+usr/local/lib/connman/plugins
+usr/local/lib/connman/scripts
+usr/local/sbin
+usr/local/include
+usr/local/include/connman
+usr/local/etc
+usr/local/etc/init.d
+etc
+etc/dbus-1
