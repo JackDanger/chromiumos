@@ -1,0 +1,16 @@
+URL: http://shunit2.googlecode.com/svn/tags/source/2.1.5@294
+Version: 2.1.5
+License: LGPL v2.1
+License File: files/doc/LGPL-2.1
+
+Description:
+
+shUnit2 is a xUnit unit test framework for Bourne based shell scripts,
+and it is designed to work in a similar manner to JUnit, PyUnit, etc.
+shunit2 is not part of the main image but is used for testing shell
+scripts in the development environment.
+
+
+Local Modifications:
+
+   * None

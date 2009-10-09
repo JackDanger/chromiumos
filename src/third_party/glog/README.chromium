@@ -1,0 +1,15 @@
+URL: http://code.google.com/p/google-glog/
+Version: 0.2.1 r49
+License: BSD
+License File: LICENSE
+
+Description:
+
+The glog library implements application-level logging. This library
+provides logging APIs based on C++-style streams and various helper
+macros.
+
+Need >= r49 to include fix for compiling with gflags support.
+
+Local Modifications:
+No Modifications
