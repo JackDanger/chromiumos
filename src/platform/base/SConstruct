@@ -1,0 +1,19 @@
+# Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Help('''\
+Type: 'scons' to build\
+''')
+
+env = Environment()
+env['CCFLAGS'] = '-I.. -Wall -Werror -O3'
+env['LINKFLAGS'] = '-lgflags -lprotobuf -lgtest'
+env.ParseConfig('pkg-config --cflags --libs libglog libpcrecpp')
+
+srcs = Split('''\
+  strutil.cc
+''')
+
+base = env.StaticLibrary('base', srcs)
+
