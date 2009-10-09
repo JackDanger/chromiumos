@@ -1,0 +1,8 @@
+URL: http://www.kernel.org/pub/linux/libs/pam/
+Version: Current as of Wed Oct  07 12:00:00 PDT 2009
+License: BSD / GPL v2
+License File: LICENSE 
+
+Description:
+  The header files for using pam modules
+
