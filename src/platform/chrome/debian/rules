@@ -1,0 +1,67 @@
+#!/usr/bin/make -f
+# -*- makefile -*-
+# Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# Uncomment this to turn on verbose mode.
+#export DH_VERBOSE=1
+
+build: build-stamp
+build-stamp:
+	dh_testdir
+	./copy_chrome_zip.sh
+	touch $@
+
+clean:
+	dh_testdir
+	dh_testroot
+	rm -f build-stamp
+	rm -f LATEST chrome-chromeos.zip chrome-linux.zip
+	dh_clean
+
+install: build
+	dh_testdir
+	dh_testroot
+	dh_prep
+	dh_installdirs
+	# (note: use ./dirs file instead of mkdir -p here)
+	# Unzip chrome-linux.zip into chrome/
+	unzip $(CURDIR)/chrome-chromeos.zip
+	# We may need to rename .../chrome-linux to chrome-chromeos
+	mv $(CURDIR)/chrome-linux $(CURDIR)/chrome-chromeos || true
+	mv $(CURDIR)/chrome-chromeos \
+	  $(CURDIR)/debian/chromeos-chrome/opt/google/chrome
+	# Strip debug info and symbols from chrome exe
+	# (could strip -S to just remove debug info, but that's 80MB bigger)
+	strip $(CURDIR)/debian/chromeos-chrome/opt/google/chrome/chrome
+	# Create link in /usr/bin
+	ln -s /opt/google/chrome/chrome \
+	  $(CURDIR)/debian/chromeos-chrome/usr/bin/google-chrome
+	# Create plugins directory
+	mkdir $(CURDIR)/debian/chromeos-chrome/opt/google/chrome/plugins
+	# Symlink to flash plugin
+	ln -s /usr/lib/flashplugin-installer/libflashplayer.so \
+	  $(CURDIR)/debian/chromeos-chrome/opt/google/chrome/plugins
+	# ChromeOS chrome startup script
+	cp $(CURDIR)/run_google_chrome.sh \
+	  $(CURDIR)/debian/chromeos-chrome/usr/bin/chromeos-chrome
+	chmod 0755 $(CURDIR)/debian/chromeos-chrome/usr/bin/chromeos-chrome
+
+# Build architecture-dependent files here.
+binary-arch: install
+	dh_testdir
+	dh_testroot
+	dh_strip
+	dh_compress
+	dh_fixperms
+	dh_installdeb
+	# Don't scan shlibs for dependencies, since the chroot environment
+	# doesn't have all the packages installed to run chrome.
+	dh_gencontrol
+	dh_md5sums
+	dh_builddeb
+
+binary: binary-arch
+
+.PHONY: build clean install binary-arch binary

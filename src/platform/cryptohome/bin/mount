@@ -1,0 +1,85 @@
+#!/bin/bash
+# Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+set -e  # exit on failure
+set -E  # share the error handler
+set -u  # require all variables to be defined
+USERID=""
+PASSWORD=""
+
+function error_handler() {
+  if ! typeset -F cryptohome::log; then
+    echo "An error occurred before/in cryptohome." 1>&2
+    # Assume common is ok.
+    /bin/mount -t tmpfs tmpfs /home/$DEFAULT_USER
+    /bin/chown $DEFAULT_USER /home/$DEFAULT_USER
+    exit 1
+  fi
+
+  local image="$IMAGE_DIR/${USERID}/image"
+  cryptohome::log "entering the mount error_handler ($image)"
+  # We don't want to error out again if close fails
+  cryptohome::close || $true
+  # Same goes for detach
+  cryptohome::detach || $true
+  if [[ -n "$image" ]]; then
+    cryptohome::log "removing the failed image: $image"
+    $rm -f $image
+  fi
+  cryptohome::log "attempting to create a new image..."
+  # Let's try a new image. If that fails, use the exit trap.
+  trap second_chance EXIT
+  cryptohome::mount_or_create "$USERID" "$PASSWORD"
+  trap - EXIT
+  cryptohome::log "new image created and mounted successfully"
+  cryptohome::log "mount completed"
+  $exit 0
+}
+# TODO: move traps into a single call
+trap error_handler ERR;
+
+function second_chance() {
+  cryptohome::log "new image creation failed (again)"
+  cryptohome::log "mounting tmpfs"
+  $mount -t tmpfs tmpfs /home/$DEFAULT_USER
+  $chown $DEFAULT_USER /home/$DEFAULT_USER
+  cryptohome::log "mount completed"
+  $exit 0
+}
+
+function mount_main() {
+  if ! typeset -p CHROMEOS_USER &>/dev/null  ; then
+    cryptohome::log "CHROMEOS_USER not exported."
+    cryptohome::log "Assuming we aren't coming via pam_google..."
+    return 0
+  fi
+
+  # Support a file to disable encryption for given users.
+  if $test -n "$DISABLED_ENCRYPTION_FILE" && \
+     $test -e "$DISABLED_ENCRYPTION_FILE"; then
+    cryptohome::log "disabled_encryption_file present"
+    if $grep -qEe "\\b${CHROMEOS_USER}\\b" "$DISABLED_ENCRYPTION_FILE"; then
+      cryptohome::log "$CHROMEOS_USER has opted out of encryption"
+      return 0
+    fi
+  fi
+
+  # Cut down on the noise from pam-mount but only do so on a pam_google
+  # login so that we don't blow away old logs during a debug login.
+  $exec 1>$STDOUT_FILE
+  $exec 2>$STDERR_FILE
+  USERID="$($cat $IMAGE_DIR/salt <($echo -n $CHROMEOS_USER) | $openssl sha1)"
+  PASSWORD="$($cat)"
+  cryptohome::mount_or_create "$USERID" "$PASSWORD"
+}
+
+# Invoke main.
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  source "$(dirname "$0")/../lib/chromeos-cryptohome/common"
+  utils::declare_commands exit
+  # Everything is done by default at present.
+  mount_main
+fi
+

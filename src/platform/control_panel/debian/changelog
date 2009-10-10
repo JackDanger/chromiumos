@@ -1,0 +1,12 @@
+chromeos-controlpanel (0.2) unstable; urgency=low
+
+  * Fixes a bug with wifi scanning that was causing a crash for APs that
+    returned extra data.
+
+ -- The Chromium OS Authors <chromium-os-dev@googlegroups.com>  Tue, 21 Jul 2009 11:13:45 -0700
+
+chromeos-controlpanel (0.1) unstable; urgency=low
+
+  * Initial release
+
+ -- The Chromium OS Authors <chromium-os-dev@googlegroups.com>  Mon, 01 Jun 2009 22:38:04 -0700

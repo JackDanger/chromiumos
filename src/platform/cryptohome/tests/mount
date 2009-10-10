@@ -1,0 +1,177 @@
+#!/bin/bash
+# Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+#
+# Tests behavior specific to bin/mount
+# (not cryptohome::mount_or_create)
+
+testNoUserEnvVariable() {
+  unset CHROMEOS_USER
+  mount_main 1>${stdoutF} 2>${stderrF} 3>${logF}
+  ret=$?
+  assertEquals 'expecting return code of 0' 0 ${ret}
+  assertNull 'unexpected output to stdout' "$(cat ${stdoutF})"
+  assertNull 'unexpected output to stderr' "$(cat ${stderrF})"
+  expected_log="\
+CHROMEOS_USER not exported.
+Assuming we aren't coming via pam_google..."
+  assertSame 'unexpected output to log' \
+             "$(echo -ne "$expected_log")" \
+             "$(cat ${logF})"
+}
+
+
+testDisabledEncryptionLogic() {
+  export CHROMEOS_USER=exampleuser@example.com
+  mock test mock::ok
+  mock grep mock::ok
+  mount_main 1>${stdoutF} 2>${stderrF} 3>${logF}
+  ret=$?
+  assertEquals 'expecting return code of 0' 0 ${ret}
+  assertNull 'unexpected output to stdout' "$(cat ${stdoutF})"
+  assertNull 'unexpected output to stderr' "$(cat ${stderrF})"
+  expected_log="\
+disabled_encryption_file present
+$CHROMEOS_USER has opted out of encryption"
+  assertSame 'unexpected output to log' \
+             "$(echo -ne "$expected_log")" \
+             "$(cat ${logF})"
+
+  unmock_all
+}
+
+testDisabledEncryptionCheckSingle() {
+  export CHROMEOS_USER=exampleuser@example.com
+  export DISABLED_ENCRYPTION_FILE=<(echo -n "exampleuser@example.com")
+  mount_main 1>${stdoutF} 2>${stderrF} 3>${logF}
+  ret=$?
+  assertEquals 'expecting return code of 0' 0 ${ret}
+  assertNull 'unexpected output to stdout' "$(cat ${stdoutF})"
+  assertNull 'unexpected output to stderr' "$(cat ${stderrF})"
+  expected_log="\
+disabled_encryption_file present
+$CHROMEOS_USER has opted out of encryption"
+  assertSame 'unexpected output to log' \
+             "$(echo -ne "$expected_log")" \
+             "$(cat ${logF})"
+
+  unmock_all
+}
+
+testDisabledEncryptionCheckMulti() {
+  export CHROMEOS_USER=exampleuser@example.com
+  export DISABLED_ENCRYPTION_FILE=<(echo -en "someexampleuser@example.com\nexampleuser@example.com")
+  mount_main 1>${stdoutF} 2>${stderrF} 3>${logF}
+  ret=$?
+  assertEquals 'expecting return code of 0' 0 ${ret}
+  assertNull 'unexpected output to stdout' "$(cat ${stdoutF})"
+  assertNull 'unexpected output to stderr' "$(cat ${stderrF})"
+  expected_log="\
+disabled_encryption_file present
+$CHROMEOS_USER has opted out of encryption"
+  assertSame 'unexpected output to log' \
+             "$(echo -ne "$expected_log")" \
+             "$(cat ${logF})"
+
+  unmock_all
+}
+
+testDisabledEncryptionCheckPartial() {
+  export CHROMEOS_USER=exampleuser@example.com
+  export DISABLED_ENCRYPTION_FILE=<(echo -n "someexampleuser@example.com")
+  function error_handler() { true; }
+  set -E
+  trap error_handler ERR
+  # Make sure it fails at cat.
+  mock cat mock::ok
+  mock openssl mock::ok
+  function cryptohome::mount_or_create { echo -n "reached"; true; }
+
+  mount_main 1>${stdoutF} 2>${stderrF} 3>${logF}
+  ret=$?
+  assertEquals 'expecting return code of 0' 0 ${ret}
+  assertSame 'unexpected output to stdout' "reached" "$(cat ${stdoutF})"
+  assertNull 'unexpected output to stderr' "$(cat ${stderrF})"
+  expected_log="\
+disabled_encryption_file present"
+  assertSame 'unexpected output to log' \
+             "$(echo -ne "$expected_log")" \
+             "$(cat ${logF})"
+
+  unmock_all
+}
+
+testUserIdAndPassGrab() {
+  export CHROMEOS_USER=exampleuser@example.com
+  function error_handler() { true; }
+  set -E
+  trap error_handler ERR
+  # Make sure it fails at cat.
+  function cryptohome::mount_or_create { echo -n "reached"; true; }
+  echo "salt" > $outputDir/salt
+  IMAGE_DIR=$outputDir
+  USERID=""
+  PASSWORD=""
+  mount_main 1>${stdoutF} 2>${stderrF} 3>${logF} < <(echo password)
+  ret=$?
+  assertEquals 'expecting return code of 0' 0 ${ret}
+  assertSame 'unexpected output to stdout' "reached" "$(cat ${stdoutF})"
+  assertNull 'unexpected output to stderr' "$(cat ${stderrF})"
+  assertNull 'unexpected output to log' "$(cat ${logF})"
+  # userid = sha1(salt || CHROMEOS_USER)
+  assertEquals 'unexpected userid' \
+               'c8458d2ff3c2a94283cf66c721c22b0506d2070e' \
+               "$USERID"
+  assertEquals 'unexpected password' \
+               'password' \
+               "$PASSWORD"
+
+
+  unmock_all
+}
+
+
+
+oneTimeSetUp() {
+  outputDir="${__shunit_tmpDir}/output"
+  mkdir "${outputDir}"
+  stdoutF="${outputDir}/stdout"
+  stderrF="${outputDir}/stderr"
+  testDir="${__shunit_tmpDir}/some_test_dir"
+  echo "Output dir: ${outputDir}"
+}
+
+oneTimeTearDown() {
+  true
+}
+
+setUp() {
+  source $location/../tests/mocks
+  source $location/../lib/common
+  source $location/../bin/mount
+  logF="${outputDir}/log"
+  set +e
+  trap mock::ok ERR
+  # Disable error handling. We don't care about it right now.
+  function cryptohome::log() {
+    echo -e "$@" >> $logF
+  }
+  # Disable I/O redirection
+  mock exec mock::ok
+  STDOUT_FILE=/dev/null
+  STDERR_FILE=/dev/null
+
+}
+
+tearDown() {
+  true
+}
+
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  SHUNIT_PARENT=$0
+  pushd "${0%/*}" &> /dev/null
+  popd &> /dev/null
+  location=$OLDPWD
+  . $location/../shunit2/files/src/shell/shunit2
+fi

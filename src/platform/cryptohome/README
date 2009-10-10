@@ -1,0 +1,9 @@
+This package implements sparse image file creation, mounting,
+and unmounting.
+
+For Indy, it will be comprised of helper scripts for pam_mount
+integration.
+
+For all later releases, it will supply a daemon which will
+manage this functionality directly for pam_google.
+

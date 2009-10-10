@@ -1,0 +1,5 @@
+chromeos-cryptohome (0.1) karmic; urgency=low
+
+  * Initial creation of encrypted user home directory helper scripts
+
+ -- The Chromium OS Authors <chromium-os-dev@googlegroups.com>  Wed,  2 Sep 2009 08:19:15 +0000 

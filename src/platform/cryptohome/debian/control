@@ -1,0 +1,18 @@
+# Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Source: chromeos-cryptohome
+Priority: extra
+Maintainer: The Chromium OS Authors <chromium-os-dev@googlegroups.com>
+Build-Depends: debhelper (>= 7)
+Standards-Version: 3.8.0
+Section: libs
+
+Package: chromeos-cryptohome
+Section: libs
+Architecture: all
+Depends: bash, libpam-mount, e4fsprogs-git, dmsetup, openssl, mount, ${shlibs:Depends}, ${misc:Depends}
+Description: Helper scripts which smooth the integration of
+ chromeos-pam-google and libpam-mount to provide automatic
+ encrypted home directories.

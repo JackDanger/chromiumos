@@ -1,0 +1,25 @@
+# Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Source: chromeos-chrome
+Section: unknown
+Priority: extra
+Maintainer: The Chromium OS Authors <chromium-os-dev@googlegroups.com>
+Build-Depends: debhelper (>= 7)
+Standards-Version: 3.8.0
+
+Package: chromeos-chrome
+Architecture: any
+# This list includes chromeos-wm, flash, and all packages from
+# svn://chrome-svn/chrome-internal/trunk/chrome/installer/linux/internal/debian/build.sh
+Depends: chromeos-wm, 
+ flashplugin-installer, 
+ lsb-base (>=3.2), xdg-utils (>= 1.0.1), 
+ libasound2, libc6 (>= 2.6-1), libnss3-1d, libatk1.0-0 (>= 1.13.2), 
+ libcairo2 (>=1.4.0), libfontconfig1 (>= 2.4.0), libfreetype6 (>= 2.3.5), 
+ libgcc1 (>= 1:4.2.1), libglib2.0-0 (>= 2.14.0), libgtk2.0-0 (>= 2.12.0), 
+ libnspr4-0d (>= 1.8.0.10), libpango1.0-0 (>= 1.18.3), 
+ libstdc++6 (>= 4.2.1), zlib1g (>= 1:1.2.3.3.dfsg-1)
+Description: chromeos chrome
+ Chrome for ChromeOS.

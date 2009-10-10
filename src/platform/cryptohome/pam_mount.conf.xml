@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<pam_mount>
+  <debug enable="0" />
+  <volume user="chronos"
+          fstype="crypt"
+          path="/dev/null"
+          mountpoint="/home/chronos"
+          cipher="aes-cbc-essiv:sha256" />
+  <cryptmount>/usr/sbin/mount.cryptohome %(MNTPT)</cryptmount>
+  <cryptumount>/usr/sbin/umount.cryptohome %(MNTPT)</cryptumount>
+</pam_mount>

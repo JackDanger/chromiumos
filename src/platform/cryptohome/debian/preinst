@@ -1,0 +1,23 @@
+#!/bin/sh
+# Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+set -e
+PKG=chromeos-cryptohome
+CFG=pam_mount.conf.xml
+case "$1" in
+    install|upgrade)
+        dpkg-divert --add --package ${PKG} --rename \
+                    --divert /etc/security/$CFG.chromeos-orig /etc/security/$CFG
+    ;;
+    abort-upgrade)
+    ;;
+    *)
+        echo "preinst called with unknown argument \`$1'" >&2
+        exit 1
+    ;;
+esac
+
+#DEBHELPER#
+exit 0

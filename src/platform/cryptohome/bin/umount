@@ -1,0 +1,47 @@
+#!/bin/bash
+# Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+set -e  # exit on error
+set -E  # force error handler inheritance
+set -u  # require all variables to be defined
+trap error_handler ERR;
+
+function error_handler() {
+  cryptohome::log "unmount failed: the system may be rebooted"
+  $sync || $true
+
+  cryptohome::is_mounted && $reboot
+  cryptohome::log "unmount but the filesystem is no longer mounted"
+
+  # Make sure we aren't leaving a mess or an accessible key.
+  if cryptohome::is_opened; then
+    cryptohome::log "device mapper device still present; attempting to close"
+    cryptohome::close || $reboot
+    $exit 1
+  fi
+
+  if cryptohome::attached; then
+    cryptohome::log "loop device still present; attempting to detach"
+    cryptohome::detach || $reboot
+    $exit 1
+  fi
+
+  cryptohome::log "forced unmount and cleanup successful"
+  $exit 0
+}
+
+function umount_main() {
+  # If we can't unmount, do it the hard way, for now.
+  local target="${1:-$DEFAULT_MOUNT_POINT}"
+  if cryptohome::is_mounted "$target"; then
+    cryptohome::unmount "$target"
+  fi
+}
+
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  source "$(dirname "$0")/../lib/chromeos-cryptohome/common"
+  utils::declare_commands reboot exit sync
+  umount_main "$@"
+fi

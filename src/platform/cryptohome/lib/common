@@ -1,0 +1,53 @@
+#!/bin/bash
+# Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+#
+# common file containing shared globals and
+# necessary inclusions for chromeos-cryptohome
+# mounting and unmounting.
+
+# Configurable globals
+export IMAGE_DIR=/home/.shadow
+export MOUNT_OPTIONS="nosuid,noexec,nodev"
+export LOG_FILE=/var/log/cryptohome.log
+export STDOUT_FILE=/var/log/cryptohome.stdout.log
+export STDERR_FILE=/var/log/cryptohome.stderr.log
+
+export DEFAULT_USER=chronos
+export DEFAULT_LOOP_DEVICE=/dev/loop0
+export DEFAULT_MAPPER_DEVICE=/dev/mapper/cryptohome
+export DEFAULT_MOUNT_POINT=/home/$DEFAULT_USER
+
+# If the variable is defined and the file exists,
+# encryption will be disabled for users listed in the
+# file.  The file should take the format:
+#   user@domain<NEWLINE>
+#   user2@domain<NEWLINE>
+#   ...
+export DISABLED_ENCRYPTION_FILE="$IMAGE_DIR/users"
+
+# TODO: support multiple wrapped master key instances for easy
+#       password changes, enterprise keys, etc.
+export KEY_FILE_USER_ZERO="master.0"
+export KEY_SIZE=16
+
+# ext4 filesystem specifics
+export BLOCK_SIZE=4096
+export BLOCKS_IN_A_GROUP=32768
+
+# Introspect
+pushd "${BASH_SOURCE[0]%/*}" &> /dev/null
+popd &> /dev/null
+location=$OLDPWD
+
+# Pull in requirements
+PATH=/bin:/sbin:/usr/bin:/usr/sbin
+source $location/utils/declare_commands
+source $location/cryptohome
+
+# Fire up the tests.
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  echo "Error: common should not be called directly" 1>&1
+  exit 1
+fi

@@ -1,0 +1,365 @@
+#!/bin/bash
+# Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+#
+# A collection of functions which implement the bare
+# minimum of functionality for creating, mounting, and
+# unmounting sparse image files with dmsetup.
+
+
+# Declare the executable dependencies for this code.
+# This includes bash builtins so we can stub them.
+utils::declare_commands read echo mkdir test mount grep blockdev
+utils::declare_commands pkill chown df tr cut dd cat openssl
+utils::declare_commands losetup dmsetup tune2fs chmod xxd exec
+utils::declare_commands head tail cp umount touch rm date true
+
+# Be sure to use our e4fsprogs instead of the stable version.
+export PATH=/usr/lib/e4fsprogs-git/bin:${PATH}
+utils::declare_commands resize2fs e4defrag e2fsck mkfs.ext4 &> /dev/null
+
+# TODO: deal with missing commands..
+function cryptohome::log() {
+  $echo "$($date +%s)[$$]: $@" >> $LOG_FILE
+}
+
+function cryptohome::is_mounted() {
+  local mountpt="${1:-$DEFAULT_MOUNT_POINT}"
+  # TODO: we should make sure there is no trailing slash
+  # We dont care about mounting over tmpfs if we have to.
+  if $mount | $grep "$mountpt" | $grep -qv tmpfs; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+# unmount [mountpt] [username]
+function cryptohome::unmount() {
+  local mountpt="${1:-$DEFAULT_MOUNT_POINT}"
+  local user="${2:-$DEFAULT_USER}"
+  cryptohome::log "unmount start"
+  $pkill -9 -u $user && $true &> /dev/null
+  $umount "$mountpt"
+  cryptohome::close
+  cryptohome::detach
+  # Make sure the mountpoint can't be used on accident by a faulty log in.
+  # TODO: enable this when the default login goes away.
+  #$chown root:root "$mountpt"
+  cryptohome::log "unmount finished"
+}
+
+# total_blocks [some_path]
+function cryptohome::total_blocks() {
+  local target="${1:-/home}"
+  local disk_size="$($df -P -B $BLOCK_SIZE "$target" |
+                     $tr -s ' ' |
+                     $grep -v Filesystem |
+                     $cut -f2 -d' ')"
+  if [[ -z "$disk_size" ]]; then
+    echo 0
+    echo "Disk appears to be less than 1G or df output is unparseable!" 1>&2
+    return 1
+  fi
+  echo $disk_size
+  return 0
+}
+
+# make_table masterkey [loopdev]
+function cryptohome::make_table() {
+ local masterkey="$1"
+ local loopdev="${2:-$DEFAULT_LOOP_DEVICE}"
+ [[ $# -lt 1 ]] && return 1  # argument sanity check
+ echo "0 $($blockdev --getsize $loopdev) crypt aes-cbc-essiv:sha256 "$masterkey" 0 $loopdev 0"
+}
+
+# maximize /path/to/image.img masterkey [online] [loopdev]  [mapperdev]
+function cryptohome::maximize() {
+  local image="$1"
+  local masterkey="$2"
+  local online="${3:-0}"
+  local loopdev="${4:-$DEFAULT_LOOP_DEVICE}"
+  local mapperdev="${5:-$DEFAULT_MAPPER_DEVICE}"
+  [[ $# -lt 2 ]] && return 1  # argument sanity check
+  cryptohome::log "maximize start"
+  local blocks="$(cryptohome::total_blocks $image)"
+  local current="$($blockdev --getsize64 $loopdev)"
+  current=$((current / BLOCK_SIZE))
+  blocks=$((blocks - BLOCKS_IN_A_GROUP))
+  if [[ "$blocks" -le "$current" ]]; then
+    cryptohome::log "no work to do: $blocks <= $current"
+    cryptohome::log "maximize end"
+    return 0
+  fi
+  $dd if=/dev/zero of="$image" count=0 bs=$BLOCK_SIZE seek=$blocks
+  $losetup -c "$loopdev"
+  $dmsetup suspend $mapperdev
+  $dmsetup reload $mapperdev <(cryptohome::make_table "$masterkey" "$loopdev")
+  $dmsetup resume $mapperdev
+  if [[ "$online" -eq 0 ]]; then
+    cryptohome::check -f
+  fi
+  $resize2fs $mapperdev
+  cryptohome::log "maximize end"
+}
+
+# create_minimal /path/to/image
+function cryptohome::create_minimal() {
+  local image="$1"
+  [[ $# -lt 1 ]] && return 1  # argument sanity check
+  $dd if=/dev/zero \
+      of="$image" \
+      bs=$BLOCK_SIZE \
+      seek=$((BLOCKS_IN_A_GROUP + 1)) \
+      count=0
+}
+
+# attach /path/to/image [loop device]
+function cryptohome::attach() {
+  local image="$1"
+  local loopdev="${2:-$DEFAULT_LOOP_DEVICE}"
+  [[ $# -lt 1 ]] && return 1  # argument sanity check
+  $losetup "$loopdev" "$image"
+}
+
+# detach [loop device]
+function cryptohome::detach() {
+  local loopdev="${1:-$DEFAULT_LOOP_DEVICE}"
+  $losetup -d "$loopdev"
+}
+
+# format max_resize_blocs [target mapper device] [loop device]
+function cryptohome::format() {
+  local blocks="$1"
+  local mapperdev="${2:-$DEFAULT_MAPPER_DEVICE}"
+  local loopdev="${3:-$DEFAULT_LOOP_DEVICE}"
+  [[ $# -lt 1 ]] && return 1  # argument sanity check
+  $mkfs__ext4 -b $BLOCK_SIZE -E lazy_itable_init=1,resize=$blocks "$mapperdev"
+  $tune2fs -c -1 -i 0 "$mapperdev" # we'll be checking later.
+}
+
+# password_to_wrapper password salt_file [iteration_count]
+# Create key from the passphrase using a per-user salt and
+# an arbitrary iteration count for optional key strengthening.
+function cryptohome::password_to_wrapper() {
+  local password="$1"
+  local salt_file="$2"
+  local itercount="${3:-1}"
+  local wrapped="$password"
+  local count=0
+  [[ $# -lt 2 ]] && return 1  # argument sanity check
+  if [[ ! -f "$salt_file" ]]; then
+    $head -c 16 /dev/urandom > $salt_file
+  fi
+  while [[ $count -lt "$itercount" ]]; do
+    wrapped="$($cat "$salt_file" <($echo -n "$wrapped") |
+               $openssl sha1)"
+    count=$((count+1))
+  done
+  $echo "$wrapped"
+}
+# master_key user_password userid [wrapped_keyfile]
+function cryptohome::unwrap_master_key() {
+  local password="$1"
+  local userid="$2"
+  [[ $# -lt 2 ]] && return 1  # argument sanity check
+  local keyfile="${3:-$IMAGE_DIR/$userid/$KEY_FILE_USER_ZERO}"
+  local wrapper="$(cryptohome::password_to_wrapper \
+                   "$password" "${keyfile}.salt")"
+  $openssl aes-256-ecb \
+           -in "$keyfile" -kfile <($echo -n "$wrapper") -md sha1 -d
+}
+
+# create_master_key user_password userid [wrapped_keyfile] [iters]
+function cryptohome::create_master_key() {
+  local password="$1"
+  local userid="$2"
+  [[ $# -lt 2 ]] && return 1  # argument sanity check
+  local keyfile="${3:-$IMAGE_DIR/$userid/$KEY_FILE_USER_ZERO}"
+  local iters="${4:-1}"
+  local wrapper="$(cryptohome::password_to_wrapper \
+                   "$password" "${keyfile}.salt" "$iters")"
+  local master_key="$($xxd -ps -l $KEY_SIZE -c $KEY_SIZE /dev/urandom)"
+  # openssl salts itself too, but this lets us do repeated iterations.
+  $openssl aes-256-ecb -out "$keyfile" -kfile <($echo -n "$wrapper") -md sha1 -e < <(echo -n $master_key)
+  $echo -n "$master_key"
+}
+
+# open masterkey [mapper dev] [loop dev]
+function cryptohome::open() {
+  local masterkey="$1"
+  local mapperdev="${2:-$DEFAULT_MAPPER_DEVICE}"
+  local loopdev="${3:-$DEFAULT_LOOP_DEVICE}"
+  $dmsetup create "${mapperdev//*\/}" <(cryptohome::make_table "$masterkey")
+}
+
+# close [mapper dev]
+function cryptohome::close() {
+  local mapperdev="${1:-$DEFAULT_MAPPER_DEVICE}"
+  $dmsetup remove -f "${mapperdev//*\/}"
+}
+
+# is_opened [mapper dev]
+function cryptohome::is_opened() {
+  local mapperdev="${1:-$DEFAULT_MAPPER_DEVICE}"
+  if $test -b "$mapperdev"; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+# is_attached [loop dev]
+function cryptohome::is_attached() {
+  local loopdev="${1:-$DEFAULT_LOOP_DEVICE}"
+  if $test -b "$loopdev"; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+# mount [mapper device] [mount point]
+function cryptohome::mount() {
+  local mapperdev="${1:-$DEFAULT_MAPPER_DEVICE}"
+  local mountpt="${2:-$DEFAULT_MOUNT_POINT}"
+  $mount -o "$MOUNT_OPTIONS" "$mapperdev" "$mountpt"
+}
+
+# check [check argument] [mapper device]
+function cryptohome::check() {
+  local arg="${1:-}"
+  local mapperdev="${2:-$DEFAULT_MAPPER_DEVICE}"
+  $e2fsck $arg -p "$mapperdev"
+}
+
+# prepare_skel [mount point]
+function cryptohome::prepare_skel() {
+  local mountpt="${1:-$DEFAULT_MOUNT_POINT}"
+
+  if [[ ! -d $IMAGE_DIR/skel ]]; then
+    $mkdir -p $IMAGE_DIR/skel
+    $cp -r /etc/skel/. $IMAGE_DIR/skel
+  fi
+
+  if [[ ! -d $IMAGE_DIR/skel/logs ]]; then
+    $mkdir -p $IMAGE_DIR/skel/logs
+  fi
+
+  if [[ $mountpt/.xsession -nt $IMAGE_DIR/skel/.xsession ]]; then
+    $cp $mountpt/.xsession $IMAGE_DIR/skel
+  fi
+
+  return 0
+}
+
+function cryptohome::check_and_clear_loop() {
+  # TODO: use losetup -f explicitly and clean up on failure
+  if [[ "$($losetup -f)" != "$DEFAULT_LOOP_DEVICE" ]]; then
+    cryptohome::log "$DEFAULT_LOOP_DEVICE is unavailable!"
+    if cryptohome::is_mounted; then
+      cryptohome::log "attempting to unmount lingering mount"
+      cryptohome::unmount
+    fi
+    if cryptohome::is_opened; then
+      cryptohome::log "attempting to close a lingering dm device"
+      cryptohome::close
+    fi
+    if cryptohome::is_attached; then
+      cryptohome::log "attempting to detach the loop device"
+      cryptohome::detach
+    fi
+    if [[ "$($losetup -f)" != "$DEFAULT_LOOP_DEVICE" ]]; then
+      cryptohome::log "$DEFAULT_LOOP_DEVICE could not be freed."
+      return 1
+    fi
+    cryptohome::log "default loop device freed for use"
+  fi
+  return 0
+}
+
+# mount_or_create userid password
+function cryptohome::mount_or_create() {
+  local userid="$1"
+  local password="$2"
+  [[ $# -lt 2 ]] && return 1  # argument sanity check
+
+  local image="$IMAGE_DIR/${userid}/image"
+  IMAGE="$image"  # exported for use by cleanup handlers/logging
+
+  # Ensure a sane environment.
+  if [[ ! -d "$IMAGE_DIR/$userid" ]]; then
+    $mkdir -p "$IMAGE_DIR/$userid"
+  fi
+  cryptohome::prepare_skel
+
+  # We need a master key file and an image
+  if [[ -f "$image" && -f "$IMAGE_DIR/$userid/$KEY_FILE_USER_ZERO" ]]; then
+    cryptohome::log "mount start"
+
+    if ! cryptohome::check_and_clear_loop; then
+      cryptohome::log "mount_or_create bailing"
+      return 1
+    fi
+
+    cryptohome::attach "$image"
+    local masterkey="$(cryptohome::unwrap_master_key "$password" "$userid")"
+    # TODO: we should track mount attempts so we can delete a broken mount.
+    #       right now, we will just fail forever.
+    #       So if a user image gets in a wedged state they get stuck in tmpfs
+    #       land.
+    cryptohome::open "$masterkey"
+    # checking is not forced and will only impact login time
+    # if there is a filesystem error.  However, we don't have
+    # a way to give a user feedback.
+    # TODO: add UI or determine if we should just re-image.
+    # Filesystem checking is disabled for Indy to further minimize initial
+    # login impact.  However, we need to determine our priorities in this
+    # area.
+    # cryptohome::check
+    cryptohome::mount
+    # Make sure to pass along .xsession updates and keep it rx.
+    if [[ $IMAGE_DIR/skel/.xsession -nt $DEFAULT_MOUNT_POINT/.xsession ]]; then
+      $cp $IMAGE_DIR/skel/.xsession $DEFAULT_MOUNT_POINT/.xsession
+      $chmod 755 $DEFAULT_MOUNT_POINT/.xsession
+    fi
+    $chown $DEFAULT_USER $DEFAULT_MOUNT_POINT
+    $chmod 750 $DEFAULT_MOUNT_POINT
+    # Perform an online resize behind the scenes just in case it
+    # wasn't completed before.
+    trap - ERR  # disable any potential err handlers
+    cryptohome::maximize "$image" "$masterkey" 1 &
+    disown -a
+    cryptohome::log "mount end"
+  else
+    cryptohome::log "create_and_mount start"
+    # Creates a sparse file roughly 131M (BLOCK_SIZE * BLOCKS_IN_A_GROUP) in
+    # size so that the first block group is about the same size as the others
+    # after resize.
+    cryptohome::create_minimal "$image"
+
+    if ! cryptohome::check_and_clear_loop; then
+      cryptohome::log "mount_or_create bailing"
+      return 1
+    fi
+    cryptohome::attach "$image"
+
+    local masterkey="$(cryptohome::create_master_key "$password" "$userid")"
+    cryptohome::open "$masterkey"
+    cryptohome::format "$(cryptohome::total_blocks $image)"
+    cryptohome::mount
+    $cp -r $IMAGE_DIR/skel/. $DEFAULT_MOUNT_POINT/
+    $chown -R $DEFAULT_USER $DEFAULT_MOUNT_POINT
+    $chmod 750 $DEFAULT_MOUNT_POINT
+
+    # Perform an online resize behind the scenes
+    # and remove the retry trap.
+    trap - ERR  # disable any potential err handlers
+    cryptohome::maximize "$image" "$masterkey" 1 &
+    disown -a
+
+    cryptohome::log "create_and_mount end"
+  fi
+  return 0
+}

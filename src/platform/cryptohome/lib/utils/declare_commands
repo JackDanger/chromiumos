@@ -1,0 +1,73 @@
+#!/bin/bash
+# Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+#
+# declare_commands command1 command2 command3
+#
+# This function finds the desired command in the path and sets the variable
+# $<command> equal to its full path or errors out if there is no executable
+# file. This lets the script ensure all commands are present and then even
+# clear the PATH if desired. If an argument is a path to a binary, only that
+# file will be tested - no search of the PATH will be done. A variable will
+# still be set using the name without the path.
+#
+# If a file is not found, the variable will be populated with 'false' to
+# ensure a valid exit status on call.
+#
+# Note: if a file is a script there is still a chance of problem where the execute
+# bit is set, but the file is not readable.
+function utils::declare_commands {
+  # Ensure COMMANDS has been declared
+  if [[ $# -eq 0 ]]; then
+    echo "$(caller): declare_commands() called with no command list" 1>&2
+    return 1
+  fi
+
+  local cmd=""
+  for cmd in $*; do
+    # Check to see if a path was given and try that first.
+    local realcmd="${cmd/*\/}"
+    local forced_path=0
+    if [[ "$realcmd" != "$cmd" ]]; then
+      forced_path=1
+    fi
+    # Change - to _ to allow for a reasonable var
+    realcmd="${realcmd//-/_}"
+    # . -> __
+    realcmd="${realcmd//./__}"
+    if [[ $forced_path -eq 1 ]]; then
+      eval $realcmd=$cmd
+    else
+      eval $realcmd=$(type -p $cmd)
+    fi
+    if [[ ! -x ${!realcmd} ]]; then
+      if ! type -p $cmd &> /dev/null; then
+        echo "$(caller): Could not find '$cmd'" 1>&2
+        # By default, we set these commands to false since we've tested
+        # our scripts with stubbed out commands. Better than "".
+        eval $realcmd=false
+        return 1
+      else
+        # Otherwise, it is a builtin/function which works.
+        eval $realcmd=$cmd
+      fi
+    fi
+    eval declare -rx $realcmd
+  done
+}
+
+# Example main/testing code
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  utils::declare_commands bash
+  echo -n "Bash as found: "
+  echo $bash
+  unset bash
+  # Now mock
+  function bash() { echo "Called bash"; return 1; }
+  utils::declare_commands bash
+  echo -n "Bash as a mock: "
+  $bash
+fi
+
+

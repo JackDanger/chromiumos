@@ -1,0 +1,181 @@
+#!/bin/bash
+# Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+#
+# A crazily simple mocking framework for use with shunit2.
+# In addition, a number of custom mocks are included which
+# are used by cryptohome tests.
+# Note, these are not subshell friendly so avoid () and |.
+
+# mock
+# Replaces a variable with a given function call in a reversible
+# manner.  This is for use with utils/declare_commands.
+# TODO: embed old command in the current_mocks instead of using old_$cmd
+current_mocks=""
+function mock() {
+  local cmd="$1"
+  local mock="$2"
+  local old_cmdname=old_$cmd
+  eval ${old_cmdname}="${!cmd}"
+  eval $cmd=$mock
+  current_mocks=$(echo "${current_mocks};$cmd;")
+}
+
+# unmock
+# Restores the original value in a given variable from a globally
+# stored list.
+function unmock() {
+  for cmd in "$@"; do
+    local old_cmdname=old_$cmd
+    eval $cmd="${!old_cmdname}"
+    current_mocks="${current_mocks/;$cmd;/}"
+    # Unset backup if nested mock. no gurantee the replacements
+    # are the same though.
+    if [[ "$current_mocks" == "${current_mocks/;$cmd;/}" ]]; then
+      unset ${old_cmdname}
+    fi
+  done
+}
+
+# unmock_all
+# Walks all current mocks and unmocks them.
+function unmock_all() {
+  if [[ -n "${current_mocks}" ]]; then
+    unmock ${current_mocks//;/ }
+  fi
+}
+
+# A boat load of mocks.
+function mock::ok() {
+  return 0
+}
+
+function mock::fail() {
+  echo -n "[mock::fail] " 1>&2
+  return 1
+}
+
+# Creates a function for mocking with the given arguments and i/o.
+# Input:
+# - $1: mock_name
+# - $2: "'arg 1' 'arg 2' ..."
+# - $3: "stdout"
+# - $4: "stderr"
+# - $5: "success return code"
+# - $6: "failure return code"
+function mock::factory::arg_validating() {
+  eval "function mock::$1() {
+    for arg in $2; do
+      if [[ \"\$arg\" == \"MOCK_WILD\" ]]; then
+         true  # a-ok
+      elif [[ \"\$1\" != \"\$arg\" ]]; then
+        echo -ne \"$4\" 1>&2
+        return $6
+      fi
+      shift
+    done
+    echo -ne \"$3\"
+    return $5
+  }"
+}
+
+# Creates a function for mocking with the given arguments and i/o.
+# Input:
+# - $1: mock_name
+# - $2: "stdin"
+# - $3: "'arg 1' 'arg 2' ..."
+# - $4: "stdout"
+# - $5: "stderr"
+# - $6: "success return code"
+# - $7: "failure return code"
+function mock::factory::input_and_arg_validating() {
+  eval "function mock::$1() {
+    read input
+    if [[ "\$input" != "$2" ]]; then
+      # TODO: really need to make this give meaningful mock logs.
+      echo \"\$FUNCNAME(\$@): Mismatched input: \\\"\$input\\\" != \\\"$2\\\"\" 1>&2
+      echo -ne \"$5\" 1>&2
+      return $7
+    fi
+    for arg in $3; do
+      if [[ \"\$arg\" == \"MOCK_WILD\" ]]; then
+         true  # a-ok
+      elif [[ \"\$1\" != \"\$arg\" ]]; then
+        echo -ne \"$5\" 1>&2
+        return $7
+      fi
+      shift
+    done
+    echo -ne \"$4\"
+    return $6
+  }"
+}
+
+# Creates a function for mocking with the given output.
+# Input:
+# - $1: mock_name
+# - $2: "stdout"
+# - $3: "stderr"
+# - $4: "return code"
+function mock::factory::simple_output() {
+  eval "function mock::$1() {
+    echo -ne "$2"
+    echo -ne "$3" 1>&2
+    return $4
+  }"
+}
+
+# mock::helper::chained_shifter
+# A helper function for factory::chained
+# below which just pops the first entry off
+# the given chained list.
+# Input:
+# - $1: chained list name
+# - $*: current list
+function mock::helper::chained_shifter() {
+  container="$1"
+  shift  # pop name
+  shift  # pop off first element
+  count=0
+  eval "${container}=()"
+  for arg in "$@"; do
+    eval "${container}[$count]=\"$arg\""
+    count=$((count+1))
+  done
+}
+
+# mock::factory::chained
+# Creates a function which iterates over a list of expected, or chained, calls.
+# When the end of the list is reached, the generated function will always
+# return an error.
+# Note: this is not subshell friendly as a global variable stores the current
+#       function chain list for the given wrapper function.  If it crosses subshell
+#       boundaries, it will not be properly updated.
+# Input:
+# - $1: function_name
+# - $*: each subsequent expected function to call.
+function mock::factory::chained() {
+  fname="$1"
+  shift
+  # Setup a global chained list to work from
+  eval "mock_${fname}_funcs=("$@")"
+
+  eval "function mock::$fname() {
+    if [[ \${#mock_${fname}_funcs[*]} -eq 0 ]]; then
+      echo \"Chained mock called too many times\" 1>&2
+      return 1
+    fi
+    # If you want this debugging message, you are probably having subshell
+    # consistency problems.
+    # echo \"Calling \${mock_${fname}_funcs[@]} with args \\\"\$@\\\"\" 1>&2
+    \${mock_${fname}_funcs[0]} \"\$@\"
+    local ret=\$?
+    mock::helper::chained_shifter mock_${fname}_funcs \"\${mock_${fname}_funcs[@]}\"
+    # echo \"Remaining: \${mock_${fname}_funcs[@]}\" 1>&2
+    return \$ret
+  }"
+}
+
+
+
