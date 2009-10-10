@@ -1,0 +1,25 @@
+# Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# Slim theme for chromeos
+#
+# There are a bunch more options for customization that we are not using.
+# See http://slim.berlios.de/themes_howto.php
+#
+# We are using welcome fields to display the chromeos version information
+
+background_style        center
+background_color        #000000
+input_panel_x           50%
+input_panel_y           50%
+input_name_x            233
+input_name_y            452
+input_pass_x            542
+input_pass_y            452
+input_font          	Verdana:size=14:dpi=75
+input_fgcolor           #000000
+welcome_x		85%
+welcome_y		99%
+welcome_color		#999999
+welcome_font		Verdana:size=8:dpi=75

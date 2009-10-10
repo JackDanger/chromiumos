@@ -1,0 +1,11 @@
+#!/bin/sh
+
+# Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# install into crontab. check every day at noon
+crontab -l 2>/dev/null | grep -v memento_updater ; \
+echo "0 4 * * * /opt/google/memento_updater/memento_updater.sh" | \
+crontab - 2>/dev/null
+update-rc.d software_update.sh start 99 2 .

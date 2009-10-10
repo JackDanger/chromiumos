@@ -1,0 +1,11 @@
+memento-updater (0.2) jaunty; urgency=low
+
+  * Check for updates at 4AM and 2 minutes after startup
+
+ -- The Chromium OS Authors <chromium-os-dev@googlegroups.com>  Fri, 19 Jun 2009 18:54:31 -0700
+
+memento-updater (0.1) unstable; urgency=low
+
+  * Initial release
+
+ -- The Chromium OS Authors <chromium-os-dev@googlegroups.com>  Mon, 01 Jun 2009 22:38:04 -0700

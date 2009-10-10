@@ -1,0 +1,58 @@
+#!/usr/bin/make -f
+# -*- makefile -*-
+# Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# Uncomment this to turn on verbose mode.
+#export DH_VERBOSE=1
+
+build: build-stamp
+build-stamp:
+	dh_testdir
+	touch $@
+
+clean:
+	dh_testdir
+	dh_testroot
+	rm -f build-stamp
+	dh_clean
+
+install:
+	dh_testdir
+	dh_testroot
+	dh_prep
+	dh_installdirs
+	mkdir -p $(CURDIR)/debian/chromeos-login/usr/share/slim/themes/chromeos
+	cp $(CURDIR)/slim.theme \
+	    $(CURDIR)/debian/chromeos-login/usr/share/slim/themes/chromeos/
+	ln -s /usr/share/chromeos-assets/images/login_background.png \
+	 $(CURDIR)/debian/chromeos-login/usr/share/slim/themes/chromeos/background.png
+	ln -s /usr/share/chromeos-assets/images/login_panel.png \
+	    $(CURDIR)/debian/chromeos-login/usr/share/slim/themes/chromeos/panel.png
+	mkdir -p $(CURDIR)/debian/chromeos-login/etc/pam.d/
+	cp $(CURDIR)/slim $(CURDIR)/debian/chromeos-login/etc/pam.d/
+	# Temporary fix to make sure we don't execute ~/.xsession
+	mkdir -p $(CURDIR)/debian/chromeos-login/etc/X11/Xsession.d
+	cp $(CURDIR)/chromeos-xsession \
+	    $(CURDIR)/debian/chromeos-login/etc/X11/
+	cp $(CURDIR)/51x11-chromeos-set-startup \
+	    $(CURDIR)/debian/chromeos-login/etc/X11/Xsession.d/
+
+# Build architecture-independent files here.
+binary-indep: install
+	dh_testdir
+	dh_testroot
+	dh_link
+	dh_strip
+	dh_compress
+	dh_fixperms
+	dh_installdeb
+	dh_shlibdeps
+	dh_gencontrol
+	dh_md5sums
+	dh_builddeb
+
+binary: binary-indep
+
+.PHONY: build clean install binary-indep binary

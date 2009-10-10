@@ -1,0 +1,16 @@
+# Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Source: hal
+Section: admin
+Priority: optional
+Maintainer: The Chromium OS Authors <chromium-os-dev@googlegroups.com>
+Build-Depends: debhelper (>= 7)
+Standards-Version: 3.8.0
+
+Package: hal
+Architecture: all
+Depends: libhal1
+Description: Fake hal package to satisfy dependencies.
+ This is a fake hal package to satisfy xserver dependencies.

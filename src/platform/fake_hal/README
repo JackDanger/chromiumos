@@ -1,0 +1,9 @@
+The X Server currently depends on "hal", but we disable it.
+
+This fake_hal package satisfies the hal package dependency without pulling
+in all of the dependencies that hal has. It does depend on libhal1 since
+the x server will still load that library even if we use "AutoAddDevices"
+option to disable hal.
+
+The Ubuntu community is working toward removing hal as part of their fast
+booting initiative. Until then, we'll use fake_hal.

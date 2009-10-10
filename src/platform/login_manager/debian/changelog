@@ -1,0 +1,25 @@
+chromeos-login (0.4) unstable; urgency=low
+
+  * Adding pam_mount support to the pam config file and dependency on
+    libpam-mount and chromeos-cryptohome
+
+ -- The Chromium OS Authors <chromium-os-dev@googlegroups.com>  Wed, 02 Sep 2009 12:06:15 -0700
+
+chromeos-login (0.3) jaunty; urgency=low
+
+  * Adding pam config file so that slim will use pam-google to authenticate.  
+	Also added dependency on pam-google
+
+ -- The Chromium OS Authors <chromium-os-dev@googlegroups.com>  Mon, 01 Jun 2009 14:28:27 -0700
+
+chromeos-login (0.2) unstable; urgency=low
+
+  * Working revision.
+
+ -- The Chromium OS Authors <chromium-os-dev@googlegroups.com>  Tue, 28 May 2009 18:08:52 +0000
+
+chromeos-login (0.1) unstable; urgency=low
+
+  * Initial Release.
+
+ -- The Chromium OS Authors <chromium-os-dev@googlegroups.com>  Tue, 12 May 2009 18:08:52 +0000

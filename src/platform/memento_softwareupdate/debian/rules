@@ -1,0 +1,49 @@
+#!/usr/bin/make -f
+# -*- makefile -*-
+# Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# Uncomment this to turn on verbose mode.
+#export DH_VERBOSE=1
+
+SCRIPTS = \
+	$(CURDIR)/memento_updater.sh \
+	$(CURDIR)/memento_updater_logging.sh \
+	$(CURDIR)/ping_omaha.sh
+
+build: build-stamp
+build-stamp:
+	dh_testdir
+	touch $@
+
+clean:
+	dh_testdir
+	dh_testroot
+	rm -f build-stamp
+	dh_clean
+
+install:
+	dh_testdir
+	dh_testroot
+	dh_prep
+	dh_installdirs
+	mkdir -p $(CURDIR)/debian/memento-updater/opt/google/memento_updater
+	cp $(SCRIPTS) $(CURDIR)/debian/memento-updater/opt/google/memento_updater/
+	mkdir -p $(CURDIR)/debian/memento-updater/etc/init.d
+	cp $(CURDIR)/software_update.sh $(CURDIR)/debian/memento-updater/etc/init.d/
+
+# Build architecture-independent files here.
+binary-indep: install
+	dh_testdir
+	dh_testroot
+	dh_compress
+	dh_fixperms
+	dh_installdeb
+	dh_gencontrol
+	dh_md5sums
+	dh_builddeb
+
+binary: binary-indep
+
+.PHONY: build clean install binary-indep binary

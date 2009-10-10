@@ -1,0 +1,24 @@
+# Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# /etc/pam.d/slim
+#
+# Configure the pam modules that slim uses to authenticate the user.
+
+# We borrow from the system default in /etc/pam.d/common-*
+
+# from common-auth
+auth	[success=1 default=ignore]	pam_google.so
+auth	requisite			pam_deny.so
+auth	required			pam_permit.so
+auth	optional			pam_mount.so enable_pam_password disable_interactive
+
+# from common-account
+account	[success=1 new_authtok_reqd=done default=ignore]	pam_permit.so
+account	requisite			pam_deny.so
+account	required			pam_permit.so
+
+
+@include common-password
+@include common-session
