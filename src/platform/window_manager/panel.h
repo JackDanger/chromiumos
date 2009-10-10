@@ -1,0 +1,146 @@
+// Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#ifndef __PLATFORM_WINDOW_MANAGER_PANEL_H__
+#define __PLATFORM_WINDOW_MANAGER_PANEL_H__
+
+extern "C" {
+#include <X11/Xlib.h>
+}
+
+#include <vector>
+
+#include "base/basictypes.h"
+#include "base/scoped_ptr.h"
+#include "window_manager/clutter_interface.h"
+#include "window_manager/motion_event_coalescer.h"
+#include "window_manager/window.h"  // for Window::Gravity
+
+typedef ::Window XWindow;
+
+namespace chromeos {
+
+class PanelBar;
+class WindowManager;
+
+// A single panel.  Each panel consists of both a panel window (the panel's
+// contents) and a titlebar window (a small window drawn in the bar when
+// the panel is collapsed or at the top of the panel when it's expanded).
+// 'initial_right' is the initial position of the right edge of the panel.
+class Panel {
+ public:
+  Panel(PanelBar* panel_bar,
+        Window* panel_win,
+        Window* titlebar_win,
+        int initial_right);
+  ~Panel();
+
+  const Window* const_panel_win() const { return panel_win_; }
+  Window* panel_win() { return panel_win_; }
+  Window* titlebar_win() { return titlebar_win_; }
+  int snapped_right() const { return snapped_right_; }
+  void set_snapped_right(int x) { snapped_right_ = x; }
+  bool is_expanded() const { return is_expanded_; }
+
+  // Get the X ID of the panel window.  This is handy for logging.
+  XWindow xid() const;
+
+  // The current position of one pixel beyond the right edge of the panel.
+  int cur_right() const;
+
+  // The current left edge of the panel or titlebar window (that is, its
+  // composited position).
+  int cur_panel_left() const;
+  int cur_titlebar_left() const;
+  int cur_panel_center() const;
+
+  // The snapped left edge of the panel or titlebar window (see
+  // 'snapped_right_' for details).
+  int snapped_panel_left() const;
+  int snapped_titlebar_left() const;
+
+  // Width of the panel or titlebar windows.
+  int panel_width() const;
+  int titlebar_width() const;
+
+  // Fill the passed-in vector with all of the panel's input windows.
+  void GetInputWindows(vector<XWindow>* windows_out);
+
+  // Handle events occurring in on one of our input windows.
+  void HandleInputWindowButtonPress(
+      XWindow xid, int x, int y, int button, Time timestamp);
+  void HandleInputWindowButtonRelease(XWindow xid, int x, int y, int button);
+  void HandleInputWindowPointerMotion(XWindow xid, int x, int y);
+
+  // Expand or collapse the panel, notifying the client app of the change.
+  void SetState(bool is_expanded);
+
+  // Move the panel.  Positions are given in terms of panels' right
+  // edges (since panel and titlebar windows share a common right edge).
+  // TODO: This is weird; 'right' is actually one pixel beyond the panel's
+  // right edge.
+  void Move(int right, int anim_ms);
+
+  // Raise the panel's client and composited windows above other panels.
+  void Raise();
+
+ private:
+  WindowManager* wm();
+
+  void Resize(int width, int height,
+              Window::Gravity gravity,
+              bool configure_input_windows);
+
+  // Notify Chrome about the panel's current visibility state.
+  bool NotifyChromeAboutState();
+
+  // Called periodically by 'resize_event_coalescer_'.
+  void ApplyResize();
+
+  // Position, resize, and stack the input windows appropriately for the
+  // panel's current configuration.
+  void ConfigureInputWindows();
+
+  PanelBar* panel_bar_;   // not owned
+  Window* panel_win_;     // not owned
+  Window* titlebar_win_;  // not owned
+
+  // Translucent resize box used when opaque resizing is disabled.
+  scoped_ptr<ClutterInterface::Actor> resize_actor_;
+
+  // Batches motion events for resized panels so that we can rate-limit the
+  // frequency of their processing.
+  MotionEventCoalescer resize_event_coalescer_;
+
+  // Used to catch clicks for resizing.
+  XWindow top_input_win_;
+  XWindow top_left_input_win_;
+  XWindow top_right_input_win_;
+  XWindow left_input_win_;
+  XWindow right_input_win_;
+
+  // X position of the right edge of where the titlebar wants to be when
+  // collapsed.  For collapsed panels that are being dragged, this may be
+  // different from the actual composited position -- we only snap the
+  // panels to this position when the drag is complete.
+  int snapped_right_;
+
+  // Is the panel expanded or collapsed?
+  bool is_expanded_;
+
+  XWindow drag_xid_;
+  Window::Gravity drag_gravity_;
+  int drag_start_x_;
+  int drag_start_y_;
+  int drag_orig_width_;
+  int drag_orig_height_;
+  int drag_last_width_;
+  int drag_last_height_;
+
+  DISALLOW_COPY_AND_ASSIGN(Panel);
+};
+
+}  // namespace chromeos
+
+#endif

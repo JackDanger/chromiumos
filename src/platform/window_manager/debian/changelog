@@ -1,0 +1,24 @@
+chromeos-wm (0.4) jaunty; urgency=low
+
+  * Make the window manager use the auth token written to disk by pam_google,
+  * if present, to run chrome and log in as the user.
+
+ -- The Chromium OS Authors <chromium-os-dev@googlegroups.com>  Thu, 04 Jun 2009 12:35:11 -0700
+
+chromeos-wm (0.3) unstable; urgency=low
+
+  * Bumped version number so it is included in image creation.
+
+ -- The Chromium OS Authors <chromium-os-dev@googlegroups.com>  Thu, 14 May 2009 17:43:52 +0000
+
+chromeos-wm (0.2) unstable; urgency=low
+
+  * Added dependency on chromeos-assets.
+
+ -- The Chromium OS Authors <chromium-os-dev@googlegroups.com>  Thu, 14 May 2009 18:08:52 +0000
+
+chromeos-wm (0.1) unstable; urgency=low
+
+  * Initial Release.
+
+ -- The Chromium OS Authors <chromium-os-dev@googlegroups.com>  Tue, 12 May 2009 18:08:52 +0000

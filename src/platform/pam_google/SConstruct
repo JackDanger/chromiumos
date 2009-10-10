@@ -1,0 +1,57 @@
+# -*- python -*-
+
+# Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import os
+
+env = Environment()
+
+pam_sources = env.Split("""offline_credential_store.cc
+                       google_authenticator.cc
+                       google_connection.cc
+                       google_cookies.cc
+                       google_curl_connection.cc
+                       google_credentials.cc
+                       google_response.cc
+                       google_username_password.cc
+                       pam_prompt_wrapper.cc
+                       username_password_fetcher.cc
+                       pam_google.cc
+                       pipe_writer.cc""")
+
+test_sources = env.Split("""../base/strutil.cc
+                 pam_google_testrunner.cc
+                 offline_credential_store_unittest.cc
+                 google_authenticator_unittest.cc
+                 google_cookies_unittest.cc
+                 google_curl_connection_unittest.cc
+                 google_username_password_unittest.cc
+                 pam_prompt_wrapper_unittest.cc
+                 pipe_reader.cc
+                 pipe_reader_unittest.cc
+                 pipe_writer_unittest.cc
+                 username_password_fetcher_unittest.cc""")
+
+env.Append(
+    CPPPATH=['..'],
+    CCFLAGS=['-g', '-fno-exceptions', '-Wall', '-Werror'],
+    LIBS=['glog', 'pam', 'curl', 'ssl'],
+)
+
+# Enable local account only if user has specified one
+if os.path.exists('pam_localaccount.h'):
+  print """
+WARNING: pam local account is enabled!  If you don't want this, remove
+pam_localaccount.h.
+"""
+  env.Append(CPPDEFINES=['CHROMEOS_PAM_LOCALACCOUNT'])
+
+env_lib = env.Clone()
+env_lib.Append(LIBS=['gflags'])
+env_lib.SharedLibrary('pam_google', pam_sources)
+
+env_test = env.Clone()
+env_test.Append(LIBS=['gtest', 'pcrecpp'])
+env_test.Program('pam_google_unittests', pam_sources + test_sources)

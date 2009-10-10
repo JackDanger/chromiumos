@@ -1,0 +1,17 @@
+To compile this on Ubuntu 9.04 (Jaunty), you may need to install the
+following packages:
+
+  scons libpcre++-dev libclutter-0.9-dev libgflags-dev libgoogle-glog-dev \
+  libgtest-dev libprotobuf-dev libgtkmm-2.4-dev
+
+To build the 'wm' executable, run 'scons wm'.
+
+To run the window manager under Xephyr, a nested X server, use
+'run_in_xephyr.sh'.  There are some parameters that you can change by
+setting variables in the script's environment, e.g.
+'resolution=640x480 ./run_in_xephyr.sh'.
+
+Xephyr doesn't seem to support GLX_EXT_texture_from_pixmap (although a
+nested glxinfo reports that it's present).  If you see a warning about
+this, it means that every time a window updates, the changes will need to
+be copied through the X server on their way to the video card.

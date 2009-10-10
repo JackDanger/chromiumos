@@ -1,0 +1,11 @@
+.*.swp
+.sconsign.dblite
+*.a
+*.o
+wm
+test_clutter
+mock_app
+mock_chrome
+*_test
+*.pb.h
+*.pb.cc
