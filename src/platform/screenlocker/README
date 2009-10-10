@@ -1,0 +1,11 @@
+The screen locker is a mod of xscreensaver.  
+
+We have heaviliy trimmed down xscreensaver to have no default screensavers.  
+This leaves a simple lock mechanism that locks with a blank screen.  
+Configuration is done using two files.  The pam file is in this package.
+Other config and code is in third_party/xscreensaver.  
+
+We are also not using xscreensaver-demo which relies upon GTK libraries to 
+provide an easy way of changing the screensaver settings.  Instead we will 
+be building a custom configuration interface in the future.
+

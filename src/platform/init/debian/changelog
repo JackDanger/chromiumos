@@ -1,0 +1,18 @@
+chromeos-init (0.3) karmic; urgency=low
+
+  * Adds a proper upstart service for D-Bus and makes Connman start-up more
+    robust.
+
+ -- The Chromium OS Authors <chromium-os-dev@googlegroups.com>  Wed, 26 Aug 2009 17:46:57 -0700
+
+chromeos-init (0.2) jaunty; urgency=low
+
+  * Adds an upstart job that catches a custom "login-prompt-ready" event and logs boot time.
+
+ -- The Chromium OS Authors <chromium-os-dev@googlegroups.com>  Thu, 16 Jul 2009 10:11:44 -0700
+
+chromeos-init (0.1) unstable; urgency=low
+
+  * Initial Release.
+
+ -- The Chromium OS Authors <chromium-os-dev@googlegroups.com>  Tue, 12 May 2009 18:08:52 +0000
