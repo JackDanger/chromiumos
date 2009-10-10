@@ -698,6 +698,7 @@ static gboolean set_connected(gpointer user_data)
 
 		switch (network->protocol) {
 		case CONNMAN_NETWORK_PROTOCOL_UNKNOWN:
+			connman_warn("%s: unknown protocol", __func__);
 			return 0;
 		case CONNMAN_NETWORK_PROTOCOL_IP:
 			type = CONNMAN_ELEMENT_TYPE_DHCP;
@@ -767,20 +768,27 @@ int connman_network_set_connected(struct connman_network *network,
 		__connman_network_disconnect(network);
 	}
 
-	if (network->connected == connected)
+	if (network->connected == connected) {
+		_DBG_NETWORK("%s: already %sconnected", __func__,
+				connected ? "" : "!");
 		return -EALREADY;
+	}
 
 	network->connected = connected;
 
 	if (network->registered == FALSE) {
+		_DBG_NETWORK("not registered; defer");
 		g_idle_add(set_connected, network);
 		return 0;
 	}
 
 	signal = dbus_message_new_signal(network->element.path,
 				CONNMAN_NETWORK_INTERFACE, "PropertyChanged");
-	if (signal == NULL)
+	if (signal == NULL) {
+		connman_error("%s: cannot allocate signal", __func__);
+		/* XXX? defer to idle loop */
 		return 0;
+	}
 
 	dbus_message_iter_init_append(signal, &entry);
 
@@ -913,14 +921,18 @@ int connman_network_set_address(struct connman_network *network,
 
 	_DBG_NETWORK("network %p size %d", network, size);
 
-	if (size != 6)
+	if (size != 6) {
+		connman_error("%s: bad size %d", __func__, size);
 		return -EINVAL;
+	}
 
 	str = g_strdup_printf("%02X:%02X:%02X:%02X:%02X:%02X",
 				addr_octet[0], addr_octet[1], addr_octet[2],
 				addr_octet[3], addr_octet[4], addr_octet[5]);
-	if (str == NULL)
+	if (str == NULL) {
+		connman_error("%s: no memory", __func__);
 		return -ENOMEM;
+	}
 
 	g_free(network->address);
 	network->address = str;

@@ -1279,6 +1279,11 @@ int connman_device_set_carrier(struct connman_device *device,
 	return set_carrier(device, device->carrier);
 }
 
+void connman_device_reset_scan(struct connman_device *device)
+{
+	reset_scan_trigger(device);
+}
+
 int __connman_device_scan(struct connman_device *device)
 {
 	if (!device->driver || !device->driver->scan)

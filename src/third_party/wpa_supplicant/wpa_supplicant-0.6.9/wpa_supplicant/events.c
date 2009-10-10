@@ -705,6 +705,14 @@ req_scan:
 		 */
 		wpa_s->scan_res_tried++;
 		timeout = 0;
+	} else if (!wpa_supplicant_isenabled(wpa_s)) {
+		/*
+		 * No networks are enabled; short-circuit request so
+		 * we don't wait timeout seconds before transitioning
+		 * to INACTIVE state.
+		 */
+		wpa_supplicant_set_state(wpa_s, WPA_INACTIVE);
+		return;
 	}
 	wpa_supplicant_req_scan(wpa_s, timeout, 0);
 }

@@ -1585,9 +1585,8 @@ static void state_change(struct supplicant_task *task, DBusMessage *msg)
 		return;
 	}
 
-	_DBG_SUPPLICANT("state %s ==> %s", oldstate, newstate);
-
-	connman_info("%s %s", task->ifname, newstate);
+	connman_info("%s state change %s -> %s", task->ifname,
+			oldstate, newstate);
 
 	state = string2state(newstate);
 	if (state == WPA_INVALID)
@@ -1605,6 +1604,9 @@ static void state_change(struct supplicant_task *task, DBusMessage *msg)
 
 	switch (task->state) {
 	case WPA_COMPLETED:
+		/* reset bg scan reschedule */
+		connman_device_reset_scan(task->device);
+
 		if (get_bssid(task->device, bssid, &bssid_len) == 0)
 			connman_network_set_address(task->network,
 							bssid, bssid_len);

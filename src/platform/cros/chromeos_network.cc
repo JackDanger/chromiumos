@@ -306,16 +306,21 @@ bool ChromeOSConnectToWifiNetwork(const char* ssid,
   glib::Value value_mode("managed");
   glib::Value value_type("wifi");
   glib::Value value_ssid(ssid);
-  glib::Value value_passphrase(passphrase == NULL ? "" : passphrase);
   glib::Value value_security(encryption == NULL ? "rsn" : encryption);
+  glib::Value value_passphrase(passphrase == NULL ? "" : passphrase);
 
   ::GHashTable* properties = scoped_properties.get();
   ::g_hash_table_insert(properties, ::g_strdup("Mode"), &value_mode);
   ::g_hash_table_insert(properties, ::g_strdup("Type"), &value_type);
   ::g_hash_table_insert(properties, ::g_strdup("SSID"), &value_ssid);
-  ::g_hash_table_insert(properties, ::g_strdup("Passphrase"),
-      &value_passphrase);
   ::g_hash_table_insert(properties, ::g_strdup("Security"), &value_security);
+
+  // Connman will overwrite any passphrase that it remembers with the value
+  // sent via d-bus. So Passphrase needs to be omitted when reconnecting.
+  if (passphrase != NULL) {
+    ::g_hash_table_insert(properties, ::g_strdup("Passphrase"),
+        &value_passphrase);
+  }
 
   glib::ScopedError error;
   ::DBusGProxy obj;

@@ -35,7 +35,7 @@ mount -n -t devpts -onoexec,nosuid,gid=5,mode=0620 devpts /dev/pts
 # Splash screen!
 if [ -x /usr/bin/ply-image ]
 then
-  /usr/bin/ply-image /usr/share/chromeos-assets/images/login_splash.png
+  /usr/bin/ply-image /usr/share/chromeos-assets/images/login_splash.png &
 fi
 
 # Mount our stateful partition

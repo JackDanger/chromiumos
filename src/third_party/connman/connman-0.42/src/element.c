@@ -725,8 +725,10 @@ static int set_static_property(struct connman_element *element,
 		return -EINVAL;
 
 	property = g_try_new0(struct connman_property, 1);
-	if (property == NULL)
+	if (property == NULL) {
+		connman_error("%s: no memory", __func__);
 		return -ENOMEM;
+	}
 
 	property->id   = CONNMAN_PROPERTY_ID_INVALID;
 	property->type = type;
@@ -1284,6 +1286,9 @@ static void register_element(gpointer data, gpointer user_data)
 	const gchar *basepath;
 	GNode *node;
 
+	_DBG_ELEMENT("element %p name %s parent %p",
+			element, element->name, element->parent);
+
 	__connman_element_lock(element);
 
 	if (element->parent) {
@@ -1370,7 +1375,9 @@ gboolean __connman_device_isfiltered(const char *devname)
 int connman_element_register(struct connman_element *element,
 					struct connman_element *parent)
 {
-	_DBG_ELEMENT("element %p name %s parent %p", element, element->name, parent);
+	_DBG_ELEMENT("element %p name %s parent %p type %s (%d)", element,
+			element->name, parent, type2string(element->type),
+			element->type);
 
 	if (element->devname == NULL)
 		element->devname = g_strdup(element->name);
@@ -1390,6 +1397,7 @@ int connman_element_register(struct connman_element *element,
 		element->name = g_strdup(type2string(element->type));
 		if (element->name == NULL) {
 			__connman_element_unlock(element);
+			connman_error("%s: no memory for name", __func__);
 			return -EINVAL;
 		}
 	}

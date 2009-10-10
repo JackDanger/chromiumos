@@ -15,8 +15,10 @@ FIRST_RUN_ARGS=""
 if [ ! -d "$USER_DATA_DIR" ]; then
   mkdir -p "$USER_DATA_DIR"
   # Automatically opt-in to Chrome OS stats collecting.
+  # This does not have to be a cryptographically random string, but we do need a
+  # 32 byte, printable string.
   # TODO: remove after dogfood?
-  touch "${USER_DATA_DIR}/Consent To Send Stats"
+  head -c 8 /dev/random | openssl md5 > "${USER_DATA_DIR}/Consent To Send Stats"
 
   # determine the logged in user's domain and give them the appropriate stuff.
   # TODO: reliably determine the correct domain for all users.

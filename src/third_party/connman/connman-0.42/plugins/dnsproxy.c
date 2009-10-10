@@ -153,6 +153,8 @@ static gboolean server_event(GIOChannel *channel, GIOCondition condition,
 	struct request_data *req;
 	unsigned char buf[768];
 	struct domain_hdr *hdr = (void *) &buf;
+	struct sockaddr_in sin;
+	socklen_t size = sizeof(sin);
 	int sk, err, len;
 
 	if (condition & (G_IO_NVAL | G_IO_ERR | G_IO_HUP)) {
@@ -163,12 +165,12 @@ static gboolean server_event(GIOChannel *channel, GIOCondition condition,
 
 	sk = g_io_channel_unix_get_fd(channel);
 
-	/* TODO(sleffler): use recvfrom so we can log who responded */
-	len = recv(sk, buf, sizeof(buf), 0);
+	len = recvfrom(sk, buf, sizeof(buf), 0, (struct sockaddr *) &sin, &size);
 	if (len < 12)
 		return TRUE;
 
-	_DBG_DNSPROXY("Received %d bytes (id 0x%04x)", len, buf[0] | buf[1] << 8);
+	_DBG_DNSPROXY("Received %d bytes (id 0x%04x) from %s", 
+                len, buf[0] | buf[1] << 8, inet_ntoa(sin.sin_addr));
 
 	req = find_request(buf[0] | buf[1] << 8);
 	if (req == NULL)
@@ -286,7 +288,8 @@ static int dnsproxy_append(const char *interface, const char *domain,
 {
 	struct server_data *data;
 
-	_DBG_DNSPROXY("interface %s server %s", interface, server);
+	_DBG_DNSPROXY("interface %s server %s domain %s", 
+                interface, server, domain);
 
 	if (g_str_equal(server, "127.0.0.1") == TRUE)
 		return -ENODEV;

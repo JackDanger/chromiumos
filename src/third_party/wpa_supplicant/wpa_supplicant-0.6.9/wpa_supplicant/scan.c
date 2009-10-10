@@ -65,11 +65,22 @@ static int wpas_wps_in_use(struct wpa_config *conf,
 }
 #endif /* CONFIG_WPS */
 
+int wpa_supplicant_isenabled(struct wpa_supplicant *wpa_s)
+{
+	struct wpa_ssid *ssid;
+
+	for (ssid = wpa_s->conf->ssid; ssid; ssid = ssid->next) {
+		if (!ssid->disabled)
+			return 1;
+	}
+	return 0;
+}
+
 static void wpa_supplicant_scan(void *eloop_ctx, void *timeout_ctx)
 {
 	struct wpa_supplicant *wpa_s = eloop_ctx;
 	struct wpa_ssid *ssid;
-	int enabled, scan_req = 0, ret;
+	int scan_req = 0, ret;
 	struct wpabuf *wps_ie = NULL;
 	const u8 *extra_ie = NULL;
 	size_t extra_ie_len = 0;
@@ -83,16 +94,7 @@ static void wpa_supplicant_scan(void *eloop_ctx, void *timeout_ctx)
 		return;
 	}
 
-	enabled = 0;
-	ssid = wpa_s->conf->ssid;
-	while (ssid) {
-		if (!ssid->disabled) {
-			enabled++;
-			break;
-		}
-		ssid = ssid->next;
-	}
-	if (!enabled && !wpa_s->scan_req) {
+	if (!wpa_supplicant_isenabled(wpa_s) && !wpa_s->scan_req) {
 		wpa_printf(MSG_DEBUG, "No enabled networks - do not scan");
 		wpa_supplicant_set_state(wpa_s, WPA_INACTIVE);
 		return;
