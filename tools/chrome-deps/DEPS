@@ -12,12 +12,12 @@
 # API to dynamically load the libcros.so library
 deps = {
   "src/third_party/cros" :
-    "/trunk/src/platform/cros@719",
+    "/trunk/src/platform/cros@30",
 # Source for the chrome os login manager to be built along with the
 # chrome os build of chrome
   "src/third_party/chromeos_login_manager" :
-    "/trunk/src/platform/login_manager/chromeos_login_manager@681",
+    "/trunk/src/platform/login_manager/chromeos_login_manager@30",
 # dependency for login manager in chrome os
   "src/third_party/chromeos_login_manager/include" :
-    "/trunk/src/third_party/pam-dev@715",
+    "/trunk/src/third_party/pam-dev@30",
 }
