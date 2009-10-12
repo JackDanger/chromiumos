@@ -955,7 +955,15 @@ bool WindowManager::HandleConfigureRequest(const XConfigureRequestEvent& e) {
     return false;
 
   VLOG(1) << "Handling configure request for " << e.window << " to pos ("
-          << e.x << ", " << e.y << ") and size " << e.width << "x" << e.height;
+          << ((e.value_mask & CWX) ? StringPrintf("%d", e.x) : string("undef"))
+          << ", "
+          << ((e.value_mask & CWY) ? StringPrintf("%d", e.y) : string("undef"))
+          << ") and size "
+          << ((e.value_mask & CWWidth) ?
+                  StringPrintf("%d", e.width) : string("undef "))
+          << "x"
+          << ((e.value_mask & CWHeight) ?
+                  StringPrintf("%d", e.height) : string(" undef"));
   if (win->override_redirect()) {
     LOG(WARNING) << "Huh?  Got a ConfigureRequest event for override-redirect "
                  << "window " << e.window;
@@ -964,35 +972,45 @@ bool WindowManager::HandleConfigureRequest(const XConfigureRequestEvent& e) {
   // We only let clients move transient windows (requests for
   // override-redirect windows won't be redirected to us in the first
   // place).
-  if (win->transient_for_window()) {
-    win->MoveClient(e.x, e.y);
+  if (((e.value_mask & CWX) || (e.value_mask & CWY)) &&
+      win->transient_for_window()) {
+    const int req_x = (e.value_mask & CWX) ? e.x : win->client_x();
+    const int req_y = (e.value_mask & CWY) ? e.y : win->client_y();
+    win->MoveClient(req_x, req_y);
     win->transient_for_window()->MoveAndScaleCompositedTransientWindow(win, 0);
   }
 
-  // GTK sometimes sends us goofy ConfigureRequests that ask for the
-  // default size (200x200) even when it falls outside of the min- and
-  // max-size hints that were specified earlier.  Stick to the hints here.
-  int win_width = e.width;
-  int win_height = e.height;
-  win->GetMaxSize(e.width, e.height, &win_width, &win_height);
+  if ((e.value_mask & CWWidth) || (e.value_mask & CWHeight)) {
+    // If either value wasn't supplied, replace it with the value from the
+    // dimensions that we most-recently applied.
+    const int req_width =
+        (e.value_mask & CWWidth) ? e.width : win->client_width();
+    const int req_height =
+        (e.value_mask & CWHeight) ? e.height : win->client_height();
 
-  // Check if any of the event consumers want to modify this request.
-  for (set<EventConsumer*>::iterator it = event_consumers_.begin();
-       it != event_consumers_.end(); ++it) {
-    int permitted_width = win_width;
-    int permitted_height = win_height;
-    if ((*it)->HandleWindowResizeRequest(
-            win, &permitted_width, &permitted_height)) {
-      DCHECK_GT(permitted_width, 0);
-      DCHECK_GT(permitted_height, 0);
-      win_width = permitted_width;
-      win_height = permitted_height;
-      break;
+    int win_width = win->client_width();
+    int win_height = win->client_height();
+    win->GetMaxSize(req_width, req_height, &win_width, &win_height);
+
+    // Check if any of the event consumers want to modify this request.
+    for (set<EventConsumer*>::iterator it = event_consumers_.begin();
+         it != event_consumers_.end(); ++it) {
+      int permitted_width = win_width;
+      int permitted_height = win_height;
+      if ((*it)->HandleWindowResizeRequest(
+              win, &permitted_width, &permitted_height)) {
+        DCHECK_GT(permitted_width, 0);
+        DCHECK_GT(permitted_height, 0);
+        win_width = permitted_width;
+        win_height = permitted_height;
+        break;
+      }
     }
+
+    if (win_width != win->client_width() || win_height != win->client_height())
+      win->ResizeClient(win_width, win_height, Window::GRAVITY_NORTHWEST);
   }
 
-  if (win_width != win->client_width() || win_height != win->client_height())
-    win->ResizeClient(win_width, win_height, Window::GRAVITY_NORTHWEST);
   return true;
 }
 

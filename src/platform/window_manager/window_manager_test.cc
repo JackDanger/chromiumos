@@ -419,6 +419,43 @@ TEST_F(WindowManagerTest, RestackOverrideRedirectWindows) {
                 dynamic_cast<MockClutterInterface::Actor*>(win2->actor())));
 }
 
+// Test that we honor ConfigureRequest events that change an unmapped
+// window's size, and that we ignore fields that are unset in its
+// 'value_mask' field.
+TEST_F(WindowManagerTest, ConfigureRequestResize) {
+  XWindow xid = CreateSimpleWindow(xconn_->GetRootWindow());
+  MockXConnection::WindowInfo* info = xconn_->GetWindowInfoOrDie(xid);
+  const int orig_width = info->width;
+  const int orig_height = info->height;
+
+  XEvent event;
+  MockXConnection::InitCreateWindowEvent(&event, *info);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+
+  // Send a ConfigureRequest event with its width and height fields masked
+  // out, and check that the new width and height values are ignored.
+  const int new_width = orig_width * 2;
+  const int new_height = orig_height * 2;
+  MockXConnection::InitConfigureRequestEvent(
+      &event, xid, info->x, info->y, new_width, new_height);
+  event.xconfigurerequest.value_mask &= ~(CWWidth | CWHeight);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  EXPECT_EQ(orig_width, info->width);
+  EXPECT_EQ(orig_height, info->height);
+
+  // Now turn on the width bit and check that it gets applied.
+  event.xconfigurerequest.value_mask |= CWWidth;
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  EXPECT_EQ(new_width, info->width);
+  EXPECT_EQ(orig_height, info->height);
+
+  // Turn on the height bit as well.
+  event.xconfigurerequest.value_mask |= CWHeight;
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  EXPECT_EQ(new_width, info->width);
+  EXPECT_EQ(new_height, info->height);
+}
+
 }  // namespace chromeos
 
 int main(int argc, char **argv) {

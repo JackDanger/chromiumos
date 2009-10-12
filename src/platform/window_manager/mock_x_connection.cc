@@ -488,6 +488,7 @@ void MockXConnection::InitConfigureRequestEvent(
   conf_event->y = y;
   conf_event->width = width;
   conf_event->height = height;
+  conf_event->value_mask = CWX | CWY | CWWidth | CWHeight;
 }
 
 // static
