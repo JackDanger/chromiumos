@@ -459,10 +459,13 @@ main (int    argc,
 
   // hide_cursor ();
 
-  if (argc == 1)
-    image = ply_image_new ("booting.png");
-  else
-    image = ply_image_new (argv[1]);
+  if (argc != 2)
+    {
+      perror ("usage: ply-image <pngImageFile>");
+      return 1;
+    }
+
+  image = ply_image_new (argv[1]);
 
   if (!ply_image_load (image))
     {

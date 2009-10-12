@@ -533,22 +533,51 @@ ply_frame_buffer_fill (ply_frame_buffer_t      *buffer,
 		       uint32_t                *data)
 {
   char *dst, *src;
+  int hdiff, vdiff;
 
   assert (buffer != NULL);
   assert (ply_frame_buffer_device_is_open (buffer));
-
   assert (area != NULL);
 
-  dst = &buffer->map_address[0];
-  src = (char *) data;
+  hdiff = area->width - buffer->row_stride;
+  vdiff = area->height - buffer->area.height;
 
-  assert (area->width == buffer->row_stride);
-  memcpy (dst, src, area->width * area->height * 4);
-  /* 
-{
-	  int f = open("/root/image", O_CREAT);
-  }
-  */
+  if (hdiff >= 0)
+    {
+      /* image is wider than buffer */
+      dst = &buffer->map_address[0];
+      src = (char *) (data + hdiff / 2);
+    } else {
+      dst = &buffer->map_address[(-hdiff / 2) * sizeof(*data)];
+      src = (char *) data;
+    }
+
+  if (vdiff >= 0)
+    {
+      /* image is taller than buffer */
+      src += (vdiff / 2) * area->width * sizeof(*data);
+    }
+  else
+    {
+      dst += (-vdiff / 2) * buffer->row_stride * sizeof(*data);
+    }
+
+  if (hdiff == 0)
+    {
+      memcpy (dst, src, area->width * area->height * sizeof(*data));
+    }
+  else
+    {
+      int line;
+      int lines = vdiff > 0 ? buffer->area.height : area->height;
+      int width = hdiff > 0 ? buffer->area.width : area->width;
+    
+      for (line = 0; line < lines; line++) {
+	memcpy (dst, src, width * sizeof(*data));
+	dst += buffer->row_stride * sizeof(*data);
+	src += area->width * sizeof(*data);
+      }
+    }
 
   return 1;
 }
