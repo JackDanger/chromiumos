@@ -539,7 +539,7 @@ ply_frame_buffer_fill (ply_frame_buffer_t      *buffer,
   assert (ply_frame_buffer_device_is_open (buffer));
   assert (area != NULL);
 
-  hdiff = area->width - buffer->row_stride;
+  hdiff = area->width - buffer->area.width;
   vdiff = area->height - buffer->area.height;
 
   if (hdiff >= 0)
@@ -562,7 +562,7 @@ ply_frame_buffer_fill (ply_frame_buffer_t      *buffer,
       dst += (-vdiff / 2) * buffer->row_stride * sizeof(*data);
     }
 
-  if (hdiff == 0)
+  if (area->width == buffer->row_stride)
     {
       memcpy (dst, src, area->width * area->height * sizeof(*data));
     }
