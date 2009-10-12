@@ -6,6 +6,7 @@ if [ "$1" = '--loop' ]; then LOOP=1; fi
 CHROME="/opt/google/chrome/chrome"
 COOKIE_PIPE="/tmp/cookie_pipe"
 DISABLE_CHROME_RESTART="/tmp/disable_chrome_restart"
+SEND_METRICS="/etc/send_metrics"
 USER_DATA_DIR="${HOME}/${CHROMEOS_USER}/.config/google-chrome"
 
 # The first time a user runs chrome, we use some initial arguments
@@ -14,11 +15,13 @@ USER_DATA_DIR="${HOME}/${CHROMEOS_USER}/.config/google-chrome"
 FIRST_RUN_ARGS=""
 if [ ! -d "$USER_DATA_DIR" ]; then
   mkdir -p "$USER_DATA_DIR"
-  # Automatically opt-in to Chrome OS stats collecting.
-  # This does not have to be a cryptographically random string, but we do need a
-  # 32 byte, printable string.
-  # TODO: remove after dogfood?
-  head -c 8 /dev/random | openssl md5 > "${USER_DATA_DIR}/Consent To Send Stats"
+  if [ -f "$SEND_METRICS" ]; then
+    # Automatically opt-in to Chrome OS stats collecting.  This does
+    # not have to be a cryptographically random string, but we do need
+    # a 32 byte, printable string.
+    head -c 8 /dev/random | openssl md5 > \
+        "${USER_DATA_DIR}/Consent To Send Stats"
+  fi
 
   # determine the logged in user's domain and give them the appropriate stuff.
   # TODO: reliably determine the correct domain for all users.
@@ -40,7 +43,7 @@ if [ ! -d "$USER_DATA_DIR" ]; then
                     https://mail.google.com/mail \
                     https://calendar.google.com \
                     chrome://newtab"
-  fi  
+  fi
 fi
 
 # We want to pass user login credentials to chrome through the cookie
