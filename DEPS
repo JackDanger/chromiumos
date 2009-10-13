@@ -48,4 +48,8 @@ deps = {
     # shunit2 2.1.5
     _third_party_base + "shunit2/files":
         "http://shunit2.googlecode.com/svn/tags/source/2.1.5@294",
+
+    # tpm-emulator
+    _third_party_base + "tpm-emulator/files":
+        "http://svn.berlios.de/svnroot/repos/tpm-emulator/trunk@341",
 }
