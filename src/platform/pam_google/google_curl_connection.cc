@@ -22,10 +22,10 @@ const char kIssueAuthTokenUrl[] =
     "https://www.google.com/accounts/IssueAuthToken";
 const char kService[] = "service=gaia";
 const char kTokenAuthUrl[] =
-  "https://www.google.com/accounts/TokenAuth?"
-  "continue=http://www.google.com/&source=hourglass&auth=";
+    "https://www.google.com/accounts/TokenAuth?"
+    "continue=http://www.google.com/webhp&source=chromeos&auth=";
 const int kHttpSuccess = 200;
-const int kMaxRedirs = 3;
+const int kMaxRedirs = 2;
 
 GoogleCurlConnection::GoogleCurlConnection()
     : cant_fit_(false),
