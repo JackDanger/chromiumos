@@ -55,7 +55,7 @@ class Callback {
     DumpServices(&status);
     Callback* self = static_cast<Callback*>(object);
     ++self->count_;
-    if (self->count_ == 500)
+    if (self->count_ == 5)
       ::g_main_loop_quit(self->loop_);
   }
  private:
@@ -89,7 +89,7 @@ int main(int argc, const char** argv) {
   chromeos::NetworkStatusConnection connection =
       chromeos::MonitorNetworkStatus(&Callback::Run, &callback);
   ::g_main_loop_run(loop);
-
+  chromeos::DisconnectNetworkStatus(connection);
   return 0;
 }
 

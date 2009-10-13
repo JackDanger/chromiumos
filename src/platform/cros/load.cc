@@ -21,6 +21,7 @@ typedef ServiceStatus* (*GetAvailableNetworksType)();
 typedef void (*FreeServiceStatusType)(ServiceStatus*);
 typedef NetworkStatusConnection
     (*MonitorNetworkStatusType)(NetworkMonitor, void*);
+typedef void (*DisconnectNetworkStatusType)(NetworkStatusConnection);
 
 CrosVersionCheckType CrosVersionCheck = 0;
 
@@ -32,6 +33,7 @@ ConnectToWifiNetworkType ConnectToWifiNetwork = 0;
 GetAvailableNetworksType GetAvailableNetworks = 0;
 FreeServiceStatusType FreeServiceStatus = 0;
 MonitorNetworkStatusType MonitorNetworkStatus = 0;
+DisconnectNetworkStatusType DisconnectNetworkStatus = 0;
 
 char const * const kCrosDefaultPath = "/opt/google/chrome/chromeos/libcros.so";
 
@@ -75,13 +77,17 @@ bool LoadCros(const char* path_to_libcros) {
   MonitorNetworkStatus =
       MonitorNetworkStatusType(::dlsym(handle, "ChromeOSMonitorNetworkStatus"));
 
+  DisconnectNetworkStatus = DisconnectNetworkStatusType(
+      ::dlsym(handle, "ChromeOSDisconnectNetworkStatus"));
+
   return MonitorPowerStatus
       && DisconnectPowerStatus
       && RetrievePowerInformation
       && ConnectToWifiNetwork
       && GetAvailableNetworks
       && FreeServiceStatus
-      && MonitorNetworkStatus;
+      && MonitorNetworkStatus
+      && DisconnectNetworkStatus;
 }
 
 }  // namespace chromeos

@@ -71,6 +71,8 @@ extern bool (*ConnectToWifiNetwork)(const char* ssid,
 // Returns a list of all of the available services that a user can connect to.
 // The ServiceStatus instance that is returned by this function MUST be
 // deleted with by calling FreeAvailableNetworks.
+//
+// Returns NULL on error.
 extern ServiceStatus* (*GetAvailableNetworks)();
 
 // Deletes a ServiceStatus type that was allocated in the ChromeOS dll. We need
@@ -94,6 +96,9 @@ typedef void(*NetworkMonitor)(void* object, const ServiceStatus& status);
 // Connman service that changed and sending the details along to the next
 // handler in the chain as an instance of ServiceInfo.
 extern NetworkStatusConnection (*MonitorNetworkStatus)(NetworkMonitor, void*);
+
+// Disconnects a NetworkStatusConnection.
+extern void (*DisconnectNetworkStatus)(NetworkStatusConnection connection);
 
 }  // namespace chromeos
 

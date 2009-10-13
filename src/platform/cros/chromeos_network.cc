@@ -284,6 +284,12 @@ NetworkStatusConnection ChromeOSMonitorNetworkStatus(NetworkMonitor monitor,
 }
 
 extern "C"
+void ChromeOSDisconnectNetworkStatus(NetworkStatusConnection connection) {
+  dbus::Disconnect(connection->connection());
+  delete connection;
+}
+
+extern "C"
 bool ChromeOSConnectToWifiNetwork(const char* ssid,
                                   const char* passphrase,
                                   const char* encryption) {

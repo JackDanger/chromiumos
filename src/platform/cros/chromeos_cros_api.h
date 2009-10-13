@@ -24,12 +24,13 @@
 //  1: Added CrosVersionCheck API.
 //     Changed load to take file path instead of so handle.
 //  2: Changed the interface for network monitoring callbacks.
+//  3: Added support disconnecting the network monitor.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 2,
-  kCrosAPIVersion = 2
+  kCrosAPIVersion = 3
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"
