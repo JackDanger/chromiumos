@@ -17,12 +17,12 @@ namespace views {
 
 class ImageBackground : public Background {
   public:
-    explict ImageBackground(GdkPixbuf* background_image) :
-       background_image_(background_image) {
+    explicit ImageBackground(GdkPixbuf* background_image) :
+      background_image_(background_image) {
     }
 
     virtual ~ImageBackground() {
-      gdk_pixbuf_unref(background_image);
+      gdk_pixbuf_unref(background_image_);
     }
 
     void Paint(gfx::Canvas* canvas, View* view) const {

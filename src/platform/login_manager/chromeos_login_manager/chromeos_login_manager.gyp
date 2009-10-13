@@ -22,6 +22,7 @@
       'type': 'executable',
       'dependencies': [
         '../../build/linux/system.gyp:gtk',
+        '../../build/linux/system.gyp:x11',
         '../../base/base.gyp:base',
         '../../skia/skia.gyp:skia',
         '../../views/views.gyp:views',        
@@ -29,9 +30,13 @@
       'include_dirs': [
         '../..',
       ],
+      'libraries': [
+        'pam',
+      ],
       'sources': [
-        'login_manager_main.h',
         'login_manager_main.cc',
+        'textfield_controller.cc',
+        'pam_client.cc',                        
       ],                          
     },
   ],

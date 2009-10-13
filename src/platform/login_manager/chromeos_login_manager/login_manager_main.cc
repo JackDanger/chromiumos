@@ -9,8 +9,6 @@
 #include "base/at_exit.h"
 #include "base/process_util.h"
 #include "views/controls/label.h"
-#include "views/controls/textfield/textfield.h"
-#include "views/controls/textfield/native_textfield_gtk.h"
 #include "views/focus/accelerator_handler.h"
 #include "views/grid_layout.h"
 #include "views/widget/widget.h"
@@ -19,7 +17,7 @@
 #include "views/screen.h"
 #include "views/background.h"
 #include "views/border.h"
-#include "views/slim_port/image_background.h"
+#include "third_party/chromeos_login_manager/image_background.h"
 #include "app/gfx/canvas.h"
 
 using views::Background;
@@ -28,7 +26,6 @@ using views::ColumnSet;
 using views::GridLayout;
 using views::Label;
 using views::Textfield;
-using views::NativeTextfieldGtk;
 using views::TabbedPane;
 using views::View;
 using views::Widget;
@@ -43,11 +40,67 @@ const int kUsernameY = 27;
 const int kPanelSpacing = 16;
 const int kTextfieldWidth = 275;
 
+LoginManagerMain::LoginManagerMain()
+    : main_window_(NULL),
+      pam_(NULL),
+      password_field_(views::Textfield::STYLE_PASSWORD) {}
+
 /*
  * TODO(sosa@chormium.org) - Once sparent moves glib into chromium, add
  * gflags support for constants
  */
+
 void LoginManagerMain::Run() {
+  // Initializes the pam module
+  InitPam();
+
+  // The exit manager is in charge of calling the dtors of singleton objects.
+  base::AtExitManager exit_manager;
+
+  base::EnableTerminationOnHeapCorruption();
+
+  app::RegisterPathProvider();
+
+  // This requires chrome to be built first right now.
+  ResourceBundle::InitSharedInstance(L"en-US");
+  ResourceBundle::GetSharedInstance().LoadThemeResources();
+
+  // Creates message loop
+  MessageLoop main_message_loop(MessageLoop::TYPE_UI);
+
+  // Creates the main window
+  CreateWindow();
+
+  // Controller to handle events from textfields
+  TextfieldController* textfield_controller = new TextfieldController(this);
+  username_field_.SetController(textfield_controller);
+  password_field_.SetController(textfield_controller);
+
+  // Draws the main window
+  main_window_->Show();
+
+  // Start the main loop
+  views::AcceleratorHandler accelerator_handler;
+  MessageLoopForUI::current()->Run(&accelerator_handler);
+
+  delete textfield_controller;
+
+  // Cleanup
+  delete main_window_;
+}
+
+bool LoginManagerMain::InitPam() {
+  pam_ = new PamClient(&user_credentials_);
+  if (pam_->GetLastPamResult() != PAM_SUCCESS) {
+    delete pam_;
+    pam_ = NULL;
+    return false;
+  } else {
+    return true;
+  }
+}
+
+void LoginManagerMain::CreateWindow() {
   GError* gerror = NULL;
   GdkPixbuf* background_pixbuf;
   GdkPixbuf* panel_pixbuf;
@@ -69,25 +122,13 @@ void LoginManagerMain::Run() {
   int panel_width = gdk_pixbuf_get_width(panel_pixbuf);
 
   // --------------------- Set up root window ------------------------------
-  base::EnableTerminationOnHeapCorruption();
-
-  // The exit manager is in charge of calling the dtors of singleton objects.
-  base::AtExitManager exit_manager;
-
-  app::RegisterPathProvider();
-
-  // This requires chrome to be built first right now.
-  ResourceBundle::InitSharedInstance(L"en-US");
-  ResourceBundle::GetSharedInstance().LoadThemeResources();
-
-  MessageLoop main_message_loop(MessageLoop::TYPE_UI);
-
-  Widget* main_window = CreateTopLevelWidget();
+  main_window_ = CreateTopLevelWidget();
   /* TODO(sosa@chromium.org) - Use this in later releases */
   // const gfx::Rect rect =
       // views::Screen::GetMonitorWorkAreaNearestWindow(NULL);
 
-  main_window->Init(NULL, gfx::Rect(0, 0, background_width, background_height));
+  main_window_->Init(NULL,
+                     gfx::Rect(0, 0, background_width, background_height));
 
   // ---------------------- Set up root View ------------------------------
   View* container = new View();
@@ -97,7 +138,7 @@ void LoginManagerMain::Run() {
   GridLayout* layout = new GridLayout(container);
   container->SetLayoutManager(layout);
 
-  main_window->SetContentsView(container);
+  main_window_->SetContentsView(container);
 
   ColumnSet* column_set = layout->AddColumnSet(0);
   column_set->AddPaddingColumn(1, 0);
@@ -124,18 +165,12 @@ void LoginManagerMain::Run() {
                                  kTextfieldWidth, kTextfieldWidth);
     prompt_column_set->AddPaddingColumn(1, 0);
 
-    Textfield* username = new Textfield();
-    /* TODO(sosa@chromium.org) - Why don't password boxes work */
-    /*NativeTextfieldGtk *password = new NativeTextfieldGtk(
-        new Textfield(Textfield::STYLE_PASSWORD));*/
-    Textfield* password = new Textfield(Textfield::STYLE_PASSWORD);
-
     prompt_layout->AddPaddingRow(0, kUsernameY);
     prompt_layout->StartRow(1, 0);
-    prompt_layout->AddView(username);
+    prompt_layout->AddView(&username_field_);
     prompt_layout->AddPaddingRow(0, kPanelSpacing);
     prompt_layout->StartRow(1, 0);
-    prompt_layout->AddView(password);
+    prompt_layout->AddView(&password_field_);
     prompt_layout->AddPaddingRow(0, kPanelSpacing);
 
     layout->AddView(login_prompt, 1, 1, GridLayout::CENTER, GridLayout::CENTER,
@@ -143,30 +178,10 @@ void LoginManagerMain::Run() {
   }
 
   layout->AddPaddingRow(1, 0);
-
-  /* Stub added here to cleanly exit upon hitting enter */
-  Accelerator return_accelerator(base::VKEY_RETURN, false, false, false);
-  main_window->GetFocusManager()->RegisterAccelerator(
-      return_accelerator, this);
-
-  // Show display and start message loop
-  main_window->Show();
-
-  // Start the main loop
-  views::AcceleratorHandler accelerator_handler;
-  MessageLoopForUI::current()->Run(&accelerator_handler);
-
-  // Delete parent view and its children
-  delete main_window;
 }
 
 views::Widget* LoginManagerMain::CreateTopLevelWidget() {
   return new views::WidgetGtk(views::WidgetGtk::TYPE_WINDOW);
-}
-
-bool LoginManagerMain::AcceleratorPressed(const Accelerator& accelerator) {
-  MessageLoopForUI::current()->Quit();
-  return true;
 }
 
 int main(int argc, char** argv) {
