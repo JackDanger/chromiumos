@@ -43,10 +43,10 @@ TEST_F(UtilTest, Stacker) {
   EXPECT_EQ(2, stacker.GetIndex("c"));
   EXPECT_EQ(3, stacker.GetIndex("d"));
 
-  stacker.AddBelow("a", "a2");
-  stacker.AddBelow("b", "b2");
-  stacker.AddBelow("c", "c2");
-  stacker.AddBelow("d", "d2");
+  stacker.AddBelow("a2", "a");
+  stacker.AddBelow("b2", "b");
+  stacker.AddBelow("c2", "c");
+  stacker.AddBelow("d2", "d");
   CheckStackerOutput(stacker.items(), "a a2 b b2 c c2 d d2");
 
   stacker.Remove("a");
@@ -64,9 +64,9 @@ TEST_F(UtilTest, Stacker) {
   ASSERT_TRUE((str = stacker.GetUnder("a2")) != NULL);
   EXPECT_EQ("b", *str);
 
-  stacker.AddAbove("a2", "a3");
-  stacker.AddAbove("b2", "b3");
-  stacker.AddAbove("d", "d3");
+  stacker.AddAbove("a3", "a2");
+  stacker.AddAbove("b3", "b2");
+  stacker.AddAbove("d3", "d");
   CheckStackerOutput(stacker.items(), "a3 a2 b b3 b2 c2 d3 d");
 }
 

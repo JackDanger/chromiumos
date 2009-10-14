@@ -99,9 +99,9 @@ bool MockXConnection::StackWindow(XWindow xid, XWindow other, bool above) {
     return false;
   stacked_xids_->Remove(xid);
   if (above)
-    stacked_xids_->AddAbove(other, xid);
+    stacked_xids_->AddAbove(xid, other);
   else
-    stacked_xids_->AddBelow(other, xid);
+    stacked_xids_->AddBelow(xid, other);
   return true;
 }
 

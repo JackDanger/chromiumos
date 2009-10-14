@@ -407,7 +407,7 @@ void MockClutterInterface::Actor::Raise(ClutterInterface::Actor* other) {
   CHECK(parent_->stacked_children()->Contains(this));
   CHECK(parent_->stacked_children()->Contains(cast_other));
   parent_->stacked_children()->Remove(this);
-  parent_->stacked_children()->AddAbove(cast_other, this);
+  parent_->stacked_children()->AddAbove(this, cast_other);
 }
 
 void MockClutterInterface::Actor::Lower(ClutterInterface::Actor* other) {
@@ -419,7 +419,7 @@ void MockClutterInterface::Actor::Lower(ClutterInterface::Actor* other) {
   CHECK(parent_->stacked_children()->Contains(this));
   CHECK(parent_->stacked_children()->Contains(cast_other));
   parent_->stacked_children()->Remove(this);
-  parent_->stacked_children()->AddBelow(cast_other, this);
+  parent_->stacked_children()->AddBelow(this, cast_other);
 }
 
 void MockClutterInterface::Actor::LowerToBottom() {

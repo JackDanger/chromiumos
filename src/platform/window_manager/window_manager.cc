@@ -870,7 +870,7 @@ bool WindowManager::HandleConfigureNotify(const XConfigureEvent& e) {
     stacked_xids_->Remove(e.window);
 
     if (e.above != None && stacked_xids_->Contains(e.above)) {
-      stacked_xids_->AddAbove(e.above, e.window);
+      stacked_xids_->AddAbove(e.window, e.above);
     } else {
       // 'above' being unset means that the window is stacked beneath its
       // siblings.

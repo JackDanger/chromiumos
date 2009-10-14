@@ -87,7 +87,7 @@ class Stacker {
 
   // Add 'item' above 'other_item'.  'other_item' must already exist on the
   // stack.
-  void AddAbove(T other_item, T item) {
+  void AddAbove(T item, T other_item) {
     if (Contains(item)) {
       LOG(WARNING) << "Ignoring request to add already-present item "
                    << item << " above item " << other_item;
@@ -105,7 +105,7 @@ class Stacker {
 
   // Add 'item' below 'other_item'.  'other_item' must already exist on the
   // stack.
-  void AddBelow(T other_item, T item) {
+  void AddBelow(T item, T other_item) {
     if (Contains(item)) {
       LOG(WARNING) << "Ignoring request to add already-present item "
                    << item << " below item " << other_item;
