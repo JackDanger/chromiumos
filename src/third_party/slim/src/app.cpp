@@ -271,7 +271,7 @@ void App::Run() {
 
 #ifndef XNEST_DEBUG
         OpenLog();
-        
+
         if (!force_nodaemon && cfg->getOption("daemon") == "yes") {
             daemonmode = true;
         }
@@ -321,7 +321,7 @@ void App::Run() {
     bool firstloop = true; // 1st time panel is shown (for automatic username)
     bool focuspass = cfg->getOption("focus_password")=="yes";
     bool autologin = cfg->getOption("auto_login")=="yes";
-    
+
     if (firstlogin && cfg->getOption("default_user") != "") {
         LoginPanel->SetName(cfg->getOption("default_user") );
         #ifdef USE_PAM
@@ -352,8 +352,8 @@ void App::Run() {
         }
 
         LoginPanel->Reset();
-	
-	
+
+
         if (firstloop && cfg->getOption("default_user") != "") {
             LoginPanel->SetName(cfg->getOption("default_user") );
         }
@@ -369,7 +369,7 @@ void App::Run() {
             XBell(Dpy, 100);
             continue;
         }
-	
+
 	firstloop = false;
 
         Action = LoginPanel->getAction();
@@ -442,7 +442,7 @@ bool App::AuthenticateUser(bool focuspass){
         }
     }
     LoginPanel->EventHandler(Panel::Get_Passwd);
-    
+
     char *encrypted, *correct;
     struct passwd *pw;
 
@@ -463,7 +463,7 @@ bool App::AuthenticateUser(bool focuspass){
         return false;
 
 #ifdef HAVE_SHADOW
-    struct spwd *sp = getspnam(pw->pw_name);    
+    struct spwd *sp = getspnam(pw->pw_name);
     endspent();
     if(sp)
         correct = sp->sp_pwdp;
@@ -538,7 +538,7 @@ void App::Login() {
     maildir.append(pw->pw_name);
     string xauthority = pw->pw_dir;
     xauthority.append("/.Xauthority");
-    
+
 #ifdef USE_PAM
     // Setup the PAM environment
     try{
@@ -581,6 +581,10 @@ void App::Login() {
         child_env[n++]=StrConcat("XAUTHORITY=", xauthority.c_str());
         child_env[n++]=0;
 #endif
+
+        // TODO(sosa@chromium.org)
+        // Temporary workaround for acpi to inherit environment
+        system("/etc/init.d/acpid start &");
 
         // Login process starts here
         SwitchUser Su(pw, cfg, DisplayName, child_env);
@@ -762,10 +766,10 @@ void App::RestartServer() {
     };
 #endif
 
-    StopServer(); 
+    StopServer();
     RemoveLock();
     Run();
-} 
+}
 
 void App::KillAllClients(Bool top) {
     Window dummywindow;
@@ -936,7 +940,7 @@ int App::StartServer() {
     } else if (numlock == "off") {
         NumLock::setOff();
     }
-    
+
     delete args;
 
     return ServerPID;
@@ -1051,7 +1055,7 @@ void App::setBackground(const string& themedir) {
         XSetWindowBackgroundPixmap(Dpy, Root, p);
     }
     XClearWindow(Dpy, Root);
-    
+
     XFlush(Dpy);
     delete image;
 }
