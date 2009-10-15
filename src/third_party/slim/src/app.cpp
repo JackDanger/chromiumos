@@ -582,10 +582,6 @@ void App::Login() {
         child_env[n++]=0;
 #endif
 
-        // TODO(sosa@chromium.org)
-        // Temporary workaround for acpi to inherit environment
-        system("/etc/init.d/acpid start &");
-
         // Login process starts here
         SwitchUser Su(pw, cfg, DisplayName, child_env);
         string session = LoginPanel->getSession();
