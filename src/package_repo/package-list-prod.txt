@@ -47,6 +47,9 @@ acpid
 # for power management (battery monitor)
 devicekit-power
 
+# for mounting
+devicekit-disks
+
 # For sound (needed specifically for volume adjustment)
 alsa-utils
 
