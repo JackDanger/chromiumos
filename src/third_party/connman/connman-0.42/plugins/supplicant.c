@@ -782,13 +782,9 @@ static int set_network(struct supplicant_task *task,
 
 	connman_dbus_dict_append_variant(&dict, "scan_ssid",
 					 DBUS_TYPE_UINT32, &scan_ssid);
-
-	if (address)
-		connman_dbus_dict_append_variant(&dict, "bssid",
-						DBUS_TYPE_STRING, &address);
-
 	connman_dbus_dict_append_array(&dict, "ssid",
 					DBUS_TYPE_BYTE, &network, len);
+	/* NB: do not set the bssid; this allows wpa_supplicant to roam */
 
 	if (g_ascii_strcasecmp(security, "wpa") == 0 ||
 				g_ascii_strcasecmp(security, "rsn") == 0) {
@@ -1570,7 +1566,7 @@ static void state_change(struct supplicant_task *task, DBusMessage *msg)
 	const char *newstate, *oldstate;
 	unsigned char bssid[ETH_ALEN];
 	unsigned int bssid_len;
-	enum supplicant_state state;
+	enum supplicant_state state, ostate;
 
 	dbus_error_init(&error);
 
@@ -1585,8 +1581,9 @@ static void state_change(struct supplicant_task *task, DBusMessage *msg)
 		return;
 	}
 
-	connman_info("%s state change %s -> %s", task->ifname,
-			oldstate, newstate);
+	connman_info("%s state change %s -> %s%s", task->ifname,
+			oldstate, newstate,
+			task->scanning == TRUE ? " (scanning)" : "");
 
 	state = string2state(newstate);
 	if (state == WPA_INVALID)
@@ -1597,6 +1594,7 @@ static void state_change(struct supplicant_task *task, DBusMessage *msg)
 		task->scanning = FALSE;
 	}
 
+	ostate = task->state;
 	task->state = state;
 
 	if (task->network == NULL)
@@ -1604,6 +1602,9 @@ static void state_change(struct supplicant_task *task, DBusMessage *msg)
 
 	switch (task->state) {
 	case WPA_COMPLETED:
+		if (ostate != WPA_ASSOCIATED && ostate != WPA_GROUP_HANDSHAKE)
+			goto badstate;
+
 		/* reset bg scan reschedule */
 		connman_device_reset_scan(task->device);
 
@@ -1635,10 +1636,17 @@ static void state_change(struct supplicant_task *task, DBusMessage *msg)
 		break;
 
 	case WPA_ASSOCIATING:
-		connman_network_set_associating(task->network, TRUE);
+		if (ostate != WPA_SCANNING && ostate != WPA_COMPLETED)
+			goto badstate;
+
+		if (ostate == WPA_SCANNING)
+			connman_network_set_associating(task->network, TRUE);
 		break;
 
 	case WPA_INACTIVE:
+		if (ostate != WPA_SCANNING && ostate != WPA_DISCONNECTED)
+			goto badstate;
+
 		connman_network_set_connected(task->network, FALSE);
 
 		if (task->disconnecting == TRUE) {
@@ -1658,6 +1666,11 @@ static void state_change(struct supplicant_task *task, DBusMessage *msg)
 		connman_network_set_associating(task->network, FALSE);
 		break;
 	}
+	return;
+badstate:
+	connman_error("%s invalid state change %s -> %s%s", task->ifname,
+			oldstate, newstate,
+			task->scanning == TRUE ? " (scanning)" : "");
 }
 
 static DBusHandlerResult supplicant_filter(DBusConnection *conn,
