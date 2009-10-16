@@ -10,6 +10,10 @@ BACKGROUND="${IMAGES}/${BACKGROUND_FILE}"
 LOG_DIR="${HOME}/logs"
 CHROME_COMMAND="/usr/bin/chromeos-chrome"
 
+# xdg-open is used to open downloaded files.
+# It runs sensible-browser, which uses $BROWSER.
+export BROWSER=/usr/bin/chromeos-chrome
+
 /usr/bin/xscreensaver -no-splash &
 
 exec "${WM}"                                        \
