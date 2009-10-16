@@ -1,0 +1,5 @@
+chromeos-verity (0.1) karmic; urgency=low
+
+  * Proof-of-concept implementation
+
+ -- The Chromium OS Authors <chromium-os-dev@googlegroups.com>  Thu, 15 Oct 2009 15:11:20 +0000
