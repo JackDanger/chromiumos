@@ -2,9 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include "third_party/chromeos_login_manager/login_manager_window.h"
 #include "third_party/chromeos_login_manager/pam_client.h"
 #include "third_party/chromeos_login_manager/textfield_controller.h"
-#include "views/widget/widget_gtk.h"
+#include "views/window/window_gtk.h"
 #include "views/accelerator.h"
 
 #ifndef LOGIN_MANAGER_MAIN_H_
@@ -23,7 +24,7 @@ class LoginManagerMain {
     // Creates all examples and start UI event loop.
   private:
     // Creates top level window
-    views::Widget* main_window_;
+    LoginManagerWindow* main_window_;
     PamClient* pam_;
     PamClient::UserCredentials user_credentials_;
     views::Textfield username_field_;
@@ -32,7 +33,6 @@ class LoginManagerMain {
     // Helper functions to modularize class
     bool InitPam();
     void CreateWindow();
-    views::Widget* CreateTopLevelWidget();
 
     DISALLOW_COPY_AND_ASSIGN(LoginManagerMain);
 };

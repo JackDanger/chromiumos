@@ -17,8 +17,10 @@
 #include "views/screen.h"
 #include "views/background.h"
 #include "views/border.h"
-#include "third_party/chromeos_login_manager/image_background.h"
 #include "app/gfx/canvas.h"
+#include "views/window/window_gtk.h"
+#include "third_party/chromeos_login_manager/image_background.h"
+#include "chrome/browser/chromeos/network_menu_button.h"
 
 using views::Background;
 using views::Border;
@@ -122,13 +124,12 @@ void LoginManagerMain::CreateWindow() {
   int panel_width = gdk_pixbuf_get_width(panel_pixbuf);
 
   // --------------------- Set up root window ------------------------------
-  main_window_ = CreateTopLevelWidget();
+  main_window_ = new LoginManagerWindow();
   /* TODO(sosa@chromium.org) - Use this in later releases */
   // const gfx::Rect rect =
       // views::Screen::GetMonitorWorkAreaNearestWindow(NULL);
 
-  main_window_->Init(NULL,
-                     gfx::Rect(0, 0, background_width, background_height));
+  main_window_->Init(gfx::Rect(0, 0, background_width, background_height));
 
   // ---------------------- Set up root View ------------------------------
   View* container = new View();
@@ -178,10 +179,10 @@ void LoginManagerMain::CreateWindow() {
   }
 
   layout->AddPaddingRow(1, 0);
-}
-
-views::Widget* LoginManagerMain::CreateTopLevelWidget() {
-  return new views::WidgetGtk(views::WidgetGtk::TYPE_WINDOW);
+  layout->StartRow(1, 0);
+  NetworkMenuButton* network_menu = new NetworkMenuButton(
+      GTK_WINDOW(main_window_->GetNativeView()));
+  layout->AddView(network_menu);
 }
 
 int main(int argc, char** argv) {
