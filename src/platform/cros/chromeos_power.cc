@@ -72,16 +72,19 @@ bool RetrieveBatteryStatus(const dbus::Proxy& battery,
 
 bool RetrieveLinePowerStatus(const dbus::Proxy& line_power,
                              PowerStatus* status) {
+  if (!line_power) {
+    status->line_power_on = true;
+    return true;
+  }
   return dbus::RetrieveProperty(line_power,
                                 "org.freedesktop.DeviceKit.Power.Device",
                                 "online",
                                 &status->line_power_on);
 }
 
-// Will return the battery and line_power proxies. The battery proxy may be
-// left empty if the device does not have a battery (true will still be returned
-// indicating a successful call). We handle this case to support running
-// chromeos on devices without batteries (such as under VMWare for testing).
+// Will return the battery and line_power proxies if available, otherwise they
+// are left unchanged. An error code is not returned because the devices may
+// not be present (such as within a virtual machine for QE).
 
 bool RetrievePowerDeviceProxies(const dbus::BusConnection& bus,
                                 const dbus::Proxy& power,
@@ -127,20 +130,19 @@ bool RetrievePowerDeviceProxies(const dbus::BusConnection& bus,
   }
 
   DLOG_IF(WARNING, !battery_name) << "Battery is missing!";
-  DCHECK(line_power_name) << "Line Power is missing!";
+  DLOG_IF(WARNING, !line_power_name) << "Line power is missing!";
 
-  if (!line_power_name) return false;
+  if (battery_name)
+    *battery = dbus::Proxy(bus,
+                           "org.freedesktop.DeviceKit.Power",
+                           battery_name,
+                           "org.freedesktop.DBus.Properties");
 
-  *battery = battery_name ? dbus::Proxy(bus,
-                                        "org.freedesktop.DeviceKit.Power",
-                                        battery_name,
-                                        "org.freedesktop.DBus.Properties")
-              : dbus::Proxy();
-
-  *line_power = dbus::Proxy(bus,
-                            "org.freedesktop.DeviceKit.Power",
-                            line_power_name,
-                            "org.freedesktop.DBus.Properties");
+  if (line_power_name)
+    *line_power = dbus::Proxy(bus,
+                              "org.freedesktop.DeviceKit.Power",
+                              line_power_name,
+                              "org.freedesktop.DBus.Properties");
 
   return true;
 }
