@@ -9,6 +9,7 @@ IMAGES=/usr/share/chromeos-assets/images
 BACKGROUND="${IMAGES}/${BACKGROUND_FILE}"
 LOG_DIR="${HOME}/logs"
 CHROME_COMMAND="/usr/bin/chromeos-chrome"
+XTERM_COMMAND="/usr/bin/xterm -bg black -fg grey"
 
 # xdg-open is used to open downloaded files.
 # It runs sensible-browser, which uses $BROWSER.
@@ -23,6 +24,7 @@ exec "${WM}"                                        \
     --shadow_image_dir="${IMAGES}"                    \
     --wm_background_image="${BACKGROUND}"             \
     --wm_chrome_command="${CHROME_COMMAND}"           \
+    --wm_xterm_command="${XTERM_COMMAND}"           \
     --wm_spawn_chrome_on_start=true                   \
     --v=1                                             \
     --log_dir="${LOG_DIR}"
