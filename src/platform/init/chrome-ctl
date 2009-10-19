@@ -1,0 +1,43 @@
+#! /bin/sh
+### BEGIN INIT INFO
+# Provides:          chrome-ctl
+# Required-Start:    
+# Required-Stop:     pkill
+# Default-Start:
+# Default-Stop:      0 6
+# Short-Description: Gracefully shut down all Chrome processes.
+# Description: 
+### END INIT INFO
+
+PATH=/sbin:/usr/sbin:/bin:/usr/bin
+
+do_stop () {
+  # TERM chrome before the user's home dir is unmounted by the murder of slim.
+  # First, make sure that the chrome-restarting script doesn't restart chrome
+  # after we TERM it.
+  touch /tmp/disable_chrome_restart
+  pkill -TERM "^chrome$"
+  # TODO: determine how often users see "Chrome has crashed" messages on
+  # startup after this change lands.  If too much, determine how we can be
+  # about waiting for chrome to exit gracefully without making shutdown/reboot
+  # take forever.
+}
+
+case "$1" in
+  start)
+	# No-op
+	;;
+  restart|reload|force-reload)
+	echo "Error: argument '$1' not supported" >&2
+	exit 3
+	;;
+  stop)
+	do_stop
+	;;
+  *)
+	echo "Usage: $0 start|stop" >&2
+	exit 3
+	;;
+esac
+
+:
