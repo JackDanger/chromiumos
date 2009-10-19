@@ -32,6 +32,14 @@ int main(int argc, char** argv) {
   google::InitGoogleLogging(argv[0]);
 
   RealXConnection xconn(GDK_DISPLAY());
+
+  // Create the overlay window as soon as possible, to reduce the chances that
+  // Chrome will be able to map a window before we've taken over.
+  if (FLAGS_wm_use_compositing) {
+    XWindow root = xconn.GetRootWindow();
+    xconn.GetCompositingOverlayWindow(root);
+  }
+
   scoped_ptr<ClutterInterface> clutter;
   if (FLAGS_wm_use_compositing) {
     clutter.reset(new RealClutterInterface);
