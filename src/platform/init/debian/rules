@@ -24,6 +24,7 @@ install:
 	dh_prep
 	dh_installdirs
 	cp $(CURDIR)/startup.sh $(CURDIR)/debian/chromeos-init/etc/init.d/chromeos_init.sh
+	cp $(CURDIR)/chrome-ctl $(CURDIR)/debian/chromeos-init/etc/init.d/chrome-ctl
 	cp $(CURDIR)/acpid.conf $(CURDIR)/debian/chromeos-init/etc/init/acpid.conf
 	cp $(CURDIR)/connman.conf $(CURDIR)/debian/chromeos-init/etc/init/connman.conf
 	cp $(CURDIR)/cron.conf $(CURDIR)/debian/chromeos-init/etc/init/cron.conf
