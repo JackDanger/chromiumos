@@ -49,6 +49,7 @@ devicekit-power
 
 # for mounting
 devicekit-disks
+policykit-1
 
 # For sound (needed specifically for volume adjustment)
 alsa-utils
