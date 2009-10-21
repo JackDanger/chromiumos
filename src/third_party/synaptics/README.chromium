@@ -1,0 +1,6 @@
+These files are related to the synaptics touchpad. It is from synaptics stable
+version 1.1.2. We are only using the synclient part of the code for setting
+synaptics touchpad parameters.
+
+synaptics 1.1.2 is available from:
+  http://cgit.freedesktop.org/xorg/driver/xf86-input-synaptics/tree/?id=b46ea23ab9f8db40880d294733debbe7a5ebcab7

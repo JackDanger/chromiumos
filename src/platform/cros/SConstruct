@@ -5,15 +5,16 @@
 import os
 import sys
 
-SOURCES=['chromeos_power.cc', 'chromeos_network.cc', 'marshal.cc', 
-         'version_check.cc']
+SOURCES=['chromeos_power.cc', 'chromeos_network.cc', 'chromeos_synaptics.cc',
+         'marshal.cc', 'version_check.cc']
 
 env = Environment(
-    CPPPATH=[ '.', '../../common', '..'],
+    CPPPATH=[ '.', '../../common',
+              '../../third_party/synaptics', '..'],
     CCFLAGS=['-m32', '-fno-exceptions'],
     LINKFLAGS=['-m32' ],
-    LIBS = ['glog', 'chromeos'],
-    LIBPATH=['../../common'],
+    LIBS = ['glog', 'chromeos', 'synaptics'],
+    LIBPATH=['../../common', '../../third_party/synaptics'],
 )
 
 # glib and dbug environment

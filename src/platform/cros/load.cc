@@ -7,6 +7,7 @@
 #include "chromeos_cros_api.h" // NOLINT
 #include "chromeos_network.h"  // NOLINT
 #include "chromeos_power.h"  // NOLINT
+#include "chromeos_synaptics.h"  // NOLINT
 
 namespace chromeos {  // NOLINT
 
@@ -22,6 +23,7 @@ typedef void (*FreeServiceStatusType)(ServiceStatus*);
 typedef NetworkStatusConnection
     (*MonitorNetworkStatusType)(NetworkMonitor, void*);
 typedef void (*DisconnectNetworkStatusType)(NetworkStatusConnection);
+typedef void (*SetSynapticsParameterType)(SynapticsParameter param, int value);
 
 CrosVersionCheckType CrosVersionCheck = 0;
 
@@ -35,6 +37,8 @@ FreeServiceStatusType FreeServiceStatus = 0;
 MonitorNetworkStatusType MonitorNetworkStatus = 0;
 DisconnectNetworkStatusType DisconnectNetworkStatus = 0;
 
+SetSynapticsParameterType SetSynapticsParameter = 0;
+
 char const * const kCrosDefaultPath = "/opt/google/chrome/chromeos/libcros.so";
 
 // TODO(rtc/davemoore/seanparent): Give the caller some mechanism to help them
@@ -46,7 +50,7 @@ bool LoadCros(const char* path_to_libcros) {
   void* handle = ::dlopen(path_to_libcros, RTLD_NOW);
   if (handle == NULL)
     return false;
-  
+
   CrosVersionCheck =
       CrosVersionCheckType(::dlsym(handle, "ChromeOSCrosVersionCheck"));
 
@@ -80,6 +84,9 @@ bool LoadCros(const char* path_to_libcros) {
   DisconnectNetworkStatus = DisconnectNetworkStatusType(
       ::dlsym(handle, "ChromeOSDisconnectNetworkStatus"));
 
+  SetSynapticsParameter = SetSynapticsParameterType(
+      ::dlsym(handle, "ChromeOSSetSynapticsParameter"));
+
   return MonitorPowerStatus
       && DisconnectPowerStatus
       && RetrievePowerInformation
@@ -87,7 +94,8 @@ bool LoadCros(const char* path_to_libcros) {
       && GetAvailableNetworks
       && FreeServiceStatus
       && MonitorNetworkStatus
-      && DisconnectNetworkStatus;
+      && DisconnectNetworkStatus
+      && SetSynapticsParameter;
 }
 
 }  // namespace chromeos
