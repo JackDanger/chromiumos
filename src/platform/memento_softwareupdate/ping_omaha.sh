@@ -47,9 +47,30 @@ APP_VERSION="$1"
 OS_VERSION=${APP_VERSION}_$(uname -m)
 LANG=en-us
 BRAND=GGLG
-# use the first mac address we find, for now
-MACHINE_ID=$(ifconfig | grep HWaddr | head -n 1 | \
-             sed 's/.*HWaddr \([0-9a-f:]*\).*/\1/')
+
+OMAHA_ID_FILE=/mnt/stateful_partition/etc/omaha_id
+if [ ! -f "$OMAHA_ID_FILE" ]
+then
+  # omaha file isn't a regular file
+  if [ -e "$OMAHA_ID_FILE" ]
+  then
+    # but the omaha file does exist. delete it
+    rm -rf "$OMAHA_ID_FILE"
+  fi
+  # Generate Omaha ID:
+  dd if=/dev/urandom bs=16 count=1 status=noxfer | xxd -c 32 -g 1 -u | \
+      cut -d ' ' -f 2-17 | awk \
+      '{print "{" $1 $2 $3 $4 "-" $5 $6 "-" $7 $8 "-" $9 $10 "-" \
+      $11 $12 $13 $14 $15 $16 "}"; }' > "$OMAHA_ID_FILE"
+  chmod 0444 "$OMAHA_ID_FILE"
+fi
+
+MACHINE_ID=$(cat "$OMAHA_ID_FILE")
+if [ "x" = "x$MACHINE_ID" ]
+then
+  log missing Omaha ID and unable to generate one
+  exit 1
+fi
 USER_ID=$MACHINE_ID
 AU_VERSION=MementoSoftwareUpdate-0.1.0.0
 APP_TRACK=$(grep ^CHROMEOS_RELEASE_TRACK /mnt/stateful_partition/etc/lsb-release | \
