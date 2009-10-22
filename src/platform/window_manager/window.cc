@@ -98,7 +98,7 @@ Window::Window(WindowManager* wm, XWindow xid)
   }
 
   if (!actor_->IsUsingTexturePixmapExtension()) {
-    LOG_FIRST_N(WARNING, 5) <<
+    LOG_FIRST_N(WARNING, 1) <<
         "Not using texture-from-pixmap extension -- expect slowness";
   }
   actor_->SetTexturePixmapWindow(xid_);
