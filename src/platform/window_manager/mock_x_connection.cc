@@ -242,6 +242,19 @@ bool MockXConnection::DestroyWindow(XWindow xid) {
   stacked_xids_->Remove(xid);
   if (focused_xid_ == xid)
     focused_xid_ = None;
+
+  // Release any selections held by this window.
+  vector<XAtom> orphaned_selections;
+  for (map<XAtom, XWindow>::const_iterator it = selection_owners_.begin();
+       it != selection_owners_.end(); ++it) {
+    if (it->second == xid)
+      orphaned_selections.push_back(it->first);
+  }
+  for (vector<XAtom>::const_iterator it = orphaned_selections.begin();
+       it != orphaned_selections.end(); ++it) {
+    selection_owners_.erase(*it);
+  }
+
   return true;
 }
 
@@ -305,9 +318,8 @@ bool MockXConnection::GetIntArrayProperty(
     return false;
   map<XAtom, vector<int> >::const_iterator it =
       info->int_properties.find(xatom);
-  if (it == info->int_properties.end()) {
+  if (it == info->int_properties.end())
     return false;
-  }
   *values = it->second;
   return true;
 }
@@ -319,6 +331,26 @@ bool MockXConnection::SetIntArrayProperty(
     return false;
   info->int_properties[xatom] = values;
   // TODO: Also save type.
+  return true;
+}
+
+bool MockXConnection::GetStringProperty(XWindow xid, XAtom xatom, string* out) {
+  WindowInfo* info = GetWindowInfo(xid);
+  if (!info)
+    return false;
+  map<XAtom, string>::const_iterator it = info->string_properties.find(xatom);
+  if (it == info->string_properties.end())
+    return false;
+  *out = it->second;
+  return true;
+}
+
+bool MockXConnection::SetStringProperty(
+    XWindow xid, XAtom xatom, const string& value) {
+  WindowInfo* info = GetWindowInfo(xid);
+  if (!info)
+    return false;
+  info->string_properties[xatom] = value;
   return true;
 }
 

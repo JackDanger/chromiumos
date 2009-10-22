@@ -69,6 +69,44 @@ class TestEventConsumer : public EventConsumer {
   int num_button_presses_;
 };
 
+TEST_F(WindowManagerTest, RegisterExistence) {
+  // First, make sure that the window manager created a window and gave it
+  // a title.
+  XAtom title_atom = None;
+  ASSERT_TRUE(xconn_->GetAtom("_NET_WM_NAME", &title_atom));
+  string window_title;
+  EXPECT_TRUE(
+      xconn_->GetStringProperty(wm_->wm_window_, title_atom, &window_title));
+  EXPECT_EQ(WindowManager::kWmName, window_title);
+
+  // Check that the window and compositing manager selections are owned by
+  // the window manager's window.
+  XAtom wm_atom = None, cm_atom = None;
+  ASSERT_TRUE(xconn_->GetAtom("WM_S0", &wm_atom));
+  ASSERT_TRUE(xconn_->GetAtom("_NET_WM_CM_S0", &cm_atom));
+  EXPECT_EQ(wm_->wm_window_, xconn_->GetSelectionOwner(wm_atom));
+  EXPECT_EQ(wm_->wm_window_, xconn_->GetSelectionOwner(cm_atom));
+
+  XAtom manager_atom = None;
+  ASSERT_TRUE(xconn_->GetAtom("MANAGER", &manager_atom));
+
+  // Client messages should be sent to the root window announcing the
+  // window manager's existence.
+  MockXConnection::WindowInfo* root_info =
+      xconn_->GetWindowInfoOrDie(xconn_->GetRootWindow());
+  ASSERT_GE(root_info->client_messages.size(), 2);
+
+  EXPECT_EQ(ClientMessage, root_info->client_messages[0].type);
+  EXPECT_EQ(manager_atom, root_info->client_messages[0].message_type);
+  EXPECT_EQ(XConnection::kLongFormat, root_info->client_messages[0].format);
+  EXPECT_EQ(wm_atom, root_info->client_messages[0].data.l[1]);
+
+  EXPECT_EQ(ClientMessage, root_info->client_messages[1].type);
+  EXPECT_EQ(manager_atom, root_info->client_messages[1].message_type);
+  EXPECT_EQ(XConnection::kLongFormat, root_info->client_messages[1].format);
+  EXPECT_EQ(cm_atom, root_info->client_messages[1].data.l[1]);
+}
+
 TEST_F(WindowManagerTest, InputWindows) {
   // Check that CreateInputWindow() creates windows as requested.
   XWindow xid = wm_->CreateInputWindow(100, 200, 300, 400);

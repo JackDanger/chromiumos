@@ -125,9 +125,15 @@ class WindowManager {
   bool SetActiveWindowProperty(XWindow xid);
 
  private:
+  // Title to use for the window that we create to take ownership of
+  // management selections.  Defined as a static member so we can use it in
+  // tests.
+  static const char* kWmName;
+
   friend class LayoutManagerTest;         // uses 'layout_manager_'
   FRIEND_TEST(LayoutManagerTest, Basic);  // uses TrackWindow()
   FRIEND_TEST(WindowTest, TransientFor);  // uses TrackWindow()
+  FRIEND_TEST(WindowManagerTest, RegisterExistence);
   FRIEND_TEST(WindowManagerTest, EventConsumer);
   FRIEND_TEST(WindowManagerTest, KeyEventSnooping);
 

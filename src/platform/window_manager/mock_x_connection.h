@@ -58,10 +58,8 @@ class MockXConnection : public XConnection {
   bool GetIntArrayProperty(XWindow xid, XAtom xatom, vector<int>* values);
   bool SetIntArrayProperty(
       XWindow xid, XAtom xatom, XAtom type, const vector<int>& values);
-  bool GetStringProperty(XWindow xid, XAtom xatom, string* out) { return true; }
-  bool SetStringProperty(XWindow xid, XAtom xatom, const string& value) {
-    return true;
-  }
+  bool GetStringProperty(XWindow xid, XAtom xatom, string* out);
+  bool SetStringProperty(XWindow xid, XAtom xatom, const string& value);
   bool DeletePropertyIfExists(XWindow xid, XAtom xatom);
   bool SendEvent(XWindow xid, XEvent* event, int event_mask);
   bool WaitForEvent(XWindow xid, int event_mask, XEvent* event_out) {
@@ -94,6 +92,7 @@ class MockXConnection : public XConnection {
     bool redirected;
     int event_mask;
     map<XAtom, vector<int> > int_properties;
+    map<XAtom, string> string_properties;
     XWindow transient_for;
     uint32 cursor;
     XSizeHints size_hints;

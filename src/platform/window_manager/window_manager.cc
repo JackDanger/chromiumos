@@ -46,6 +46,8 @@ DEFINE_bool(wm_use_compositing, true, "Use compositing");
 
 namespace chromeos {
 
+const char* WindowManager::kWmName = "chromeos-wm";
+
 // Height for the panel bar.
 static const int kPanelBarHeight = 18;
 
@@ -175,6 +177,7 @@ WindowManager::WindowManager(XConnection* xconn, ClutterInterface* clutter)
 }
 
 WindowManager::~WindowManager() {
+  xconn_->DestroyWindow(wm_window_);
   xconn_->DestroyWindow(client_stacking_win_);
 }
 
@@ -514,7 +517,7 @@ bool WindowManager::GetManagerSelection(
   XClientMessageEvent msg;
   msg.type = ClientMessage;
   msg.window = root_;
-  msg.type = GetXAtom(ATOM_MANAGER);
+  msg.message_type = GetXAtom(ATOM_MANAGER);
   msg.format = XConnection::kLongFormat;
   msg.data.l[0] = timestamp;
   msg.data.l[1] = atom;
@@ -549,7 +552,7 @@ bool WindowManager::RegisterExistence() {
   // Set the window's title and wait for the notify event so we can get a
   // timestamp from the server.
   CHECK(xconn_->SetStringProperty(
-            wm_window_, GetXAtom(ATOM_NET_WM_NAME), "wm"));
+            wm_window_, GetXAtom(ATOM_NET_WM_NAME), kWmName));
   XEvent event;
   xconn_->WaitForEvent(wm_window_, PropertyChangeMask, &event);
   Time timestamp = event.xproperty.time;
