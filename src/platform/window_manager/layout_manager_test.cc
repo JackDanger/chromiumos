@@ -399,6 +399,23 @@ TEST_F(LayoutManagerTest, FocusTransient) {
   EXPECT_FALSE(wm_->GetWindow(xid2)->focused());
 }
 
+TEST_F(LayoutManagerTest, SetWmStateMaximized) {
+  XWindow xid = CreateSimpleWindow(xconn_->GetRootWindow());
+  MockXConnection::WindowInfo* info = xconn_->GetWindowInfoOrDie(xid);
+  XEvent event;
+  MockXConnection::InitCreateWindowEvent(&event, *info);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  MockXConnection::InitMapEvent(&event, xid);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+
+  vector<int> atoms;
+  ASSERT_TRUE(xconn_->GetIntArrayProperty(
+                  xid, wm_->GetXAtom(ATOM_NET_WM_STATE), &atoms));
+  ASSERT_EQ(2, atoms.size());
+  EXPECT_EQ(wm_->GetXAtom(ATOM_NET_WM_STATE_MAXIMIZED_HORZ), atoms[0]);
+  EXPECT_EQ(wm_->GetXAtom(ATOM_NET_WM_STATE_MAXIMIZED_VERT), atoms[1]);
+}
+
 }  // namespace chromeos
 
 int main(int argc, char **argv) {

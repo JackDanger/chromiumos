@@ -14,8 +14,6 @@ extern "C" {
 
 #include "base/basictypes.h"
 
-using namespace std;
-
 namespace chromeos {
 
 class XConnection;  // from x_connection.h
@@ -44,6 +42,8 @@ enum Atom {
   ATOM_NET_WM_NAME,
   ATOM_NET_WM_STATE,
   ATOM_NET_WM_STATE_FULLSCREEN,
+  ATOM_NET_WM_STATE_MAXIMIZED_HORZ,
+  ATOM_NET_WM_STATE_MAXIMIZED_VERT,
   ATOM_NET_WM_STATE_MODAL,
   ATOM_NET_WM_WINDOW_OPACITY,
   ATOM_NET_WORKAREA,

@@ -21,15 +21,11 @@ extern "C" {
 #include "window_manager/window_manager.h"
 #include "window_manager/x_connection.h"
 
-DEFINE_bool(lm_force_fullscreen_windows, true,
-            "Resize each client window to fill the whole screen (otherwise, "
-            "it just uses the client app's requested size)");
-
 DEFINE_bool(lm_honor_window_size_hints, false,
-            "When --lm_force_fullscreen_windows is enabled, constrain each "
-            "client window's size according to the size hints that the "
-            "client app has provided (e.g. max size, size increment, etc.) "
-            "instead of automatically making it fill the screen");
+            "When maximizing a client window, constrain its size according to "
+            "the size hints that the client app has provided (e.g. max size, "
+            "size increment, etc.) instead of automatically making it fill the "
+            "screen");
 
 namespace chromeos {
 
@@ -259,12 +255,20 @@ void LayoutManager::HandleWindowMap(Window* win) {
         break;
       }
 
-      if (FLAGS_lm_force_fullscreen_windows) {
+      {
         int width = width_;
         int height = height_;
         if (FLAGS_lm_honor_window_size_hints)
           win->GetMaxSize(width_, height_, &width, &height);
         win->ResizeClient(width, height, Window::GRAVITY_NORTHWEST);
+
+        // Let the window know that it's maximized.
+        vector<pair<XAtom, bool> > wm_state;
+        wm_state.push_back(
+            make_pair(wm_->GetXAtom(ATOM_NET_WM_STATE_MAXIMIZED_HORZ), true));
+        wm_state.push_back(
+            make_pair(wm_->GetXAtom(ATOM_NET_WM_STATE_MAXIMIZED_VERT), true));
+        win->ChangeWmState(wm_state);
       }
 
       // Make sure that we hear about button presses on this window.
@@ -697,15 +701,13 @@ void LayoutManager::Resize(int width, int height) {
   height_ = height;
   overview_height_ = kOverviewHeightFraction * height_;
 
-  if (FLAGS_lm_force_fullscreen_windows) {
-    for (ToplevelWindows::iterator it = toplevels_.begin();
-         it != toplevels_.end(); ++it) {
-      int width = width_;
-      int height = height_;
-      if (FLAGS_lm_honor_window_size_hints)
-        (*it)->win()->GetMaxSize(width_, height_, &width, &height);
-      (*it)->win()->ResizeClient(width, height, Window::GRAVITY_NORTHWEST);
-    }
+  for (ToplevelWindows::iterator it = toplevels_.begin();
+       it != toplevels_.end(); ++it) {
+    int width = width_;
+    int height = height_;
+    if (FLAGS_lm_honor_window_size_hints)
+      (*it)->win()->GetMaxSize(width_, height_, &width, &height);
+    (*it)->win()->ResizeClient(width, height, Window::GRAVITY_NORTHWEST);
   }
 
   switch (mode_) {

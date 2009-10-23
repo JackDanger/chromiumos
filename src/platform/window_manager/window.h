@@ -123,6 +123,11 @@ class Window {
   // copy of the state and the window's _NET_WM_STATE property.
   bool HandleWmStateMessage(const XClientMessageEvent& event);
 
+  // Set or unset _NET_WM_STATE values for this window.  Note that this is
+  // for WM-initiated state changes -- client-initiated changes come in
+  // through HandleWmStateMessage().
+  bool ChangeWmState(const vector<pair<XAtom, bool> >& states);
+
   // If this window has a mapped, modal transient window, return it.  (If
   // there are multiple ones, the topmost is returned.)
   Window* GetTopModalTransient();
@@ -253,10 +258,14 @@ class Window {
   // Hide or show the window's shadow if necessary.
   void UpdateShadowIfNecessary();
 
-  // Helper method for HandleWmStateMessage().  Given an action from a
-  // _NET_WM_STATE message (i.e. the XClientMessageEvent's data.l[0] field),
-  // updates 'value' accordingly.
+  // Helper method for HandleWmStateMessage() and ChangeWmState().  Given
+  // an action from a _NET_WM_STATE message (i.e. the XClientMessageEvent's
+  // data.l[0] field), updates 'value' accordingly.
   void SetWmStateInternal(int action, bool* value);
+
+  // Update the window's _NET_WM_STATE property based on the current values
+  // of the 'wm_state_*' members.
+  bool UpdateWmStateProperty();
 
   XWindow xid_;
   WindowManager* wm_;
@@ -339,6 +348,8 @@ class Window {
   // EWMH window state, as set by _NET_WM_STATE client messages and exposed
   // in the window's _NET_WM_STATE property.
   bool wm_state_fullscreen_;
+  bool wm_state_maximized_horz_;
+  bool wm_state_maximized_vert_;
   bool wm_state_modal_;
 
   DISALLOW_COPY_AND_ASSIGN(Window);

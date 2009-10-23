@@ -14,8 +14,6 @@
 
 #include "base/basictypes.h"
 
-using namespace std;
-
 typedef unsigned int uint;
 
 namespace chromeos {

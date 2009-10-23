@@ -318,7 +318,7 @@ TEST_F(WindowTest, WmProtocols) {
   Time timestamp = 43;  // arbitrary
   EXPECT_TRUE(win.SendDeleteRequest(timestamp));
   ASSERT_EQ(1, info->client_messages.size());
-  const XClientMessageEvent& delete_msg = info->client_messages.at(0);
+  const XClientMessageEvent& delete_msg = info->client_messages[0];
   EXPECT_EQ(wm_->GetXAtom(ATOM_WM_PROTOCOLS), delete_msg.message_type);
   EXPECT_EQ(XConnection::kLongFormat, delete_msg.format);
   EXPECT_EQ(wm_->GetXAtom(ATOM_WM_DELETE_WINDOW), delete_msg.data.l[0]);
@@ -329,7 +329,7 @@ TEST_F(WindowTest, WmProtocols) {
   info->client_messages.clear();
   EXPECT_TRUE(win.TakeFocus(timestamp));
   ASSERT_EQ(1, info->client_messages.size());
-  const XClientMessageEvent& focus_msg = info->client_messages.at(0);
+  const XClientMessageEvent& focus_msg = info->client_messages[0];
   EXPECT_EQ(wm_->GetXAtom(ATOM_WM_PROTOCOLS), focus_msg.message_type);
   EXPECT_EQ(XConnection::kLongFormat, focus_msg.format);
   EXPECT_EQ(wm_->GetXAtom(ATOM_WM_TAKE_FOCUS), focus_msg.data.l[0]);
@@ -354,6 +354,12 @@ TEST_F(WindowTest, WmProtocols) {
 }
 
 TEST_F(WindowTest, WmState) {
+  const XAtom wm_state_atom = wm_->GetXAtom(ATOM_NET_WM_STATE);
+  const XAtom fullscreen_atom = wm_->GetXAtom(ATOM_NET_WM_STATE_FULLSCREEN);
+  const XAtom max_horz_atom = wm_->GetXAtom(ATOM_NET_WM_STATE_MAXIMIZED_HORZ);
+  const XAtom max_vert_atom = wm_->GetXAtom(ATOM_NET_WM_STATE_MAXIMIZED_VERT);
+  const XAtom modal_atom = wm_->GetXAtom(ATOM_NET_WM_STATE_MODAL);
+
   // Create a window with its _NET_WM_STATE property set to only
   // _NET_WM_STATE_MODAL and make sure that it's correctly loaded in the
   // constructor.
@@ -365,9 +371,9 @@ TEST_F(WindowTest, WmState) {
       false,   // input only
       0);      // event mask
   xconn_->SetIntProperty(xid,
-                         wm_->GetXAtom(ATOM_NET_WM_STATE),  // atom
-                         XA_ATOM,                           // type
-                         wm_->GetXAtom(ATOM_NET_WM_STATE_MODAL));
+                         wm_state_atom,  // atom
+                         XA_ATOM,        // type
+                         modal_atom);
   Window win(wm_.get(), xid);
   EXPECT_FALSE(win.wm_state_fullscreen());
   EXPECT_TRUE(win.wm_state_modal());
@@ -377,12 +383,12 @@ TEST_F(WindowTest, WmState) {
   XEvent event;
   MockXConnection::InitClientMessageEvent(
       &event,
-      xid,                                     // window
-      wm_->GetXAtom(ATOM_NET_WM_STATE),        // type
-      0,                                       // arg1: remove
-      wm_->GetXAtom(ATOM_NET_WM_STATE_MODAL),  // arg2
-      None,                                    // arg3
-      None);                                   // arg4
+      xid,            // window
+      wm_state_atom,  // type
+      0,              // arg1: remove
+      modal_atom,     // arg2
+      None,           // arg3
+      None);          // arg4
   EXPECT_TRUE(win.HandleWmStateMessage(event.xclient));
   EXPECT_FALSE(win.wm_state_fullscreen());
   EXPECT_FALSE(win.wm_state_modal());
@@ -390,12 +396,12 @@ TEST_F(WindowTest, WmState) {
   // ... and one adding the fullscreen state.
   MockXConnection::InitClientMessageEvent(
       &event,
-      xid,                                          // window
-      wm_->GetXAtom(ATOM_NET_WM_STATE),             // type
-      1,                                            // arg1: add
-      wm_->GetXAtom(ATOM_NET_WM_STATE_FULLSCREEN),  // arg2
-      None,                                         // arg3
-      None);                                        // arg4
+      xid,              // window
+      wm_state_atom,    // type
+      1,                // arg1: add
+      fullscreen_atom,  // arg2
+      None,             // arg3
+      None);            // arg4
   EXPECT_TRUE(win.HandleWmStateMessage(event.xclient));
   EXPECT_TRUE(win.wm_state_fullscreen());
   EXPECT_FALSE(win.wm_state_modal());
@@ -403,30 +409,41 @@ TEST_F(WindowTest, WmState) {
   // Check that the window's _NET_WM_STATE property was updated in response
   // to the messages.
   vector<int> values;
-  ASSERT_TRUE(xconn_->GetIntArrayProperty(
-                  xid, wm_->GetXAtom(ATOM_NET_WM_STATE), &values));
+  ASSERT_TRUE(xconn_->GetIntArrayProperty(xid, wm_state_atom, &values));
   ASSERT_EQ(1, values.size());
-  EXPECT_EQ(wm_->GetXAtom(ATOM_NET_WM_STATE_FULLSCREEN), values.at(0));
+  EXPECT_EQ(fullscreen_atom, values[0]);
 
-  // Finally, test that we can toggle states (and that we process messages
-  // listing multiple states correctly).
+  // Test that we can toggle states (and that we process messages listing
+  // multiple states correctly).
   MockXConnection::InitClientMessageEvent(
       &event,
-      xid,                                          // window
-      wm_->GetXAtom(ATOM_NET_WM_STATE),             // type
-      2,                                            // arg1: toggle
-      wm_->GetXAtom(ATOM_NET_WM_STATE_FULLSCREEN),  // arg2
-      wm_->GetXAtom(ATOM_NET_WM_STATE_MODAL),       // arg2
-      None);                                        // arg4
+      xid,              // window
+      wm_state_atom,    // type
+      2,                // arg1: toggle
+      fullscreen_atom,  // arg2
+      modal_atom,       // arg2
+      None);            // arg4
   EXPECT_TRUE(win.HandleWmStateMessage(event.xclient));
   EXPECT_FALSE(win.wm_state_fullscreen());
   EXPECT_TRUE(win.wm_state_modal());
 
   values.clear();
-  ASSERT_TRUE(xconn_->GetIntArrayProperty(
-                  xid, wm_->GetXAtom(ATOM_NET_WM_STATE), &values));
+  ASSERT_TRUE(xconn_->GetIntArrayProperty(xid, wm_state_atom, &values));
   ASSERT_EQ(1, values.size());
-  EXPECT_EQ(wm_->GetXAtom(ATOM_NET_WM_STATE_MODAL), values.at(0));
+  EXPECT_EQ(modal_atom, values[0]);
+
+  // Test that ChangeWmState() works for clearing the modal state and
+  // setting both maximized states.
+  vector<pair<XAtom, bool> > changed_states;
+  changed_states.push_back(make_pair(modal_atom, false));
+  changed_states.push_back(make_pair(max_horz_atom, true));
+  changed_states.push_back(make_pair(max_vert_atom, true));
+  EXPECT_TRUE(win.ChangeWmState(changed_states));
+  values.clear();
+  ASSERT_TRUE(xconn_->GetIntArrayProperty(xid, wm_state_atom, &values));
+  ASSERT_EQ(2, values.size());
+  EXPECT_EQ(max_horz_atom, values[0]);
+  EXPECT_EQ(max_vert_atom, values[1]);
 }
 
 TEST_F(WindowTest, Shape) {

@@ -57,6 +57,8 @@ Window::Window(WindowManager* wm, XWindow xid)
       supports_wm_take_focus_(false),
       supports_wm_delete_window_(false),
       wm_state_fullscreen_(false),
+      wm_state_maximized_horz_(false),
+      wm_state_maximized_vert_(false),
       wm_state_modal_(false) {
   // Listen for focus, property, and shape changes on this window.
   wm_->xconn()->SelectInputOnWindow(
@@ -310,6 +312,8 @@ void Window::FetchAndApplyWmProtocols() {
 
 void Window::FetchAndApplyWmState() {
   wm_state_fullscreen_ = false;
+  wm_state_maximized_horz_ = false;
+  wm_state_maximized_vert_ = false;
   wm_state_modal_ = false;
 
   vector<int> state_atoms;
@@ -319,18 +323,27 @@ void Window::FetchAndApplyWmState() {
   }
 
   XAtom fullscreen_atom = wm_->GetXAtom(ATOM_NET_WM_STATE_FULLSCREEN);
+  XAtom max_horz_atom = wm_->GetXAtom(ATOM_NET_WM_STATE_MAXIMIZED_HORZ);
+  XAtom max_vert_atom = wm_->GetXAtom(ATOM_NET_WM_STATE_MAXIMIZED_VERT);
   XAtom modal_atom = wm_->GetXAtom(ATOM_NET_WM_STATE_MODAL);
   for (vector<int>::const_iterator it = state_atoms.begin();
        it != state_atoms.end(); ++it) {
     XAtom atom = static_cast<XAtom>(*it);
     if (atom == fullscreen_atom)
       wm_state_fullscreen_ = true;
+    if (atom == max_horz_atom)
+      wm_state_maximized_horz_ = true;
+    if (atom == max_vert_atom)
+      wm_state_maximized_vert_ = true;
     else if (atom == modal_atom)
       wm_state_modal_ = true;
   }
 
-  VLOG(1) << "Fetched NET_WM_STATE_ for " << xid_ << ": fullscreen="
-          << wm_state_fullscreen_ << " modal=" << wm_state_modal_;
+  VLOG(1) << "Fetched NET_WM_STATE_ for " << xid_ << ":"
+          << " fullscreen=" << wm_state_fullscreen_
+          << " maximized_horz=" << wm_state_maximized_horz_
+          << " maximized_vert=" << wm_state_maximized_vert_
+          << " modal=" << wm_state_modal_;
 }
 
 void Window::FetchAndApplyShape(bool update_shadow) {
@@ -376,20 +389,29 @@ bool Window::HandleWmStateMessage(const XClientMessageEvent& event) {
     SetWmStateInternal(event.data.l[0], &wm_state_modal_);
   }
 
-  vector<int> values;
-  if (wm_state_fullscreen_)
-    values.push_back(fullscreen_atom);
-  if (wm_state_modal_)
-    values.push_back(modal_atom);
+  // We don't let clients toggle their maximized state currently.
 
-  VLOG(1) << "Updating NET_WM_STATE_ for " << xid_ << ": fullscreen="
-          << wm_state_fullscreen_ << " modal=" << wm_state_modal_;
-  if (!values.empty())
-    wm_->xconn()->SetIntArrayProperty(xid_, wm_state_atom, XA_ATOM, values);
-  else
-    wm_->xconn()->DeletePropertyIfExists(xid_, wm_state_atom);
+  return UpdateWmStateProperty();
+}
 
-  return true;
+bool Window::ChangeWmState(const vector<pair<XAtom, bool> >& states) {
+  for (vector<pair<XAtom, bool> >::const_iterator it = states.begin();
+       it != states.end(); ++it) {
+    XAtom xatom = it->first;
+    int action = it->second;  // 0 is remove, 1 is add
+
+    if (xatom == wm_->GetXAtom(ATOM_NET_WM_STATE_FULLSCREEN))
+      SetWmStateInternal(action, &wm_state_fullscreen_);
+    else if (xatom == wm_->GetXAtom(ATOM_NET_WM_STATE_MAXIMIZED_HORZ))
+      SetWmStateInternal(action, &wm_state_maximized_horz_);
+    else if (xatom == wm_->GetXAtom(ATOM_NET_WM_STATE_MAXIMIZED_VERT))
+      SetWmStateInternal(action, &wm_state_maximized_vert_);
+    else if (xatom == wm_->GetXAtom(ATOM_NET_WM_STATE_MODAL))
+      SetWmStateInternal(action, &wm_state_modal_);
+    else
+      LOG(ERROR) << "Unsupported _NET_WM_STATE " << xatom << " for " << xid_;
+  }
+  return UpdateWmStateProperty();
 }
 
 Window* Window::GetTopModalTransient() {
@@ -863,6 +885,32 @@ void Window::SetWmStateInternal(int action, bool* value) {
     default:
       LOG(WARNING) << "Got _NET_WM_STATE message for " << xid_
                    << " with invalid action " << action;
+  }
+}
+
+bool Window::UpdateWmStateProperty() {
+  XAtom wm_state_atom = wm_->GetXAtom(ATOM_NET_WM_STATE);
+
+  vector<int> values;
+  if (wm_state_fullscreen_)
+    values.push_back(wm_->GetXAtom(ATOM_NET_WM_STATE_FULLSCREEN));
+  if (wm_state_maximized_horz_)
+    values.push_back(wm_->GetXAtom(ATOM_NET_WM_STATE_MAXIMIZED_HORZ));
+  if (wm_state_maximized_vert_)
+    values.push_back(wm_->GetXAtom(ATOM_NET_WM_STATE_MAXIMIZED_VERT));
+  if (wm_state_modal_)
+    values.push_back(wm_->GetXAtom(ATOM_NET_WM_STATE_MODAL));
+
+  VLOG(1) << "Updating _NET_WM_STATE for " << xid_ << ":"
+          << " fullscreen=" << wm_state_fullscreen_
+          << " maximized_horz=" << wm_state_maximized_horz_
+          << " maximized_vert=" << wm_state_maximized_vert_
+          << " modal=" << wm_state_modal_;
+  if (!values.empty()) {
+    return wm_->xconn()->SetIntArrayProperty(
+        xid_, wm_state_atom, XA_ATOM, values);
+  } else {
+    return wm_->xconn()->DeletePropertyIfExists(xid_, wm_state_atom);
   }
 }
 
