@@ -13,6 +13,7 @@ USER_DATA_DIR="${HOME}/${CHROMEOS_USER}/.config/google-chrome"
 # to set up their environment. From then on, chrome session restore
 # will take care of opening the tabs they want.
 FIRST_RUN_ARGS=""
+CLIENTSSL_AUTH_ALLOW_ARGS=""
 if [ ! -d "$USER_DATA_DIR" ]; then
   mkdir -p "$USER_DATA_DIR"
   if [ -f "$SEND_METRICS" ]; then
@@ -32,6 +33,10 @@ if [ ! -d "$USER_DATA_DIR" ]; then
                     https://mail.google.com/a/google.com \
                     https://calendar.google.com/a/google.com \
                     chrome://newtab"
+    # Allow chrome to automatically send available SSL client certificates 
+    # to a server. Until a client certificate UI is available in chrome,
+    # this is only enabled to allow corp access.
+    CLIENTSSL_AUTH_ALLOW_ARGS="--auto-ssl-client-auth"
   elif [ $DOMAIN = "gmail.com" ]; then
     FIRST_RUN_ARGS="--pinned-tab-count=2 \
                     https://mail.google.com/mail \
@@ -58,8 +63,9 @@ while true; do
   "$CHROME" --enable-plugins \
             --no-first-run $COOKIE_PIPE_ARG  \
             --user-data-dir="$USER_DATA_DIR" \
-            $FIRST_RUN_ARGS
-
+            $FIRST_RUN_ARGS \
+            $CLIENTSSL_AUTH_ALLOW_ARGS
+            
   # After the first launch skip the cookie pipe and first run args.
   rm -f "$COOKIE_PIPE"
   COOKIE_PIPE_ARG=""
