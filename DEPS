@@ -23,6 +23,10 @@
 # is trunk/src/DEPS.
 _third_party_base = "trunk/src/third_party/"
 
+vars = {
+    "chromiumos_git": "git://chromiumos-git/git/repos"
+}
+
 deps = {
     # gflags 1.1
     _third_party_base + "gflags/files":
@@ -52,4 +56,8 @@ deps = {
     # tpm-emulator
     _third_party_base + "tpm-emulator/files":
         "http://svn.berlios.de/svnroot/repos/tpm-emulator/trunk@341",
+
+    # kernel
+    _third_party_base + "kernel/files":
+        Var("chromiumos_git") + "/kernel.git",
 }
