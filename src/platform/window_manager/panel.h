@@ -82,6 +82,11 @@ class Panel {
   // right edge.
   void Move(int right, int anim_ms);
 
+  // Handle the panel bar being moved.  This just updates our Y value; the
+  // panel bar is responsible for moving all of the panels left or right as
+  // needed.
+  void HandlePanelBarMove();
+
   // Raise the panel's client and composited windows above other panels.
   void Raise();
 

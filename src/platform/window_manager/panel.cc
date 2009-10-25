@@ -410,6 +410,26 @@ void Panel::Move(int right, int anim_ms) {
   ConfigureInputWindows();
 }
 
+void Panel::HandlePanelBarMove() {
+  if (is_expanded_) {
+    panel_win_->MoveCompositedY(
+        panel_bar_->y() - panel_win_->client_height(), 0);
+    panel_win_->MoveClientToComposited();
+    titlebar_win_->MoveCompositedY(
+        panel_bar_->y() -
+          panel_win_->client_height() - titlebar_win_->client_height(),
+        0);
+    titlebar_win_->MoveClientToComposited();
+  } else {
+    panel_win_->MoveCompositedY(panel_bar_->y() + panel_bar_->height(), 0);
+    panel_win_->MoveClientToComposited();
+    titlebar_win_->MoveCompositedY(
+        panel_bar_->y() + panel_bar_->height() - titlebar_win_->client_height(),
+        0);
+    titlebar_win_->MoveClientToComposited();
+  }
+}
+
 void Panel::Raise() {
   panel_win_->RaiseClient();
   titlebar_win_->RaiseClient();

@@ -32,12 +32,14 @@ class XConnection {
  public:
   XConnection()
       : shape_event_base_(0),
+        xrandr_event_base_(0),
         server_grabbed_(false) {
   }
   virtual ~XConnection() {}
 
-  // Get the base event ID for Shape extension events.
+  // Get the base event ID for extension events.
   int shape_event_base() const { return shape_event_base_; }
+  int xrandr_event_base() const { return xrandr_event_base_; }
 
   // Get the position and dimensions of a window.
   // Unwanted parameters can be NULL.
@@ -164,6 +166,9 @@ class XConnection {
   // Get the rectangles defining a window's bounding region.
   virtual bool GetWindowBoundingRegion(XWindow xid, ByteMap* bytemap) = 0;
 
+  // Select XRandR events on a window.
+  virtual bool SelectXRandREventsOnWindow(XWindow xid) = 0;
+
   // Look up the X ID for a single atom, creating it if necessary.
   virtual bool GetAtom(const string& name, XAtom* atom_out) = 0;
 
@@ -261,9 +266,10 @@ class XConnection {
   static const int kLongFormat;
 
  protected:
-  // Base ID for Shape extension events.  Implementations should initialize
-  // this in their constructors.
+  // Base IDs for extension events.  Implementations should initialize
+  // these in their constructors.
   int shape_event_base_;
+  int xrandr_event_base_;
 
  private:
   virtual bool GrabServerImpl() = 0;

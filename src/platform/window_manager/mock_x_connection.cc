@@ -20,8 +20,9 @@ MockXConnection::MockXConnection()
       next_atom_(1000),
       focused_xid_(None),
       pointer_grab_xid_(None) {
-  // Arbitrary large number unlikely to be used by other events.
+  // Arbitrary large numbers unlikely to be used by other events.
   shape_event_base_ = 432432;
+  xrandr_event_base_ = 543251;
 }
 
 MockXConnection::~MockXConnection() {}
@@ -284,6 +285,14 @@ bool MockXConnection::GetWindowBoundingRegion(XWindow xid, ByteMap* bytemap) {
   return true;
 }
 
+bool MockXConnection::SelectXRandREventsOnWindow(XWindow xid) {
+  WindowInfo* info = GetWindowInfo(xid);
+  if (!info)
+    return false;
+  info->xrandr_events_selected = true;
+  return true;
+}
+
 bool MockXConnection::GetAtom(const string& name, XAtom* atom_out) {
   CHECK(atom_out);
   map<string, XAtom>::const_iterator it = name_to_atom_.find(name);
@@ -445,6 +454,7 @@ MockXConnection::WindowInfo::WindowInfo(XWindow xid, XWindow parent)
       cursor(0),
       shape(NULL),
       shape_events_selected(false),
+      xrandr_events_selected(false),
       changed(false),
       all_buttons_grabbed(false) {
   memset(&size_hints, 0, sizeof(size_hints));

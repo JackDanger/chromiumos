@@ -11,6 +11,7 @@
 extern "C" {
 #include <X11/Xlib.h>
 #include <X11/extensions/shape.h>
+#include <X11/extensions/Xrandr.h>
 }
 
 #include <gtest/gtest_prod.h>  // for FRIEND_TEST() macro
@@ -130,12 +131,16 @@ class WindowManager {
   // tests.
   static const char* kWmName;
 
+  // Height for the panel bar.
+  static const int kPanelBarHeight;
+
   friend class LayoutManagerTest;         // uses 'layout_manager_'
   FRIEND_TEST(LayoutManagerTest, Basic);  // uses TrackWindow()
   FRIEND_TEST(WindowTest, TransientFor);  // uses TrackWindow()
   FRIEND_TEST(WindowManagerTest, RegisterExistence);
   FRIEND_TEST(WindowManagerTest, EventConsumer);
   FRIEND_TEST(WindowManagerTest, KeyEventSnooping);
+  FRIEND_TEST(WindowManagerTest, XRandR);
 
   // Is this one of our internally-created windows?
   bool IsInternalWindow(XWindow xid) {
@@ -221,6 +226,7 @@ class WindowManager {
   bool HandleMotionNotify(const XMotionEvent& e);
   bool HandlePropertyNotify(const XPropertyEvent& e);
   bool HandleReparentNotify(const XReparentEvent& e);
+  bool HandleRRScreenChangeNotify(const XRRScreenChangeNotifyEvent& e);
   bool HandleShapeNotify(const XShapeEvent& e);
   bool HandleUnmapNotify(const XUnmapEvent& e);
 

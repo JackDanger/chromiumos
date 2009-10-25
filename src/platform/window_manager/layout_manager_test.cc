@@ -416,6 +416,40 @@ TEST_F(LayoutManagerTest, SetWmStateMaximized) {
   EXPECT_EQ(wm_->GetXAtom(ATOM_NET_WM_STATE_MAXIMIZED_VERT), atoms[1]);
 }
 
+TEST_F(LayoutManagerTest, Resize) {
+  XWindow xid = CreateSimpleWindow(xconn_->GetRootWindow());
+  MockXConnection::WindowInfo* info = xconn_->GetWindowInfoOrDie(xid);
+  XEvent event;
+  MockXConnection::InitCreateWindowEvent(&event, *info);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  MockXConnection::InitMapEvent(&event, xid);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+
+  Window* win = wm_->GetWindow(xid);
+  ASSERT_TRUE(win != NULL);
+
+  // The client window and its composited counterpart should be resized to
+  // take up all the space available to the layout manager.
+  EXPECT_EQ(lm_->x(), info->x);
+  EXPECT_EQ(lm_->y(), info->y);
+  EXPECT_EQ(lm_->width(), info->width);
+  EXPECT_EQ(lm_->height(), info->height);
+  EXPECT_EQ(lm_->x(), win->composited_x());
+  EXPECT_EQ(lm_->y(), win->composited_y());
+  EXPECT_DOUBLE_EQ(1.0, win->composited_scale_x());
+  EXPECT_DOUBLE_EQ(1.0, win->composited_scale_y());
+
+  // Now tell the layout manager to resize itself.  The client window
+  // should also be resized.
+  int new_width = lm_->width() / 2;
+  int new_height = lm_->height() / 2;
+  lm_->Resize(new_width, new_height);
+  EXPECT_EQ(new_width, lm_->width());
+  EXPECT_EQ(new_height, lm_->height());
+  EXPECT_EQ(lm_->width(), info->width);
+  EXPECT_EQ(lm_->height(), info->height);
+}
+
 }  // namespace chromeos
 
 int main(int argc, char **argv) {

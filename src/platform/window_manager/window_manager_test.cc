@@ -10,7 +10,9 @@
 #include "base/scoped_ptr.h"
 #include "window_manager/clutter_interface.h"
 #include "window_manager/event_consumer.h"
+#include "window_manager/layout_manager.h"
 #include "window_manager/mock_x_connection.h"
+#include "window_manager/panel_bar.h"
 #include "window_manager/util.h"
 #include "window_manager/window.h"
 #include "window_manager/window_manager.h"
@@ -492,6 +494,57 @@ TEST_F(WindowManagerTest, ConfigureRequestResize) {
   EXPECT_TRUE(wm_->HandleEvent(&event));
   EXPECT_EQ(new_width, info->width);
   EXPECT_EQ(new_height, info->height);
+}
+
+TEST_F(WindowManagerTest, XRandR) {
+  // Make sure that the WM is selecting RRScreenChangeNotify events on the
+  // root window.
+  XWindow root_xid = xconn_->GetRootWindow();
+  MockXConnection::WindowInfo* root_info = xconn_->GetWindowInfoOrDie(root_xid);
+  EXPECT_TRUE(root_info->xrandr_events_selected);
+
+  int new_width = root_info->width / 2;
+  int new_height = root_info->height / 2;
+
+  // Resize the root and compositing overlay windows to half their size.
+  root_info->width = new_width;
+  root_info->height = new_height;
+  MockXConnection::WindowInfo* composite_info =
+      xconn_->GetWindowInfoOrDie(xconn_->GetCompositingOverlayWindow(root_xid));
+  composite_info->width = new_width;
+  composite_info->height = new_height;
+
+  // Send the WM an event saying that the screen has been resized.
+  XEvent event;
+  XRRScreenChangeNotifyEvent* xrandr_event =
+      reinterpret_cast<XRRScreenChangeNotifyEvent*>(&event);
+  xrandr_event->type = xconn_->xrandr_event_base() + RRScreenChangeNotify;
+  xrandr_event->window = root_xid;
+  xrandr_event->root = root_xid;
+  xrandr_event->width = new_width;
+  xrandr_event->height = new_height;
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+
+  EXPECT_EQ(new_width, wm_->width());
+  EXPECT_EQ(new_height, wm_->height());
+  EXPECT_EQ(new_width, wm_->stage()->GetWidth());
+  EXPECT_EQ(new_height, wm_->stage()->GetHeight());
+
+  // Check that the window manager passed the new dimensions to some of the
+  // objects that it owns.  The panel bar shouldn't be visible since there
+  // are no panels (and as a result, the layout manager should be taking up
+  // the entire screen).
+  EXPECT_FALSE(wm_->panel_bar_->is_visible());
+
+  EXPECT_EQ(0, wm_->layout_manager_->x());
+  EXPECT_EQ(0, wm_->layout_manager_->y());
+  EXPECT_EQ(new_width, wm_->layout_manager_->width());
+  EXPECT_EQ(new_height, wm_->layout_manager_->height());
+
+  EXPECT_EQ(0, wm_->panel_bar_->x());
+  EXPECT_EQ(new_height - WindowManager::kPanelBarHeight, wm_->panel_bar_->y());
+  EXPECT_EQ(new_width, wm_->panel_bar_->width());
+  EXPECT_EQ(WindowManager::kPanelBarHeight, wm_->panel_bar_->height());
 }
 
 }  // namespace chromeos

@@ -5,8 +5,10 @@
 #include "window_manager/real_x_connection.h"
 
 extern "C" {
+#include <X11/extensions/randr.h>
 #include <X11/extensions/shape.h>
 #include <X11/extensions/Xcomposite.h>
+#include <X11/extensions/Xrandr.h>
 #include <X11/Xatom.h>
 #include <X11/Xutil.h>
 #include <X11/XKBlib.h>
@@ -49,7 +51,9 @@ RealXConnection::RealXConnection(Display* display)
 
   int error_base = 0;  // unused; the Shape extension doesn't define any errors
   CHECK(XShapeQueryExtension(display_, &shape_event_base_, &error_base) == True)
-      << "Shape extension not supported by X server";
+      << "Shape extension unsupported by X server";
+  CHECK(XRRQueryExtension(display_, &xrandr_event_base_, &error_base) == True)
+      << "XRandR extension unsupported by X server";
 }
 
 bool RealXConnection::GetWindowGeometry(
@@ -499,6 +503,17 @@ bool RealXConnection::GetWindowBoundingRegion(XWindow xid, ByteMap* bytemap) {
     bytemap->SetRectangle(rect.x, rect.y, rect.width, rect.height, 0xff);
   }
   XFree(rects);
+  return true;
+}
+
+bool RealXConnection::SelectXRandREventsOnWindow(XWindow xid) {
+  TrapErrors();
+  XRRSelectInput(display_, xid, RRScreenChangeNotifyMask);
+  if (int error = UntrapErrors()) {
+    LOG(WARNING) << "Got X error while selecting RRScreenChangeNotify events "
+                 << "on " << xid << ": " << GetErrorText(error);
+    return false;
+  }
   return true;
 }
 

@@ -48,8 +48,7 @@ namespace chromeos {
 
 const char* WindowManager::kWmName = "chromeos-wm";
 
-// Height for the panel bar.
-static const int kPanelBarHeight = 18;
+const int WindowManager::kPanelBarHeight = 18;
 
 // Time to spend fading the hotkey overlay in or out, in milliseconds.
 static const int kHotkeyOverlayAnimMs = 100;
@@ -183,6 +182,7 @@ WindowManager::~WindowManager() {
 
 bool WindowManager::Init() {
   root_ = xconn_->GetRootWindow();
+  xconn_->SelectXRandREventsOnWindow(root_);
   CHECK(xconn_->GetWindowGeometry(root_, NULL, NULL, &width_, &height_));
 
   // Create the atom cache first; RegisterExistence() needs it.
@@ -302,14 +302,15 @@ bool WindowManager::Init() {
   layout_manager_.reset(new LayoutManager(this, 0, 0, width_, height_));
   event_consumers_.insert(layout_manager_.get());
 
-  panel_bar_.reset(new PanelBar(this, kPanelBarHeight));
+  panel_bar_.reset(new PanelBar(this,
+                                0, height_ - kPanelBarHeight,  // x, y
+                                width_, kPanelBarHeight));
   event_consumers_.insert(panel_bar_.get());
 
   hotkey_overlay_.reset(new HotkeyOverlay(clutter_));
   stage_->AddActor(hotkey_overlay_->group());
   hotkey_overlay_->group()->Lower(overlay_depth_.get());
-  hotkey_overlay_->group()->Move(
-      stage_->GetWidth() / 2, stage_->GetHeight() / 2, 0);
+  hotkey_overlay_->group()->Move(width_ / 2, height_ / 2, 0);
 
   // Register a callback to get a shot at all the events that come in.
   gdk_window_add_filter(NULL, FilterEvent, this);
@@ -402,8 +403,13 @@ bool WindowManager::HandleEvent(XEvent* event) {
     case UnmapNotify:
       return HandleUnmapNotify(event->xunmap);
     default:
-      if (event->type == xconn_->shape_event_base() + ShapeNotify)
+      if (event->type == xconn_->shape_event_base() + ShapeNotify) {
         return HandleShapeNotify(*(reinterpret_cast<XShapeEvent*>(event)));
+      } else if (event->type ==
+                 xconn_->xrandr_event_base() + RRScreenChangeNotify) {
+        return HandleRRScreenChangeNotify(
+                   *(reinterpret_cast<XRRScreenChangeNotifyEvent*>(event)));
+      }
       return false;
   }
 }
@@ -1278,6 +1284,27 @@ bool WindowManager::HandleReparentNotify(const XReparentEvent& e) {
       xconn_->RemapWindowIfMapped(e.window);
     }
   }
+  return true;
+}
+
+bool WindowManager::HandleRRScreenChangeNotify(
+    const XRRScreenChangeNotifyEvent& e) {
+  VLOG(1) << "Got RRScreenChangeNotify event to "
+          << e.width << "x" << e.height;
+  if (e.width == width_ && e.height == height_)
+    return true;
+
+  width_ = e.width;
+  height_ = e.height;
+  stage_->SetSize(width_, height_);
+  if (background_.get())
+    background_->SetSize(width_, height_);
+  layout_manager_->Resize(
+      width_, height_ - (panel_bar_->is_visible() ? kPanelBarHeight : 0));
+  panel_bar_->MoveAndResize(
+      0, height_ - kPanelBarHeight, width_, kPanelBarHeight);
+  hotkey_overlay_->group()->Move(width_ / 2, height_ / 2, 0);
+
   return true;
 }
 

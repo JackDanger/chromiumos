@@ -31,11 +31,14 @@ class WindowManager;
 // The panel bar positions and controls Chrome panel windows.
 class PanelBar : public EventConsumer {
  public:
-  PanelBar(WindowManager* wm, int height);
+  PanelBar(WindowManager* wm, int x, int y, int width, int height);
   ~PanelBar();
 
   WindowManager* wm() { return wm_; }
+  bool is_visible() const { return is_visible_; }
+  int x() const { return x_; }
   int y() const { return y_; }
+  int width() const { return width_; }
   int height() const { return height_; }
 
   // Note: Begin overridden EventConsumer methods.
@@ -72,6 +75,8 @@ class PanelBar : public EventConsumer {
   bool HandleFocusChange(XWindow xid, bool focus_in);
 
   // Note: End overridden EventConsumer methods.
+
+  void MoveAndResize(int x, int y, int width, int height);
 
   // Store the position where a panel has been dragged to
   // 'queued_dragged_panel_x_' and 'queued_dragged_panel_y_'.  These
@@ -185,8 +190,10 @@ class PanelBar : public EventConsumer {
 
   WindowManager* wm_;  // not owned
 
-  // Y-position and height of the bar.
+  // Position and size of the bar.
+  int x_;
   int y_;
+  int width_;
   int height_;
 
   // Width of the contents of the bar.

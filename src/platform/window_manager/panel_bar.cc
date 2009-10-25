@@ -32,9 +32,11 @@ static const int kAnimMs = 150;
 // Frequency with which we should update the position of dragged panels.
 static const int kDraggedPanelUpdateMs = 25;
 
-PanelBar::PanelBar(WindowManager* wm, int height)
+PanelBar::PanelBar(WindowManager* wm, int x, int y, int width, int height)
     : wm_(wm),
-      y_(wm_->height() - height),
+      x_(x),
+      y_(y),
+      width_(width),
       height_(height),
       collapsed_panel_width_(0),
       bar_actor_(wm_->clutter()->CreateImage(FLAGS_panel_bar_image)),
@@ -49,15 +51,15 @@ PanelBar::PanelBar(WindowManager* wm, int height)
       desired_panel_to_focus_(NULL),
       is_visible_(false) {
   wm_->stage()->AddActor(bar_actor_.get());
-  bar_actor_->SetSize(wm_->width(), height_);
-  bar_actor_->Move(0, y_ + height, 0);
+  bar_actor_->SetSize(width_, height_);
+  bar_actor_->Move(x_, y_ + height, 0);
   bar_actor_->Raise(wm_->panel_bar_depth());
 
   wm_->stage()->AddActor(bar_shadow_->group());
   bar_shadow_->group()->Lower(wm_->panel_bar_depth());
   bar_shadow_->SetOpacity(0, 0);
-  bar_shadow_->Move(0, y_ + height, 0);
-  bar_shadow_->Resize(wm_->width(), height_, 0);
+  bar_shadow_->Move(x_, y_ + height, 0);
+  bar_shadow_->Resize(width_, height_, 0);
   bar_shadow_->Show();
 
   wm_->stage()->AddActor(anchor_actor_.get());
@@ -351,6 +353,33 @@ bool PanelBar::HandleFocusChange(XWindow xid, bool focus_in) {
   return true;
 }
 
+void PanelBar::MoveAndResize(int x, int y, int width, int height) {
+  x_ = x;
+  y_ = y;
+  width_ = width;
+  height_ = height;
+
+  bar_actor_->SetSize(width_, height_);
+  bar_actor_->Move(x_, y_ + (is_visible_ ? 0 : height_), 0);
+  bar_shadow_->Resize(width_, height_, 0);
+  bar_shadow_->Move(x_, y_ + (is_visible_ ? 0 : height_), 0);
+
+  // Update all of the panels' Y positions...
+  for (Panels::iterator it = expanded_panels_.begin();
+       it != expanded_panels_.end(); ++it) {
+    (*it)->HandlePanelBarMove();
+  }
+  for (Panels::iterator it = collapsed_panels_.begin();
+       it != collapsed_panels_.end(); ++it) {
+    (*it)->HandlePanelBarMove();
+  }
+
+  // ... and their X positions.
+  PackCollapsedPanels();
+  if (!expanded_panels_.empty())
+    RepositionExpandedPanels(expanded_panels_[0].get());
+}
+
 void PanelBar::StorePanelPosition(Window* win, int x, int y) {
   CHECK(win);
   VLOG(2) << "Got request to move panel " << win->xid()
@@ -458,8 +487,8 @@ void PanelBar::AddPanel(
           << " and titlebar window " << titlebar_win->xid();
 
   const int right = expanded ?
-      wm_->width() - kBarPadding :
-      wm_->width() - collapsed_panel_width_ - kBarPadding;
+      x_ + width_ - kBarPadding :
+      x_ + width_ - collapsed_panel_width_ - kBarPadding;
   ref_ptr<Panel> panel(
       new Panel(this, panel_win, titlebar_win, right));
 
@@ -635,7 +664,7 @@ void PanelBar::PackCollapsedPanels() {
        it != collapsed_panels_.rend(); ++it) {
     Panel* panel = it->get();
 
-    int right = wm_->width() - collapsed_panel_width_ - kBarPadding;
+    int right = x_ + width_ - collapsed_panel_width_ - kBarPadding;
     panel->set_snapped_right(right);
     collapsed_panel_width_ += panel->titlebar_width() + kBarPadding;
 
@@ -688,7 +717,7 @@ void PanelBar::RepositionExpandedPanels(Panel* fixed_panel) {
 
   // Move panels over to the right of the fixed panel until all of the ones
   // on the left will fit.
-  int avail_width = max(fixed_panel->cur_panel_left() - kBarPadding, 0);
+  int avail_width = max(fixed_panel->cur_panel_left() - kBarPadding - x_, 0);
   while (total_width > avail_width) {
     new_fixed_index--;
     CHECK_GE(new_fixed_index, 0);
@@ -712,8 +741,7 @@ void PanelBar::RepositionExpandedPanels(Panel* fixed_panel) {
     total_width += (*it)->panel_width();
   }
 
-  avail_width = max(wm_->width() - (fixed_panel->cur_right() + kBarPadding),
-                    0);
+  avail_width = max(x_ + width_ - (fixed_panel->cur_right() + kBarPadding), 0);
   while (total_width > avail_width) {
     new_fixed_index++;
     CHECK_LT(new_fixed_index, expanded_panels_.size());
@@ -739,8 +767,9 @@ void PanelBar::RepositionExpandedPanels(Panel* fixed_panel) {
     Panel* panel = it->get();
     if (panel->cur_right() > boundary) {
       panel->Move(boundary, kAnimMs);
-    } else if (panel->cur_panel_left() < 0) {
-      panel->Move(min(boundary, panel->panel_width() + kBarPadding), kAnimMs);
+    } else if (panel->cur_panel_left() < x_) {
+      panel->Move(min(boundary, x_ + panel->panel_width() + kBarPadding),
+                  kAnimMs);
     }
     boundary = panel->cur_panel_left() - kBarPadding;
   }
@@ -751,9 +780,8 @@ void PanelBar::RepositionExpandedPanels(Panel* fixed_panel) {
     Panel* panel = it->get();
     if (panel->cur_panel_left() < boundary) {
       panel->Move(boundary + panel->panel_width(), kAnimMs);
-    } else if (panel->cur_right() > wm_->width()) {
-      panel->Move(max(boundary + panel->panel_width(),
-                      wm_->width() - kBarPadding),
+    } else if (panel->cur_right() > x_ + width_) {
+      panel->Move(max(boundary + panel->panel_width(), width_ - kBarPadding),
                   kAnimMs);
     }
     boundary = panel->cur_right() + kBarPadding;

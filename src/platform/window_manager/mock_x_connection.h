@@ -52,6 +52,7 @@ class MockXConnection : public XConnection {
   bool IsWindowShaped(XWindow xid);
   bool SelectShapeEventsOnWindow(XWindow xid);
   bool GetWindowBoundingRegion(XWindow xid, ByteMap* bytemap);
+  bool SelectXRandREventsOnWindow(XWindow xid);
   bool GetAtom(const string& name, XAtom* atom_out);
   bool GetAtoms(const vector<string>& names, vector<XAtom>* atoms_out);
   bool GetAtomName(XAtom atom, string* name);
@@ -101,8 +102,10 @@ class MockXConnection : public XConnection {
     // NULL otherwise.
     scoped_ptr<ByteMap> shape;
 
-    // Have shape events been selected using SelectShapeEventsOnWindow()?
+    // Have various extension events been selected using
+    // Select*EventsOnWindow()?
     bool shape_events_selected;
+    bool xrandr_events_selected;
 
     // Client messages sent to the window.
     vector<XClientMessageEvent> client_messages;

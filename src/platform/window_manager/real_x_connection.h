@@ -48,6 +48,7 @@ class RealXConnection : public XConnection {
   bool IsWindowShaped(XWindow xid);
   bool SelectShapeEventsOnWindow(XWindow xid);
   bool GetWindowBoundingRegion(XWindow xid, ByteMap* bytemap);
+  bool SelectXRandREventsOnWindow(XWindow xid);
   bool GetAtom(const string& name, XAtom* atom_out);
   bool GetAtoms(const vector<string>& names, vector<XAtom>* atoms_out);
   bool GetAtomName(XAtom atom, string* name);
