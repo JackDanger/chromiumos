@@ -45,10 +45,20 @@ proto_builder = Builder(generator = ProtocolBufferGenerator,
                         suffix = '.pb.cc')
 
 # Create a base environment including things that are likely to be common
-# to all of the objects in this directory.
+# to all of the objects in this directory. We pull in overrides from the
+# environment to enable cross-compile.
 base_env = Environment()
-base_env['CCFLAGS'] = '-I.. -Wall -Werror -O3'
+for key in Split('CC CXX AR RANLIB LD NM CFLAGS CCFLAGS'):
+  value = os.environ.get(key)
+  if value != None:
+    base_env[key] = value
+if not base_env.has_key('CCFLAGS'):
+  base_env['CCFLAGS'] = '-I.. -Wall -Werror -O3'
 base_env['LINKFLAGS'] = '-lgflags -lprotobuf'
+
+# Fix up the pkg-config path if it is present in the environment.
+if os.environ.has_key('PKG_CONFIG_PATH'):
+  base_env['ENV']['PKG_CONFIG_PATH'] = os.environ['PKG_CONFIG_PATH']
 
 # Add a builder for .proto files
 base_env['BUILDERS']['ProtocolBuffer'] = proto_builder

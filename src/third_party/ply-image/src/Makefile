@@ -10,7 +10,7 @@ H = ply-frame-buffer.h \
 
 
 ply-image: $(C) $(H) Makefile
-	cc $(C) $(LIBS) -Wall -O2 -I. -o ply-image -lpng
+	$(CC) $(C) $(LIBS) -Wall -O2 -I. -o ply-image -lpng
 	strip ply-image
 
 clean:
