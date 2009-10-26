@@ -10,9 +10,8 @@ if [ -d /dev/.initramfs ]
 then
   HAS_INITRAMFS=1
   ! umount -l /dev
-  ! umount -l /sysfs
+  ! umount -l /sys
   ! umount -l /tmp
-  mount -n -o remount,rw /
 fi
 
 # Mount /proc, /sys, /tmp
@@ -39,14 +38,41 @@ then
 fi
 
 # Mount our stateful partition
-if [ $HAS_INITRAMFS -eq 0 ]
+ROOT_DEV=$(sed 's/.*root=\([^ ]*\).*/\1/g' /proc/cmdline)
+if [ "${ROOT_DEV#*=}" = "$ROOT_DEV" ]
 then
-  mount -n -t ext3 /dev/sda4 /mnt/stateful_partition
-  mount -n --bind /mnt/stateful_partition/var /var
-  mount -n --bind /mnt/stateful_partition/home /home
-fi
+  # We get here if $ROOT doesn't have an = in it.
 
-# Run and lock directories.
+  # Old installations have system partitions on partitions 1 and 2. They
+  # have the stateful partition on partition 4. New installations have
+  # partitions 3 and 4 as system partitions and partition 1 as the stateful
+  # partition.
+  STATE_DEV=$(echo "$ROOT_DEV" | tr 1234 4411)
+else
+  # $ROOT has an = in it, so we assume it's LABEL= or UUID=. Follow that
+  # convention when specifying the stateful partition.
+  STATE_DEV="LABEL=C-STATE"
+fi
+mount -n -t ext3 "$STATE_DEV" /mnt/stateful_partition
+
+# Make sure stateful partition has some basic directories
+mkdir -p -m 0755 /mnt/stateful_partition/var/cache
+mkdir -p -m 0755 /mnt/stateful_partition/var/log
+mkdir -p -m 0755 /mnt/stateful_partition/home
+mkdir -p -m 0755 /mnt/stateful_partition/etc
+
+chmod 0755 /mnt/stateful_partition/var
+
+# Default to Pacific timezone if we don't have one set
+! ln -s /usr/share/zoneinfo/US/Pacific /mnt/stateful_partition/etc/localtime \
+    > /dev/null 2>&1
+
+# Mount some /var directories and /home
+mount -n --bind /mnt/stateful_partition/var/cache /var/cache
+mount -n --bind /mnt/stateful_partition/var/log /var/log
+mount -n -t tmpfs -omode=1777,nodev,noexec,nosuid vartmp /var/tmp
+mount -n --bind /mnt/stateful_partition/home /home
+
 mount -n -t tmpfs -omode=0755,nosuid varrun /var/run
 touch /var/run/.ramfs  # TODO: Is this needed?
 mount -n -t tmpfs -omode=1777,nodev,noexec,nosuid varlock /var/lock

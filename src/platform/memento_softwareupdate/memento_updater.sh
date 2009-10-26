@@ -117,17 +117,17 @@ fi
 
 # we install onto the other dev. so if we end in 1, other ends in 2, and
 # vice versa
-INSTALL_DEV=$(echo $LOCAL_DEV | tr '12' '21')
+INSTALL_DEV=$(echo $LOCAL_DEV | tr '1234' '2143')
 
-ROOT_DEV=$(echo $LOCAL_DEV | tr -d '12')  # strip trailing 1 or 2
+ROOT_DEV=$(echo $LOCAL_DEV | tr -d '1234')  # strip trailing number
 
 # do some device sanity checks
-if ! expr match "$LOCAL_DEV" '^/dev/[a-z][a-z]*[12]$' > /dev/null
+if ! expr match "$LOCAL_DEV" '^/dev/[a-z][a-z]*[1234]$' > /dev/null
 then
   log "didnt find good local device. local: $LOCAL_DEV install: $INSTALL_DEV"
   exit 1
 fi
-if ! expr match "$INSTALL_DEV" '^/dev/[a-z][a-z]*[12]$' > /dev/null
+if ! expr match "$INSTALL_DEV" '^/dev/[a-z][a-z]*[1234]$' > /dev/null
 then
   log "didnt find good install device. local: $LOCAL_DEV install: $INSTALL_DEV"
   exit 1

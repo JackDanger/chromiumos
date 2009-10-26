@@ -111,33 +111,28 @@ error_handler() {
 set -e
 trap error_handler EXIT
 
-# Copy the system image. We sync first to try to make the copy as safe as we
-# can and copy the MBR plus the first partition in one go. We'll fix up the
-# MBR and repartition below.
-echo ""
-echo "Copying the system image. This might take a while..."
-BS=$((1024 * 1024 * 4))  # 4M block size
-COUNT=$(((SIZE / BS) + 1))
-sync
-sudo dd if="$SRC" of="$DST" bs=$BS count=$COUNT
-sync
-
 # Set up the partition table. This is different from the USB partition table
 # because the user paritition expands to fill the space on the disk.
 # NOTE: We currently create an EFI partition rather than swap since the
 # eeepc can take advantage of this to speed POST time.
-NUM_SECTORS=$((SIZE / 512))
+PARTITION_NUM_SECTORS=$((SIZE / 512))
+# size of the device in 512 bytes sectors:
+DEVICE_NUM_SECTORS=$(cat /sys/block/${DST#/dev/}/size)
+
 sudo sfdisk --force -uS "$DST" <<EOF
-,$NUM_SECTORS,L,*,
-,$NUM_SECTORS,L,-,
-,$NUM_SECTORS,ef,-,
-,,L,-,
+,$(($DEVICE_NUM_SECTORS - (3 * $PARTITION_NUM_SECTORS) - 1)),L,-,
+,$PARTITION_NUM_SECTORS,ef,-,
+,$PARTITION_NUM_SECTORS,L,*,
+,$PARTITION_NUM_SECTORS,L,-,
 ;
 EOF
 sync
 
+# Tell kernel to update partition devices based on the new MBR:
+sudo sfdisk -R "$DST"
+
 # Wait a bit and make sure that the partition device shows up.
-DST_PARTITION="${DST}1"
+DST_PARTITION="${DST}3"
 sleep 5
 if [ ! -b "$DST_PARTITION" ]
 then
@@ -145,70 +140,30 @@ then
   exit 1
 fi
 
-# FSCK to make sure. We ignore errors here since e2fsck will report a
-# non-zero result if it had to fix anything up.
-! sudo e2fsck -y -f "$DST_PARTITION"
+# Copy the system image. We sync first to try to make the copy as safe as we
+# can.
+echo ""
+echo "Copying the system image. This might take a while..."
+sync
+sudo dd if="$SRC_PARTITION" of="$DST_PARTITION" bs=1M
+sync
 
 # Fix up the file system label. We skip the first char and prefix with 'H'
 NEW_LABEL=`expr substr "$LABEL" 2 ${#LABEL}`
-NEW_LABEL="H${LABEL}"
+NEW_LABEL="H${NEW_LABEL}"
 sudo tune2fs -L "$NEW_LABEL" "$DST_PARTITION"
 
 # Mount root partition
 mkdir -p "$ROOTFS_DIR"
 sudo mount "$DST_PARTITION" "$ROOTFS_DIR"
-# fix up the extlinux.conf
-
-sudo sed -i '{ s/^DEFAULT .*/DEFAULT chromeos-hd/ }' \
-  "$ROOTFS_DIR"/boot/extlinux.conf
-sudo sed -i "{ s:HDROOT:$DST_PARTITION: }" \
-  "$ROOTFS_DIR"/boot/extlinux.conf
-
-# make a mountpoint for partition 4
-sudo mkdir -p "$ROOTFS_DIR"/mnt/stateful_partition
-sudo chmod 0755 "$ROOTFS_DIR"/mnt
-sudo chmod 0755 "$ROOTFS_DIR"/mnt/stateful_partition
-
-# fix up fstab to keep home dir on 4th partition
-STATEFUL_PARTITION="${DST}4"
-# delete old home partition info
-sudo sed '/\/home\/chronos/d' "$ROOTFS_DIR"/etc/fstab
-sudo mkfs.ext3 "$STATEFUL_PARTITION"
-STATEFUL_PART_DIR=/tmp/chromeos-installer-home
-sudo mkdir -p "$STATEFUL_PART_DIR"
-sudo mount "$STATEFUL_PARTITION" "$STATEFUL_PART_DIR"
-
-# set up home
-sudo mkdir -p "$STATEFUL_PART_DIR"/home
-sudo chown 0:0 "$STATEFUL_PART_DIR"/home
-sudo chmod 0755 "$STATEFUL_PART_DIR"/home
-sudo cp -Rp "$ROOTFS_DIR"/home/chronos "$STATEFUL_PART_DIR"/home
-
-# set up var
-sudo mkdir -p "$STATEFUL_PART_DIR"/var
-sudo cp -Rp "$ROOTFS_DIR"/var/* "$STATEFUL_PART_DIR"/var/
-
-# Default to Pacific timezone
-sudo mkdir "$STATEFUL_PART_DIR"/etc
-sudo rm "$ROOTFS_DIR"/etc/localtime
-sudo ln -s /usr/share/zoneinfo/US/Pacific "$STATEFUL_PART_DIR"/etc/localtime
-sudo ln -s /mnt/stateful_partition/etc/localtime "$ROOTFS_DIR"/etc/localtime
-
-sudo umount "$STATEFUL_PART_DIR"
-
-# write out a new fstab.
-# keep in sync w/ src/scripts/mk_memento_images.sh
-# TODO: Figure out if we can mount rootfs read-only
-cat <<EOF | sudo dd of="$ROOTFS_DIR"/etc/fstab
-/dev/root / rootfs ro 0 0
-tmpfs /tmp tmpfs rw,nosuid,nodev 0 0
-$STATEFUL_PARTITION /mnt/stateful_partition ext3 rw 0 1
-/mnt/stateful_partition/home /home bind defaults,bind 0 0
-/mnt/stateful_partition/var /var bind defaults,bind 0 0
-EOF
-
-
+# run postinst script
+sudo "$ROOTFS_DIR"/postinst "$DST_PARTITION"
 sudo umount "$ROOTFS_DIR"
+
+# set up stateful partition
+STATEFUL_PARTITION="${DST}1"
+sudo mkfs.ext3 "$STATEFUL_PARTITION"
+sudo tune2fs -L "H-STATE" "$STATEFUL_PARTITION"
 
 # Force data to disk before we declare done.
 sync
