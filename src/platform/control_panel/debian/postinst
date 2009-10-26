@@ -25,9 +25,6 @@ set -e
 
 case "$1" in
     configure)
-
-  easy_install web.py
-
 esac
 
 # dh_installdeb will replace this with shell code automatically

@@ -81,6 +81,14 @@ then
   APP_TRACK=$(grep ^CHROMEOS_RELEASE_TRACK /etc/lsb-release | cut -d = -f 2-)
 fi
 
+AUSERVER_URL=$(grep ^CHROMEOS_AUSERVER /etc/lsb-release | cut -d = -f 2-) 
+
+if [ "x" = "x$AUSERVER_URL" ]
+then
+  AUSERVER_URL="https://tools.google.com/service/update2"
+  log using default update server
+fi
+
 # for testing. Uncomment and use these to reproduce the examples above
 # OS=MacOSX
 # PLATFORM=mac
@@ -110,12 +118,11 @@ track="$APP_TRACK">
 </o:gupdate>
 EOF
 
-log sending this request to omaha at https://tools.google.com/service/update2
+log sending this request to omaha at $AUSERVER_URL
 cat "$POST_FILE" >> "$MEMENTO_AU_LOG"
 
 RESPONSE=$(wget -q --header='Content-Type: text/xml' \
-           --post-file="$POST_FILE" -O - \
-           https://tools.google.com/service/update2)
+           --post-file="$POST_FILE" -O - $AUSERVER_URL)
 
 rm -f "$POST_FILE"
 
@@ -132,12 +139,20 @@ then
   log No update
   exit 0
 fi
-HTTPS_CODEBASE=$(expr match "$CODEBASE" '\(https://.*\)')
-if [ -z "$HTTPS_CODEBASE" ]
+
+# We need to make sure that we download updates via HTTPS, but we can skip
+# this check for developer builds.
+DEVSERVER_URL=$(grep ^CHROMEOS_DEVSERVER /etc/lsb-release | cut -d = -f 2-) 
+if [ "x" = "x$DEVSERVER_URL" ]
 then
-  log No https url
-  exit 0
+  HTTPS_CODEBASE=$(expr match "$CODEBASE" '\(https://.*\)')
+  if [ -z "$HTTPS_CODEBASE" ]
+  then
+    log No https url
+    exit 0
+  fi
 fi
+
 
 echo URL=$CODEBASE
 echo HASH=$HASH
