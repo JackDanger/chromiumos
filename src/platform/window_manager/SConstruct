@@ -8,8 +8,6 @@ Help('''\
 Type: 'scons' to build and 'scons -c' to clean\
 ''')
 
-SConscript('../base/SConstruct')
-
 """ Inputs:
         target: list of targets to compile to
         source: list of sources to compile
