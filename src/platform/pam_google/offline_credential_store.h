@@ -4,19 +4,24 @@
 //
 // A class to store credentials on disk and retrieve them for offline login.
 
-#ifndef CHROMEOS_OFFLINE_CREDENTIAL_STORE_H_
-#define CHROMEOS_OFFLINE_CREDENTIAL_STORE_H_
+#ifndef CHROMEOS_PAM_OFFLINE_CREDENTIAL_STORE_H_
+#define CHROMEOS_PAM_OFFLINE_CREDENTIAL_STORE_H_
+
+#include <gtest/gtest.h>
+#include <security/pam_ext.h>
 
 #include <map>
 #include <string>
+#include <utility>
 #include <vector>
+
 #include "base/basictypes.h"
 #include "base/scoped_ptr.h"
-#include <security/pam_ext.h>
 
 namespace chromeos_pam {
 
 extern const string kDefaultOfflineCredentialStorePath;
+extern const int kSaltLength;
 
 using std::map;
 using std::string;
@@ -35,15 +40,29 @@ class OfflineCredentialStore {
       : wrapper_(wrapper),
         path_(path),
         credentials_loaded_(false) {}
-  // Stores a mapping between |name| and |hash| in our offline credential store.
-  void Store(const string& name, const Blob& hash);
+  virtual ~OfflineCredentialStore() {}
+  // Exports |name| and |hash| to the environment so that they can be used by
+  // other pam modules and components in the system.
+  virtual void ExportCredentials(const string& name, const Blob& hash);
+  // Stores a mapping between |name|, |salt| and |hash| in our offline
+  // credential store.
+  virtual void Store(const string& name, const string& salt, const Blob& hash);
   // True if |name|:|hash| is present in the offline store.  False otherwise.
-  bool Contains(const string& name, const Blob& hash);
+  virtual bool Contains(const string& name, const Blob& hash);
+  // Returns a given user's salt or a newly generated salt if none exists.
+  virtual string GetSalt(const string& name);
+  // Returns the salt from the system-wide shadow salt file.
+  virtual string GetSystemSalt();
 
-  // returns a weak hash of password.
-  static Blob WeakHash(const char* const password);
+  // Returns an ASCII hexadecimal string with a newly generated salt of
+  // specified length.
+  static string GenerateSalt(unsigned int length);
+  // Returns the ASCII hexadecimal representation of a binary blob.
   static string AsciiEncode(const Blob& blob);
+  // Returns the binary blob represented by an ASCII hexadecimal string.
   static Blob AsciiDecode(const string& str);
+  // Returns a weak hash of the salt combined with the password.
+  static Blob WeakHash(const char* const salt, const char* const password);
 
  protected:
   // For testing.
@@ -51,14 +70,16 @@ class OfflineCredentialStore {
 
  private:
   bool LoadCredentials();  // returns true on success
-  // Exports |name| and |hash| to the environment so that they can be used by
-  // other pam modules and components in the system.
-  void ExportCredentials(const string& name, const Blob& hash);
+  // Reads |size| random data into |buf| and returns true on success.
+  static bool GetRandom(char *buf, size_t size);
 
   scoped_ptr<ExportWrapper> wrapper_;
   const string& path_;
   bool credentials_loaded_;
-  map<string, Blob> credentials_;
+  // Stores username to hash, salt mappings
+  map<string, pair<Blob, string> > credentials_;
+
+  FRIEND_TEST(OfflineCredentialStoreTest, GetRandomTest);
   DISALLOW_COPY_AND_ASSIGN(OfflineCredentialStore);
 };
 
@@ -75,9 +96,10 @@ class ExportWrapper {
   }
  private:
   pam_handle_t *pamh_;
+
   DISALLOW_COPY_AND_ASSIGN(ExportWrapper);
 };
 
 };  // namespace chromeos_pam
 
-#endif  // CHROMEOS_OFFLINE_CREDENTIAL_STORE_H_
+#endif  // CHROMEOS_PAM_OFFLINE_CREDENTIAL_STORE_H_

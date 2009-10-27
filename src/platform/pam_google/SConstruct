@@ -53,5 +53,5 @@ env_lib.Append(LIBS=['gflags'])
 env_lib.SharedLibrary('pam_google', pam_sources)
 
 env_test = env.Clone()
-env_test.Append(LIBS=['gtest', 'pcrecpp'])
+env_test.Append(LIBS=['gflags', 'gtest', 'pcrecpp'])
 env_test.Program('pam_google_unittests', pam_sources + test_sources)

@@ -2,13 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "offline_credential_store.h"
+#include "pam_google/offline_credential_store.h"
 
 #include <ctype.h>
 #include <stdio.h>
 #include <glog/logging.h>
 #include <openssl/evp.h>
-
 #include "pam_google/pam_prompt_wrapper.h"  // for kUserEnvVariable.
 
 namespace {
@@ -93,12 +92,12 @@ void OfflineCredentialStore::ExportCredentials(const string& name,
                        reinterpret_cast<const void*>(ascii_hash.c_str()));
 }
 
-void OfflineCredentialStore::Store(const string& name, const Blob& hash) {
-  ExportCredentials(name, hash);
-
+void OfflineCredentialStore::Store(const string& name,
+                                   const string& salt,
+                                   const Blob& hash) {
   if (!credentials_loaded_)
     LoadCredentials();
-  credentials_[name] = hash;
+  credentials_[name] = pair<Blob, string>(hash, salt);
 
   // store new credentials to disk
   ScopedFilePointer fp(fopen(path_.c_str(), "w+"));
@@ -106,7 +105,7 @@ void OfflineCredentialStore::Store(const string& name, const Blob& hash) {
     LOG(WARNING) << "Could not open offline credential store.";
     return;
   }
-  for (map<string, Blob>::iterator it = credentials_.begin();
+  for (map<string, pair<Blob, string> >::iterator it = credentials_.begin();
        it != credentials_.end(); ++it) {
     int count_written = fwrite(it->first.data(), 1, it->first.size(), fp.Get());
     if (static_cast<int>(it->first.size()) != count_written) {
@@ -118,11 +117,24 @@ void OfflineCredentialStore::Store(const string& name, const Blob& hash) {
       LOG(WARNING) << "Failed writing delimiter to offline credential store";
       return;
     }
-    string encoded_hash = AsciiEncode(it->second);
+    string encoded_hash = AsciiEncode((it->second).first);
     count_written = fwrite(encoded_hash.data(), 1, encoded_hash.size(),
                            fp.Get());
     if (static_cast<int>(encoded_hash.size()) != count_written) {
       LOG(WARNING) << "Failed writing hash to offline credential store";
+      return;
+    }
+    count_written = fwrite(&kFieldDelimiter, 1, 1, fp.Get());
+    if (1 != count_written) {
+      LOG(WARNING) << "Failed writing delimiter to offline credential store";
+      return;
+    }
+    count_written = fwrite((it->second).second.data(),
+                           1,
+                           (it->second).second.size(),
+                           fp.Get());
+    if (static_cast<int>((it->second).second.size()) != count_written) {
+      LOG(WARNING) << "Failed writing salt to offline credential store";
       return;
     }
     count_written = fwrite("\n", 1, 1, fp.Get());
@@ -136,12 +148,22 @@ void OfflineCredentialStore::Store(const string& name, const Blob& hash) {
 bool OfflineCredentialStore::Contains(const string& name, const Blob& hash) {
   if (!credentials_loaded_)
     LoadCredentials();
-  map<string, Blob>::iterator it = credentials_.find(name);
-  if (credentials_.end() != it && it->second == hash) {
-    ExportCredentials(name, hash);
+  map<string, pair<Blob, string> >::iterator it = credentials_.find(name);
+  if(credentials_.end() != it && it->second.first == hash)
     return true;
-  }
   return false;
+}
+
+string OfflineCredentialStore::GetSalt(const string& name) {
+  static const int kSaltLength = 16;
+  if (!credentials_loaded_)
+    LoadCredentials();
+  map<string, pair<Blob, string> >::iterator it = credentials_.find(name);
+  if (credentials_.end() != it) {
+    return string(it->second.second);
+  }
+  // Create a new salt if the user isn't known.
+  return GenerateSalt(kSaltLength);
 }
 
 bool OfflineCredentialStore::LoadCredentials() {
@@ -152,43 +174,94 @@ bool OfflineCredentialStore::LoadCredentials() {
     return false;
   char line[1024];
   while (fgets(line, sizeof(line), fp.Get())) {
-    char *delimiter = strchr(line, kFieldDelimiter);
-    if ('\0' == *delimiter) {
+    char *user_delimiter = strchr(line, kFieldDelimiter);
+    if ('\0' == *user_delimiter) {
       // delimiter not found. abort
       return false;
     }
-    string name(line, delimiter);
-    string pass(delimiter + 1);
-    if ('\n' != pass[pass.size() - 1]) {
-      // didn't get the entire hash. abort
-      // we probably didn't read the entire line in, which means
-      // the line is very long, which is quite suspicious.
-      return false;
-    }
-    pass.resize(pass.size() - 1);
+    string name(line, user_delimiter);
+    char *salt_delimiter = strchr(user_delimiter + 1, kFieldDelimiter);
+
+    string pass(user_delimiter + 1, salt_delimiter);
     if (pass.size() % 2) {
       // bad length
       return false;
     }
+
+    if ('\0' == *salt_delimiter) {
+      // delimiter not found. abort
+      return false;
+    }
+    string salt(salt_delimiter + 1);
+    if ('\n' != salt[salt.size() - 1]) {
+      // didn't get the entire salt. abort
+      // we probably didn't read the entire line in, which means
+      // the line is very long, which is quite suspicious.
+      return false;
+    }
+    salt.resize(salt.size() - 1);
+
     Blob binary_pass = AsciiDecode(pass);
     if (binary_pass.size() > 0)
-      credentials_[name] = binary_pass;
+      credentials_[name] = pair<Blob, string>(binary_pass, salt);
   }
   return true;
 }
 
-// returns a weak hash of |password|.
-Blob OfflineCredentialStore::WeakHash(const char* const password) {
+bool OfflineCredentialStore::GetRandom(char *buf, size_t size) {
+  const char *kDevUrandom = "/dev/urandom";
+  ScopedFilePointer fp(fopen(kDevUrandom, "r"));
+  if (!fp.Get()) {
+    LOG(WARNING) << "Could not open /dev/urandom";
+    return false;
+  }
+  if (fread(buf, size, 1, fp.Get()) != 1) {
+    LOG(ERROR) << "Could not read bytes from urandom";
+    return false;
+  }
+  return true;
+}
+
+string OfflineCredentialStore::GenerateSalt(unsigned int length) {
+  char* salt = new char[length+1];
+  if (!GetRandom(salt, length)) {
+    return string("");
+  }
+  return AsciiEncode(Blob(salt, salt+length));
+}
+
+string OfflineCredentialStore::GetSystemSalt() {
+  const char *kSaltFile = "/home/.shadow/salt";
+  static const int kMaxSystemSalt = 256;
+  char buf[kMaxSystemSalt];
+  ScopedFilePointer fp(fopen(kSaltFile, "r"));
+  if (!fp.Get()) {
+    LOG(WARNING) << "Could not open " << kSaltFile;
+    return "nosyssalt";
+  }
+  size_t salt_len = fread(buf, 1, sizeof(buf), fp.Get());
+  if (salt_len == 0) {
+    LOG(ERROR) << "Could not read system salt file";
+    return "nosyssalt";
+  }
+  return AsciiEncode(Blob(buf, buf+salt_len));
+}
+
+// returns a weak hash of |salt||password|.
+Blob OfflineCredentialStore::WeakHash(const char* const salt,
+                                      const char* const password) {
   EVP_MD_CTX mdctx;
   const EVP_MD *md;
   unsigned char md_value[EVP_MAX_MD_SIZE];
   unsigned int md_len;
+
 
   OpenSSL_add_all_digests();
 
   md = EVP_get_digestbyname("sha256");
   EVP_MD_CTX_init(&mdctx);
   EVP_DigestInit_ex(&mdctx, md, NULL);
+  EVP_DigestUpdate(&mdctx, salt, strlen(salt));
   EVP_DigestUpdate(&mdctx, password, strlen(password));
   EVP_DigestFinal_ex(&mdctx, md_value, &md_len);
   EVP_MD_CTX_cleanup(&mdctx);

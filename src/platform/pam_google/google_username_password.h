@@ -16,7 +16,7 @@
 
 // Enable local account only if user has specifically requested it
 #ifdef CHROMEOS_PAM_LOCALACCOUNT
-#include "pam_localaccount.h"
+#include "pam_google/pam_localaccount.h"
 #endif
 
 namespace chromeos_pam {
@@ -83,6 +83,8 @@ class GoogleUsernamePassword : public GoogleCredentials {
   // in Google Accounts.
   char *username_;
   char *password_;
+  char *salt_;
+  char *system_salt_;
 
   // handle to libcurl, which does urlencoding for us.
   CURL *curl_;

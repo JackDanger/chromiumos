@@ -4,17 +4,56 @@
 
 // Unit tests for GoogleUsernamePassword.
 
-#include "pam_google/offline_credential_store.h"
-#include "pam_google/google_username_password.h"
+#include <string.h>  // For memset(), memcpy()
 #include <curl/curl.h>
 #include <gtest/gtest.h>
-#include <string.h>
+
+#include <string>
+
+#include "pam_google/google_username_password.h"
+#include "pam_google/offline_credential_store.h"
 
 namespace chromeos_pam {
 const char kFakeUser[] = "fakeuser";
 const char kFakePass[] = "fakepass";
 
 class GoogleUsernamePasswordTest : public ::testing::Test { };
+
+class ExportWrapperMock : public ExportWrapper {
+ public:
+  ExportWrapperMock()
+      : ExportWrapper(reinterpret_cast<pam_handle_t*>(7)) {}
+  virtual ~ExportWrapperMock() {}
+
+  void PamPutenv(const char *name_value) {
+  }
+  void PamSetItem(int item_type, const void *item) {
+  }
+};
+
+class OfflineCredentialStoreMock : public OfflineCredentialStore {
+ public:
+  explicit OfflineCredentialStoreMock(ExportWrapper *wrapper)
+      : OfflineCredentialStore(wrapper), is_stored_(false) {}
+  virtual ~OfflineCredentialStoreMock() {}
+  void ExportCredentials(const string& name, const Blob& hash) {
+  }
+  void Store(const string& name, const string& salt, const Blob& hash) {
+    is_stored_ = true;
+  }
+  bool Contains(const string& name, const Blob& hash) {
+    return is_stored_;
+  }
+  string GetSalt(const string& name) {
+    return string("fakeusersalt");
+  }
+  string GetSystemSalt() {
+    return string("fakesystemsalt");
+  }
+ private:
+  bool is_stored_;
+};
+
 
 TEST(GoogleUsernamePasswordTest, MemoryZeroTest) {
   int zerolen = strlen(kFakePass)+1;
@@ -60,7 +99,7 @@ TEST(GoogleUsernamePasswordTest, UrlencodeTest) {
 
 TEST(GoogleUsernamePasswordTest, GetActiveUserTest) {
   char username[80];
-  sprintf(username, "%s%s", kFakeUser, "@gmail.com");
+  snprintf(username, sizeof(username), "%s%s", kFakeUser, "@gmail.com");
   GoogleUsernamePassword up(username, strlen(username),
                           kFakePass, strlen(kFakePass), NULL);
   char active_username[80];
@@ -70,11 +109,11 @@ TEST(GoogleUsernamePasswordTest, GetActiveUserTest) {
 
 TEST(GoogleUsernamePasswordTest, IsAcceptableTest) {
   char username[80];
-  sprintf(username, "%s%s", "foo", "@gmail.com");
+  snprintf(username, sizeof(username), "%s%s", "foo", "@gmail.com");
   GoogleUsernamePassword up(username, strlen(username),
                             kFakePass, strlen(kFakePass), NULL);
   EXPECT_TRUE(up.IsAcceptable());
-  sprintf(username, "%s%s", "foo2", "@gmail.com");
+  snprintf(username, sizeof(username), "%s%s", "foo2", "@gmail.com");
   GoogleUsernamePassword up2(username, strlen(username),
                              kFakePass, strlen(kFakePass), NULL);
   EXPECT_TRUE(up2.IsAcceptable());
@@ -95,7 +134,7 @@ TEST(GoogleUsernamePasswordTest, LocalAccountIsNotAcceptableTest) {
   EXPECT_FALSE(up.IsAcceptable());
 }
 
-#endif // CHROMEOS_PAM_LOCALACCOUNT
+#endif  // CHROMEOS_PAM_LOCALACCOUNT
 
 TEST(GoogleUsernamePasswordTest, IsAcceptableFailTest) {
   GoogleUsernamePassword up(kFakeUser, strlen(kFakeUser),
@@ -110,15 +149,27 @@ TEST(GoogleUsernamePasswordTest, FormatTest) {
   char password[80];
   char account[80];
 
-  sprintf(email, "Email=%s&", kFakeUser);
-  sprintf(password, "Passwd=%s&", kFakePass);
-  sprintf(account, "accountType=%s&", kAccountType);
+  snprintf(email, sizeof(email), "Email=%s&", kFakeUser);
+  snprintf(password, sizeof(password), "Passwd=%s&", kFakePass);
+  snprintf(account, sizeof(account), "accountType=%s&", kAccountType);
 
   char buffer[256];
   up.Format(buffer, sizeof(buffer));
   EXPECT_TRUE(NULL != strstr(buffer, email));
   EXPECT_TRUE(NULL != strstr(buffer, password));
   EXPECT_TRUE(NULL != strstr(buffer, account));
+}
+
+TEST(GoogleUsernamePasswordTest, ValidForOfflineLoginTest) {
+  scoped_ptr<ExportWrapperMock> wrapper(new ExportWrapperMock());
+  scoped_ptr<OfflineCredentialStoreMock> store(
+      new OfflineCredentialStoreMock(wrapper.get()));
+  GoogleUsernamePassword up(kFakeUser, strlen(kFakeUser),
+                            kFakePass, strlen(kFakePass),
+                            store.get());
+  EXPECT_FALSE(up.ValidForOfflineLogin());
+  up.StoreCredentials();
+  EXPECT_TRUE(up.ValidForOfflineLogin());
 }
 
 }  // namespace chromeos_pam
