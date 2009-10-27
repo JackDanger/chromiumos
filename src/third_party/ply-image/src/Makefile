@@ -8,9 +8,10 @@ H = ply-frame-buffer.h \
     ply-list.h \
     ply-utils.h \
 
+CFLAGS ?= -O2
 
 ply-image: $(C) $(H) Makefile
-	$(CC) $(C) $(LIBS) -Wall -O2 -I. -o ply-image -lpng
+	$(CC) $(CFLAGS) $(C) $(LIBS) -Wall -I. -o ply-image -o ply-image -lpng
 	strip ply-image
 
 clean:
