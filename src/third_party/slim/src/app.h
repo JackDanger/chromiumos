@@ -56,9 +56,13 @@ private:
     void CreateServerAuth();
     char* StrConcat(const char* str1, const char* str2);
     void UpdatePid();
+    void CheckAndUpdateForExternalMontior();
+    static inline bool isBetween(int num, int min, int max) {
+      return num >= min && num <= max;
+    }
 
     bool AuthenticateUser(bool focuspass);
- 
+
     static std::string findValidRandomTheme(const std::string& set);
     static void replaceVariables(std::string& input,
                                  const std::string& var,
@@ -98,7 +102,7 @@ private:
 	// For testing themes
 	char* testtheme;
     bool testing;
-    
+
     std::string themeName;
     std::string mcookie;
 };

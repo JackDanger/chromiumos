@@ -22,6 +22,7 @@
 #include <sstream>
 #include <vector>
 #include <algorithm>
+
 #include "app.h"
 #include "numlock.h"
 
@@ -31,6 +32,8 @@
 #endif
 
 using namespace std;
+
+static const char* kMonitorReconfigCommand = "/usr/sbin/monitor_reconfigure";
 
 #ifdef USE_PAM
 #include <string>
@@ -311,7 +314,8 @@ void App::Run() {
         XMapWindow(Dpy, Root);
         XFlush(Dpy);
     } else {
-      //        blankScreen();
+      // Check and adjust for external monitor if not testing
+      CheckAndUpdateForExternalMontior();
     }
 
     HideCursor();
@@ -949,6 +953,9 @@ int IgnoreXIO(Display *d) {
     longjmp(CloseEnv, 1);
 }
 
+void App::CheckAndUpdateForExternalMontior() {
+  system(kMonitorReconfigCommand);
+}
 
 void App::StopServer() {
     // Stop alars clock and ignore signals
