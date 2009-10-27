@@ -17,7 +17,7 @@ deps = {
 # Source for the chrome os login manager to be built along with the
 # chrome os build of chrome
   "src/third_party/chromeos_login_manager" :
-    "/trunk/src/platform/login_manager/chromeos_login_manager@30",
+    "/trunk/src/platform/login_manager/chromeos_login_manager@48",
 # dependency for login manager in chrome os
   "src/third_party/chromeos_login_manager/include" :
     "/trunk/src/third_party/pam-dev@30",
