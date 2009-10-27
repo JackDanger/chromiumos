@@ -33,8 +33,8 @@ class ExportWrapperMock : public ExportWrapper {
 
 class OfflineCredentialStoreMock : public OfflineCredentialStore {
  public:
-  explicit OfflineCredentialStoreMock(ExportWrapper *wrapper)
-      : OfflineCredentialStore(wrapper), is_stored_(false) {}
+  explicit OfflineCredentialStoreMock()
+      : is_stored_(false) {}
   virtual ~OfflineCredentialStoreMock() {}
   void ExportCredentials(const string& name, const Blob& hash) {
   }
@@ -161,9 +161,8 @@ TEST(GoogleUsernamePasswordTest, FormatTest) {
 }
 
 TEST(GoogleUsernamePasswordTest, ValidForOfflineLoginTest) {
-  scoped_ptr<ExportWrapperMock> wrapper(new ExportWrapperMock());
   scoped_ptr<OfflineCredentialStoreMock> store(
-      new OfflineCredentialStoreMock(wrapper.get()));
+      new OfflineCredentialStoreMock);
   GoogleUsernamePassword up(kFakeUser, strlen(kFakeUser),
                             kFakePass, strlen(kFakePass),
                             store.get());

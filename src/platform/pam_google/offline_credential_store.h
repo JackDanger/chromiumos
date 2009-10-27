@@ -66,6 +66,8 @@ class OfflineCredentialStore {
 
  protected:
   // For testing.
+  OfflineCredentialStore()
+      :wrapper_(NULL), path_(""), credentials_loaded_(false) {}
   void SetExportWrapper(ExportWrapper *wrapper) { wrapper_.reset(wrapper); }
 
  private:
@@ -76,7 +78,7 @@ class OfflineCredentialStore {
   scoped_ptr<ExportWrapper> wrapper_;
   const string& path_;
   bool credentials_loaded_;
-  // Stores username to hash, salt mappings
+  // Stores username to hash, salt mappings.
   map<string, pair<Blob, string> > credentials_;
 
   FRIEND_TEST(OfflineCredentialStoreTest, GetRandomTest);
