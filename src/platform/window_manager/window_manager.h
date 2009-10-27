@@ -108,8 +108,11 @@ class WindowManager {
   // present.
   Window* GetWindow(XWindow xid);
 
-  // Locks the screen by calling xscreensaver-command
+  // Locks the screen by calling xscreensaver-command.
   void LockScreen();
+
+  // Enables and configures an external monitor.
+  void ConfigureExternalMonitor();
 
   // Do something reasonable with the input focus.
   // This is intended to be called by EventConsumers when they give up the

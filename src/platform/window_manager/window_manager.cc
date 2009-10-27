@@ -41,6 +41,9 @@ DEFINE_string(wm_chrome_command, "google-chrome",
 DEFINE_string(wm_background_image, "", "Background image to display");
 DEFINE_string(wm_lock_screen_command, "xscreensaver-command -l",
               "Command to lock the screen");
+DEFINE_string(wm_configure_monitor_command,
+              "/usr/sbin/monitor_reconfigure",
+              "Command to configure an external monitor");
 
 DEFINE_bool(wm_use_compositing, true, "Use compositing");
 
@@ -289,6 +292,16 @@ bool WindowManager::Init() {
             XK_l, KeyBindings::kControlMask | KeyBindings::kAltMask),
         "lock-screen");
   }
+  if (!FLAGS_wm_configure_monitor_command.empty()) {
+    key_bindings_->AddAction(
+        "configure_monitor",
+        NewPermanentCallback(this, &WindowManager::ConfigureExternalMonitor),
+        NULL, NULL);
+    key_bindings_->AddBinding(
+        KeyBindings::KeyCombo(
+            XK_m, KeyBindings::kControlMask | KeyBindings::kAltMask),
+        "configure_monitor");
+  }
 
   key_bindings_->AddAction(
       "toggle-hotkey-overlay",
@@ -471,11 +484,17 @@ Window* WindowManager::GetWindow(XWindow xid) {
 
 void WindowManager::LockScreen() {
   LOG(INFO) << "Locking screen via: " << FLAGS_wm_lock_screen_command;
+  if (system(FLAGS_wm_lock_screen_command.c_str()) < 0)
+    LOG(WARNING) << "Unable to lock screen via: "
+                 << FLAGS_wm_lock_screen_command;
+}
 
-  const string command = StringPrintf(
-                          "%s", FLAGS_wm_lock_screen_command.c_str());
-  if (system(command.c_str()) < 0)
-    LOG(WARNING) << "Unable to lock screen via: " << command;
+void WindowManager::ConfigureExternalMonitor() {
+  LOG(INFO) << "Configuring external monitor via: "
+            << FLAGS_wm_configure_monitor_command;
+  if (system(FLAGS_wm_configure_monitor_command.c_str()) < 0)
+    LOG(WARNING) << "Unable to configure the external monitor via: "
+                 << FLAGS_wm_configure_monitor_command;
 }
 
 void WindowManager::TakeFocus() {
