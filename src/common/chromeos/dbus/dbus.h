@@ -279,10 +279,12 @@ bool RetrieveProperty(const Proxy& proxy,
                            G_TYPE_STRING, property,
                            G_TYPE_INVALID,
                            G_TYPE_VALUE, &value,
-                           G_TYPE_INVALID))
+                           G_TYPE_INVALID)){
+    LOG(ERROR) << "Getting property failed: " << (error->message ? error->message : "Unknown Error.");
     return false;
 
-  return glib::Retrieve<T>(value, result);
+  }
+  return glib::Retrieve(value, result);
 }
 
 // \brief RetrieveProperties returns a HashTable of all properties for the

@@ -3,8 +3,10 @@
 // found in the LICENSE file.
 
 #include <dlfcn.h>
+#include <glog/logging.h>
 
 #include "chromeos_cros_api.h" // NOLINT
+#include "chromeos_mount.h"  // NOLINT
 #include "chromeos_network.h"  // NOLINT
 #include "chromeos_power.h"  // NOLINT
 #include "chromeos_synaptics.h"  // NOLINT
@@ -15,6 +17,10 @@ typedef bool (*CrosVersionCheckType)(chromeos::CrosAPIVersion);
 typedef PowerStatusConnection (*MonitorPowerStatusType)(PowerMonitor, void*);
 typedef void (*DisconnectPowerStatusType)(PowerStatusConnection);
 typedef bool (*RetrievePowerInformationType)(PowerInformation* information);
+typedef MountStatusConnection (*MonitorMountStatusType)(MountMonitor, void*);
+typedef void (*DisconnectMountStatusType)(MountStatusConnection);
+typedef MountStatus* (*RetrieveMountInformationType)();
+typedef void (*FreeMountStatusType)(MountStatus*);
 typedef bool (*ConnectToWifiNetworkType)(const char*,
                                          const char*,
                                          const char*);
@@ -30,6 +36,11 @@ CrosVersionCheckType CrosVersionCheck = 0;
 MonitorPowerStatusType MonitorPowerStatus = 0;
 DisconnectPowerStatusType DisconnectPowerStatus = 0;
 RetrievePowerInformationType RetrievePowerInformation = 0;
+
+MonitorMountStatusType MonitorMountStatus = 0;
+DisconnectMountStatusType DisconnectMountStatus = 0;
+RetrieveMountInformationType RetrieveMountInformation = 0;
+FreeMountStatusType FreeMountStatus = 0;
 
 ConnectToWifiNetworkType ConnectToWifiNetwork = 0;
 GetAvailableNetworksType GetAvailableNetworks = 0;
@@ -48,8 +59,10 @@ bool LoadCros(const char* path_to_libcros) {
     return false;
 
   void* handle = ::dlopen(path_to_libcros, RTLD_NOW);
-  if (handle == NULL)
+  if (handle == NULL) {
+    DLOG(ERROR) << "Error opening up cros: " << dlerror();
     return false;
+  }
 
   CrosVersionCheck =
       CrosVersionCheckType(::dlsym(handle, "ChromeOSCrosVersionCheck"));
@@ -68,6 +81,18 @@ bool LoadCros(const char* path_to_libcros) {
 
   RetrievePowerInformation = RetrievePowerInformationType(
       ::dlsym(handle, "ChromeOSRetrievePowerInformation"));
+
+  MonitorMountStatus = MonitorMountStatusType(
+      ::dlsym(handle, "ChromeOSMonitorMountStatus"));
+
+  FreeMountStatus = FreeMountStatusType(
+      ::dlsym(handle, "ChromeOSFreeMountStatus"));
+
+  DisconnectMountStatus = DisconnectMountStatusType(
+      ::dlsym(handle, "ChromeOSDisconnectMountStatus"));
+
+  RetrieveMountInformation = RetrieveMountInformationType(
+      ::dlsym(handle, "ChromeOSRetrieveMountInformation"));
 
   ConnectToWifiNetwork = ConnectToWifiNetworkType(
       ::dlsym(handle, "ChromeOSConnectToWifiNetwork"));
@@ -90,6 +115,10 @@ bool LoadCros(const char* path_to_libcros) {
   return MonitorPowerStatus
       && DisconnectPowerStatus
       && RetrievePowerInformation
+      && MonitorMountStatus
+      && FreeMountStatus
+      && DisconnectMountStatus
+      && RetrieveMountInformation
       && ConnectToWifiNetwork
       && GetAvailableNetworks
       && FreeServiceStatus
@@ -99,4 +128,3 @@ bool LoadCros(const char* path_to_libcros) {
 }
 
 }  // namespace chromeos
-

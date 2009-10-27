@@ -5,20 +5,21 @@
 import os
 import sys
 
-SOURCES=['chromeos_power.cc', 'chromeos_network.cc', 'chromeos_synaptics.cc',
-         'marshal.cc', 'version_check.cc']
+SOURCES=['chromeos_power.cc', 'chromeos_mount.cc',
+         'chromeos_network.cc', 'marshal.cc', 
+         'version_check.cc', 'chromeos_synaptics.cc']
 
 env = Environment(
     CPPPATH=[ '.', '../../common',
-              '../../third_party/synaptics', '..'],
+              '../../third_party/synaptics', '..', '../base'],
     CCFLAGS=['-m32', '-fno-exceptions'],
     LINKFLAGS=['-m32' ],
-    LIBS = ['glog', 'chromeos', 'synaptics'],
-    LIBPATH=['../../common', '../../third_party/synaptics'],
+    LIBS = ['glog', 'chromeos', 'synaptics', 'base'],
+    LIBPATH=['../../common', '../../third_party/synaptics', '../base'],
 )
 
 # glib and dbug environment
-env.ParseConfig('pkg-config --cflags --libs dbus-1 glib-2.0 dbus-glib-1')
+env.ParseConfig('pkg-config --cflags --libs dbus-1 glib-2.0 dbus-glib-1 libpcrecpp')
 
 env.SharedLibrary('cros', SOURCES)
 
@@ -33,4 +34,4 @@ env_so = Environment (
 env_so.ParseConfig('pkg-config --cflags --libs gobject-2.0')
 env_so.Program('monitor_power', ['monitor_power.cc', 'load.cc'])
 env_so.Program('monitor_network', ['monitor_network.cc', 'load.cc'])
-
+env_so.Program('monitor_mount', ['monitor_mount.cc', 'load.cc'])

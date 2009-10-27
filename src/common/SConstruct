@@ -5,7 +5,7 @@
 import os
 import sys
 
-SOURCES=['chromeos/dbus/dbus.cc']
+SOURCES=['chromeos/dbus/dbus.cc', 'util.cc']
 
 env = Environment(
     CPPPATH=[ '.', '../platform' ],

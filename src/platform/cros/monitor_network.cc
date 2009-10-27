@@ -10,6 +10,7 @@
 #include "chromeos_cros_api.h"  // NOLINT
 #include "chromeos_network.h"  // NOLINT
 #include "chromeos/glib/object.h"  // NOLINT
+#include "monitor_utils.h" //NOLINT
 
 // Dumps the contents of a single service to the logs.
 void DumpService(const chromeos::ServiceInfo& info) {
@@ -67,18 +68,8 @@ class Callback {
 int main(int argc, const char** argv) {
   ::g_type_init();
   GMainLoop* loop = ::g_main_loop_new(NULL, false);
-  // Construct a path for the shared library. This example uses a local path
-  // but on chromeos the library is installed in:
-  //  "/opt/google/chrome/chromeos/libcros.so"
 
-  std::string app_path = argv[0];
-  app_path.erase(app_path.begin() + app_path.find_last_of("/"), app_path.end());
-  app_path += "/libcros.so";
-
-  // Load the symbols for the Power API. LoadPower must be called before any
-  // other functions.
-  bool success = chromeos::LoadCros(app_path.c_str());
-  DCHECK(success) << "LoadCros('" << app_path.c_str() << "') failed.";
+  DCHECK(LoadCrosLibrary(argv)) << "Failed to load cros .so";
 
   chromeos::ServiceStatus* status = chromeos::GetAvailableNetworks();
   DCHECK(status) << "Unable to scan for networks";
@@ -92,4 +83,3 @@ int main(int argc, const char** argv) {
   chromeos::DisconnectNetworkStatus(connection);
   return 0;
 }
-

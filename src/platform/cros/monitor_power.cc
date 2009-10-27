@@ -10,6 +10,7 @@
 
 #include "chromeos_cros_api.h"  // NOLINT
 #include "chromeos_power.h"
+#include "monitor_utils.h" //NOLINT
 
 // \file This is a simple console application which will monitor the power
 // status to std::cout and disconnect after it has reported the status
@@ -62,21 +63,11 @@ int main(int argc, const char** argv) {
   ::g_type_init();
   GMainLoop* loop = ::g_main_loop_new(NULL, false);
 
-  // Construct a path for the shared library. This example uses a local path
-  // but on chromeos the library is installed in:
-  //  "/opt/google/chrome/chromeos/libcros.so"
-
-  std::string app_path = argv[0];
-  app_path.erase(app_path.begin() + app_path.find_last_of("/"), app_path.end());
-  app_path += "/libcros.so";
-
-  // Load the symbols for the Power API. LoadPower must be called before any
-  // other functions.
-  bool success = chromeos::LoadCros(app_path.c_str());
-  DCHECK(success) << "LoadCros('" << app_path.c_str() << "') failed.";
+  DCHECK(LoadCrosLibrary(argv)) << "Failed to load cros .so";
 
   // Display information about the power system
   chromeos::PowerInformation info = {};
+  bool success;
   success = chromeos::RetrievePowerInformation(&info);
   DCHECK(success) << "RetrievePowerInformation failed.";
 

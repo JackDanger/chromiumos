@@ -202,11 +202,15 @@ class Value : public ::GValue {
   Value()
       : GValue() {
   }
+  explicit Value(const ::GValue& x)
+      : GValue() {
+    *this = *static_cast<const Value*>(&x);
+  }
   template <typename T>
   explicit Value(T x)
       : GValue() {
     ::g_value_init(this,
-                   type_to_gtypeid<typename promotes_from<T>::type>());
+        type_to_gtypeid<typename promotes_from<T>::type>());
     RawSet(this, x);
   }
   Value(const Value& x)
@@ -267,12 +271,17 @@ template <typename T>
 bool Retrieve(const ::GValue& x, T* result) {
   if (!G_VALUE_HOLDS(&x, type_to_gtypeid<typename promotes_from<T>::type>())) {
     LOG(WARNING) << "GValue retrieve failed. Expected: "
-        << type_to_gtypeid<typename promotes_from<T>::type>()
-        << ", Found: " << G_VALUE_TYPE(&x);
+        << g_type_name(type_to_gtypeid<typename promotes_from<T>::type>())
+        << ", Found: " << g_type_name(G_VALUE_TYPE(&x));
     return false;
   }
 
   *result = RawCast<typename promotes_from<T>::type>(x);
+  return true;
+}
+
+inline bool Retrieve(const ::GValue& x, Value* result) {
+  *result = Value(x);
   return true;
 }
 
