@@ -74,6 +74,7 @@ chromeos-cryptohome
 chromeos-init
 chromeos-installer
 chromeos-login
+chromeos-monitor-reconfig
 chromeos-pam-google
 chromeos-libcros
 chromeos-ply-image

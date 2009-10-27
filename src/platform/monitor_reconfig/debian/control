@@ -1,0 +1,11 @@
+Source: chromeos-monitor-reconfig
+Section: x11
+Priority: optional
+Maintainer: The Chromium OS Authors <chromium-os-dev@googlegroups.com>
+Build-Depends: debhelper (>=7), autotools-dev
+Standards-Version: 3.8.0
+
+Package: chromeos-monitor-reconfig
+Architecture: any
+Depends: xserver-xorg
+Description: Small module that will reconfigure an external monitor to the largest resolution the fills either horizontally or vertically

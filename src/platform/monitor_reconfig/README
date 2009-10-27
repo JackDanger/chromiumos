@@ -1,0 +1,5 @@
+This package provides a small tool that allows one to enable and configure 
+an external monitor to mirror the primary's screen's resolution as best
+possible (i.e. if primary max is 1024x600 and external monitor has
+800x600 and 1024x768, the monitor will be configured at the later rather
+than the former.
