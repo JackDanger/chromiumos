@@ -23,6 +23,23 @@ class ExportWrapperMock : public ExportWrapper {
   }
 };
 
+TEST(OfflineCredentialStoreTest, LoadCredentialsMalformedTest) {
+  const string kPath = "/tmp/malformed_cred_store.txt";
+  char malformed_line[] = "foo 64787423abcab\n";
+  if (-1 == remove(kPath.c_str()))
+    EXPECT_EQ(ENOENT, errno);
+  // Create a malformed credential store file.
+  FILE *fp = fopen(kPath.c_str(), "w");
+  EXPECT_TRUE(fp != NULL);
+  EXPECT_EQ(sizeof(malformed_line), fwrite(malformed_line,
+                                           sizeof(char),
+                                           sizeof(malformed_line),
+                                           fp));
+  EXPECT_EQ(0, fclose(fp));
+  OfflineCredentialStore store(kPath, new ExportWrapperMock);
+  EXPECT_TRUE(store.LoadCredentials());
+}
+
 TEST(OfflineCredentialStoreTest, SimpleStoreRecallTest) {
   const string kPath = "/tmp/cred_store.txt";
   if (-1 == remove(kPath.c_str()))

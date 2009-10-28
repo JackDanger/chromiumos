@@ -81,6 +81,7 @@ class OfflineCredentialStore {
   // Stores username to hash, salt mappings.
   map<string, pair<Blob, string> > credentials_;
 
+  FRIEND_TEST(OfflineCredentialStoreTest, LoadCredentialsMalformedTest);
   FRIEND_TEST(OfflineCredentialStoreTest, GetRandomTest);
   DISALLOW_COPY_AND_ASSIGN(OfflineCredentialStore);
 };

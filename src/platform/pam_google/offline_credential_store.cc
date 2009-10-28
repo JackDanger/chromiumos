@@ -27,15 +27,20 @@ char DecodeChar(char in) {
 
 class ScopedFilePointer {
  public:
-  explicit ScopedFilePointer(FILE* const fp) : fp_(fp) {}
+  explicit ScopedFilePointer(FILE* fp) : fp_(fp) {}
   ~ScopedFilePointer() {
     if (!fp_)
       return;
     CHECK_EQ(0, fclose(fp_));
   }
   FILE* Get() { return fp_; }
+  FILE* Release() {
+    FILE* fp_copy = fp_;
+    fp_ = NULL;
+    return fp_copy;
+  }
  private:
-  FILE* const fp_;
+  FILE* fp_;
   DISALLOW_COPY_AND_ASSIGN(ScopedFilePointer);
 };
 
@@ -175,23 +180,34 @@ bool OfflineCredentialStore::LoadCredentials() {
   char line[1024];
   while (fgets(line, sizeof(line), fp.Get())) {
     char *user_delimiter = strchr(line, kFieldDelimiter);
-    if ('\0' == *user_delimiter) {
+    if (!user_delimiter || '\0' == *user_delimiter) {
       // delimiter not found. abort
       return false;
     }
     string name(line, user_delimiter);
     char *salt_delimiter = strchr(user_delimiter + 1, kFieldDelimiter);
 
+    if (!salt_delimiter || '\0' == *salt_delimiter) {
+      // Delimiter not found. Either the offline credential file is
+      // corrupted, or it's still using the old style credentials with no salt.
+      // In either case, truncate the file.
+      CHECK_EQ(0, fclose(fp.Release()));
+      LOG(WARNING) << "Malformed credential file found";
+      ScopedFilePointer truncate_fp(fopen(path_.c_str(), "w"));
+      if (!truncate_fp.Get()) {
+        LOG(WARNING) << "Couldn't truncate malformed credential file";
+        return false;
+      }
+      return true;
+    }
+
     string pass(user_delimiter + 1, salt_delimiter);
     if (pass.size() % 2) {
       // bad length
+      LOG(WARNING) << "Bad password hash length.";
       return false;
     }
 
-    if ('\0' == *salt_delimiter) {
-      // delimiter not found. abort
-      return false;
-    }
     string salt(salt_delimiter + 1);
     if ('\n' != salt[salt.size() - 1]) {
       // didn't get the entire salt. abort
