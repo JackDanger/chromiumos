@@ -5,7 +5,7 @@ from autotest_lib.server.hosts import remote
 
 
 def make_ssh_command(user="root", port=22, opts='', connect_timeout=30):
-    base_command = ("/usr/bin/ssh -a -x %s -o BatchMode=yes "
+    base_command = ("/usr/bin/ssh -a -q -x %s -o BatchMode=yes "
                     "-o ConnectTimeout=%d -o ServerAliveInterval=300 "
                     "-l %s -p %d")
     assert isinstance(connect_timeout, (int, long))
@@ -100,10 +100,9 @@ class AbstractSSHHost(SiteHost):
 
         # take a set of globs that cover all files, and see which are needed
         patterns = ["*", ".[!.]*"]
-        patterns = [p for p in patterns if glob_matches_files(path + p)]
+        patterns = [p for p in patterns if glob_matches_files(path, p)]
 
         # convert them into a set of paths suitable for the commandline
-        path = utils.sh_escape(path)
         if is_local:
             return ["\"%s\"%s" % (utils.sh_escape(path), pattern)
                     for pattern in patterns]
@@ -203,7 +202,7 @@ class AbstractSSHHost(SiteHost):
                                          delete_dest, preserve_symlinks)
             utils.run(rsync)
         except error.CmdError, e:
-            logging.warn("warning: rsync failed with: %s", e)
+            # logging.warn("warning: rsync failed with: %s", e)
             logging.info("attempting to copy with scp instead")
 
             # scp has no equivalent to --delete, just drop the entire dest dir
@@ -270,7 +269,7 @@ class AbstractSSHHost(SiteHost):
                                          delete_dest, preserve_symlinks)
             utils.run(rsync)
         except error.CmdError, e:
-            logging.warn("Command rsync failed with: %s", e)
+            # logging.warn("Command rsync failed with: %s", e)
             logging.info("Attempting to copy with scp instead")
 
             # scp has no equivalent to --delete, just drop the entire dest dir
