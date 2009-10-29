@@ -73,7 +73,7 @@ plugindir = $(libdir)/connman/plugins
 
 scriptdir = $(libdir)/connman/scripts
 
-storagedir = $(localstatedir)/lib/connman
+storagedir = $(localstatedir)/cache/connman
 
 if MAINTAINER_MODE
 build_plugindir = $(abs_top_srcdir)/plugins/.libs
