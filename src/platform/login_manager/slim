@@ -22,3 +22,4 @@ account	required			pam_permit.so
 
 @include common-password
 @include common-session
+session optional pam_mount.so
