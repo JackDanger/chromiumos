@@ -1616,25 +1616,6 @@ static void state_change(struct supplicant_task *task, DBusMessage *msg)
 		connman_network_set_connected(task->network, TRUE);
 		break;
 
-	case WPA_DISCONNECTED:
-		remove_network(task);
-
-		/* carrier off */
-		connman_network_set_connected(task->network, FALSE);
-
-		if (task->disconnecting == TRUE) {
-			connman_network_unref(task->network);
-			task->disconnecting = FALSE;
-
-			if (task->pending_network != NULL) {
-				task->network = task->pending_network;
-				task->pending_network = NULL;
-				task_connect(task);
-			} else
-				task->network = NULL;
-		}
-		break;
-
 	case WPA_ASSOCIATING:
 		if (ostate != WPA_SCANNING && ostate != WPA_COMPLETED)
 			goto badstate;
@@ -1646,7 +1627,9 @@ static void state_change(struct supplicant_task *task, DBusMessage *msg)
 	case WPA_INACTIVE:
 		if (ostate != WPA_SCANNING && ostate != WPA_DISCONNECTED)
 			goto badstate;
-
+		/* fall thru... */
+	case WPA_DISCONNECTED:
+		/* carrier off */
 		connman_network_set_connected(task->network, FALSE);
 
 		if (task->disconnecting == TRUE) {
