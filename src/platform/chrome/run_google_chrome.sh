@@ -14,6 +14,10 @@ USER_DATA_DIR="${HOME}/${CHROMEOS_USER}/.config/google-chrome"
 # will take care of opening the tabs they want.
 FIRST_RUN_ARGS=""
 CLIENTSSL_AUTH_ALLOW_ARGS=""
+# Determine user's domain.
+# TODO: reliably determine the correct domain for all users.
+DOMAIN="${CHROMEOS_USER#*@}"
+
 if [ ! -d "$USER_DATA_DIR" ]; then
   mkdir -p "$USER_DATA_DIR"
   if [ -f "$SEND_METRICS" ]; then
@@ -24,19 +28,13 @@ if [ ! -d "$USER_DATA_DIR" ]; then
         "${USER_DATA_DIR}/Consent To Send Stats"
   fi
 
-  # determine the logged in user's domain and give them the appropriate stuff.
-  # TODO: reliably determine the correct domain for all users.
-  DOMAIN="${CHROMEOS_USER#*@}"
+  # Give appropriate stuff to the users based on their domain.
   if [ $DOMAIN = "google.com" ]; then
     FIRST_RUN_ARGS="--pinned-tab-count=3 \
                     http://welcome-cros.appspot.com \
                     https://mail.google.com/a/google.com \
                     https://calendar.google.com/a/google.com \
                     chrome://newtab"
-    # Allow chrome to automatically send available SSL client certificates 
-    # to a server. Until a client certificate UI is available in chrome,
-    # this is only enabled to allow corp access.
-    CLIENTSSL_AUTH_ALLOW_ARGS="--auto-ssl-client-auth"
   elif [ $DOMAIN = "gmail.com" ]; then
     FIRST_RUN_ARGS="--pinned-tab-count=2 \
                     https://mail.google.com/mail \
@@ -49,6 +47,13 @@ if [ ! -d "$USER_DATA_DIR" ]; then
                     https://calendar.google.com \
                     chrome://newtab"
   fi
+fi
+
+# Allow Chromium to automatically send available SSL client certificates 
+# to a server. Until a client certificate UI is available in Chromium,
+# this is automatically enabled for internal users.
+if [ $DOMAIN = "google.com" ]; then
+    CLIENTSSL_AUTH_ALLOW_ARGS="--auto-ssl-client-auth"
 fi
 
 # We want to pass user login credentials to chrome through the cookie
