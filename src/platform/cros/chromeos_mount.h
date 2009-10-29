@@ -4,7 +4,7 @@
 
 #ifndef CHROMEOS_MOUNT_H_
 #define CHROMEOS_MOUNT_H_
-
+#include <string>
 #include <base/basictypes.h>
 
 namespace chromeos { //NOLINT
@@ -35,7 +35,10 @@ typedef OpaqueMountStatusConnection* MountStatusConnection;
 //
 // The expected callback signature that will be provided by the client who
 // calls MonitorMountStatus.
-typedef void(*MountMonitor)(void*, const MountStatus&, MountEventType evt);
+typedef void(*MountMonitor)(void*,
+                            const MountStatus&,
+                            MountEventType,
+                            const char*);
 
 // Processes a callback from a d-bus signal by finding the path of the
 // DeviceKit Disks service that changed and sending the details along to the

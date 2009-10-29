@@ -169,29 +169,29 @@ class OpaqueMountStatusConnection {
        removeconnection_(NULL) {
   }
 
-  void FireEvent(MountEventType evt) {
+  void FireEvent(MountEventType evt, const char* path) {
     MountStatus* info;
     if ((info = ChromeOSRetrieveMountInformation()) != NULL)
-      monitor_(object_, *info, evt);
+      monitor_(object_, *info, evt, path);
     ChromeOSFreeMountStatus(info);
   }
 
   static void Added(void* object, const char* device) {
     MountStatusConnection self = static_cast<MountStatusConnection>(object);
     DLOG(INFO) << "device added:" << device;
-    self->FireEvent(DISK_ADDED);
+    self->FireEvent(DISK_ADDED, device);
   }
 
   static void Removed(void* object, const char* device) {
     MountStatusConnection self = static_cast<MountStatusConnection>(object);
     DLOG(INFO) << "device removed:" << device;
-    self->FireEvent(DISK_REMOVED);
+    self->FireEvent(DISK_REMOVED, device);
   }
 
   static void Changed(void* object, const char* device) {
     MountStatusConnection self = static_cast<MountStatusConnection>(object);
     DLOG(INFO) << "device changed" << device;
-    self->FireEvent(DISK_CHANGED);
+    self->FireEvent(DISK_CHANGED, device);
   }
 
   ConnectionType& addedconnection() {

@@ -3,7 +3,6 @@
 // found in the LICENSE file.
 
 #include <dlfcn.h>
-#include <glog/logging.h>
 
 #include "chromeos_cros_api.h" // NOLINT
 #include "chromeos_mount.h"  // NOLINT
@@ -60,7 +59,6 @@ bool LoadCros(const char* path_to_libcros) {
 
   void* handle = ::dlopen(path_to_libcros, RTLD_NOW);
   if (handle == NULL) {
-    DLOG(ERROR) << "Error opening up cros: " << dlerror();
     return false;
   }
 

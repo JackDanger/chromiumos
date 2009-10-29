@@ -43,7 +43,8 @@ class Callback {
 
   static void Run(void* object,
                   const chromeos::MountStatus& x,
-                  chromeos::MountEventType evt) {
+                  chromeos::MountEventType evt,
+                  const char* path) {
     Callback* self = static_cast<Callback*>(object);
 
     PrintMountStatus(x);
