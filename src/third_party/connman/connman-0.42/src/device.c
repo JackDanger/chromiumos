@@ -1407,6 +1407,23 @@ int __connman_device_disconnect(struct connman_device *device)
 	while (g_hash_table_iter_next(&iter, &key, &value) == TRUE) {
 		struct connman_network *network = value;
 
+		if (__connman_network_get_connecting(network) == TRUE) {
+			/*
+			 * Skip network in the process of connecting.
+			 * This is a workaround for wifi networks serviced
+			 * by the supplicant plugin that hold a reference
+			 * to the network.  If we disconnect the network
+			 * here then the referenced object will not be
+			 * registered and usage (like launching dhcp client)
+			 * will fail.  There is nothing to be gained by
+			 * removing the network here anyway.
+			 */
+			_DBG_DEVICE("skip connecting %s network %s",
+				__connman_network_get_type(network),
+				connman_network_get_identifier(network));
+			continue;
+		}
+
 		__connman_network_disconnect(network);
 	}
 

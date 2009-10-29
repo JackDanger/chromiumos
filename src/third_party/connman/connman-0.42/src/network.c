@@ -806,6 +806,11 @@ int connman_network_set_connected(struct connman_network *network,
 	return 0;
 }
 
+connman_bool_t __connman_network_get_connecting(struct connman_network *network)
+{
+	return network->connecting;
+}
+
 /**
  * connman_network_get_connected:
  * @network: network structure
