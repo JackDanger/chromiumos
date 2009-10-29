@@ -22,6 +22,7 @@ Panel::Panel(Display* dpy, int scr, Window root, Cfg* config,
     Scr = scr;
     Root = root;
     cfg = config;
+    lastErrorMessage = "";
 
     session = "";
 
@@ -544,7 +545,21 @@ void Panel::ShowText(){
                          welcome_message,
                          &welcomeshadowcolor, shadowXOffset, shadowYOffset);
     }
-
+    // If there is an error message to display
+    // Uses same font as release version
+    if (lastErrorMessage.length() > 0) {
+      XftTextExtents8(Dpy, welcomefont, (XftChar8*)lastErrorMessage.c_str(),
+                          strlen(lastErrorMessage.c_str()), &extents);
+      // Borrow these values from welcome message
+      int shadowXOffset =
+          Cfg::string2int(cfg->getOption("welcome_shadow_xoffset").c_str());
+      int shadowYOffset =
+          Cfg::string2int(cfg->getOption("welcome_shadow_yoffset").c_str());
+      SlimDrawString8 (draw, &welcomecolor, welcomefont,
+                       input_pass_x - 80, input_pass_y + 40,
+                       lastErrorMessage,
+                       &welcomeshadowcolor, shadowXOffset, shadowYOffset);
+    }
     /* Enter username-password message */
     string msg;
     if (!singleInputMode|| field == Get_Passwd ) {
@@ -663,6 +678,11 @@ void Panel::SetName(const string& name){
     NameBuffer=name;
     return;
 };
+void Panel::SetLastErrorMessage(const string& msg){
+    lastErrorMessage=msg;
+    return;
+};
+
 const string& Panel::GetName(void) const{
     return NameBuffer;
 };

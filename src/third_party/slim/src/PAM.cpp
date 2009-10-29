@@ -120,10 +120,10 @@ namespace PAM {
         switch((last_result=pam_authenticate(pam_handle, 0))){
             default:
             case PAM_ABORT:
-            case PAM_AUTHINFO_UNAVAIL:
                 _end();
                 throw Exception(pam_handle, "pam_authenticate()", last_result);
 
+            case PAM_AUTHINFO_UNAVAIL:
             case PAM_USER_UNKNOWN:
             case PAM_MAXTRIES:
             case PAM_CRED_INSUFFICIENT:
@@ -146,7 +146,7 @@ namespace PAM {
             case PAM_USER_UNKNOWN:
                 _end();
                 throw Exception(pam_handle, "pam_acct_mgmt()", last_result);
-                
+
             case PAM_AUTH_ERR:
             case PAM_PERM_DENIED:
                 throw Auth_Exception(pam_handle, "pam_acct_mgmt()", last_result);

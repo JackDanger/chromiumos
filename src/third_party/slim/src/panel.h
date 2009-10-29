@@ -64,6 +64,7 @@ public:
     void ResetName(void);
     void ResetPasswd(void);
     void SetName(const std::string& name);
+    void SetLastErrorMessage(const std::string& msg);
     const std::string& GetName(void) const;
     const std::string& GetPasswd(void) const;
 private:
@@ -109,7 +110,7 @@ private:
     XftColor entershadowcolor;
     ActionType action;
     FieldType field;
-    
+
     // Username/Password
     std::string NameBuffer;
     std::string PasswdBuffer;
@@ -148,6 +149,9 @@ private:
     // For thesting themes
     bool testing;
     std::string themedir;
+
+    // Last error message printed below passwod dialog
+    std::string lastErrorMessage;
 
     // Session handling
     std::string session;

@@ -9,7 +9,7 @@
 # We borrow from the system default in /etc/pam.d/common-*
 
 # from common-auth
-auth	[success=1 default=ignore]	pam_google.so
+auth	[success=1 authinfo_unavail=bad default=ignore]	pam_google.so
 auth	requisite			pam_deny.so
 auth	required			pam_permit.so
 auth	optional			pam_mount.so enable_pam_password disable_interactive

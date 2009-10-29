@@ -53,6 +53,7 @@ int GoogleAuthenticator::Authenticate(GoogleCredentials *const credentials,
           retval = PAM_SUCCESS;
         } else {
           LOG(INFO) << "Offline login failure";
+          retval = PAM_AUTHINFO_UNAVAIL;
         }
       }
       memset(buffer, 0, sizeof(buffer));

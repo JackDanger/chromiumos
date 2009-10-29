@@ -416,6 +416,7 @@ bool App::AuthenticateUser(bool focuspass){
         pam.authenticate();
     }
     catch(PAM::Auth_Exception& e){
+        LoginPanel->SetLastErrorMessage("");
         switch(LoginPanel->getAction()){
             case Panel::Exit:
             case Panel::Console:
@@ -423,7 +424,17 @@ bool App::AuthenticateUser(bool focuspass){
             default:
                 break;
         };
-        cerr << APPNAME << ": " << e << endl;
+        switch (e.errnum) {
+            case PAM_AUTH_ERR:
+                LoginPanel->SetLastErrorMessage(
+                    "Incorrect username or password");
+                break;
+            case PAM_AUTHINFO_UNAVAIL:
+                LoginPanel->SetLastErrorMessage(
+                    "Network not connected and offline login fail");
+                break;
+        };
+        cerr << APPNAME << ": " << e << " " << e.errnum << endl;
         return false;
     }
     catch(PAM::Exception& e){
