@@ -37,6 +37,7 @@ install:
 	cp $(CURDIR)/iptables.conf $(CURDIR)/debian/chromeos-init/etc/init/iptables.conf
 	cp $(CURDIR)/netdebug.conf $(CURDIR)/debian/chromeos-init/etc/init/netdebug.conf
 	cp $(CURDIR)/ntp.conf $(CURDIR)/debian/chromeos-init/etc/init/ntp.conf
+	cp $(CURDIR)/preload-chrome.conf $(CURDIR)/debian/chromeos-init/etc/init/preload-chrome.conf
 	cp $(CURDIR)/procps.conf $(CURDIR)/debian/chromeos-init/etc/init/procps.conf
 	cp $(CURDIR)/reboot.conf $(CURDIR)/debian/chromeos-init/etc/init/reboot.conf
 	cp $(CURDIR)/software-update.conf $(CURDIR)/debian/chromeos-init/etc/init/software-update.conf
