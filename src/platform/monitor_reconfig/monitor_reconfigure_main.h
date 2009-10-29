@@ -31,10 +31,7 @@ class MonitorReconfigureMain {
   // Finds the max resolution mode for the given |output|
   XRRModeInfo* FindMaxResolution(XRROutputInfo* output);
   // Finds the best matching resolution as compared to the |matching_mode|
-  // |is_wider| should be set if matching_mode output has a wider
-  // perspective (i.e. 16:9 is wider than 4:3)
-  XRRModeInfo* FindBestMatchingResolution(XRRModeInfo* matching_mode,
-      bool is_wider);
+  XRRModeInfo* FindBestMatchingResolution(XRRModeInfo* matching_mode);
   // Initializes the |notebook_output_| and |external_output_| fields
   void DetermineOutputs();
   // Sets the resolution of the notebook's screen, the external monitors screen
@@ -42,9 +39,11 @@ class MonitorReconfigureMain {
   void SetResolutions(XRRModeInfo* notebook_mode,
                       XRRModeInfo* external_mode,
                       XRRModeInfo* overall_screen_size);
-  // Returns whether |output| has a wider width/height ratio than the
-  // |target_output|
-  bool IsWider(XRROutputInfo* output, XRROutputInfo* target_output);
+  // Inline helper functions for FindBestMatchingResolution
+  inline bool IsEqual(XRRModeInfo*, XRRModeInfo*);
+  inline bool IsBiggerOrEqual(XRRModeInfo*, XRRModeInfo*);
+  inline bool IsBetterMatching(XRRModeInfo* target, XRRModeInfo* to_match,
+      XRRModeInfo* previous_best);
   // Mapping between mode XID's and mode information structures
   std::map <int, XRRModeInfo*> mode_map_;
   // X Resources needed between functions

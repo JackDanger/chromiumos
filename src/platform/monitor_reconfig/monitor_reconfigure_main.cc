@@ -10,10 +10,6 @@ static const char* kDisplay = ":0.0";
 
 namespace chromeos_monitor_reconfig {
 
-static inline bool isBetween(int num, int min, int max) {
-  return num >= min && num <= max;
-}
-
 MonitorReconfigureMain::MonitorReconfigureMain(Display* display,
     XRRScreenResources* screen_info)
       : display_(display), screen_info_(screen_info) {
@@ -43,7 +39,7 @@ void MonitorReconfigureMain::DetermineOutputs() {
 XRRModeInfo* MonitorReconfigureMain::FindMaxResolution(XRROutputInfo* output) {
   XRRModeInfo* mode_return = NULL;
   for (int m = 0; m < output->nmode; m++) {
-    XRRModeInfo* current_mode = mode_map_[notebook_output_->modes[m]];
+    XRRModeInfo* current_mode = mode_map_[output->modes[m]];
     if (mode_return == NULL) {
       mode_return = current_mode;
     } else {
@@ -57,23 +53,43 @@ XRRModeInfo* MonitorReconfigureMain::FindMaxResolution(XRROutputInfo* output) {
   return mode_return;
 }
 
-bool MonitorReconfigureMain::IsWider(XRROutputInfo* output,
-    XRROutputInfo* target_output) {
-  bool is_wider = true;
-  // Need to find the best resolution for the external monitor
-  unsigned long output_wh_ratio =
-    output->mm_width / output->mm_height;
-  unsigned long target_output_wh_ratio =
-    target_output->mm_width / target_output->mm_height;
-  // Notebook is wider than external output
-  if (output_wh_ratio < target_output_wh_ratio) {
-    is_wider = false;
+bool MonitorReconfigureMain::IsEqual(XRRModeInfo* one,
+    XRRModeInfo* two) {
+  return (one->height * one->width) == (two->height * two->width);
+}
+
+bool MonitorReconfigureMain::IsBiggerOrEqual(XRRModeInfo* target,
+    XRRModeInfo* screen) {
+  return ((target->width >= screen->width) &&
+      (target->height >= screen->height));
+}
+
+bool MonitorReconfigureMain::IsBetterMatching(XRRModeInfo* target,
+    XRRModeInfo* to_match, XRRModeInfo* previous_best) {
+  if (IsEqual(previous_best, to_match)) return false;
+  // If the current will have some of the display cut off
+  // and the new choice doesn't, choose the new one
+  if ((!IsBiggerOrEqual(previous_best, to_match)) &&
+      (IsBiggerOrEqual(target, to_match))) {
+    return true;
+  // If the current one isn't cropped and the new one would
+  // get cropped
+  } else if (IsBiggerOrEqual(previous_best, to_match) &&
+        (!IsBiggerOrEqual(target, to_match))) {
+    return false;
+  // Case if the current is bigger than the matching but the new target falls
+  // between the current and the matching (so it's closer to the matching)
+  } else if (IsBiggerOrEqual(previous_best, to_match)) {
+    return !IsBiggerOrEqual(target, previous_best);
+  } else {
+    // Final case, we know the current is smaller than the matching
+    // We just need to check if the new will bring us closer to the matching
+    return IsBiggerOrEqual(target, previous_best);
   }
-  return is_wider;
 }
 
 XRRModeInfo* MonitorReconfigureMain::FindBestMatchingResolution(
-    XRRModeInfo* matching_mode, bool is_notebook_wider) {
+    XRRModeInfo* matching_mode) {
   // Need a min mode to increase from
   XRRModeInfo min_mode;
   min_mode.height = 0;
@@ -83,22 +99,11 @@ XRRModeInfo* MonitorReconfigureMain::FindBestMatchingResolution(
   for (int m = 0; m < external_output_->nmode; m++) {
     XRRModeInfo* current_mode =
       mode_map_[external_output_->modes[m]];
-    if (is_notebook_wider) {
-      if (isBetween(current_mode->width, best_mode->width,
-                    matching_mode->width) &&
-             (current_mode->height > best_mode->height)) {
-               best_mode = current_mode;
-      }
-    } else {
-      // Notebook is not wider and external mode not null
-      if (isBetween(current_mode->height, best_mode->height,
-                    matching_mode->width) &&
-             (current_mode->width > best_mode->width)) {
-        best_mode = current_mode;
-      }
+    if (IsBetterMatching(current_mode, matching_mode, best_mode)) {
+      best_mode = current_mode;
     }
   }
-  if (best_mode->width == 0 && best_mode->height == 0)  best_mode = NULL;
+  if (best_mode == &min_mode) best_mode = NULL;
   return best_mode;
 }
 
@@ -106,7 +111,7 @@ void MonitorReconfigureMain::SetResolutions(XRRModeInfo* notebook_mode,
                                             XRRModeInfo* external_mode,
                                             XRRModeInfo* overall_screen_size) {
   // We use xrandr script to set modes
-  char buffer[256];
+  char buffer[512];
   snprintf(buffer, sizeof(buffer), "xrandr --output %s --mode %s",
     external_output_->name, external_mode->name);
   system(buffer);
@@ -121,8 +126,7 @@ void MonitorReconfigureMain::Run() {
   // Find the max resolution for the notebook
   XRRModeInfo* notebook_mode = FindMaxResolution(notebook_output_);
   // Find the best mode for external output relative to above mode
-  XRRModeInfo* external_mode = FindBestMatchingResolution(notebook_mode,
-      IsWider(notebook_output_, external_output_));
+  XRRModeInfo* external_mode = FindBestMatchingResolution(notebook_mode);
   // Set the resolutions accordingly
   SetResolutions(notebook_mode, external_mode, notebook_mode);
 }
