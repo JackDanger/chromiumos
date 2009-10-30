@@ -221,7 +221,11 @@
 #include "auth.h"
 
 /*  Added for Chrome OS - sosa@chromium.org */
+
+/* Max username length */
 const int kMaxUsernameLength = 200;
+/* Global variable to handle back door */
+static Bool lock_screen = TRUE;
 
 /*  Added for Chrome OS - sosa@chromium.org
  *  Function returns the name of the currently logged in user to ChromeOS
@@ -1292,7 +1296,11 @@ main_loop (saver_info *si)
               suspend_screenhack (&si->screens[i], True);	  /* suspend */
 	    XUndefineCursor (si->dpy, ssi->screensaver_window);
 
-	    ok_to_unblank = unlock_p (si);
+	    if (lock_screen) {
+	      ok_to_unblank = unlock_p (si);
+	    } else {
+	      ok_to_unblank = TRUE;
+	    }
 
 	    si->dbox_up_p = False;
 	    XDefineCursor (si->dpy, ssi->screensaver_window, ssi->cursor);
@@ -1396,8 +1404,9 @@ main (int argc, char **argv)
 
   /*  Changed for Chrome OS - sosa@chromium.org */
   get_user_login_name(&si->user);
-  if (NULL == si->user) {
-    si->user = strdup(spasswd->pw_name ? spasswd->pw_name : "(unknown)");
+  if (NULL == si->user || strlen(si->user) == 0) {
+    /* Do not lock the screen if we do not get the info from pam_google */
+    lock_screen = FALSE;
   }
 
   /* Changed for Chrome OS - sosa@chromium
