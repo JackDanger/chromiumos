@@ -258,6 +258,11 @@ abort_update_if_cmd_failed_long "$POSTINST_RETURN_CODE" "$MOUNTPOINT"/postinst
 # update MBR to make the other partition bootable
 # the slash-magic converts '/' -> '\/' so it's valid in a regex
 log updating MBR of usb device
+
+# flush linux caches; seems to be necessary
+sync
+echo 3 > /proc/sys/vm/drop_caches
+
 LAYOUT_FILE=/tmp/new_partition_layout
 sfdisk -d $ROOT_DEV | sed -e "s/${INSTALL_DEV//\//\\/} .*[^e]$/&, bootable/" \
                           -e "s/\(${LOCAL_DEV//\//\\/} .*\), bootable/\1/" \
