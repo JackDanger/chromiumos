@@ -665,6 +665,11 @@ quadruple (monitor **monitors, Bool debug_p, char **errP)
 }
 #endif /* QUAD_MODE */
 
+/* sosa@chromium.org - Gets the real current screen size */
+void get_current_screen_size(saver_info *si, saver_screen_info* ssi) {
+   ssi->width = DisplayWidth(si->dpy, DefaultScreen(si->dpy));
+   ssi->height = DisplayHeight (si->dpy, DefaultScreen(si->dpy));
+}
 
 static monitor **
 scan_monitors (saver_info *si)

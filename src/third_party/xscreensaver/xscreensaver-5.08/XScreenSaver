@@ -89,8 +89,8 @@ xscreensaver.Dialog.unameFont:          -*-dina-medium-r-*-*-12-*-*-*-*-*-*-*
 xscreensaver.passwd.passwdFont:         -*-dina-bold-r-*-*-12-*-*-*-*-*-*-*
 
 !general dialog box (affects main hostname, username, password text)
-xscreensaver.Dialog.foreground:         #000000
-xscreensaver.Dialog.background:         #ffffff
+xscreensaver.Dialog.foreground:         #ffffff
+xscreensaver.Dialog.background:         #000000
 xscreensaver.Dialog.text.foreground:    #666666
 xscreensaver.Dialog.text.background:    #ebeff9
 

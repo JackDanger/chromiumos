@@ -74,11 +74,13 @@ vms_passwd_valid_p(char *pw, Bool verbose_p)
 
 #define SAMPLE_INPUT "MMMMMMMMMMMM"
 
-
 #undef MAX
 #define MAX(a,b) ((a)>(b)?(a):(b))
 
 typedef struct info_dialog_data info_dialog_data;
+
+/* sosa@chromium.org - added to handle screen size with external display */
+extern void get_current_screen_size(saver_info *si, saver_screen_info* ssi);
 
 struct passwd_dialog_data {
 
@@ -264,6 +266,9 @@ make_passwd_window (saver_info *si,
 
   if (! ssi)
     return -1;
+
+  /* sosa@chromium.org - fix for mirroring with external monitor */
+  get_current_screen_size(si, ssi);
 
   if (!si->pw_data)
     if (new_passwd_window (si) < 0)
