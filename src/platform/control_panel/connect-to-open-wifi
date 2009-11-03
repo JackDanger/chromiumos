@@ -48,7 +48,7 @@ if not success:
 
 attempts = 0
 best_network = None
-while best_network == None and attempts <= 30:
+while best_network == None and attempts <= 6:
     print "Scanning for networks"
     # Catch any excpetions that d-bus/connman throw and try again.
     try:
@@ -57,8 +57,8 @@ while best_network == None and attempts <= 30:
       print "Error scanning for networks: %s" % e
 
     if best_network == None:
-      print "unable to find networks, retrying in 300ms"
-      time.sleep(.3)
+      print "unable to find networks, retrying in 5secs"
+      time.sleep(5)
       attempts += 1
 
 if best_network == None:
