@@ -1,2 +1,0 @@
-This is the diff of the atl1c driver between kernels 2.6.30 and 2.6.31-rc1.
-It is necessary in order to make wired ethernet work on the Asus EEEPC.

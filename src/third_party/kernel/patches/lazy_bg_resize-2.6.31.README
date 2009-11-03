@@ -1,8 +1,0 @@
-Since we use sparse files for encrypted home directories.  We will allow
-the kernel to avoid forced initialization of itables during an online resize.
-This lets us speed up initial login time by at least 4 seconds and avoid
-writing 2 gigabytes of zeroes to the encrypted dm.
-
-TODO: Push upstream and pursue a mount triggered thread for initializing
-      inode tables if we move toward disk-based partitions instead of file-based
-      ones.

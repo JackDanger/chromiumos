@@ -1,7 +1,0 @@
-The sreadahead-2.6.30.patch is a modification of the sreadahead project's
-0001-kernel-trace-open.patch (by Auke Kok) so that it will patch against
-the 2.6.30 kernel. It was pulled from comment 10 found here:
-
-http://code.google.com/p/sreadahead/issues/detail?id=5
-
-This modification of the original sreadahead patch was done by Corrado Zoccolo.
