@@ -29,7 +29,7 @@ class EventConsumer {
   virtual ~EventConsumer() {}
 
   // Is the passed-in window an input window owned by this consumer?
-  virtual bool IsInputWindow(XWindow xid) const { return false; }
+  virtual bool IsInputWindow(XWindow xid) { return false; }
 
   // Handle a window being mapped.  This method and HandleWindowUnmap()
   // return void so as to be invoked for all consumers -- these events
@@ -41,14 +41,14 @@ class EventConsumer {
   // Handle a window being unmapped.
   virtual void HandleWindowUnmap(Window* win) { }
 
-  // Handle a window's request to be resized.  To permit the resize as
-  // requested and allow other consumers to examine the request, the
-  // consumer should return false.  Otherwise, the consumer should modify
-  // 'req_width' and 'req_height' to the actual values that should be used
-  // and return true.  (Modifications to the passed-in pointers will be
-  // ignored if false is returned.)
-  virtual bool HandleWindowResizeRequest(
-      Window* win, int* req_width, int* req_height) {
+  // Handle a mapped window's request to be configured (unmapped windows'
+  // requests are granted automatically).  If the consumer wants to
+  // configure the window (possibly with different parameters than the
+  // requested ones), it should call Window::MoveClient() and
+  // ResizeClient() and return true.  Returning false permits other
+  // consumers to examine the request.
+  virtual bool HandleWindowConfigureRequest(
+      Window* win, int req_x, int req_y, int req_width, int req_height) {
     return false;
   }
 

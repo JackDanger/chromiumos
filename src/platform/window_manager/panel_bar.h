@@ -43,7 +43,7 @@ class PanelBar : public EventConsumer {
 
   // Note: Begin overridden EventConsumer methods.
 
-  bool IsInputWindow(XWindow xid) const {
+  bool IsInputWindow(XWindow xid) {
     return xid == anchor_input_win_ || panel_input_windows_.count(xid);
   }
 
@@ -57,9 +57,9 @@ class PanelBar : public EventConsumer {
   // passed windows not in the bar.
   void HandleWindowUnmap(Window* win);
 
-  // Handle a request from a client window to get resized.  Keeps clients
-  // from resizing their panel windows larger than we'd like.
-  bool HandleWindowResizeRequest(Window* win, int* req_width, int* req_height);
+  // Handle a request from a client window to get moved or resized.
+  bool HandleWindowConfigureRequest(
+      Window* win, int req_x, int req_y, int req_width, int req_height);
 
   // Handle events for windows.
   bool HandleButtonPress(XWindow xid, int x, int y, int button, Time timestamp);

@@ -47,15 +47,12 @@ class WindowManager;
 class Window {
  public:
   Window(WindowManager* wm, XWindow xid);
-
-  // The destructor also cleans up any transient-for references to or from
-  // this window.
   ~Window();
 
   XWindow xid() const { return xid_; }
   ClutterInterface::Actor* actor() { return actor_.get(); }
   const Shadow* shadow() const { return shadow_.get(); }
-  Window* transient_for_window() const { return transient_for_window_; }
+  XWindow transient_for_xid() const { return transient_for_xid_; }
   bool override_redirect() const { return override_redirect_; }
   WmIpc::WindowType type() const { return type_; }
   WmIpc::WindowType* mutable_type() { return &type_; }
@@ -87,10 +84,6 @@ class Window {
 
   bool wm_state_fullscreen() const { return wm_state_fullscreen_; }
   bool wm_state_modal() const { return wm_state_modal_; }
-
-  // Add or remove the passed-in window from 'transient_windows_'.
-  void AddTransientWindow(Window* win);
-  void RemoveTransientWindow(Window* win);
 
   // Get and apply hints that have been set for the client window.
   bool FetchAndApplySizeHints();
@@ -127,13 +120,6 @@ class Window {
   // for WM-initiated state changes -- client-initiated changes come in
   // through HandleWmStateMessage().
   bool ChangeWmState(const vector<pair<XAtom, bool> >& states);
-
-  // If this window has a mapped, modal transient window, return it.  (If
-  // there are multiple ones, the topmost is returned.)
-  Window* GetTopModalTransient();
-
-  // If one of this window's transient windows is focused, return it.
-  Window* GetFocusedTransient();
 
   // Give keyboard focus to the client window, using a WM_TAKE_FOCUS
   // message if the client supports it or a SetInputFocus request
@@ -208,11 +194,6 @@ class Window {
   void SetCompositedOpacity(double opacity, int anim_ms);
   void ScaleComposited(double scale_x, double scale_y, int anim_ms);
 
-  // Move and scale one of our transient window's actors to have the
-  // correct relative position and same scale as us.
-  void MoveAndScaleCompositedTransientWindow(
-      Window* transient_win, int anim_ms);
-
   // Change the opacity of the window's shadow, overriding any previous
   // setting from SetCompositedOpacity().  This just temporarily changes
   // the opacity; the next call to SetCompositedOpacity() will restore the
@@ -234,27 +215,6 @@ class Window {
                             ClutterInterface::Actor* shadow_actor);
 
  private:
-  FRIEND_TEST(WindowTest, TransientFor);
-
-  // Set the window for which this window is transient (or set it to not be
-  // transient, if NULL is passed in).  Calls RemoveTransientWindow() on
-  // the previous owner and AddTransientWindow() on the new one.  Also
-  // repositions the transient window over its owner and scales it.
-  void SetTransientForWindow(Window* win);
-
-  // Record a transient window's position relative to us in
-  // 'transient_window_positions_'.
-  void SaveTransientWindowPosition(Window* transient_win);
-
-  // Iterate over 'transient_windows_', invoking each window's
-  // MoveAndScaleCompositedAsTransient() method.
-  void MoveAndScaleCompositedTransientWindows(int anim_ms);
-
-  // Stack all transient windows' client or composited windows on top of us
-  // in the proper order.
-  void RestackClientTransientWindows();
-  void RestackCompositedTransientWindows();
-
   // Hide or show the window's shadow if necessary.
   void UpdateShadowIfNecessary();
 
@@ -272,17 +232,11 @@ class Window {
   scoped_ptr<ClutterInterface::TexturePixmapActor> actor_;
   scoped_ptr<Shadow> shadow_;
 
-  // The window for which this window is transient, or NULL if it isn't
-  // transient.
-  Window* transient_for_window_;
-
-  // Windows which are transient for this window.  We track the order in
-  // which they should be stacked.
-  scoped_ptr<Stacker<Window*> > transient_windows_;
-
-  // Positions for transient windows, stored as offsets from the top left
-  // corner of this window.
-  map<XWindow, pair<int, int> > transient_window_positions_;
+  // The XID that this window says it's transient for.  Note that the
+  // client can arbitrarily supply an ID here; the window doesn't
+  // necessarily exist.  A good general practice may be to examine this
+  // value when the window is mapped and ignore any changes after that.
+  XWindow transient_for_xid_;
 
   // Was override-redirect set when the window was originally created?
   bool override_redirect_;

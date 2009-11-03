@@ -352,55 +352,6 @@ TEST_F(WindowManagerTest, KeyEventSnooping) {
   EXPECT_FALSE(child_info->event_mask & SubstructureNotifyMask);
 }
 
-TEST_F(WindowManagerTest, TransientWindows) {
-  XEvent event;
-
-  // Create and map a window.
-  XWindow owner_xid = CreateSimpleWindow(xconn_->GetRootWindow());
-  MockXConnection::WindowInfo* owner_info =
-      xconn_->GetWindowInfoOrDie(owner_xid);
-  MockXConnection::InitCreateWindowEvent(&event, *owner_info);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
-  MockXConnection::InitMapEvent(&event, owner_xid);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
-  MockXConnection::InitConfigureNotifyEvent(&event, *owner_info);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
-
-  // Now create and map a transient window.
-  XWindow transient_xid = xconn_->CreateWindow(
-      xconn_->GetRootWindow(),
-      60, 70,    // x, y
-      320, 240,  // width, height
-      false,     // override redirect
-      false,     // input only
-      0);        // event mask
-  MockXConnection::WindowInfo* transient_info =
-      xconn_->GetWindowInfoOrDie(transient_xid);
-  transient_info->transient_for = owner_xid;
-  MockXConnection::InitCreateWindowEvent(&event, *transient_info);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
-  MockXConnection::InitMapEvent(&event, transient_xid);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
-
-  // The transient window should initially be centered over its owner.
-  EXPECT_EQ(owner_info->x + 0.5 * (owner_info->width - transient_info->width),
-            transient_info->x);
-  EXPECT_EQ(owner_info->y + 0.5 * (owner_info->height - transient_info->height),
-            transient_info->y);
-  MockXConnection::InitConfigureNotifyEvent(&event, *owner_info);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
-
-  // Send a ConfigureRequest event to move and resize the transient window
-  // and make sure that it gets applied.
-  MockXConnection::InitConfigureRequestEvent(
-      &event, transient_xid, owner_info->x + 20, owner_info->y + 10, 200, 150);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
-  EXPECT_EQ(owner_info->x + 20, transient_info->x);
-  EXPECT_EQ(owner_info->y + 10, transient_info->y);
-  EXPECT_EQ(200, transient_info->width);
-  EXPECT_EQ(150, transient_info->height);
-}
-
 TEST_F(WindowManagerTest, RestackOverrideRedirectWindows) {
   XEvent event;
 
@@ -444,19 +395,15 @@ TEST_F(WindowManagerTest, RestackOverrideRedirectWindows) {
   event.xconfigure.above = xid;
   EXPECT_TRUE(wm_->HandleEvent(&event));
   MockClutterInterface::StageActor* stage = clutter_->GetDefaultStage();
-  EXPECT_LT(stage->stacked_children()->GetIndex(
-                dynamic_cast<MockClutterInterface::Actor*>(win2->actor())),
-            stage->stacked_children()->GetIndex(
-                dynamic_cast<MockClutterInterface::Actor*>(win->actor())));
+  EXPECT_LT(stage->GetStackingIndex(win2->actor()),
+            stage->GetStackingIndex(win->actor()));
 
   // Now send a message saying that the first window is on top of the second.
   MockXConnection::InitConfigureNotifyEvent(&event, *info);
   event.xconfigure.above = xid2;
   EXPECT_TRUE(wm_->HandleEvent(&event));
-  EXPECT_LT(stage->stacked_children()->GetIndex(
-                dynamic_cast<MockClutterInterface::Actor*>(win->actor())),
-            stage->stacked_children()->GetIndex(
-                dynamic_cast<MockClutterInterface::Actor*>(win2->actor())));
+  EXPECT_LT(stage->GetStackingIndex(win->actor()),
+            stage->GetStackingIndex(win2->actor()));
 }
 
 // Test that we honor ConfigureRequest events that change an unmapped

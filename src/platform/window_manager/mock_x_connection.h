@@ -133,6 +133,10 @@ class MockXConnection : public XConnection {
   XWindow focused_xid() const { return focused_xid_; }
   XWindow pointer_grab_xid() const { return pointer_grab_xid_; }
 
+  const Stacker<XWindow>& stacked_xids() const {
+    return *(stacked_xids_.get());
+  }
+
   // Set a window as having an active pointer grab.  This is handy when
   // simulating a passive button grab being upgraded due to a button press.
   void set_pointer_grab_xid(XWindow xid) {

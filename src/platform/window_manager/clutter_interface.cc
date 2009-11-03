@@ -452,6 +452,15 @@ void MockClutterInterface::ContainerActor::AddActor(
   stacked_children_->AddOnBottom(cast_actor);
 }
 
+int MockClutterInterface::ContainerActor::GetStackingIndex(
+    ClutterInterface::Actor* actor) {
+  CHECK(actor);
+  MockClutterInterface::Actor* cast_actor =
+      dynamic_cast<MockClutterInterface::Actor*>(actor);
+  CHECK(cast_actor);
+  return stacked_children_->GetIndex(cast_actor);
+}
+
 
 bool MockClutterInterface::TexturePixmapActor::SetAlphaMask(
     const unsigned char* bytes, int width, int height) {

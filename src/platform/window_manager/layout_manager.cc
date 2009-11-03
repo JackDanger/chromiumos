@@ -161,7 +161,7 @@ LayoutManager::~LayoutManager() {
   tab_summary_ = NULL;
 }
 
-bool LayoutManager::IsInputWindow(XWindow xid) const {
+bool LayoutManager::IsInputWindow(XWindow xid) {
   return (GetToplevelWindowByInputXid(xid) != NULL);
 }
 
@@ -239,47 +239,31 @@ void LayoutManager::HandleWindowMap(Window* win) {
     }
     case WmIpc::WINDOW_TYPE_CHROME_TOPLEVEL:
     case WmIpc::WINDOW_TYPE_UNKNOWN: {
-      if (win->transient_for_window()) {
-        win->ShowComposited();
-        win->AddPassiveButtonGrab();
-        if (active_toplevel_ != NULL &&
-            win->transient_for_window() == active_toplevel_->win() &&
-            active_toplevel_->win()->focused() &&
-            mode_ == MODE_ACTIVE) {
-          // We should only take the focus if we belong to
-          // 'active_toplevel_'.
-          win->TakeFocus(wm_->GetCurrentTimeFromServer());
-          // The _NET_ACTIVE_WINDOW property should already refer to
-          // 'active_toplevel_', since it previously had the focus.
+      if (win->transient_for_xid() != None) {
+        ToplevelWindow* toplevel_owner =
+            GetToplevelWindowByXid(win->transient_for_xid());
+        if (toplevel_owner) {
+          transient_to_toplevel_[win->xid()] = toplevel_owner;
+          toplevel_owner->AddTransientWindow(win);
+
+          if (mode_ == MODE_ACTIVE &&
+              active_toplevel_ != NULL &&
+              active_toplevel_->IsWindowOrTransientFocused()) {
+            // The _NET_ACTIVE_WINDOW property should already refer to
+            // 'active_toplevel_', since it previously had the focus.
+            active_toplevel_->TakeFocus(wm_->GetCurrentTimeFromServer());
+          }
+          break;
+        } else {
+          LOG(WARNING) << "Ignoring " << win->xid() << "'s WM_TRANSIENT_FOR "
+                       << "hint of " << win->transient_for_xid() << ", which "
+                       << "isn't a toplevel window";
+          // Continue on and treat the transient as a toplevel window.
         }
-        break;
       }
-
-      {
-        int width = width_;
-        int height = height_;
-        if (FLAGS_lm_honor_window_size_hints)
-          win->GetMaxSize(width_, height_, &width, &height);
-        win->ResizeClient(width, height, Window::GRAVITY_NORTHWEST);
-
-        // Let the window know that it's maximized.
-        vector<pair<XAtom, bool> > wm_state;
-        wm_state.push_back(
-            make_pair(wm_->GetXAtom(ATOM_NET_WM_STATE_MAXIMIZED_HORZ), true));
-        wm_state.push_back(
-            make_pair(wm_->GetXAtom(ATOM_NET_WM_STATE_MAXIMIZED_VERT), true));
-        win->ChangeWmState(wm_state);
-      }
-
-      // Make sure that we hear about button presses on this window.
-      VLOG(1) << "Adding passive button grab for new toplevel window "
-              << win->xid();
-      win->AddPassiveButtonGrab();
 
       ref_ptr<ToplevelWindow> toplevel(new ToplevelWindow(win, this));
       input_to_toplevel_[toplevel->input_xid()] = toplevel.get();
-      win->MoveClientOffscreen();
-      win->ShowComposited();
 
       switch (mode_) {
         case MODE_ACTIVE:
@@ -330,6 +314,16 @@ void LayoutManager::HandleWindowUnmap(Window* win) {
       ArrangeToplevelWindowsForOverviewMode();
   }
 
+  ToplevelWindow* toplevel_owner = GetToplevelWindowOwningTransientWindow(*win);
+  if (toplevel_owner) {
+    bool transient_had_focus = win->focused();
+    toplevel_owner->RemoveTransientWindow(win);
+    if (transient_to_toplevel_.erase(win->xid()) != 1)
+      LOG(WARNING) << "No transient-to-toplevel mapping for " << win->xid();
+    if (transient_had_focus)
+      toplevel_owner->TakeFocus(wm_->GetCurrentTimeFromServer());
+  }
+
   ToplevelWindow* toplevel = GetToplevelWindowByWindow(*win);
   if (toplevel) {
     if (magnified_toplevel_ == toplevel)
@@ -365,14 +359,24 @@ void LayoutManager::HandleWindowUnmap(Window* win) {
         }
       }
     }
-  } else if (win->transient_for_window() && win->focused()) {
-    // If this was a focused transient window, pass the focus to its owner
-    // if possible.
-    if (!TakeFocus()) {
-      wm_->SetActiveWindowProperty(None);
-      wm_->TakeFocus();
-    }
   }
+}
+
+bool LayoutManager::HandleWindowConfigureRequest(
+    Window* win, int req_x, int req_y, int req_width, int req_height) {
+  ToplevelWindow* toplevel_owner = GetToplevelWindowOwningTransientWindow(*win);
+  if (toplevel_owner) {
+    toplevel_owner->HandleTransientWindowConfigureRequest(
+        win, req_x, req_y, req_width, req_height);
+    return true;
+  }
+
+  // Don't let clients configure toplevel windows once they've been mapped.
+  ToplevelWindow* toplevel = GetToplevelWindowByWindow(*win);
+  if (toplevel)
+    return true;
+
+  return false;
 }
 
 bool LayoutManager::HandleButtonPress(
@@ -389,39 +393,17 @@ bool LayoutManager::HandleButtonPress(
   }
 
   // Otherwise, it probably means that the user previously focused a panel
-  // and then clicked back on a toplevel or transient window.  Take back
-  // the focus.
+  // and then clicked back on a toplevel or transient window.
   Window* win = wm_->GetWindow(xid);
   if (!win)
     return false;
-
-  toplevel = GetToplevelWindowByWindow(*win);
-  if (!toplevel && win->transient_for_window())
-    toplevel = GetToplevelWindowByWindow(*(win->transient_for_window()));
+  toplevel = GetToplevelWindowOwningTransientWindow(*win);
+  if (!toplevel)
+    toplevel = GetToplevelWindowByWindow(*win);
   if (!toplevel)
     return false;
 
-  if (toplevel == active_toplevel_) {
-    VLOG(1) << "Got button press for "
-            << (win == toplevel->win() ? "active" : "transient")
-            << " window " << xid << "; removing pointer grab";
-    wm_->xconn()->RemoveActivePointerGrab(true);
-
-    // If there's a modal transient window, give the focus to it instead.
-    // FIXME: Record the new preferred transient in the ToplevelWindow.
-    if (win->transient_for_window())
-      win->TakeFocus(timestamp);
-    else
-      toplevel->FocusWindowOrModalTransient(timestamp);
-  } else {
-    // This is unexpected, but we don't want to leave the pointer
-    // grabbed.
-    LOG(WARNING) << "Got button press on inactive window " << win->xid()
-                 << " (active is "
-                 << (active_toplevel_ ? active_toplevel_->win()->xid() : 0)
-                 << "); removing pointer grab";
-    wm_->xconn()->RemoveActivePointerGrab(true);
-  }
+  toplevel->HandleButtonPress(win, timestamp);
   return true;
 }
 
@@ -448,31 +430,22 @@ bool LayoutManager::HandleFocusChange(XWindow xid, bool focus_in) {
   Window* win = wm_->GetWindow(xid);
   if (!win)
     return false;
+
+  ToplevelWindow* toplevel = GetToplevelWindowOwningTransientWindow(*win);
+  if (!toplevel)
+    toplevel = GetToplevelWindowByWindow(*win);
+
   // If this is neither a toplevel nor transient window, we don't care
   // about the focus change.
-  if (!GetToplevelWindowByWindow(*win) && !win->transient_for_window())
+  if (!toplevel)
     return false;
+  toplevel->HandleFocusChange(win, focus_in);
 
-  if (focus_in) {
-    VLOG(1) << "Got focus-in for "
-            << (win->transient_for_window() ? "transient" : "toplevel")
-            << " window " << xid << "; removing passive button grab";
-    win->RemovePassiveButtonGrab();
+  // When a transient window gets the focus, we say that its owner is the
+  // "active" window (in the _NET_ACTIVE_WINDOW sense).
+  if (focus_in)
+    wm_->SetActiveWindowProperty(toplevel->win()->xid());
 
-    // When a transient window gets the focus, we say that its owner is
-    // the "active" window (in the _NET_ACTIVE_WINDOW sense).
-    if (win->transient_for_window())
-      wm_->SetActiveWindowProperty(win->transient_for_window()->xid());
-    else
-      wm_->SetActiveWindowProperty(win->xid());
-  } else {
-    // Listen for button presses on this window so we'll know when it
-    // should be focused again.
-    VLOG(1) << "Got focus-out for "
-            << (win->transient_for_window() ? "transient" : "toplevel")
-            << " window " << xid << "; re-adding passive button grab";
-    win->AddPassiveButtonGrab();
-  }
   return true;
 }
 
@@ -547,34 +520,25 @@ bool LayoutManager::HandleClientMessage(const XClientMessageEvent& e) {
     VLOG(1) << "Got _NET_ACTIVE_WINDOW request to focus " << e.window
             << " (requestor says its currently-active window is " << e.data.l[2]
             << "; real active window is " << wm_->active_window_xid() << ")";
-    ToplevelWindow* new_active_toplevel = GetToplevelWindowByWindow(*win);
-
     // If we got a _NET_ACTIVE_WINDOW request for a transient, switch to
     // its owner instead.
-    if (!new_active_toplevel && win->transient_for_window())
-      new_active_toplevel =
-          GetToplevelWindowByWindow(*(win->transient_for_window()));
+    ToplevelWindow* toplevel = GetToplevelWindowOwningTransientWindow(*win);
+    if (toplevel)
+      toplevel->SetPreferredTransientWindowToFocus(win);
+    else
+      toplevel = GetToplevelWindowByWindow(*win);
 
     // If we don't know anything about this window, give up.
-    if (!new_active_toplevel)
+    if (!toplevel)
       return false;
 
-    if (new_active_toplevel != active_toplevel_) {
-      SetActiveToplevelWindow(new_active_toplevel,
+    if (toplevel != active_toplevel_) {
+      SetActiveToplevelWindow(toplevel,
                               ToplevelWindow::STATE_ACTIVE_MODE_IN_FADE,
                               ToplevelWindow::STATE_ACTIVE_MODE_OUT_FADE);
+    } else {
+      toplevel->TakeFocus(e.data.l[1]);
     }
-
-    // If the _NET_ACTIVE_WINDOW request was for a transient window, give
-    // it the focus if its owner doesn't have any modal windows.
-    // TODO: We should be passing the timestamp from e.data.l[1] here
-    // instead of getting a new one, but we need one that's later than the
-    // new one that SetActiveWindow() generated.
-    if (win != new_active_toplevel->win() &&
-        new_active_toplevel->win()->GetTopModalTransient() == NULL) {
-      win->TakeFocus(wm_->GetCurrentTimeFromServer());
-    }
-
     return true;
   }
 
@@ -688,8 +652,7 @@ bool LayoutManager::TakeFocus() {
   if (mode_ != MODE_ACTIVE || !active_toplevel_)
     return false;
 
-  active_toplevel_->FocusWindowOrModalTransient(
-      wm_->GetCurrentTimeFromServer());
+  active_toplevel_->TakeFocus(wm_->GetCurrentTimeFromServer());
   return true;
 }
 
@@ -733,14 +696,36 @@ LayoutManager::ToplevelWindow::ToplevelWindow(Window* win,
       overview_y_(0),
       overview_width_(0),
       overview_height_(0),
-      overview_scale_(1.0) {
+      overview_scale_(1.0),
+      stacked_transients_(new Stacker<TransientWindow*>),
+      transient_to_focus_(NULL) {
+  int width = layout_manager_->width();
+  int height = layout_manager_->height();
+  if (FLAGS_lm_honor_window_size_hints)
+    win->GetMaxSize(width, height, &width, &height);
+  win->ResizeClient(width, height, Window::GRAVITY_NORTHWEST);
+
+  // Let the window know that it's maximized.
+  vector<pair<XAtom, bool> > wm_state;
+  wm_state.push_back(
+      make_pair(wm()->GetXAtom(ATOM_NET_WM_STATE_MAXIMIZED_HORZ), true));
+  wm_state.push_back(
+      make_pair(wm()->GetXAtom(ATOM_NET_WM_STATE_MAXIMIZED_VERT), true));
+  win->ChangeWmState(wm_state);
+
+  win->MoveClientOffscreen();
+  win->ShowComposited();
+  // Make sure that we hear about button presses on this window.
+  win->AddPassiveButtonGrab();
 }
 
 LayoutManager::ToplevelWindow::~ToplevelWindow() {
   wm()->xconn()->DestroyWindow(input_xid_);
+  win_->RemovePassiveButtonGrab();
   win_ = NULL;
   layout_manager_ = NULL;
   input_xid_ = None;
+  transient_to_focus_ = NULL;
 }
 
 void LayoutManager::ToplevelWindow::ArrangeForActiveMode(
@@ -757,7 +742,7 @@ void LayoutManager::ToplevelWindow::ArrangeForActiveMode(
   // TODO: This is a pretty huge mess.  Replace it with a saner way of
   // tracking animation state for windows.
   if (window_is_active) {
-    // Center window horizontally
+    // Center window horizontally.
     const int win_x = max(0, (layout_width - win_->client_width())) / 2;
     if (state_ == STATE_NEW ||
         state_ == STATE_ACTIVE_MODE_OFFSCREEN ||
@@ -790,15 +775,11 @@ void LayoutManager::ToplevelWindow::ArrangeForActiveMode(
         win_->ScaleComposited(1.0, 1.0, 0);
       }
     }
+    MoveAndScaleAllTransientWindows(0);
+
     // In any case, give the window input focus and animate it moving to
     // its final location.
     win_->MoveClient(win_x, win_y);
-    // TODO: Doing a re-layout for active mode is often triggered by user
-    // input.  We should use the timestamp from the key or mouse event
-    // instead of fetching a new one from the server, but it'll require
-    // some changes to KeyBindings so that timestamps will be passed
-    // through to callbacks.
-    FocusWindowOrModalTransient(wm()->GetCurrentTimeFromServer());
     win_->StackCompositedAbove(wm()->active_window_depth(), NULL);
     win_->MoveComposited(win_x, win_y, kWindowAnimMs);
     win_->ScaleComposited(1.0, 1.0, kWindowAnimMs);
@@ -834,6 +815,10 @@ void LayoutManager::ToplevelWindow::ArrangeForActiveMode(
     state_ = STATE_ACTIVE_MODE_OFFSCREEN;
     win_->MoveClientOffscreen();
   }
+
+  ApplyStackingForAllTransientWindows();
+  MoveAndScaleAllTransientWindows(kWindowAnimMs);
+
   // TODO: Maybe just unmap input windows.
   wm()->xconn()->ConfigureWindowOffscreen(input_xid_);
 }
@@ -844,6 +829,7 @@ void LayoutManager::ToplevelWindow::ArrangeForOverviewMode(
     win_->MoveComposited(overview_x_, overview_offscreen_y(), 0);
     win_->ScaleComposited(overview_scale_, overview_scale_, 0);
     win_->SetCompositedOpacity(0.5, 0);
+    MoveAndScaleAllTransientWindows(0);
   }
   win_->StackCompositedAbove(wm()->overview_window_depth(), NULL);
   win_->MoveComposited(overview_x_, overview_y_, kWindowAnimMs);
@@ -856,6 +842,9 @@ void LayoutManager::ToplevelWindow::ArrangeForOverviewMode(
     win_->SetCompositedOpacity(0.75, kWindowAnimMs);
   else
     win_->SetCompositedOpacity(1.0, kWindowAnimMs);
+
+  ApplyStackingForAllTransientWindows();
+  MoveAndScaleAllTransientWindows(kWindowAnimMs);
 
   state_ = window_is_magnified ?
       STATE_OVERVIEW_MODE_MAGNIFIED :
@@ -873,18 +862,252 @@ void LayoutManager::ToplevelWindow::UpdateOverviewScaling(int max_width,
   overview_scale_  = tmp_scale;
 }
 
-void LayoutManager::ToplevelWindow::FocusWindowOrModalTransient(
-    Time timestamp) {
-  Window* modal_win = win_->GetTopModalTransient();
-  if (modal_win)
-    modal_win->TakeFocus(timestamp);
-  else
+void LayoutManager::ToplevelWindow::TakeFocus(Time timestamp) {
+  if (transient_to_focus_) {
+    RestackTransientWindowOnTop(transient_to_focus_);
+    transient_to_focus_->win->TakeFocus(timestamp);
+  } else {
     win_->TakeFocus(timestamp);
+  }
+}
+
+void LayoutManager::ToplevelWindow::SetPreferredTransientWindowToFocus(
+    Window* transient_win) {
+  if (!transient_win) {
+    if (transient_to_focus_ && !transient_to_focus_->win->wm_state_modal())
+      transient_to_focus_ = NULL;
+    return;
+  }
+
+  TransientWindow* transient = GetTransientWindow(*transient_win);
+  if (!transient) {
+    LOG(ERROR) << "Got request to prefer focusing " << transient_win->xid()
+               << ", which isn't transient for " << win_->xid();
+    return;
+  }
+
+  if (transient == transient_to_focus_)
+    return;
+
+  if (!transient_to_focus_ ||
+      !transient_to_focus_->win->wm_state_modal() ||
+      transient_win->wm_state_modal())
+    transient_to_focus_ = transient;
+}
+
+bool LayoutManager::ToplevelWindow::IsWindowOrTransientFocused() const {
+  if (win_->focused())
+    return true;
+
+  for (map<XWindow, ref_ptr<TransientWindow> >::const_iterator it =
+           transients_.begin();
+       it != transients_.end(); ++it) {
+    if (it->second->win->focused())
+      return true;
+  }
+  return false;
+}
+
+void LayoutManager::ToplevelWindow::AddTransientWindow(Window* transient_win) {
+  CHECK(transient_win);
+  if (transients_.find(transient_win->xid()) != transients_.end()) {
+    LOG(ERROR) << "Got request to add already-present transient window "
+               << transient_win->xid() << " to " << win_->xid();
+    return;
+  }
+
+  ref_ptr<TransientWindow> transient(new TransientWindow(transient_win));
+  transient->x_offset =
+      0.5 * (win_->client_width() - transient_win->client_width());
+  transient->y_offset =
+      0.5 * (win_->client_height() - transient_win->client_height());
+  transients_[transient_win->xid()] = transient;
+
+  // If the new transient is non-modal, stack it above the top non-modal
+  // transient that we have.  If it's modal, just put it on top of all
+  // other transients.
+  TransientWindow* transient_to_stack_above = NULL;
+  for (list<TransientWindow*>::const_iterator it =
+         stacked_transients_->items().begin();
+       it != stacked_transients_->items().end(); ++it) {
+    if (transient_win->wm_state_modal() || !(*it)->win->wm_state_modal()) {
+      transient_to_stack_above = (*it);
+      break;
+    }
+  }
+  if (transient_to_stack_above)
+    stacked_transients_->AddAbove(transient.get(), transient_to_stack_above);
+  else
+    stacked_transients_->AddOnBottom(transient.get());
+
+  SetPreferredTransientWindowToFocus(transient_win);
+
+  MoveAndScaleTransientWindow(transient.get(), 0);
+  ApplyStackingForTransientWindowAboveWindow(
+      transient.get(),
+      transient_to_stack_above ? transient_to_stack_above->win : win_);
+
+  transient_win->ShowComposited();
+  transient_win->AddPassiveButtonGrab();
+}
+
+void LayoutManager::ToplevelWindow::RemoveTransientWindow(
+    Window* transient_win) {
+  CHECK(transient_win);
+  TransientWindow* transient = GetTransientWindow(*transient_win);
+  if (!transient) {
+    LOG(ERROR) << "Got request to remove not-present transient window "
+               << transient_win->xid() << " from " << win_->xid();
+    return;
+  }
+  stacked_transients_->Remove(transient);
+  CHECK(transients_.erase(transient_win->xid()) == 1);
+  transient_win->RemovePassiveButtonGrab();
+
+  if (transient_to_focus_ == transient) {
+    transient_to_focus_ = NULL;
+    TransientWindow* new_transient = FindTransientWindowToFocus();
+    SetPreferredTransientWindowToFocus(
+        new_transient ? new_transient->win : NULL);
+  }
+}
+
+void LayoutManager::ToplevelWindow::HandleTransientWindowConfigureRequest(
+    Window* transient_win,
+    int req_x, int req_y, int req_width, int req_height) {
+  CHECK(transient_win);
+  TransientWindow* transient = GetTransientWindow(*transient_win);
+  CHECK(transient);
+
+  // Move and resize the transient window as requested.
+  if (req_x != transient_win->client_x() ||
+      req_y != transient_win->client_y()) {
+    transient_win->MoveClient(req_x, req_y);
+    transient->x_offset = req_x - win()->client_x();
+    transient->y_offset = req_y - win()->client_y();
+    MoveAndScaleTransientWindow(transient, 0);
+  }
+
+  if (req_width != transient_win->client_width() ||
+      req_height != transient_win->client_height()) {
+    transient_win->ResizeClient(
+        req_width, req_height, Window::GRAVITY_NORTHWEST);
+  }
+}
+
+void LayoutManager::ToplevelWindow::HandleFocusChange(
+    Window* focus_win, bool focus_in) {
+  DCHECK(focus_win == win_ || GetTransientWindow(*focus_win));
+
+  if (focus_in) {
+    VLOG(1) << "Got focus-in for " << focus_win->xid()
+            << "; removing passive button grab";
+    focus_win->RemovePassiveButtonGrab();
+  } else {
+    // Listen for button presses on this window so we'll know when it
+    // should be focused again.
+    VLOG(1) << "Got focus-out for " << focus_win->xid()
+            << "; re-adding passive button grab";
+    focus_win->AddPassiveButtonGrab();
+  }
+}
+
+void LayoutManager::ToplevelWindow::HandleButtonPress(
+    Window* button_win, Time timestamp) {
+  SetPreferredTransientWindowToFocus(
+      GetTransientWindow(*button_win) ? button_win : NULL);
+  TakeFocus(timestamp);
+  wm()->xconn()->RemoveActivePointerGrab(true);  // replay events
+}
+
+LayoutManager::ToplevelWindow::TransientWindow*
+    LayoutManager::ToplevelWindow::GetTransientWindow(const Window& win) {
+  map<XWindow, ref_ptr<TransientWindow> >::iterator it =
+      transients_.find(win.xid());
+  if (it == transients_.end())
+    return NULL;
+  return it->second.get();
+}
+
+void LayoutManager::ToplevelWindow::MoveAndScaleTransientWindow(
+    TransientWindow* transient, int anim_ms) {
+  // TODO: Check if 'win_' is offscreen, and make sure that the transient
+  // window is offscreen as well if so.
+  transient->win->MoveClient(
+      win_->client_x() + transient->x_offset,
+      win_->client_y() + transient->y_offset);
+
+  transient->win->MoveComposited(
+      win_->composited_x() + win_->composited_scale_x() * transient->x_offset,
+      win_->composited_y() + win_->composited_scale_y() * transient->y_offset,
+      anim_ms);
+  transient->win->ScaleComposited(
+      win_->composited_scale_x(), win_->composited_scale_y(), anim_ms);
+}
+
+void LayoutManager::ToplevelWindow::MoveAndScaleAllTransientWindows(
+    int anim_ms) {
+  for (map<XWindow, ref_ptr<TransientWindow> >::iterator it =
+           transients_.begin();
+       it != transients_.end(); ++it) {
+    MoveAndScaleTransientWindow(it->second.get(), anim_ms);
+  }
+}
+
+// static
+void LayoutManager::ToplevelWindow::ApplyStackingForTransientWindowAboveWindow(
+    TransientWindow* transient, Window* other_win) {
+  CHECK(transient);
+  CHECK(other_win);
+  transient->win->StackClientAbove(other_win->xid());
+  transient->win->StackCompositedAbove(other_win->actor(), NULL);
+}
+
+void LayoutManager::ToplevelWindow::ApplyStackingForAllTransientWindows() {
+  Window* prev_win = win_;
+  for (list<TransientWindow*>::const_reverse_iterator it =
+           stacked_transients_->items().rbegin();
+       it != stacked_transients_->items().rend();
+       ++it) {
+    TransientWindow* transient = *it;
+    ApplyStackingForTransientWindowAboveWindow(transient, prev_win);
+    prev_win = transient->win;
+  }
+}
+
+LayoutManager::ToplevelWindow::TransientWindow*
+    LayoutManager::ToplevelWindow::FindTransientWindowToFocus() const {
+  if (stacked_transients_->items().empty())
+    return NULL;
+
+  for (list<TransientWindow*>::const_iterator it =
+           stacked_transients_->items().begin();
+       it != stacked_transients_->items().end();
+       ++it) {
+    if ((*it)->win->wm_state_modal())
+      return *it;
+  }
+  return stacked_transients_->items().front();
+}
+
+void LayoutManager::ToplevelWindow::RestackTransientWindowOnTop(
+    TransientWindow* transient) {
+  if (transient == stacked_transients_->items().front())
+    return;
+
+  DCHECK(stacked_transients_->Contains(transient));
+  DCHECK_GT(stacked_transients_->items().size(), 1);
+  TransientWindow* transient_to_stack_above =
+      stacked_transients_->items().front();
+  stacked_transients_->Remove(transient);
+  stacked_transients_->AddOnTop(transient);
+  ApplyStackingForTransientWindowAboveWindow(
+      transient, transient_to_stack_above->win);
 }
 
 
 LayoutManager::ToplevelWindow* LayoutManager::GetToplevelWindowByInputXid(
-    XWindow xid) const {
+    XWindow xid) {
   return FindWithDefault(
       input_to_toplevel_, xid, static_cast<ToplevelWindow*>(NULL));
 }
@@ -905,6 +1128,20 @@ LayoutManager::ToplevelWindow* LayoutManager::GetToplevelWindowByWindow(
   return NULL;
 }
 
+LayoutManager::ToplevelWindow* LayoutManager::GetToplevelWindowByXid(
+    XWindow xid) {
+  const Window* win = wm_->GetWindow(xid);
+  if (!win)
+    return NULL;
+  return GetToplevelWindowByWindow(*win);
+}
+
+LayoutManager::ToplevelWindow*
+    LayoutManager::GetToplevelWindowOwningTransientWindow(const Window& win) {
+  return FindWithDefault(
+      transient_to_toplevel_, win.xid(), static_cast<ToplevelWindow*>(NULL));
+}
+
 void LayoutManager::SetActiveToplevelWindow(
     ToplevelWindow* toplevel,
     ToplevelWindow::State state_for_new_win,
@@ -919,6 +1156,13 @@ void LayoutManager::SetActiveToplevelWindow(
   toplevel->set_state(state_for_new_win);
   active_toplevel_ = toplevel;
   ArrangeToplevelWindowsForActiveMode();
+
+  // TODO: Doing a re-layout for active mode is often triggered by user
+  // input.  We should use the timestamp from the key or mouse event
+  // instead of fetching a new one from the server, but it'll require some
+  // changes to KeyBindings so that timestamps will be passed through to
+  // callbacks.
+  toplevel->TakeFocus(wm_->GetCurrentTimeFromServer());
 }
 
 void LayoutManager::SwitchToActiveMode(bool activate_magnified_win) {
@@ -996,9 +1240,7 @@ void LayoutManager::SetMode(Mode mode) {
       // Leave 'active_toplevel_' alone, so we can activate the same window
       // if we return to active mode on an Escape keypress.
 
-      if (active_toplevel_ &&
-          (active_toplevel_->win()->focused() ||
-           active_toplevel_->win()->GetFocusedTransient())) {
+      if (active_toplevel_ && active_toplevel_->IsWindowOrTransientFocused()) {
         // We need to take the input focus away here; otherwise the
         // previously-focused window would continue to get keyboard events
         // in overview mode.  Let the WindowManager decide what to do with it.

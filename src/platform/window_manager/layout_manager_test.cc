@@ -9,6 +9,7 @@
 #include "window_manager/clutter_interface.h"
 #include "window_manager/layout_manager.h"
 #include "window_manager/mock_x_connection.h"
+#include "window_manager/util.h"
 #include "window_manager/window.h"
 #include "window_manager/window_manager.h"
 
@@ -215,6 +216,55 @@ TEST_F(LayoutManagerTest, Focus) {
   EXPECT_FALSE(info2->all_buttons_grabbed);
 }
 
+TEST_F(LayoutManagerTest, ConfigureTransient) {
+  XEvent event;
+
+  // Create and map a toplevel window.
+  XWindow owner_xid = CreateSimpleWindow(xconn_->GetRootWindow());
+  MockXConnection::WindowInfo* owner_info =
+      xconn_->GetWindowInfoOrDie(owner_xid);
+  MockXConnection::InitCreateWindowEvent(&event, *owner_info);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  MockXConnection::InitMapEvent(&event, owner_xid);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  MockXConnection::InitConfigureNotifyEvent(&event, *owner_info);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+
+  // Now create and map a transient window.
+  XWindow transient_xid = xconn_->CreateWindow(
+      xconn_->GetRootWindow(),
+      60, 70,    // x, y
+      320, 240,  // width, height
+      false,     // override redirect
+      false,     // input only
+      0);        // event mask
+  MockXConnection::WindowInfo* transient_info =
+      xconn_->GetWindowInfoOrDie(transient_xid);
+  transient_info->transient_for = owner_xid;
+  MockXConnection::InitCreateWindowEvent(&event, *transient_info);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  MockXConnection::InitMapEvent(&event, transient_xid);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+
+  // The transient window should initially be centered over its owner.
+  EXPECT_EQ(owner_info->x + 0.5 * (owner_info->width - transient_info->width),
+            transient_info->x);
+  EXPECT_EQ(owner_info->y + 0.5 * (owner_info->height - transient_info->height),
+            transient_info->y);
+  MockXConnection::InitConfigureNotifyEvent(&event, *owner_info);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+
+  // Send a ConfigureRequest event to move and resize the transient window
+  // and make sure that it gets applied.
+  MockXConnection::InitConfigureRequestEvent(
+      &event, transient_xid, owner_info->x + 20, owner_info->y + 10, 200, 150);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  EXPECT_EQ(owner_info->x + 20, transient_info->x);
+  EXPECT_EQ(owner_info->y + 10, transient_info->y);
+  EXPECT_EQ(200, transient_info->width);
+  EXPECT_EQ(150, transient_info->height);
+}
+
 TEST_F(LayoutManagerTest, FocusTransient) {
   // Create a window.
   XWindow xid = CreateSimpleWindow(xconn_->GetRootWindow());
@@ -372,13 +422,6 @@ TEST_F(LayoutManagerTest, FocusTransient) {
   EXPECT_EQ(transient_xid, xconn_->focused_xid());
   MockXConnection::InitFocusOutEvent(&event, xid2, NotifyNormal);
   EXPECT_TRUE(wm_->HandleEvent(&event));
-  // TODO: The current implementation briefly focuses the toplevel window
-  // before passing the focus to the transient, so we send FocusIn and
-  // FocusOut events here.  Clean this up in LayoutManager.
-  MockXConnection::InitFocusInEvent(&event, xid, NotifyNormal);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
-  MockXConnection::InitFocusOutEvent(&event, xid, NotifyNormal);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
   MockXConnection::InitFocusInEvent(&event, transient_xid, NotifyNormal);
   EXPECT_TRUE(wm_->HandleEvent(&event));
   EXPECT_EQ(xid, wm_->active_window_xid());
@@ -397,6 +440,122 @@ TEST_F(LayoutManagerTest, FocusTransient) {
   EXPECT_FALSE(wm_->GetWindow(xid)->focused());
   EXPECT_FALSE(wm_->GetWindow(transient_xid)->focused());
   EXPECT_FALSE(wm_->GetWindow(xid2)->focused());
+}
+
+TEST_F(LayoutManagerTest, MultipleTransients) {
+  // Create a window.
+  XWindow owner_xid = CreateSimpleWindow(xconn_->GetRootWindow());
+  MockXConnection::WindowInfo* owner_info =
+      xconn_->GetWindowInfoOrDie(owner_xid);
+
+  // Send CreateNotify, MapNotify, and FocusNotify events.
+  XEvent event;
+  MockXConnection::InitCreateWindowEvent(&event, *owner_info);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  MockXConnection::InitMapEvent(&event, owner_xid);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  MockXConnection::InitFocusInEvent(&event, owner_xid, NotifyNormal);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+
+  // Create a transient window, send CreateNotify and MapNotify events for
+  // it, and check that it has the focus.
+  XWindow first_transient_xid = CreateSimpleWindow(xconn_->GetRootWindow());
+  MockXConnection::WindowInfo* first_transient_info =
+      xconn_->GetWindowInfoOrDie(first_transient_xid);
+  first_transient_info->transient_for = owner_xid;
+  MockXConnection::InitCreateWindowEvent(&event, *first_transient_info);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  MockXConnection::InitMapEvent(&event, first_transient_xid);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  EXPECT_EQ(first_transient_xid, xconn_->focused_xid());
+  MockXConnection::InitFocusOutEvent(&event, owner_xid, NotifyNormal);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  MockXConnection::InitFocusInEvent(&event, first_transient_xid, NotifyNormal);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+
+  // The transient window should be stacked on top of its actor (in terms
+  // of both its composited and client windows).
+  Window* owner_win = wm_->GetWindow(owner_xid);
+  ASSERT_TRUE(owner_win != NULL);
+  Window* first_transient_win = wm_->GetWindow(first_transient_xid);
+  ASSERT_TRUE(first_transient_win != NULL);
+  MockClutterInterface::StageActor* stage = clutter_->GetDefaultStage();
+  EXPECT_LT(stage->GetStackingIndex(first_transient_win->actor()),
+            stage->GetStackingIndex(owner_win->actor()));
+  EXPECT_LT(xconn_->stacked_xids().GetIndex(first_transient_xid),
+            xconn_->stacked_xids().GetIndex(owner_xid));
+
+  // Now create a second transient window, which should get the focus when
+  // it's mapped.
+  XWindow second_transient_xid = CreateSimpleWindow(xconn_->GetRootWindow());
+  MockXConnection::WindowInfo* second_transient_info =
+      xconn_->GetWindowInfoOrDie(second_transient_xid);
+  second_transient_info->transient_for = owner_xid;
+  MockXConnection::InitCreateWindowEvent(&event, *second_transient_info);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  MockXConnection::InitMapEvent(&event, second_transient_xid);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  EXPECT_EQ(second_transient_xid, xconn_->focused_xid());
+  MockXConnection::InitFocusOutEvent(&event, first_transient_xid, NotifyNormal);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  MockXConnection::InitFocusInEvent(&event, second_transient_xid, NotifyNormal);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+
+  // The second transient should be on top of the first, which should be on
+  // top of the owner.
+  Window* second_transient_win = wm_->GetWindow(second_transient_xid);
+  ASSERT_TRUE(second_transient_win != NULL);
+  EXPECT_LT(stage->GetStackingIndex(second_transient_win->actor()),
+            stage->GetStackingIndex(first_transient_win->actor()));
+  EXPECT_LT(stage->GetStackingIndex(first_transient_win->actor()),
+            stage->GetStackingIndex(owner_win->actor()));
+  EXPECT_LT(xconn_->stacked_xids().GetIndex(second_transient_xid),
+            xconn_->stacked_xids().GetIndex(first_transient_xid));
+  EXPECT_LT(xconn_->stacked_xids().GetIndex(first_transient_xid),
+            xconn_->stacked_xids().GetIndex(owner_xid));
+
+  // Click on the first transient.  It should get the focused and be moved to
+  // the top of the stack.
+  xconn_->set_pointer_grab_xid(first_transient_xid);
+  MockXConnection::InitButtonPressEvent(&event, first_transient_xid, 0, 0, 1);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  EXPECT_EQ(first_transient_xid, xconn_->focused_xid());
+  MockXConnection::InitFocusOutEvent(
+      &event, second_transient_xid, NotifyNormal);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  MockXConnection::InitFocusInEvent(&event, first_transient_xid, NotifyNormal);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  EXPECT_LT(stage->GetStackingIndex(first_transient_win->actor()),
+            stage->GetStackingIndex(second_transient_win->actor()));
+  EXPECT_LT(stage->GetStackingIndex(second_transient_win->actor()),
+            stage->GetStackingIndex(owner_win->actor()));
+  EXPECT_LT(xconn_->stacked_xids().GetIndex(first_transient_xid),
+            xconn_->stacked_xids().GetIndex(second_transient_xid));
+  EXPECT_LT(xconn_->stacked_xids().GetIndex(second_transient_xid),
+            xconn_->stacked_xids().GetIndex(owner_xid));
+
+  // Unmap the first transient.  The second transient should be focused.
+  MockXConnection::InitUnmapEvent(&event, first_transient_xid);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  EXPECT_EQ(second_transient_xid, xconn_->focused_xid());
+  MockXConnection::InitFocusOutEvent(&event, first_transient_xid, NotifyNormal);
+  EXPECT_FALSE(wm_->HandleEvent(&event));  // false because window was unmapped
+  MockXConnection::InitFocusInEvent(&event, second_transient_xid, NotifyNormal);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  EXPECT_LT(stage->GetStackingIndex(second_transient_win->actor()),
+            stage->GetStackingIndex(owner_win->actor()));
+  EXPECT_LT(xconn_->stacked_xids().GetIndex(second_transient_xid),
+            xconn_->stacked_xids().GetIndex(owner_xid));
+
+  // After we unmap the second transient, the owner should get the focus.
+  MockXConnection::InitUnmapEvent(&event, second_transient_xid);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  EXPECT_EQ(owner_xid, xconn_->focused_xid());
+  MockXConnection::InitFocusOutEvent(
+      &event, second_transient_xid, NotifyNormal);
+  EXPECT_FALSE(wm_->HandleEvent(&event));  // false because window was unmapped
+  MockXConnection::InitFocusInEvent(&event, owner_xid, NotifyNormal);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
 }
 
 TEST_F(LayoutManagerTest, SetWmStateMaximized) {

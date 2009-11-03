@@ -151,100 +151,24 @@ TEST_F(WindowTest, ChangeComposited) {
 }
 
 TEST_F(WindowTest, TransientFor) {
-  XWindow owner_xid = xconn_->CreateWindow(
-      xconn_->GetRootWindow(),
-      100, 100,  // x, y
-      300, 200,  // width, height
-      false,     // override redirect
-      false,     // input only
-      0);        // event mask
-
-  XWindow transient_xid = xconn_->CreateWindow(
+  XWindow xid = xconn_->CreateWindow(
       xconn_->GetRootWindow(),
       300, 300,  // x, y
       60, 40,    // width, height
       false,     // override redirect
       false,     // input only
       0);        // event mask
-  MockXConnection::WindowInfo* info = xconn_->GetWindowInfoOrDie(transient_xid);
+  MockXConnection::WindowInfo* info = xconn_->GetWindowInfoOrDie(xid);
+
+  XWindow owner_xid = 1234;  // arbitrary ID
   info->transient_for = owner_xid;
+  Window win(wm_.get(), xid);
+  EXPECT_EQ(owner_xid, win.transient_for_xid());
 
-  // The Window class's constructor looks up transient windows' owners
-  // using the WindowManager object, so we need to register these windows
-  // there.
-  wm_->TrackWindow(owner_xid);
-  Window* owner_win = wm_->GetWindow(owner_xid);
-  ASSERT_TRUE(owner_win != NULL);
-  // The window manager places new windows offscreen; move this one back to
-  // its original location.
-  owner_win->MoveComposited(100, 100, 0);
-  owner_win->MoveClientToComposited();
-
-  wm_->TrackWindow(transient_xid);
-  Window* transient_win = wm_->GetWindow(transient_xid);
-  ASSERT_TRUE(transient_win != NULL);
-
-  // Check the pointers.
-  EXPECT_EQ(NULL, owner_win->transient_for_window());
-  EXPECT_EQ(owner_win, transient_win->transient_for_window());
-  EXPECT_TRUE(transient_win->transient_windows_->items().empty());
-  ASSERT_EQ(1, owner_win->transient_windows_->items().size());
-  EXPECT_EQ(transient_win, owner_win->transient_windows_->items().front());
-
-  // The transient window should be centered over its owner.
-  int transient_x = 100 + 0.5 * (300 - 60);
-  int transient_y = 100 + 0.5 * (200 - 40);
-  EXPECT_EQ(transient_x, transient_win->composited_x());
-  EXPECT_EQ(transient_y, transient_win->composited_y());
-  EXPECT_EQ(transient_x, transient_win->client_x());
-  EXPECT_EQ(transient_y, transient_win->client_y());
-
-  // Move the owner window and check that the transient window moves with it.
-  owner_win->MoveComposited(200, 200, 0);
-  owner_win->MoveClientToComposited();
-  transient_x = 200 + 0.5 * (300 - 60);
-  transient_y = 200 + 0.5 * (200 - 40);
-  EXPECT_EQ(transient_x, transient_win->composited_x());
-  EXPECT_EQ(transient_y, transient_win->composited_y());
-  EXPECT_EQ(transient_x, transient_win->client_x());
-  EXPECT_EQ(transient_y, transient_win->client_y());
-
-  // Now scale the owner window down to half its size and make sure that
-  // the composited transient window is scaled the same amount and moved
-  // over the new center.
-  owner_win->ScaleComposited(0.5, 0.5, 0);
-  EXPECT_DOUBLE_EQ(0.5, transient_win->composited_scale_x());
-  EXPECT_DOUBLE_EQ(0.5, transient_win->composited_scale_y());
-  EXPECT_EQ(200 + 0.5 * 0.5 * (300 - 60), transient_win->composited_x());
-  EXPECT_EQ(200 + 0.5 * 0.5 * (200 - 40), transient_win->composited_y());
-
-  // Create another transient window.
-  XWindow other_transient_xid = xconn_->CreateWindow(
-      xconn_->GetRootWindow(),
-      300, 300,  // x, y
-      60, 40,    // width, height
-      false,     // override redirect
-      false,     // input only
-      0);        // event mask
-  info = xconn_->GetWindowInfoOrDie(other_transient_xid);
-  info->transient_for = owner_xid;
-  wm_->TrackWindow(other_transient_xid);
-
-  // The second transient window should be registered with its owner now.
-  Window* other_transient_win = wm_->GetWindow(other_transient_xid);
-  ASSERT_TRUE(other_transient_win != NULL);
-  EXPECT_EQ(owner_win, other_transient_win->transient_for_window());
-  EXPECT_EQ(2, owner_win->transient_windows_->items().size());
-
-  // If we delete the second transient window, the owner should be updated.
-  wm_->client_windows_.erase(other_transient_xid);
-  ASSERT_EQ(1, owner_win->transient_windows_->items().size());
-  EXPECT_EQ(transient_win, owner_win->transient_windows_->items().front());
-
-  // If we delete the owner window, the transient window becomes
-  // non-transient.
-  wm_->client_windows_.erase(owner_xid);
-  EXPECT_EQ(NULL, transient_win->transient_for_window());
+  XWindow new_owner_xid = 5678;
+  info->transient_for = new_owner_xid;
+  EXPECT_TRUE(win.FetchAndApplyTransientHint());
+  EXPECT_EQ(new_owner_xid, win.transient_for_xid());
 }
 
 TEST_F(WindowTest, GetMaxSize) {

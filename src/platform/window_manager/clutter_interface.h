@@ -351,6 +351,11 @@ class MockClutterInterface : public ClutterInterface {
 
     Stacker<Actor*>* stacked_children() { return stacked_children_.get(); }
 
+    // Get an index representing an actor's stacking position inside of
+    // this container.  Objects stacked higher have lower indexes.
+    // Convenient for testing.
+    int GetStackingIndex(ClutterInterface::Actor* actor);
+
    private:
     scoped_ptr<Stacker<Actor*> > stacked_children_;
 

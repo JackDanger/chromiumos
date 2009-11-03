@@ -21,15 +21,12 @@ DECLARE_bool(wm_use_compositing);  // from window_manager.cc
 
 namespace chromeos {
 
-static const double kTransientFadeInMs = 200;
-
 Window::Window(WindowManager* wm, XWindow xid)
     : xid_(xid),
       wm_(wm),
       actor_(wm_->clutter()->CreateTexturePixmap()),
       shadow_(NULL),
-      transient_for_window_(NULL),
-      transient_windows_(new Stacker<Window*>()),
+      transient_for_xid_(None),
       override_redirect_(false),
       mapped_(false),
       shaped_(false),
@@ -121,64 +118,17 @@ Window::Window(WindowManager* wm, XWindow xid)
   // Check if the client window has set _NET_WM_WINDOW_OPACITY.
   FetchAndApplyWindowOpacity();
 
-  // Now that we've set up the actor, check if we're a transient window.
-  FetchAndApplyTransientHint();
-
-  // Apply the size hints as well, which may resize the actor.
+  // Apply the size hints, which may resize the actor.
   FetchAndApplySizeHints();
 
   // Load other properties that might've gotten set before we started
   // listening for property changes on the window.
   FetchAndApplyWmProtocols();
   FetchAndApplyWmState();
+  FetchAndApplyTransientHint();
 }
 
 Window::~Window() {
-  if (transient_for_window_) {
-    transient_for_window_->RemoveTransientWindow(this);
-    transient_for_window_ = NULL;
-  }
-  while (!transient_windows_->items().empty()) {
-    Window* win = transient_windows_->items().front();
-    if (win->transient_for_window() != this) {
-      LOG(WARNING) << "Window " << xid_ << " lists " << win->xid()
-                   << " as a transient window, but " << win->xid()
-                   << " says it's transient for "
-                   << win->transient_for_window()->xid();
-      transient_windows_->Remove(win);
-      continue;
-    }
-    // This call will also pass 'win' to our RemoveTransientWindow() method.
-    win->SetTransientForWindow(NULL);
-  }
-}
-
-void Window::AddTransientWindow(Window* win) {
-  // TODO: Check for cycles here?  (I don't think we should even expect to
-  // see, say, a window that has transients but is itself transient, so
-  // it'd be easier and maybe sufficient to just disallow that case.)
-  CHECK(win);
-  if (transient_windows_->Contains(win)) {
-    LOG(WARNING) << "Ignoring request to add duplicate transient "
-                 << "window " << win->xid() << " to " << xid_;
-    return;
-  }
-  transient_windows_->AddOnTop(win);
-  if (!win->override_redirect()) {
-    win->CenterClientOverWindow(this);
-    MoveAndScaleCompositedTransientWindow(win, 0);  // anim_ms
-  }
-  SaveTransientWindowPosition(win);
-  RestackClientTransientWindows();
-  RestackCompositedTransientWindows();
-  win->SetCompositedOpacity(0, 0);
-  win->SetCompositedOpacity(composited_opacity_, kTransientFadeInMs);
-}
-
-void Window::RemoveTransientWindow(Window* win) {
-  CHECK(win);
-  transient_windows_->Remove(win);
-  transient_window_positions_.erase(win->xid());
 }
 
 bool Window::FetchAndApplySizeHints() {
@@ -242,23 +192,8 @@ bool Window::FetchAndApplySizeHints() {
 }
 
 bool Window::FetchAndApplyTransientHint() {
-  Window* owner_win = NULL;
-  XWindow owner_xid = None;
-  if (!wm_->xconn()->GetTransientHintForWindow(xid_, &owner_xid))
+  if (!wm_->xconn()->GetTransientHintForWindow(xid_, &transient_for_xid_))
     return false;
-  if (owner_xid != None) {
-    owner_win = wm_->GetWindow(owner_xid);
-    if (!owner_win) {
-      LOG(WARNING) << "Window " << xid_ << " is transient "
-                   << "for " << owner_xid << ", which we don't know "
-                   << "anything about";
-      return false;
-    }
-  }
-
-  // If 'win' was previously transient for a different window, this call
-  // will also unregister that.
-  SetTransientForWindow(owner_win);
   return true;
 }
 
@@ -414,26 +349,6 @@ bool Window::ChangeWmState(const vector<pair<XAtom, bool> >& states) {
   return UpdateWmStateProperty();
 }
 
-Window* Window::GetTopModalTransient() {
-  for (list<Window*>::const_iterator it = transient_windows_->items().begin();
-       it != transient_windows_->items().end(); ++it) {
-    Window* win = *it;
-    if (win->wm_state_modal() && win->mapped())
-      return win;
-  }
-  return NULL;
-}
-
-Window* Window::GetFocusedTransient() {
-  for (list<Window*>::const_iterator it = transient_windows_->items().begin();
-       it != transient_windows_->items().end(); ++it) {
-    Window* win = *it;
-    if (win->focused())
-      return win;
-  }
-  return NULL;
-}
-
 bool Window::TakeFocus(Time timestamp) {
   VLOG(2) << "Focusing " << xid_ << " using time " << timestamp;
   if (supports_wm_take_focus_) {
@@ -559,28 +474,6 @@ bool Window::MoveClient(int x, int y) {
   if (!wm_->xconn()->MoveWindow(xid_, x, y))
     return false;
   SaveClientPosition(x, y);
-
-  if (transient_for_window_)
-    transient_for_window_->SaveTransientWindowPosition(this);
-
-  // Move transient windows alongside us.
-  // TODO: Maybe do something different for offscreen moves; otherwise a
-  // transient window that's larger than us could still extend onscreen.
-  for (list<Window*>::const_iterator it = transient_windows_->items().begin();
-       it != transient_windows_->items().end(); ++it) {
-    Window* win = *it;
-    if (win->override_redirect())
-      continue;
-
-    map<XWindow, pair<int, int> >::const_iterator it =
-        transient_window_positions_.find(win->xid());
-    if (it != transient_window_positions_.end()) {
-      win->MoveClient(x + it->second.first, y + it->second.second);
-    } else {
-      LOG(WARNING) << "Missing relative position for window " << win->xid()
-                   << ", transient for " << xid_;
-    }
-  }
   return true;
 }
 
@@ -620,7 +513,6 @@ bool Window::ResizeClient(int width, int height, Gravity gravity) {
     MoveComposited(composited_x_ - composited_scale_x_ * dx,
                    composited_y_ - composited_scale_y_ * dy,
                    0);
-    // TODO: Also handle transients here, I guess.
   } else  {
     if (!wm_->xconn()->ResizeWindow(xid_, width, height))
       return false;
@@ -632,21 +524,18 @@ bool Window::ResizeClient(int width, int height, Gravity gravity) {
 
 bool Window::RaiseClient() {
   bool result = wm_->xconn()->RaiseWindow(xid_);
-  RestackClientTransientWindows();
   return result;
 }
 
 bool Window::StackClientAbove(XWindow sibling_xid) {
   CHECK(sibling_xid != None);
   bool result = wm_->xconn()->StackWindow(xid_, sibling_xid, true);
-  RestackClientTransientWindows();
   return result;
 }
 
 bool Window::StackClientBelow(XWindow sibling_xid) {
   CHECK(sibling_xid != None);
   bool result = wm_->xconn()->StackWindow(xid_, sibling_xid, false);
-  RestackClientTransientWindows();
   return result;
 }
 
@@ -658,7 +547,6 @@ void Window::MoveComposited(int x, int y, int anim_ms) {
   actor_->Move(x, y, anim_ms);
   if (shadow_.get())
     shadow_->Move(x, y, anim_ms);
-  MoveAndScaleCompositedTransientWindows(anim_ms);
 }
 
 void Window::MoveCompositedX(int x, int anim_ms) {
@@ -668,7 +556,6 @@ void Window::MoveCompositedX(int x, int anim_ms) {
   actor_->MoveX(x, anim_ms);
   if (shadow_.get())
     shadow_->MoveX(x, anim_ms);
-  MoveAndScaleCompositedTransientWindows(anim_ms);
 }
 
 void Window::MoveCompositedY(int y, int anim_ms) {
@@ -678,7 +565,6 @@ void Window::MoveCompositedY(int y, int anim_ms) {
   actor_->MoveY(y, anim_ms);
   if (shadow_.get())
     shadow_->MoveY(y, anim_ms);
-  MoveAndScaleCompositedTransientWindows(anim_ms);
 }
 
 void Window::ShowComposited() {
@@ -687,13 +573,6 @@ void Window::ShowComposited() {
   composited_shown_ = true;
   if (shadow_.get())
     shadow_->Show();
-  for (list<Window*>::const_iterator it = transient_windows_->items().begin();
-       it != transient_windows_->items().end(); ++it) {
-    Window* win = *it;
-    if (win->override_redirect() || !win->mapped())
-      continue;
-    win->ShowComposited();
-  }
 }
 
 void Window::HideComposited() {
@@ -702,13 +581,6 @@ void Window::HideComposited() {
   composited_shown_ = false;
   if (shadow_.get())
     shadow_->Hide();
-  for (list<Window*>::const_iterator it = transient_windows_->items().begin();
-       it != transient_windows_->items().end(); ++it) {
-    Window* win = *it;
-    if (win->override_redirect() || !win->mapped())
-      continue;
-    win->HideComposited();
-  }
 }
 
 void Window::SetCompositedOpacity(double opacity, int anim_ms) {
@@ -727,10 +599,6 @@ void Window::SetCompositedOpacity(double opacity, int anim_ms) {
   actor_->SetOpacity(combined_opacity, anim_ms);
   if (shadow_.get())
     shadow_->SetOpacity(shadow_opacity_, anim_ms);
-  for (list<Window*>::const_iterator it = transient_windows_->items().begin();
-       it != transient_windows_->items().end(); ++it) {
-    (*it)->SetCompositedOpacity(composited_opacity_, anim_ms);
-  }
 }
 
 void Window::ScaleComposited(double scale_x, double scale_y, int anim_ms) {
@@ -742,25 +610,6 @@ void Window::ScaleComposited(double scale_x, double scale_y, int anim_ms) {
   actor_->Scale(scale_x, scale_y, anim_ms);
   if (shadow_.get())
     shadow_->Resize(scale_x * client_width_, scale_y * client_height_, anim_ms);
-  MoveAndScaleCompositedTransientWindows(anim_ms);
-}
-
-void Window::MoveAndScaleCompositedTransientWindow(
-    Window* transient_win, int anim_ms) {
-  map<XWindow, pair<int, int> >::const_iterator it =
-      transient_window_positions_.find(transient_win->xid());
-  if (it == transient_window_positions_.end()) {
-    LOG(WARNING) << "Missing relative position for window "
-                 << transient_win->xid() << ", transient for " << xid_;
-    return;
-  }
-
-  transient_win->MoveComposited(
-      composited_x_ + composited_scale_x() * it->second.first,
-      composited_y_ + composited_scale_y() * it->second.second,
-      anim_ms);
-  transient_win->ScaleComposited(
-      composited_scale_x_, composited_scale_y_, anim_ms);
 }
 
 void Window::SetShadowOpacity(double opacity, int anim_ms) {
@@ -777,7 +626,6 @@ void Window::StackCompositedAbove(ClutterInterface::Actor* actor,
     actor_->Raise(actor);
   if (shadow_.get())
     shadow_->group()->Lower(shadow_actor ? shadow_actor : actor_.get());
-  RestackCompositedTransientWindows();
 }
 
 void Window::StackCompositedBelow(ClutterInterface::Actor* actor,
@@ -786,62 +634,6 @@ void Window::StackCompositedBelow(ClutterInterface::Actor* actor,
     actor_->Lower(actor);
   if (shadow_.get())
     shadow_->group()->Lower(shadow_actor ? shadow_actor : actor_.get());
-  RestackCompositedTransientWindows();
-}
-
-void Window::SetTransientForWindow(Window* win) {
-  if (win)
-    VLOG(1) << "Setting window " << xid_ << " as transient for " << win->xid();
-  else
-    VLOG(1) << "Setting window " << xid_ << " as non-transient";
-
-  if (transient_for_window_)
-    transient_for_window_->RemoveTransientWindow(this);
-  transient_for_window_ = win;
-  if (win)
-    win->AddTransientWindow(this);
-}
-
-void Window::SaveTransientWindowPosition(Window* transient_win) {
-  CHECK(transient_win);
-  if (!transient_windows_->Contains(transient_win)) {
-    LOG(ERROR) << "Ignoring attempt to save transient window position for "
-               << transient_win->xid() << ", which isn't transient for "
-               << xid_;
-    return;
-  }
-  transient_window_positions_[transient_win->xid()] =
-      make_pair(transient_win->client_x() - client_x_,
-                transient_win->client_y() - client_y_);
-}
-
-void Window::MoveAndScaleCompositedTransientWindows(int anim_ms) {
-  for (list<Window*>::const_iterator it = transient_windows_->items().begin();
-       it != transient_windows_->items().end(); ++it) {
-    Window* win = *it;
-    if (win->override_redirect())
-      continue;
-    MoveAndScaleCompositedTransientWindow(win, anim_ms);
-  }
-}
-
-void Window::RestackClientTransientWindows() {
-  // Iterate through the transient windows in top-to-bottom stacking order,
-  // stacking each directly above the client window.
-  for (list<Window*>::const_iterator it = transient_windows_->items().begin();
-       it != transient_windows_->items().end(); ++it) {
-    if ((*it)->override_redirect())
-      continue;
-    wm_->xconn()->StackWindow((*it)->xid(), xid_, true);
-  }
-}
-
-void Window::RestackCompositedTransientWindows() {
-  for (list<Window*>::const_iterator it = transient_windows_->items().begin();
-       it != transient_windows_->items().end(); ++it) {
-    VLOG(1) << "Stacking transient " << (*it)->xid() << " above " << xid_;
-    (*it)->StackCompositedAbove(actor_.get(), NULL);
-  }
 }
 
 void Window::UpdateShadowIfNecessary() {

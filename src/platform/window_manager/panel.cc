@@ -150,6 +150,7 @@ Panel::~Panel() {
   wm()->xconn()->DestroyWindow(top_right_input_win_);
   wm()->xconn()->DestroyWindow(left_input_win_);
   wm()->xconn()->DestroyWindow(right_input_win_);
+  panel_win_->RemovePassiveButtonGrab();
   panel_bar_ = NULL;
   panel_win_ = NULL;
   titlebar_win_ = NULL;

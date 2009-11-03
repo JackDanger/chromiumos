@@ -20,7 +20,6 @@ extern "C" {
 #include "base/scoped_ptr.h"
 #include "window_manager/event_consumer.h"
 #include "window_manager/key_bindings.h"
-#include "window_manager/util.h"
 #include "window_manager/wm_ipc.h"  // for WmIpc::Message
 
 typedef ::Window XWindow;
@@ -34,6 +33,7 @@ namespace chromeos {
 class MotionEventCoalescer;
 class Window;
 class WindowManager;
+template<class T> class Stacker;  // from util.h
 
 // Manages the placement of regular client windows.
 //
@@ -44,9 +44,10 @@ class WindowManager;
 //
 class LayoutManager : public EventConsumer {
  public:
-  // 'x', 'y', 'width', and 'height' specify where windows should be
-  // displayed on overview mode.  This should be at the bottom of the
-  // screen.
+  // 'x', 'y', 'width', and 'height' specify the area available for
+  // displaying client windows.  Because of the way that overview mode is
+  // currently implemented, this should ideally be flush with the bottom of
+  // the screen.
   LayoutManager(WindowManager* wm, int x, int y, int width, int height);
   ~LayoutManager();
 
@@ -87,7 +88,7 @@ class LayoutManager : public EventConsumer {
   // Note: Begin overridden EventConsumer methods.
 
   // Is the passed-in window an input window?
-  bool IsInputWindow(XWindow xid) const;
+  bool IsInputWindow(XWindow xid) ;
 
   // Handle a new window.  This method takes care of moving the client
   // window offscreen so it doesn't get input events and of redrawing the
@@ -96,6 +97,10 @@ class LayoutManager : public EventConsumer {
 
   // Handle the removal of a window.
   void HandleWindowUnmap(Window* win);
+
+  // Handle a client window's request to get moved or resized.
+  bool HandleWindowConfigureRequest(
+      Window* win, int req_x, int req_y, int req_width, int req_height);
 
   // Handle events received by windows.
   bool HandleButtonPress(XWindow xid, int x, int y, int button, Time timestamp);
@@ -131,6 +136,8 @@ class LayoutManager : public EventConsumer {
   FRIEND_TEST(LayoutManagerTest, FocusTransient);
 
   // A toplevel window that we're managing.
+  // TODO: This class is getting large.  It should probably be moved to a
+  // separate file.
   class ToplevelWindow {
    public:
     ToplevelWindow(Window* win, LayoutManager* layout_manager);
@@ -214,12 +221,96 @@ class LayoutManager : public EventConsumer {
     // 'max_width' and 'max_height'.
     void UpdateOverviewScaling(int max_width, int max_height);
 
-    // If we have a modal transient window, tell it to take the focus;
-    // otherwise give it to the toplevel window.
-    void FocusWindowOrModalTransient(Time timestamp);
+    // Focus 'transient_to_focus_' if non-NULL or 'win_' otherwise.  Also
+    // raises the transient window to the top of the stacking order.
+    void TakeFocus(Time timestamp);
+
+    // Set the window to be focused the next time that TakeFocus() is
+    // called.  NULL can be passed to indicate that the toplevel window
+    // should get the focus.  Note that this request may be ignored if a
+    // modal transient window already has the focus.
+    void SetPreferredTransientWindowToFocus(Window* transient_win);
+
+    // Does the toplevel window or one of its transients have the input focus?
+    bool IsWindowOrTransientFocused() const;
+
+    // Add a transient window.  Called in response to the window being
+    // mapped.
+    void AddTransientWindow(Window* transient_win);
+
+    // Remove a transient window.  Called in response to the window being
+    // unmapped.
+    void RemoveTransientWindow(Window* transient_win);
+
+    // Handle a ConfigureRequest event about one of our transient windows.
+    void HandleTransientWindowConfigureRequest(
+        Window* transient_win,
+        int req_x, int req_y, int req_width, int req_height);
+
+    // Handle one of this toplevel's windows (either the toplevel window
+    // itself or one of its transients) gaining or losing the input focus.
+    void HandleFocusChange(Window* focus_win, bool focus_in);
+
+    // Handle one of this toplevel's windows (either the toplevel window
+    // itself or one of its transients) getting a button press.  We remove
+    // the active pointer grab and try to assign the focus to the
+    // clicked-on window.
+    void HandleButtonPress(Window* button_win, Time timestamp);
 
    private:
+    // A transient window belonging to a toplevel window.
+    struct TransientWindow {
+     public:
+      TransientWindow(Window* win)
+          : win(win),
+            x_offset(0),
+            y_offset(0) {
+      }
+      ~TransientWindow() {
+        win = NULL;
+      }
+
+      // The transient window itself.
+      Window* win;
+
+      // Transient window's position's offset from its owner's origin.
+      int x_offset;
+      int y_offset;
+    };
+
     WindowManager* wm() { return layout_manager_->wm_; }
+
+    // Get the TransientWindow struct representing the passed-in window.
+    TransientWindow* GetTransientWindow(const Window& win);
+
+    // Update the passed-in transient window's client and composited
+    // windows appropriately for the toplevel window's current
+    // configuration.
+    void MoveAndScaleTransientWindow(TransientWindow* transient, int anim_ms);
+
+    // Call UpdateTransientWindowPositionAndScale() for all transient
+    // windows.
+    void MoveAndScaleAllTransientWindows(int anim_ms);
+
+    // Stack a transient window's composited and client windows on top of
+    // another window.
+    static void ApplyStackingForTransientWindowAboveWindow(
+        TransientWindow* transient, Window* other_win);
+
+    // Restack all transient windows' composited and client windows on top
+    // of 'win_' in the order dictated by 'stacked_transients_'.
+    void ApplyStackingForAllTransientWindows();
+
+    // Choose a new transient window to focus.  We choose the topmost modal
+    // window if there is one; otherwise we just return the topmost
+    // transient, or NULL if there aren't any transients.
+    TransientWindow* FindTransientWindowToFocus() const;
+
+    // Move a transient window to the top of this toplevel's stacking
+    // order, if it's not already there.  Updates the transient's position
+    // in 'stacked_transients_' and also restacks its composited and client
+    // windows.
+    void RestackTransientWindowOnTop(TransientWindow* transient);
 
     // Window object for the toplevel client window.
     Window* win_;  // not owned
@@ -243,13 +334,22 @@ class LayoutManager : public EventConsumer {
     int overview_height_;
     double overview_scale_;
 
-   private:
+    // Transient windows belonging to this toplevel window, keyed by XID.
+    map<XWindow, ref_ptr<TransientWindow> > transients_;
+
+    // Transient windows in top-to-bottom stacking order.
+    scoped_ptr<Stacker<TransientWindow*> > stacked_transients_;
+
+    // Transient window that should be focused when TakeFocus() is called,
+    // or NULL if the toplevel window should be focused.
+    TransientWindow* transient_to_focus_;
+
     DISALLOW_COPY_AND_ASSIGN(ToplevelWindow);
   };
 
   // Get the toplevel window represented by the passed-in input window, or
   // NULL if the input window doesn't belong to us.
-  ToplevelWindow* GetToplevelWindowByInputXid(XWindow xid) const;
+  ToplevelWindow* GetToplevelWindowByInputXid(XWindow xid);
 
   // Get the 0-based index of the passed-in toplevel within 'windows_'.
   // Returns -1 if it isn't present.
@@ -258,6 +358,15 @@ class LayoutManager : public EventConsumer {
   // Get the ToplevelWindow object representing the passed-in window.
   // Returns NULL if it isn't a toplevel window.
   ToplevelWindow* GetToplevelWindowByWindow(const Window& win);
+
+  // Get the ToplevelWindow object representing the window with the
+  // passed-in XID.  Returns NULL if the window doesn't exist or isn't a
+  // toplevel window.
+  ToplevelWindow* GetToplevelWindowByXid(XWindow xid);
+
+  // Get the ToplevelWindow object that owns the passed-in
+  // possibly-transient window.  Returns NULL if the window is unowned.
+  ToplevelWindow* GetToplevelWindowOwningTransientWindow(const Window& win);
 
   // Modes used to display windows.
   enum Mode {
@@ -363,8 +472,14 @@ class LayoutManager : public EventConsumer {
   typedef deque<ref_ptr<ToplevelWindow> > ToplevelWindows;
   ToplevelWindows toplevels_;
 
-  // Map from input window to the toplevel window it represents.
+  // Map from input windows to the toplevel windows they represent.
   map<XWindow, ToplevelWindow*> input_to_toplevel_;
+
+  // Map from transient windows' XIDs to the toplevel windows that own
+  // them.  This is based on the transient windows' WM_TRANSIENT_FOR hints
+  // at the time that they were mapped; we ignore any subsequent changes to
+  // this hint.
+  map<XWindow, ToplevelWindow*> transient_to_toplevel_;
 
   // Currently-magnified toplevel window in overview mode, or NULL if no
   // window is magnified.
