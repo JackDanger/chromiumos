@@ -11,12 +11,12 @@ namespace chromeos { // NOLINT
 
 // connection types (see connman/include/service.h)
 enum ConnectionType {
-  TYPE_UNKNOWN,
-  TYPE_ETHERNET,
-  TYPE_WIFI,
-  TYPE_WIMAX,
-  TYPE_BLUETOOTH,
-  TYPE_CELLULAR,
+  TYPE_UNKNOWN    = 0x00000,
+  TYPE_ETHERNET   = 0x00001,
+  TYPE_WIFI       = 0x00010,
+  TYPE_WIMAX      = 0x00100,
+  TYPE_BLUETOOTH  = 0x01000,
+  TYPE_CELLULAR   = 0x10000,
 };
 
 // connection states (see connman/include/service.h)
@@ -70,7 +70,7 @@ extern bool (*ConnectToWifiNetwork)(const char* ssid,
 
 // Returns a list of all of the available services that a user can connect to.
 // The ServiceStatus instance that is returned by this function MUST be
-// deleted with by calling FreeAvailableNetworks.
+// deleted with by calling FreeServiceStatus.
 //
 // Returns NULL on error.
 extern ServiceStatus* (*GetAvailableNetworks)();
@@ -99,6 +99,16 @@ extern NetworkStatusConnection (*MonitorNetworkStatus)(NetworkMonitor, void*);
 
 // Disconnects a NetworkStatusConnection.
 extern void (*DisconnectNetworkStatus)(NetworkStatusConnection connection);
+
+// Returns the enabled network devices as a bitwise or value of ConnectionTypes.
+//
+// Returns 0 on error.
+extern int (*GetEnabledNetworkDevices)();
+
+// Enable or disable the specific network device for connection.
+//
+// Returns false on failure and true on success.
+extern bool (*EnableNetworkDevice)(ConnectionType type, bool enable);
 
 }  // namespace chromeos
 

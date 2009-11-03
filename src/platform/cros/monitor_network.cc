@@ -14,12 +14,12 @@
 
 // Dumps the contents of a single service to the logs.
 void DumpService(const chromeos::ServiceInfo& info) {
-  LOG(INFO) << "Name => " << info.ssid;
-  LOG(INFO) << "State => " << info.state;
-  LOG(INFO) << "Type => " << info.type;
-  LOG(INFO) << "Encryption => " << info.encryption;
-  LOG(INFO) << "Signal Strength => " << info.signal_strength;
-  LOG(INFO) << "Requires Password => " << info.needs_passphrase;
+  LOG(INFO) << "  " << info.ssid <<
+               ", State=" << info.state <<
+               ", Type=" <<info.type <<
+               ", Encryption=" << info.encryption <<
+               ", Signal=" << info.signal_strength <<
+               ", Password=" << info.needs_passphrase;
 }
 
 // Dumps the contents of ServiceStatus to the log.
@@ -27,6 +27,7 @@ void DumpServices(const chromeos::ServiceStatus *status) {
   if (status == NULL)
     return;
 
+  LOG(INFO) << "Network status:";
   for (int i = 0; i < status->size; i++) {
     DumpService(status->services[i]);
   }
@@ -52,7 +53,6 @@ class Callback {
   // my_status = MakeACopyOf(status);
   // ...
   static void Run(void* object, const chromeos::ServiceStatus& status) {
-    LOG(INFO) << "\n\nCall back received";
     DumpServices(&status);
     Callback* self = static_cast<Callback*>(object);
     ++self->count_;
@@ -70,6 +70,19 @@ int main(int argc, const char** argv) {
   GMainLoop* loop = ::g_main_loop_new(NULL, false);
 
   DCHECK(LoadCrosLibrary(argv)) << "Failed to load cros .so";
+
+  LOG(INFO) << "Enabled network devices:";
+  int devices = chromeos::GetEnabledNetworkDevices();
+  if (devices & chromeos::TYPE_ETHERNET)
+    LOG(INFO) << "  ethernet";
+  if (devices & chromeos::TYPE_WIFI)
+    LOG(INFO) << "  wifi";
+  if (devices & chromeos::TYPE_WIMAX)
+    LOG(INFO) << "  wimax";
+  if (devices & chromeos::TYPE_BLUETOOTH)
+    LOG(INFO) << "  bluetooth";
+  if (devices & chromeos::TYPE_CELLULAR)
+    LOG(INFO) << "  cellular";
 
   chromeos::ServiceStatus* status = chromeos::GetAvailableNetworks();
   DCHECK(status) << "Unable to scan for networks";

@@ -25,11 +25,14 @@ const char* kConnmanServiceName = "org.moblin.connman";
 // Connman function names.
 const char* kGetPropertiesFunction = "GetProperties";
 const char* kConnectServiceFunction = "ConnectService";
+const char* kEnableTechnologyFunction = "EnableTechnology";
+const char* kDisableTechnologyFunction = "DisableTechnology";
 
 // Connman property names.
 const char* kEncryptionProperty = "Security";
 const char* kPassphraseRequiredProperty = "PassphraseRequired";
 const char* kServicesProperty = "Services";
+const char* kEnabledTechnologiesProperty = "EnabledTechnologies";
 const char* kSignalStrengthProperty = "Strength";
 const char* kSsidProperty = "Name";
 const char* kStateProperty = "State";
@@ -350,9 +353,6 @@ bool ChromeOSConnectToWifiNetwork(const char* ssid,
 
 extern "C"
 ServiceStatus* ChromeOSGetAvailableNetworks() {
-  typedef glib::ScopedPtrArray<const char*> ScopedPtrArray;
-  typedef ScopedPtrArray::iterator iterator;
-
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
   dbus::Proxy manager_proxy(bus,
                             kConnmanServiceName,
@@ -374,6 +374,87 @@ ServiceStatus* ChromeOSGetAvailableNetworks() {
   GPtrArray* service_value =
       static_cast<GPtrArray*>(g_value_get_boxed(static_cast<GValue*>(ptr)));
   return GetServiceStatus(service_value);
+}
+
+extern "C"
+int ChromeOSGetEnabledNetworkDevices() {
+  int devices = 0;
+
+  dbus::BusConnection bus = dbus::GetSystemBusConnection();
+  dbus::Proxy manager_proxy(bus,
+                            kConnmanServiceName,
+                            "/",
+                            kConnmanManagerInterface);
+
+  glib::ScopedHashTable properties;
+  if (!GetProperties(manager_proxy, &properties)) {
+    return devices;
+  }
+
+  GHashTable* table = properties.get();
+  gpointer ptr = g_hash_table_lookup(table, kEnabledTechnologiesProperty);
+  if (ptr == NULL)
+    return devices;
+
+  gchar** value =
+      static_cast<gchar**>(g_value_get_boxed(static_cast<GValue*>(ptr)));
+  while (*value) {
+    devices |= ParseType(*value);
+    value++;
+  }
+  return devices;
+}
+
+extern "C"
+bool ChromeOSEnableNetworkDevice(ConnectionType type, bool enable) {
+  dbus::BusConnection bus = dbus::GetSystemBusConnection();
+  dbus::Proxy manager_proxy(bus,
+                            kConnmanServiceName,
+                            "/",
+                            kConnmanManagerInterface);
+
+  gchar* device;
+  switch (type) {
+    case TYPE_ETHERNET:
+      device = ::g_strdup(kTypeEthernet);
+      break;
+    case TYPE_WIFI:
+      device = ::g_strdup(kTypeWifi);
+      break;
+    case TYPE_WIMAX:
+      device = ::g_strdup(kTypeWimax);
+      break;
+    case TYPE_BLUETOOTH:
+      device = ::g_strdup(kTypeBluetooth);
+      break;
+    case TYPE_CELLULAR:
+      device = ::g_strdup(kTypeCellular);
+      break;
+    case TYPE_UNKNOWN:
+    default:
+      LOG(WARNING) << "EnableNetworkDevice called with an unknown type: "
+          << type;
+      return false;
+  }
+
+  glib::ScopedError error;
+  ::DBusGProxy obj;
+  if (!::dbus_g_proxy_call(manager_proxy.gproxy(),
+                           enable ? kEnableTechnologyFunction :
+                                    kDisableTechnologyFunction,
+                           &Resetter(&error).lvalue(),
+                           G_TYPE_STRING,
+                           device,
+                           G_TYPE_INVALID,
+                           G_TYPE_INVALID)) {
+    LOG(WARNING) << "EnableNetworkDevice failed: "
+        << (error->message ? error->message : "Unknown Error.");
+    ::g_free(device);
+    return false;
+  }
+
+  ::g_free(device);
+  return true;
 }
 
 }  // namespace chromeos
