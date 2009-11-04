@@ -4,7 +4,7 @@
 
 #include <dlfcn.h>
 #include <glib-object.h>
-#include <glog/logging.h>
+#include <base/logging.h>
 
 #include <iostream>  // NOLINT
 
