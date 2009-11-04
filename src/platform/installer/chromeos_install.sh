@@ -11,7 +11,7 @@ then
   echo ""
   echo "Note: You must be the 'chronos' user to run this script."
   echo ""
-  echo "Usage: install_to_hard_disk [destination_device]"
+  echo "Usage: $0 [destination_device]"
   echo ""
   echo "This will install the usb image to your machine's hard disk."
   echo "By default, it will attempt to install to '/dev/sda'."
@@ -28,7 +28,8 @@ fi
 
 # First find the root device that we are installing from and verify it.
 CMDLINE=`cat /proc/cmdline`
-LABEL=`echo $CMDLINE | sed 's/.*root=LABEL=\([-\.[:alpha:][:digit:]]*\).*/\1/g'`
+LABEL=`echo "$CMDLINE" | sed \
+  's/.*root=LABEL=\([-\.[:alpha:][:digit:]]*\).*/\1/g'`
 if [ "$LABEL" = "$CMDLINE" ]
 then
   echo "Error: Unable to find root by label. Are you booted off USB?"
