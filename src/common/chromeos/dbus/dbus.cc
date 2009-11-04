@@ -4,6 +4,8 @@
 
 #include "chromeos/dbus/dbus.h"
 
+#include <dbus/dbus.h>
+#include <dbus/dbus-glib-lowlevel.h>
 #include <base/logging.h>
 
 namespace chromeos {
@@ -34,6 +36,11 @@ BusConnection GetSystemBusConnection() {
   ::DBusGConnection* result = ::dbus_g_bus_get(DBUS_BUS_SYSTEM,
                                                &Resetter(&error).lvalue());
   CHECK(result);
+  // Set to not exit when when system bus is disconnected.
+  // This fixes the problem where when the dbus daemon is stopped, exit is
+  // called which kills Chrome.
+  ::dbus_connection_set_exit_on_disconnect(
+      ::dbus_g_connection_get_connection(result), FALSE);
   return BusConnection(result);
 }
 
