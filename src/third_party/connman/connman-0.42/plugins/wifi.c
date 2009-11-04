@@ -56,27 +56,20 @@ struct wifi_data {
 
 static int network_probe(struct connman_network *network)
 {
-	_DBG_WIFI("network %p", network);
-
 	return 0;
 }
 
 static void network_remove(struct connman_network *network)
 {
-	_DBG_WIFI("network %p", network);
 }
 
 static int network_connect(struct connman_network *network)
 {
-	_DBG_WIFI("network %p", network);
-
 	return supplicant_connect(network);
 }
 
 static int network_disconnect(struct connman_network *network)
 {
-	_DBG_WIFI("network %p", network);
-
 	return supplicant_disconnect(network);
 }
 

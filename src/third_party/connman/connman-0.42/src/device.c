@@ -1418,7 +1418,8 @@ int __connman_device_disconnect(struct connman_device *device)
 			 * will fail.  There is nothing to be gained by
 			 * removing the network here anyway.
 			 */
-			_DBG_DEVICE("skip connecting %s network %s",
+			DBG(DBG_DEVICE | DBG_WIFI,
+				"skip connecting %s network %s",
 				__connman_network_get_type(network),
 				connman_network_get_identifier(network));
 			continue;

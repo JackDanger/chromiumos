@@ -1162,15 +1162,15 @@ static void properties_reply(DBusPendingCall *call, void *user_data)
 	const char *mode, *security;
 	char *group = NULL;
 
-	_DBG_SUPPLICANT("task %p", task);
-
 	reply = dbus_pending_call_steal_reply(call);
 	if (reply == NULL) {
+		_DBG_SUPPLICANT("task %p no reply", task);
 		get_properties(task);
 		return;
 	}
 
 	if (dbus_message_get_type(reply) == DBUS_MESSAGE_TYPE_ERROR) {
+		_DBG_SUPPLICANT("task %p ERROR", task);
 		dbus_message_unref(reply);
 		get_properties(task);
 		return;
@@ -1277,8 +1277,11 @@ static void properties_reply(DBusPendingCall *call, void *user_data)
 
 		network = connman_network_create(result.path,
 						CONNMAN_NETWORK_TYPE_WIFI);
-		if (network == NULL)
+		if (network == NULL) {
+			_DBG_SUPPLICANT("cannot create network %s",
+				result.name);
 			goto done;
+		}
 
 		index = connman_device_get_index(task->device);
 		connman_network_set_index(network, index);
@@ -1290,9 +1293,15 @@ static void properties_reply(DBusPendingCall *call, void *user_data)
 							result.addr_len);
 
 		if (connman_device_add_network(task->device, network) < 0) {
+			_DBG_SUPPLICANT("cannot add network %s", result.name);
 			connman_network_unref(network);
 			goto done;
 		}
+
+		_DBG_SUPPLICANT("add %s (%s %s) signal %d (%s) freq %u path %s",
+				result.name, mode, security, strength,
+				(result.has_wps == TRUE) ? "WPS" : "no WPS",
+				frequency, result.path);
 	}
 
 	if (result.name != NULL && result.name[0] != '\0')
@@ -1302,10 +1311,6 @@ static void properties_reply(DBusPendingCall *call, void *user_data)
 						result.ssid, result.ssid_len);
 
 	connman_network_set_string(network, "WiFi.Mode", mode);
-
-	_DBG_SUPPLICANT("%s (%s %s) strength %d (%s)",
-				result.name, mode, security, strength,
-				(result.has_wps == TRUE) ? "WPS" : "no WPS");
 
 	connman_network_set_available(network, TRUE);
 	connman_network_set_strength(network, strength);

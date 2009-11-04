@@ -675,6 +675,9 @@ void __connman_service_auto_connect(void)
 static void remove_timeout(struct connman_service *service)
 {
 	if (service->timeout > 0) {
+		DBG(DBG_SERVICE | DBG_WIFI, "service %p timeout %d",
+			service, service->timeout);
+
 		g_source_remove(service->timeout);
 		service->timeout = 0;
 	}
@@ -706,7 +709,8 @@ static gboolean connect_timeout(gpointer user_data)
 	struct connman_service *service = user_data;
 	connman_bool_t autoconnect = FALSE;
 
-	_DBG_SERVICE("service %p", service);
+	DBG(DBG_SERVICE | DBG_WIFI, "service %p timeout %d",
+			service, service->timeout);
 
 	service->timeout = 0;
 
@@ -973,7 +977,8 @@ static void service_free(gpointer user_data)
  */
 void __connman_service_put(struct connman_service *service)
 {
-	_DBG_SERVICE("service %p", service);
+	_DBG_SERVICE("service %p refcount %d", service,
+		g_atomic_int_get(&service->refcount) - 1);
 
 	if (g_atomic_int_dec_and_test(&service->refcount) == TRUE) {
 		GSequenceIter *iter;
@@ -1363,6 +1368,9 @@ int __connman_service_connect(struct connman_service *service)
 			__connman_ipconfig_disable(service->ipconfig);
 			return err;
 		}
+
+		DBG(DBG_SERVICE | DBG_WIFI, "service %p add %d sec timeout",
+			service, 45);
 
 		service->timeout = g_timeout_add_seconds(45,
 						connect_timeout, service);
