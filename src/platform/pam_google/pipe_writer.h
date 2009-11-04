@@ -12,7 +12,7 @@
 #include <unistd.h>
 
 #include "base/basictypes.h"
-#include "glog/logging.h"
+#include "base/logging.h"
 
 #include "pam_google/cookie_exporter.h"
 

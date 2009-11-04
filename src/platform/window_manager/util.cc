@@ -7,11 +7,12 @@
 #include <cstdarg>
 #include <cstdlib>
 #include <ctime>
-#include <glog/logging.h>
 #include <string.h>
 
 #include <iomanip>
 #include <sstream>
+
+#include "chromeos/obsolete_logging.h"
 
 namespace chromeos {
 
@@ -42,10 +43,10 @@ void ByteMap::Clear(unsigned char value) {
 void ByteMap::SetRectangle(int rect_x, int rect_y,
                            int rect_width, int rect_height,
                            unsigned char value) {
-  const int limit_x = min(rect_x + rect_width, width_);
-  const int limit_y = min(rect_y + rect_height, height_);
-  rect_x = max(rect_x, 0);
-  rect_y = max(rect_y, 0);
+  const int limit_x = std::min(rect_x + rect_width, width_);
+  const int limit_y = std::min(rect_y + rect_height, height_);
+  rect_x = std::max(rect_x, 0);
+  rect_y = std::max(rect_y, 0);
 
   if (rect_x >= limit_x)
     return;

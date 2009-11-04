@@ -4,9 +4,10 @@
 
 #include "chromeos_synaptics.h"  // NOLINT
 
-#include <glog/logging.h>
 #include <string>
-#include "base/strutil.h"
+
+#include "base/logging.h"
+#include "base/string_util.h"
 
 extern "C" {
 #include "synclient.h"
@@ -46,7 +47,7 @@ double ConvertRange(double low, double high, int rangevalue) {
 
 extern "C"
 void ChromeOSSetSynapticsParameter(SynapticsParameter param, int value) {
-  string command;
+  std::string command;
   switch (param) {
     case PARAM_BOOL_TAP_TO_CLICK:
       // To enable/disable tap-to-click (i.e. a tap on the touchpad is

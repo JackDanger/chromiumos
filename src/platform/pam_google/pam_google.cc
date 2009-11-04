@@ -9,10 +9,10 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-
+#include <base/command_line.h>
+#include <base/logging.h>
 #include <curl/curl.h>
 #include <gflags/gflags.h>
-#include <glog/logging.h>
 #include <security/_pam_macros.h>
 #include <security/pam_modules.h>
 #include <security/pam_ext.h>
@@ -29,8 +29,6 @@
 
 // We map all users to the "chronos" user, at least for now.
 const char kUserName[] = "chronos";
-
-const char kLogFilePath[] = "/var/log/";
 const char kCookiePipe[] = "/tmp/cookie_pipe";
 
 const char kPamArgOfflineFirst[] = "offline_first";
@@ -73,12 +71,10 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t * pamh, int flags,
   curl_global_init(CURL_GLOBAL_SSL);
   static bool google_logging_initialized = false;
   if (!google_logging_initialized) {
-    const char *args[] = { "pam_google" };
-    google::SetArgv(1, args);
-    google::SetCommandLineOption("log_dir", kLogFilePath);
-    google::SetCommandLineOption("logbufsecs", "0");
-    google::InitGoogleLogging(args[0]);
-    google::InstallFailureSignalHandler();
+    CommandLine::Init(argc, argv);
+    logging::InitLogging(NULL, logging::LOG_ONLY_TO_SYSTEM_DEBUG_LOG,
+                         logging::DONT_LOCK_LOG_FILE,
+                         logging::APPEND_TO_OLD_LOG_FILE);
     google_logging_initialized = true;
   }
 

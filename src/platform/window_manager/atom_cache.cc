@@ -4,7 +4,8 @@
 
 #include "window_manager/atom_cache.h"
 
-#include <glog/logging.h>
+#include "base/logging.h"
+#include "chromeos/obsolete_logging.h"
 
 #include "window_manager/x_connection.h"
 
@@ -59,8 +60,8 @@ AtomCache::AtomCache(XConnection* xconn)
   CHECK_EQ(sizeof(kAtomInfos) / sizeof(AtomInfo), kNumAtoms)
       << "Each value in the Atom enum in atom_cache.h must have "
       << "a mapping in kAtomInfos in atom_cache.cc";
-  vector<string> names;
-  vector<XAtom> xatoms;
+  std::vector<std::string> names;
+  std::vector<XAtom> xatoms;
 
   for (int i = 0; i < kNumAtoms; ++i) {
     names.push_back(kAtomInfos[i].name);
@@ -78,20 +79,21 @@ AtomCache::AtomCache(XConnection* xconn)
 }
 
 XAtom AtomCache::GetXAtom(Atom atom) const {
-  map<Atom, XAtom>::const_iterator it = atom_to_xatom_.find(atom);
+  std::map<Atom, XAtom>::const_iterator it = atom_to_xatom_.find(atom);
   CHECK(it != atom_to_xatom_.end()) << "Couldn't find X atom for Atom " << atom;
   return it->second;
 }
 
-const string& AtomCache::GetName(XAtom xatom) {
-  map<XAtom, string>::const_iterator it = xatom_to_string_.find(xatom);
+const std::string& AtomCache::GetName(XAtom xatom) {
+  std::map<XAtom, std::string>::const_iterator
+      it = xatom_to_string_.find(xatom);
   if (it != xatom_to_string_.end()) {
     return it->second;
   }
-  string name;
+  std::string name;
   if (!xconn_->GetAtomName(xatom, &name)) {
     LOG(ERROR) << "Unable to look up name for atom " << xatom;
-    static const string kEmptyName = "";
+    static const std::string kEmptyName = "";
     return kEmptyName;
   }
   return xatom_to_string_.insert(make_pair(xatom, name)).first->second;

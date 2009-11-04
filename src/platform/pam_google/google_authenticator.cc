@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 #include "pam_google/google_authenticator.h"
-#include <glog/logging.h>
+#include "base/logging.h"
 #include <security/pam_ext.h>
 #include "pam_google/google_connection.h"
 #include "pam_google/google_cookies.h"

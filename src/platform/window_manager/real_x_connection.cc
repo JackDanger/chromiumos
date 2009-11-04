@@ -14,11 +14,15 @@ extern "C" {
 #include <X11/XKBlib.h>
 }
 
-#include <glog/logging.h>
+#include "chromeos/obsolete_logging.h"
 
 #include "window_manager/util.h"
 
 namespace chromeos {
+
+using std::string;
+using std::vector;
+using std::hex;
 
 // Maximum number of integer values to allow in a property.
 static const size_t kMaxIntPropertySize = 1024;

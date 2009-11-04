@@ -15,7 +15,6 @@ extern "C" {
 }
 
 #include "base/basictypes.h"
-#include "base/ref_ptr.h"
 #include "base/scoped_ptr.h"
 
 namespace chromeos {
@@ -170,16 +169,16 @@ class XConnection {
   virtual bool SelectXRandREventsOnWindow(XWindow xid) = 0;
 
   // Look up the X ID for a single atom, creating it if necessary.
-  virtual bool GetAtom(const string& name, XAtom* atom_out) = 0;
+  virtual bool GetAtom(const std::string& name, XAtom* atom_out) = 0;
 
   // Look up all of the atoms in 'names' in the X server, creating them if
   // necessary, and return the corresponding atom X IDs.
-  virtual bool GetAtoms(const vector<string>& names,
-                        vector<XAtom>* atoms_out) = 0;
+  virtual bool GetAtoms(const std::vector<std::string>& names,
+                        std::vector<XAtom>* atoms_out) = 0;
 
   // Get the name of the passed-in atom, saving it to 'name'.  Returns
   // false if the atom isn't present in the server.
-  virtual bool GetAtomName(XAtom atom, string* name) = 0;
+  virtual bool GetAtomName(XAtom atom, std::string* name) = 0;
 
   // Get or set a property consisting of a single 32-bit integer.
   // Calls the corresponding abstract {Get,Set}IntArrayProperty() method.
@@ -188,15 +187,16 @@ class XConnection {
 
   // Get or set a property consisting of one or more 32-bit integers.
   virtual bool GetIntArrayProperty(
-      XWindow xid, XAtom xatom, vector<int>* values) = 0;
+      XWindow xid, XAtom xatom, std::vector<int>* values) = 0;
   virtual bool SetIntArrayProperty(
-      XWindow xid, XAtom xatom, XAtom type, const vector<int>& values) = 0;
+      XWindow xid, XAtom xatom, XAtom type, const std::vector<int>& values) = 0;
 
   // Get or set a string property (of type STRING or UTF8_STRING when
   // getting and UTF8_STRING when setting).
-  virtual bool GetStringProperty(XWindow xid, XAtom xatom, string* out) = 0;
+  virtual bool GetStringProperty(
+      XWindow xid, XAtom xatom, std::string* out) = 0;
   virtual bool SetStringProperty(
-      XWindow xid, XAtom xatom, const string& value) = 0;
+      XWindow xid, XAtom xatom, const std::string& value) = 0;
 
   // Delete a property on a window if it exists.
   virtual bool DeletePropertyIfExists(XWindow xid, XAtom xatom) = 0;
@@ -221,7 +221,8 @@ class XConnection {
   virtual bool SetWindowCursor(XWindow xid, uint32 shape) = 0;
 
   // Get all subwindows of a window in bottom-to-top stacking order.
-  virtual bool GetChildWindows(XWindow xid, vector<XWindow>* children_out) = 0;
+  virtual bool GetChildWindows(
+      XWindow xid, std::vector<XWindow>* children_out) = 0;
 
   // Get a window's parent.
   virtual bool GetParentWindow(XWindow xid, XWindow* parent) = 0;
@@ -235,7 +236,7 @@ class XConnection {
 
   // Get the string representation of a keysym.  Returns the empty string
   // for unknown keysyms.
-  virtual string GetStringFromKeySym(KeySym keysym) = 0;
+  virtual std::string GetStringFromKeySym(KeySym keysym) = 0;
 
   // Grab or ungrab a key combination.
   virtual bool GrabKey(KeyCode keycode, uint32 modifiers) = 0;

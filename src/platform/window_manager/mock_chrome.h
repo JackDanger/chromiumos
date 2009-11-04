@@ -7,16 +7,15 @@
 
 #include <map>
 #include <vector>
+#include <tr1/memory>
 
 #include <gflags/gflags.h>
-#include <glog/logging.h>
 #include <gtkmm.h>
 extern "C" {
 #include <gdk/gdkx.h>
 }
 
 #include "base/basictypes.h"
-#include "base/ref_ptr.h"
 #include "base/scoped_ptr.h"
 #include "window_manager/util.h"
 
@@ -43,9 +42,9 @@ class Panel;
 // or by a FloatingTab object.
 class Tab {
  public:
-  Tab(const string& image_filename, const string& title);
+  Tab(const std::string& image_filename, const std::string& title);
 
-  const string& title() const { return title_; }
+  const std::string& title() const { return title_; }
 
   // Draw the tab's image to the passed-in widget.  The image can be
   // positioned and scaled within the widget.
@@ -54,7 +53,7 @@ class Tab {
 
  private:
   Glib::RefPtr<Gdk::Pixbuf> image_;
-  string title_;
+  std::string title_;
 
   DISALLOW_COPY_AND_ASSIGN(Tab);
 };
@@ -216,7 +215,7 @@ class ChromeWindow : public Gtk::Window {
   int width_;
   int height_;
 
-  vector<ref_ptr<TabInfo> > tabs_;
+  std::vector<std::tr1::shared_ptr<TabInfo> > tabs_;
 
   scoped_ptr<TabSummary> tab_summary_;
   scoped_ptr<FloatingTab> floating_tab_;
@@ -315,12 +314,14 @@ class PanelTitlebar : public Gtk::Window {
 
 class Panel : public Gtk::Window {
  public:
-  Panel(MockChrome* chrome, const string& image_filename, const string& title);
+  Panel(MockChrome* chrome,
+        const std::string& image_filename,
+        const std::string& title);
 
   XWindow xid() const { return xid_; }
   MockChrome* chrome() { return chrome_; }
   bool expanded() const { return expanded_; }
-  const string& title() const { return title_; }
+  const std::string& title() const { return title_; }
 
  private:
   bool on_expose_event(GdkEventExpose* event);
@@ -337,7 +338,7 @@ class Panel : public Gtk::Window {
   int width_;
   int height_;
   bool expanded_;
-  string title_;
+  std::string title_;
 
   DISALLOW_COPY_AND_ASSIGN(Panel);
 };
@@ -357,7 +358,8 @@ class MockChrome {
 
   // Create a new panel, ownership of which remains with the MockChrome
   // object.
-  Panel* CreatePanel(const string& image_filename, const string &title);
+  Panel* CreatePanel(const std::string& image_filename,
+                     const std::string &title);
 
   // Close a panel.
   void ClosePanel(Panel* panel);
@@ -377,11 +379,11 @@ class MockChrome {
   scoped_ptr<chromeos::AtomCache> atom_cache_;
   scoped_ptr<chromeos::WmIpc> wm_ipc_;
 
-  typedef map<XWindow, ref_ptr<ChromeWindow> > ChromeWindows;
+  typedef std::map<XWindow, std::tr1::shared_ptr<ChromeWindow> > ChromeWindows;
   ChromeWindows windows_;
 
   // Map from the panel window's XID to the corresponding Panel object.
-  typedef map<XWindow, ref_ptr<Panel> > Panels;
+  typedef std::map<XWindow, std::tr1::shared_ptr<Panel> > Panels;
   Panels panels_;
 
   // The window currently under the floating tab.

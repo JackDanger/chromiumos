@@ -10,8 +10,12 @@
 // We currently use the callbacks from the protobuf code.
 // TODO: Better callbacks.
 
+namespace chromeos {
+
 using google::protobuf::Closure;
 using google::protobuf::NewPermanentCallback;
 using google::protobuf::NewCallback;
+
+}  // namespace chromeos
 
 #endif  // PLATFORM_BASE_PORT_H_

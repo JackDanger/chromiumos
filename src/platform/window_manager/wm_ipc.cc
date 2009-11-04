@@ -5,11 +5,12 @@
 #include "window_manager/wm_ipc.h"
 
 #include <cstring>
-#include <glog/logging.h>
 #include <gdk/gdkx.h>
 extern "C" {
 #include <X11/Xatom.h>  // for XA_CARDINAL
 }
+
+#include "chromeos/obsolete_logging.h"
 
 #include "window_manager/atom_cache.h"
 #include "window_manager/x_connection.h"
@@ -23,12 +24,14 @@ WmIpc::WmIpc(XConnection* xconn, AtomCache* cache)
   VLOG(1) << "Window manager window is " << wm_window_;
 }
 
-bool WmIpc::GetWindowType(XWindow xid, WindowType* type, vector<int>* params) {
+bool WmIpc::GetWindowType(XWindow xid,
+                          WindowType* type,
+                          std::vector<int>* params) {
   CHECK(type);
   CHECK(params);
 
   params->clear();
-  vector<int> values;
+  std::vector<int> values;
   if (!xconn_->GetIntArrayProperty(
           xid, atom_cache_->GetXAtom(ATOM_CHROME_WINDOW_TYPE), &values)) {
     return false;
@@ -42,11 +45,11 @@ bool WmIpc::GetWindowType(XWindow xid, WindowType* type, vector<int>* params) {
 }
 
 bool WmIpc::SetWindowType(
-    XWindow xid, WindowType type, const vector<int>* params) {
+    XWindow xid, WindowType type, const std::vector<int>* params) {
   CHECK_GE(type, 0);
   CHECK_LT(type, kNumWindowTypes);
 
-  vector<int> values;
+  std::vector<int> values;
   values.push_back(type);
   if (params) {
     for (size_t i = 0; i < params->size(); ++i) {
@@ -57,7 +60,7 @@ bool WmIpc::SetWindowType(
       xid, atom_cache_->GetXAtom(ATOM_CHROME_WINDOW_TYPE), XA_CARDINAL, values);
 }
 
-bool WmIpc::SetSystemMetricsProperty(XWindow xid, const string& metrics) {
+bool WmIpc::SetSystemMetricsProperty(XWindow xid, const std::string& metrics) {
   return xconn_->SetStringProperty(
       xid, atom_cache_->GetXAtom(ATOM_WM_SYSTEM_METRICS), metrics);
 }

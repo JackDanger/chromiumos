@@ -10,7 +10,6 @@
 #define CHROMEOS_PAM_GOOGLE_CURL_CONNECTION_H_
 
 #include <curl/curl.h>
-#include <glog/logging.h>
 #include <gtest/gtest.h>
 #include <string>
 
@@ -67,8 +66,8 @@ class GoogleCurlConnection : public GoogleConnection {
   }
 
   GoogleReturnCode GoogleTransaction(CURL *curl,
-                                     const string& url,
-                                     const string& post_body);
+                                     const std::string& url,
+                                     const std::string& post_body);
 
   // For testing.
   void SetCantFit() { cant_fit_ = true; }

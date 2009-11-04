@@ -3,9 +3,11 @@
 // found in the LICENSE file.
 
 #include "pam_google/pipe_writer.h"
-#include <glog/logging.h>
+
+#include <cerrno>
+#include <cstdlib>
+
 #include <pwd.h>
-#include <stdlib.h>
 #include <unistd.h>
 
 namespace chromeos_pam {
@@ -28,7 +30,7 @@ void PipeWriter::Export(const std::vector<std::string>& data) {
         LOG(WARNING) << "couldn't look up the user: " << strerror(errno);
       }
 
-      vector<string>::const_iterator it;
+      std::vector<std::string>::const_iterator it;
       for (it = data.begin(); it != data.end(); ++it) {
         uint32 length = (*it).length();
         const char *start = (*it).c_str();

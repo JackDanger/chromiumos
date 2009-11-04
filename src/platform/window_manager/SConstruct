@@ -68,11 +68,17 @@ base_env.Append(CCFLAGS=' -fno-strict-aliasing')
 
 # We include files relative to the parent directory.  Let SCons know about
 # this so it'll recompile as needed when a header changes.
-base_env['CPPPATH'] = '..'
+base_env['CPPPATH'] = ['..',
+                       '../../third_party/chrome/files',
+                       '../../common']
+                       
+base_env['LIBPATH'] = ['../../third_party/chrome',
+                       '../../common']
 
-base_env.ParseConfig('pkg-config --cflags --libs libglog x11 libpcrecpp ' +
+base_env['LIBS'] = ['base', 'chromeos', 'rt']
+
+base_env.ParseConfig('pkg-config --cflags --libs x11 libpcrecpp ' +
                      'gdk-2.0')
-base_env.Append(LIBS=File('../base/libbase.a'))
 
 base_env.ProtocolBuffer('system_metrics.pb.cc', 'system_metrics.proto');
 
@@ -135,7 +141,7 @@ wm_env['LIBS'] += [libwm_core, libwm_ipc]
 wm_env.Program('wm', 'main.cc')
 # This is weird.  We get linking errors about StringPrintf() unless
 # libbase.a appears at the end of the command line, so add it again here.
-wm_env.Append(LIBS=File('../base/libbase.a'))
+wm_env.Append(LIBS=File('../../third_party/chrome/libbase.a'))
 
 test_clutter = wm_env.Clone()
 test_clutter.ParseConfig('pkg-config --cflags --libs gtk+-2.0')

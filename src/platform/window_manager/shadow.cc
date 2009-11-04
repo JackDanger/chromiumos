@@ -6,7 +6,8 @@
 
 #include <cmath>
 #include <gflags/gflags.h>
-#include <glog/logging.h>
+
+#include "chromeos/obsolete_logging.h"
 
 DEFINE_string(shadow_image_dir, "../assets/images",
               "Path to directory containing shadow images");
@@ -130,7 +131,7 @@ void Shadow::Init() {
   CHECK_EQ(tr_texture_->GetWidth() - kRightWidth, kInset);
 }
 
-ClutterInterface::Actor* Shadow::InitTexture(const string& filename) {
+ClutterInterface::Actor* Shadow::InitTexture(const std::string& filename) {
   ClutterInterface::Actor* actor = clutter_->CreateImage(
       FLAGS_shadow_image_dir + "/" + filename);
   // Even though we don't actually want to display it, we need to add the

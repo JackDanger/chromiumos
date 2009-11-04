@@ -3,10 +3,11 @@
 // found in the LICENSE file.
 
 #include "pam_google/google_cookies.h"
-#include <glog/logging.h>
+
 #include <gtest/gtest.h>
 #include <string>
-#include "base/strutil.h"
+#include "base/string_util.h"
+#include "base/logging.h"
 #include "pam_google/cookie_exporter.h"
 
 namespace chromeos_pam {

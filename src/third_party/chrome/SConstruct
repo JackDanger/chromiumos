@@ -1,0 +1,48 @@
+# -*- python -*-
+
+# Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import os
+
+env = Environment()
+
+sources = env.Split("""
+                    files/base/third_party/dmg_fp/dtoa.cc
+                    files/base/third_party/dmg_fp/g_fmt.cc
+                    files/base/third_party/icu/icu_utf.cc
+                    files/base/third_party/nspr/prtime.cc
+                    files/base/at_exit.cc
+                    files/base/atomicops_internals_x86_gcc.cc
+                    files/base/base_switches.cc
+                    files/base/command_line.cc
+                    files/base/debug_util_posix.cc
+                    files/base/debug_util.cc
+                    files/base/dynamic_annotations.cc
+                    files/base/file_path.cc
+                    files/base/file_path.h
+                    files/base/file_util.cc
+                    files/base/file_util.h
+                    files/base/file_util_linux.cc
+                    files/base/file_util_posix.cc
+                    files/base/lock_impl_posix.cc
+                    files/base/logging.cc
+                    files/base/platform_thread_posix.cc
+                    files/base/safe_strerror_posix.cc
+                    files/base/setproctitle_linux.c
+                    files/base/string_piece.cc
+                    files/base/string_util.cc
+                    files/base/string16.cc
+                    files/base/sys_string_conversions_linux.cc
+                    files/base/time_posix.cc
+                    files/base/time.cc
+                    files/base/utf_string_conversions.cc
+                    """)
+
+env.Append(
+    CPPPATH=['files'],
+    CCFLAGS=['-g', '-fno-exceptions', '-Wall', '-Werror']
+)
+
+env.StaticLibrary('base', sources)

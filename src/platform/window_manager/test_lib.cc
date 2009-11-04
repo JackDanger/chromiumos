@@ -4,7 +4,7 @@
 
 #include "window_manager/test_lib.h"
 
-#include "base/strutil.h"
+#include "base/string_util.h"
 
 namespace chromeos {
 
@@ -18,7 +18,7 @@ testing::AssertionResult BytesAreEqual(
   for (size_t i = 0; i < size; ++i) {
     if (expected[i] != actual[i]) {
       testing::Message msg;
-      string expected_str, actual_str, hl_str;
+      std::string expected_str, actual_str, hl_str;
       bool first = true;
       for (size_t j = 0; j < size; ++j) {
         expected_str +=

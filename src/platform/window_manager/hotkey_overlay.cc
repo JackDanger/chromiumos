@@ -5,7 +5,6 @@
 #include "window_manager/hotkey_overlay.h"
 
 #include <gflags/gflags.h>
-#include <glog/logging.h>
 
 #include "window_manager/clutter_interface.h"
 
@@ -104,11 +103,13 @@ void HotkeyOverlay::UpdateImage() {
   }
 }
 
-void HotkeyOverlay::ShowImage(const string& filename) {
-  map<string, ref_ptr<ClutterInterface::Actor> >::iterator it =
-      images_.find(filename);
+void HotkeyOverlay::ShowImage(const std::string& filename) {
+  std::map<std::string,
+           std::tr1::shared_ptr<ClutterInterface::Actor> >::iterator
+      it = images_.find(filename);
   if (it == images_.end()) {
-    ref_ptr<ClutterInterface::Actor> image(clutter_->CreateImage(filename));
+    std::tr1::shared_ptr<ClutterInterface::Actor>
+        image(clutter_->CreateImage(filename));
     image->SetOpacity(0, 0);
     image->SetVisibility(true);
     group_->AddActor(image.get());

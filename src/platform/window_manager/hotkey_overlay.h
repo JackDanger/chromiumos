@@ -7,6 +7,7 @@
 
 #include <map>
 #include <string>
+#include <tr1/memory>
 
 extern "C" {
 #include <X11/Xlib.h>
@@ -47,7 +48,7 @@ class HotkeyOverlay {
   void UpdateImage();
 
   // Show the image located at 'filename'.
-  void ShowImage(const string& filename);
+  void ShowImage(const std::string& filename);
 
   // Hide the current image.
   void HideCurrentImage();
@@ -57,7 +58,7 @@ class HotkeyOverlay {
   scoped_ptr<ClutterInterface::ContainerActor> group_;
 
   // Map filenames to image actors.
-  map<string, ref_ptr<ClutterInterface::Actor> > images_;
+  std::map<std::string, std::tr1::shared_ptr<ClutterInterface::Actor> > images_;
 
   // The currently-shown image, or NULL if no image is currently shown.
   // Points at a value in 'images_'.

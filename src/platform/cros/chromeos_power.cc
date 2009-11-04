@@ -4,13 +4,13 @@
 
 #include "chromeos_power.h"
 
-#include <glog/logging.h>
-
 #include <cstdlib>
 #include <cstring>
 #include <exception>
 #include <string>
 #include <vector>
+
+#include <base/logging.h>
 
 #include "chromeos/dbus/dbus.h"
 #include "chromeos/glib/object.h"

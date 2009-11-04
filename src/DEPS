@@ -32,11 +32,6 @@ deps = {
     _third_party_base + "gflags/files":
         "http://google-gflags.googlecode.com/svn/trunk@31",
 
-    # glog
-    # Need r49 to include fix for compiling with gflags support
-    _third_party_base + "glog/files":
-        "http://google-glog.googlecode.com/svn/trunk@49",
-
     # google-breakpad
     _third_party_base + "google-breakpad/files":
         "http://google-breakpad.googlecode.com/svn/trunk@400",
@@ -56,6 +51,12 @@ deps = {
     # tpm-emulator
     _third_party_base + "tpm-emulator/files":
         "http://svn.berlios.de/svnroot/repos/tpm-emulator/trunk@341",
+        
+    # chrome-base
+    _third_party_base + "chrome/files/base":
+        "http://src.chromium.org/svn/trunk/src/base@29779",
+    _third_party_base + "chrome/files/build":
+        "http://src.chromium.org/svn/trunk/src/build@29779",
 
     # kernel
     _third_party_base + "kernel/files":

@@ -20,7 +20,7 @@
 
 namespace chromeos_pam {
 
-extern const string kDefaultOfflineCredentialStorePath;
+extern const std::string kDefaultOfflineCredentialStorePath;
 extern const int kSaltLength;
 
 using std::map;
@@ -76,10 +76,10 @@ class OfflineCredentialStore {
   static bool GetRandom(char *buf, size_t size);
 
   scoped_ptr<ExportWrapper> wrapper_;
-  const string& path_;
+  const std::string& path_;
   bool credentials_loaded_;
   // Stores username to hash, salt mappings.
-  map<string, pair<Blob, string> > credentials_;
+  std::map<std::string, std::pair<Blob, std::string> > credentials_;
 
   FRIEND_TEST(OfflineCredentialStoreTest, LoadCredentialsMalformedTest);
   FRIEND_TEST(OfflineCredentialStoreTest, GetRandomTest);

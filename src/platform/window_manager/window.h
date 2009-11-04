@@ -8,13 +8,14 @@
 extern "C" {
 #include <X11/Xlib.h>
 }
-#include <glog/logging.h>
 #include <gtest/gtest_prod.h>  // for FRIEND_TEST() macro
 #include <string>
 #include <vector>
 
 #include "base/basictypes.h"
+#include "base/logging.h"
 #include "base/scoped_ptr.h"
+#include "chromeos/obsolete_logging.h"
 #include "window_manager/clutter_interface.h"
 #include "window_manager/wm_ipc.h"
 
@@ -56,8 +57,8 @@ class Window {
   bool override_redirect() const { return override_redirect_; }
   WmIpc::WindowType type() const { return type_; }
   WmIpc::WindowType* mutable_type() { return &type_; }
-  const vector<int>& type_params() const { return type_params_; }
-  vector<int>* mutable_type_params() { return &type_params_; }
+  const std::vector<int>& type_params() const { return type_params_; }
+  std::vector<int>* mutable_type_params() { return &type_params_; }
   bool mapped() const { return mapped_; }
   void set_mapped(bool mapped) { mapped_ = mapped; }
   bool focused() const { return focused_; }
@@ -76,8 +77,8 @@ class Window {
   double composited_scale_y() const { return composited_scale_y_; }
   double composited_opacity() const { return composited_opacity_; }
 
-  const string& title() const { return title_; }
-  void set_title(const string& title) {
+  const std::string& title() const { return title_; }
+  void set_title(const std::string& title) {
     VLOG(1) << "Setting " << xid_ << "'s title to \"" << title << "\"";
     title_ = title;
   }
@@ -119,7 +120,7 @@ class Window {
   // Set or unset _NET_WM_STATE values for this window.  Note that this is
   // for WM-initiated state changes -- client-initiated changes come in
   // through HandleWmStateMessage().
-  bool ChangeWmState(const vector<pair<XAtom, bool> >& states);
+  bool ChangeWmState(const std::vector<std::pair<XAtom, bool> >& states);
 
   // Give keyboard focus to the client window, using a WM_TAKE_FOCUS
   // message if the client supports it or a SetInputFocus request
@@ -259,7 +260,7 @@ class Window {
 
   // Parameters associated with 'type_'.  See WmIpc::WindowType for
   // details.
-  vector<int> type_params_;
+  std::vector<int> type_params_;
 
   // Position and size of the client window.
   int client_x_;
@@ -282,7 +283,7 @@ class Window {
   // SetShadowOpacity().
   double shadow_opacity_;
 
-  string title_;
+  std::string title_;
 
   // Information from the WM_NORMAL_HINTS property (-1 if not set).
   int min_width_hint_;

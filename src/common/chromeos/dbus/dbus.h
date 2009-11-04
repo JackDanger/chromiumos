@@ -7,11 +7,11 @@
 
 #include <dbus/dbus-glib.h>
 #include <glib-object.h>
-#include <glog/logging.h>
 
 #include <algorithm>
 #include <string>
 
+#include "base/logging.h"
 #include "chromeos/glib/object.h"
 
 namespace chromeos {

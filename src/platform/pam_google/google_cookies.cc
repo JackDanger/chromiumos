@@ -4,7 +4,7 @@
 
 #include "pam_google/google_cookies.h"
 
-#include <glog/logging.h>
+#include "base/logging.h"
 #include <string>
 
 #include "pam_google/cookie_exporter.h"

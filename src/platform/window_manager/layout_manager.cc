@@ -6,13 +6,16 @@
 
 #include <algorithm>
 #include <cmath>
+#include <tr1/memory>
 extern "C" {
 #include <X11/Xatom.h>
 }
-#include <glog/logging.h>
 
-#include "base/callback.h"
-#include "base/strutil.h"
+#include <gflags/gflags.h>
+
+#include "chromeos/callback.h"
+#include "base/string_util.h"
+#include "base/logging.h"
 #include "window_manager/atom_cache.h"
 #include "window_manager/motion_event_coalescer.h"
 #include "window_manager/system_metrics.pb.h"
@@ -28,6 +31,13 @@ DEFINE_bool(lm_honor_window_size_hints, false,
             "screen");
 
 namespace chromeos {
+
+using std::map;
+using std::vector;
+using std::pair;
+using std::make_pair;
+using std::list;
+using std::tr1::shared_ptr;
 
 // Amount of padding that should be used between windows in overview mode.
 static const int kWindowPadding = 10;
@@ -262,7 +272,8 @@ void LayoutManager::HandleWindowMap(Window* win) {
         }
       }
 
-      ref_ptr<ToplevelWindow> toplevel(new ToplevelWindow(win, this));
+      std::tr1::shared_ptr<ToplevelWindow> toplevel(
+          new ToplevelWindow(win, this));
       input_to_toplevel_[toplevel->input_xid()] = toplevel.get();
 
       switch (mode_) {
@@ -737,13 +748,13 @@ void LayoutManager::ToplevelWindow::ArrangeForActiveMode(
 
   // Center window vertically.
   const int win_y =
-      layout_y + max(0, (layout_height - win_->client_height())) / 2;
+      layout_y + std::max(0, (layout_height - win_->client_height())) / 2;
 
   // TODO: This is a pretty huge mess.  Replace it with a saner way of
   // tracking animation state for windows.
   if (window_is_active) {
     // Center window horizontally.
-    const int win_x = max(0, (layout_width - win_->client_width())) / 2;
+    const int win_x = std::max(0, (layout_width - win_->client_width())) / 2;
     if (state_ == STATE_NEW ||
         state_ == STATE_ACTIVE_MODE_OFFSCREEN ||
         state_ == STATE_ACTIVE_MODE_IN_FROM_RIGHT ||
@@ -855,7 +866,7 @@ void LayoutManager::ToplevelWindow::UpdateOverviewScaling(int max_width,
                                                           int max_height) {
   double scale_x = max_width / static_cast<double>(win_->client_width());
   double scale_y = max_height / static_cast<double>(win_->client_height());
-  double tmp_scale = min(scale_x, scale_y);
+  double tmp_scale = std::min(scale_x, scale_y);
 
   overview_width_  = tmp_scale * win_->client_width();
   overview_height_ = tmp_scale * win_->client_height();
@@ -899,7 +910,7 @@ bool LayoutManager::ToplevelWindow::IsWindowOrTransientFocused() const {
   if (win_->focused())
     return true;
 
-  for (map<XWindow, ref_ptr<TransientWindow> >::const_iterator it =
+  for (map<XWindow, shared_ptr<TransientWindow> >::const_iterator it =
            transients_.begin();
        it != transients_.end(); ++it) {
     if (it->second->win->focused())
@@ -916,7 +927,7 @@ void LayoutManager::ToplevelWindow::AddTransientWindow(Window* transient_win) {
     return;
   }
 
-  ref_ptr<TransientWindow> transient(new TransientWindow(transient_win));
+  shared_ptr<TransientWindow> transient(new TransientWindow(transient_win));
   transient->x_offset =
       0.5 * (win_->client_width() - transient_win->client_width());
   transient->y_offset =
@@ -1022,7 +1033,7 @@ void LayoutManager::ToplevelWindow::HandleButtonPress(
 
 LayoutManager::ToplevelWindow::TransientWindow*
     LayoutManager::ToplevelWindow::GetTransientWindow(const Window& win) {
-  map<XWindow, ref_ptr<TransientWindow> >::iterator it =
+  map<XWindow, shared_ptr<TransientWindow> >::iterator it =
       transients_.find(win.xid());
   if (it == transients_.end())
     return NULL;
@@ -1047,7 +1058,7 @@ void LayoutManager::ToplevelWindow::MoveAndScaleTransientWindow(
 
 void LayoutManager::ToplevelWindow::MoveAndScaleAllTransientWindows(
     int anim_ms) {
-  for (map<XWindow, ref_ptr<TransientWindow> >::iterator it =
+  for (map<XWindow, shared_ptr<TransientWindow> >::iterator it =
            transients_.begin();
        it != transients_.end(); ++it) {
     MoveAndScaleTransientWindow(it->second.get(), anim_ms);

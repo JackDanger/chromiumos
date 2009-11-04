@@ -14,10 +14,12 @@ extern "C" {
 #include <X11/Xcursor/Xcursor.h>
 }
 #include <gflags/gflags.h>
-#include <glog/logging.h>
 
-#include "base/callback.h"
-#include "base/strutil.h"
+#include "base/logging.h"
+#include "base/string_util.h"
+#include "chromeos/callback.h"
+#include "chromeos/obsolete_logging.h"
+#include "chromeos/utility.h"
 #include "window_manager/event_consumer.h"
 #include "window_manager/hotkey_overlay.h"
 #include "window_manager/key_bindings.h"
@@ -58,63 +60,63 @@ static const int kHotkeyOverlayAnimMs = 100;
 
 static const char* XEventTypeToName(int type) {
   switch (type) {
-    CASE_RETURN_LABEL(ButtonPress);
-    CASE_RETURN_LABEL(ButtonRelease);
-    CASE_RETURN_LABEL(CirculateNotify);
-    CASE_RETURN_LABEL(CirculateRequest);
-    CASE_RETURN_LABEL(ClientMessage);
-    CASE_RETURN_LABEL(ColormapNotify);
-    CASE_RETURN_LABEL(ConfigureNotify);
-    CASE_RETURN_LABEL(ConfigureRequest);
-    CASE_RETURN_LABEL(CreateNotify);
-    CASE_RETURN_LABEL(DestroyNotify);
-    CASE_RETURN_LABEL(EnterNotify);
-    CASE_RETURN_LABEL(Expose);
-    CASE_RETURN_LABEL(FocusIn);
-    CASE_RETURN_LABEL(FocusOut);
-    CASE_RETURN_LABEL(GraphicsExpose);
-    CASE_RETURN_LABEL(GravityNotify);
-    CASE_RETURN_LABEL(KeymapNotify);
-    CASE_RETURN_LABEL(KeyPress);
-    CASE_RETURN_LABEL(KeyRelease);
-    CASE_RETURN_LABEL(LeaveNotify);
-    CASE_RETURN_LABEL(MapNotify);
-    CASE_RETURN_LABEL(MappingNotify);
-    CASE_RETURN_LABEL(MapRequest);
-    CASE_RETURN_LABEL(MotionNotify);
-    CASE_RETURN_LABEL(NoExpose);
-    CASE_RETURN_LABEL(PropertyNotify);
-    CASE_RETURN_LABEL(ReparentNotify);
-    CASE_RETURN_LABEL(ResizeRequest);
-    CASE_RETURN_LABEL(SelectionClear);
-    CASE_RETURN_LABEL(SelectionNotify);
-    CASE_RETURN_LABEL(SelectionRequest);
-    CASE_RETURN_LABEL(UnmapNotify);
-    CASE_RETURN_LABEL(VisibilityNotify);
+    CHROMEOS_CASE_RETURN_LABEL(ButtonPress);
+    CHROMEOS_CASE_RETURN_LABEL(ButtonRelease);
+    CHROMEOS_CASE_RETURN_LABEL(CirculateNotify);
+    CHROMEOS_CASE_RETURN_LABEL(CirculateRequest);
+    CHROMEOS_CASE_RETURN_LABEL(ClientMessage);
+    CHROMEOS_CASE_RETURN_LABEL(ColormapNotify);
+    CHROMEOS_CASE_RETURN_LABEL(ConfigureNotify);
+    CHROMEOS_CASE_RETURN_LABEL(ConfigureRequest);
+    CHROMEOS_CASE_RETURN_LABEL(CreateNotify);
+    CHROMEOS_CASE_RETURN_LABEL(DestroyNotify);
+    CHROMEOS_CASE_RETURN_LABEL(EnterNotify);
+    CHROMEOS_CASE_RETURN_LABEL(Expose);
+    CHROMEOS_CASE_RETURN_LABEL(FocusIn);
+    CHROMEOS_CASE_RETURN_LABEL(FocusOut);
+    CHROMEOS_CASE_RETURN_LABEL(GraphicsExpose);
+    CHROMEOS_CASE_RETURN_LABEL(GravityNotify);
+    CHROMEOS_CASE_RETURN_LABEL(KeymapNotify);
+    CHROMEOS_CASE_RETURN_LABEL(KeyPress);
+    CHROMEOS_CASE_RETURN_LABEL(KeyRelease);
+    CHROMEOS_CASE_RETURN_LABEL(LeaveNotify);
+    CHROMEOS_CASE_RETURN_LABEL(MapNotify);
+    CHROMEOS_CASE_RETURN_LABEL(MappingNotify);
+    CHROMEOS_CASE_RETURN_LABEL(MapRequest);
+    CHROMEOS_CASE_RETURN_LABEL(MotionNotify);
+    CHROMEOS_CASE_RETURN_LABEL(NoExpose);
+    CHROMEOS_CASE_RETURN_LABEL(PropertyNotify);
+    CHROMEOS_CASE_RETURN_LABEL(ReparentNotify);
+    CHROMEOS_CASE_RETURN_LABEL(ResizeRequest);
+    CHROMEOS_CASE_RETURN_LABEL(SelectionClear);
+    CHROMEOS_CASE_RETURN_LABEL(SelectionNotify);
+    CHROMEOS_CASE_RETURN_LABEL(SelectionRequest);
+    CHROMEOS_CASE_RETURN_LABEL(UnmapNotify);
+    CHROMEOS_CASE_RETURN_LABEL(VisibilityNotify);
     default: return "Unknown";
   }
 }
 
 static const char* FocusChangeEventModeToName(int mode) {
   switch (mode) {
-    CASE_RETURN_LABEL(NotifyNormal);
-    CASE_RETURN_LABEL(NotifyWhileGrabbed);
-    CASE_RETURN_LABEL(NotifyGrab);
-    CASE_RETURN_LABEL(NotifyUngrab);
+    CHROMEOS_CASE_RETURN_LABEL(NotifyNormal);
+    CHROMEOS_CASE_RETURN_LABEL(NotifyWhileGrabbed);
+    CHROMEOS_CASE_RETURN_LABEL(NotifyGrab);
+    CHROMEOS_CASE_RETURN_LABEL(NotifyUngrab);
     default: return "Unknown";
   }
 }
 
 static const char* FocusChangeEventDetailToName(int detail) {
   switch (detail) {
-    CASE_RETURN_LABEL(NotifyAncestor);
-    CASE_RETURN_LABEL(NotifyVirtual);
-    CASE_RETURN_LABEL(NotifyInferior);
-    CASE_RETURN_LABEL(NotifyNonlinear);
-    CASE_RETURN_LABEL(NotifyNonlinearVirtual);
-    CASE_RETURN_LABEL(NotifyPointer);
-    CASE_RETURN_LABEL(NotifyPointerRoot);
-    CASE_RETURN_LABEL(NotifyDetailNone);
+    CHROMEOS_CASE_RETURN_LABEL(NotifyAncestor);
+    CHROMEOS_CASE_RETURN_LABEL(NotifyVirtual);
+    CHROMEOS_CASE_RETURN_LABEL(NotifyInferior);
+    CHROMEOS_CASE_RETURN_LABEL(NotifyNonlinear);
+    CHROMEOS_CASE_RETURN_LABEL(NotifyNonlinearVirtual);
+    CHROMEOS_CASE_RETURN_LABEL(NotifyPointer);
+    CHROMEOS_CASE_RETURN_LABEL(NotifyPointerRoot);
+    CHROMEOS_CASE_RETURN_LABEL(NotifyDetailNone);
     default: return "Unknown";
   }
 }
@@ -461,7 +463,7 @@ XAtom WindowManager::GetXAtom(Atom atom) {
   return atom_cache_->GetXAtom(atom);
 }
 
-const string& WindowManager::GetXAtomName(XAtom xatom) {
+const std::string& WindowManager::GetXAtomName(XAtom xatom) {
   return atom_cache_->GetName(xatom);
 }
 
@@ -479,7 +481,8 @@ Time WindowManager::GetCurrentTimeFromServer() {
 }
 
 Window* WindowManager::GetWindow(XWindow xid) {
-  return FindWithDefault(client_windows_, xid, ref_ptr<Window>()).get();
+  return FindWithDefault(client_windows_, xid,
+                         std::tr1::shared_ptr<Window>()).get();
 }
 
 void WindowManager::LockScreen() {
@@ -600,21 +603,21 @@ bool WindowManager::SetEWMHProperties() {
       root_, GetXAtom(ATOM_NET_CURRENT_DESKTOP), XA_CARDINAL, 0);
 
   // We don't use pseudo-large desktops, so this is just the screen size.
-  vector<int> geometry;
+  std::vector<int> geometry;
   geometry.push_back(width_);
   geometry.push_back(height_);
   success &= xconn_->SetIntArrayProperty(
       root_, GetXAtom(ATOM_NET_DESKTOP_GEOMETRY), XA_CARDINAL, geometry);
 
   // The viewport (top-left corner of the desktop) is just (0, 0) for us.
-  vector<int> viewport(2, 0);
+  std::vector<int> viewport(2, 0);
   success &= xconn_->SetIntArrayProperty(
       root_, GetXAtom(ATOM_NET_DESKTOP_VIEWPORT), XA_CARDINAL, viewport);
 
   // This isn't really applicable to us (EWMH just says that it should be
   // used to determine where desktop icons can be placed), but we set it to
   // the size of the screen minus the panel bar's area.
-  vector<int> workarea;
+  std::vector<int> workarea;
   workarea.push_back(0);  // x
   workarea.push_back(0);  // y
   workarea.push_back(width_);
@@ -631,7 +634,7 @@ bool WindowManager::SetEWMHProperties() {
       wm_window_, check_atom, XA_WINDOW, wm_window_);
 
   // State which parts of EWMH we support.
-  vector<int> supported;
+  std::vector<int> supported;
   supported.push_back(GetXAtom(ATOM_NET_ACTIVE_WINDOW));
   supported.push_back(GetXAtom(ATOM_NET_CLIENT_LIST));
   supported.push_back(GetXAtom(ATOM_NET_CLIENT_LIST_STACKING));
@@ -664,7 +667,7 @@ ClutterInterface::Actor* WindowManager::CreateActorAbove(
 }
 
 bool WindowManager::ManageExistingWindows() {
-  vector<XWindow> windows;
+  std::vector<XWindow> windows;
   if (!xconn_->GetChildWindows(root_, &windows)) {
     return false;
   }
@@ -686,7 +689,7 @@ Window* WindowManager::TrackWindow(XWindow xid) {
   // Don't manage our internal windows.
   if (IsInternalWindow(xid))
     return NULL;
-  for (set<EventConsumer*>::const_iterator it = event_consumers_.begin();
+  for (std::set<EventConsumer*>::const_iterator it = event_consumers_.begin();
        it != event_consumers_.end(); ++it) {
     if ((*it)->IsInputWindow(xid))
       return NULL;
@@ -704,8 +707,8 @@ Window* WindowManager::TrackWindow(XWindow xid) {
   if (win) {
     LOG(WARNING) << "Window " << xid << " is already being managed";
   } else {
-    ref_ptr<Window> win_ref(new Window(this, xid));
-    client_windows_.insert(make_pair(xid, win_ref));
+    std::tr1::shared_ptr<Window> win_ref(new Window(this, xid));
+    client_windows_.insert(std::make_pair(xid, win_ref));
     win = win_ref.get();
     if (!win->override_redirect()) {
       // Move non-override-redirect windows offscreen before they get
@@ -730,14 +733,14 @@ void WindowManager::HandleMappedWindow(Window* win) {
   }
 
   SetWmStateProperty(win->xid(), 1);  // NormalState
-  for (set<EventConsumer*>::iterator it = event_consumers_.begin();
+  for (std::set<EventConsumer*>::iterator it = event_consumers_.begin();
        it != event_consumers_.end(); ++it) {
     (*it)->HandleWindowMap(win);
   }
 }
 
 bool WindowManager::SetWmStateProperty(XWindow xid, int state) {
-  vector<int> values;
+  std::vector<int> values;
   values.push_back(state);
   values.push_back(None);  // we don't use icons
   XAtom xatom = GetXAtom(ATOM_WM_STATE);
@@ -745,11 +748,11 @@ bool WindowManager::SetWmStateProperty(XWindow xid, int state) {
 }
 
 bool WindowManager::UpdateClientListProperty() {
-  vector<int> values;
-  const list<XWindow>& xids = mapped_xids_->items();
+  std::vector<int> values;
+  const std::list<XWindow>& xids = mapped_xids_->items();
   // We store windows in most-to-least-recently-mapped order, but
   // _NET_CLIENT_LIST is least-to-most-recently-mapped.
-  for (list<XWindow>::const_reverse_iterator it = xids.rbegin();
+  for (std::list<XWindow>::const_reverse_iterator it = xids.rbegin();
        it != xids.rend(); ++it) {
     const Window* win = GetWindow(*it);
     if (win && win->mapped() && !win->override_redirect())
@@ -765,11 +768,11 @@ bool WindowManager::UpdateClientListProperty() {
 }
 
 bool WindowManager::UpdateClientListStackingProperty() {
-  vector<int> values;
-  const list<XWindow>& xids = stacked_xids_->items();
+  std::vector<int> values;
+  const std::list<XWindow>& xids = stacked_xids_->items();
   // We store windows in top-to-bottom stacking order, but
   // _NET_CLIENT_LIST_STACKING is bottom-to-top.
-  for (list<XWindow>::const_reverse_iterator it = xids.rbegin();
+  for (std::list<XWindow>::const_reverse_iterator it = xids.rbegin();
        it != xids.rend(); ++it) {
     const Window* win = GetWindow(*it);
     if (win && win->mapped() && !win->override_redirect())
@@ -795,15 +798,15 @@ void WindowManager::SetKeyEventSnooping(bool snoop) {
 }
 
 void WindowManager::SelectKeyEventsOnTree(XWindow root, bool snoop) {
-  queue<XWindow> windows;
+  std::queue<XWindow> windows;
   windows.push(root);
   while (!windows.empty()) {
     XWindow window = windows.front();
     windows.pop();
 
-    vector<XWindow> children;
+    std::vector<XWindow> children;
     if (xconn_->GetChildWindows(window, &children)) {
-      for (vector<XWindow>::const_iterator child = children.begin();
+      for (std::vector<XWindow>::const_iterator child = children.begin();
            child != children.end(); ++child) {
         windows.push(*child);
       }
@@ -827,7 +830,7 @@ bool WindowManager::HandleButtonPress(const XButtonEvent& e) {
   VLOG(1) << "Handling button press in window " << e.window;
   // TODO: Also have consumers register the windows that they're interested
   // in, so we don't need to offer the event to all of them here?
-  for (set<EventConsumer*>::iterator it = event_consumers_.begin();
+  for (std::set<EventConsumer*>::iterator it = event_consumers_.begin();
        it != event_consumers_.end(); ++it) {
     if ((*it)->HandleButtonPress(e.window, e.x, e.y, e.button, e.time))
       return true;
@@ -837,7 +840,7 @@ bool WindowManager::HandleButtonPress(const XButtonEvent& e) {
 
 bool WindowManager::HandleButtonRelease(const XButtonEvent& e) {
   VLOG(1) << "Handling button release in window " << e.window;
-  for (set<EventConsumer*>::iterator it = event_consumers_.begin();
+  for (std::set<EventConsumer*>::iterator it = event_consumers_.begin();
        it != event_consumers_.end(); ++it) {
     if ((*it)->HandleButtonRelease(e.window, e.x, e.y, e.button, e.time))
       return true;
@@ -849,14 +852,14 @@ bool WindowManager::HandleClientMessage(const XClientMessageEvent& e) {
   VLOG(2) << "Handling client message";
   WmIpc::Message msg;
   if (wm_ipc_->GetMessage(e, &msg)) {
-    for (set<EventConsumer*>::iterator it = event_consumers_.begin();
+    for (std::set<EventConsumer*>::iterator it = event_consumers_.begin();
          it != event_consumers_.end(); ++it) {
       if ((*it)->HandleChromeMessage(msg))
         return true;
     }
     LOG(WARNING) << "Ignoring unhandled WM message of type " << msg.type();
   } else {
-    for (set<EventConsumer*>::iterator it = event_consumers_.begin();
+    for (std::set<EventConsumer*>::iterator it = event_consumers_.begin();
          it != event_consumers_.end(); ++it) {
       if ((*it)->HandleClientMessage(e))
         return true;
@@ -981,15 +984,17 @@ bool WindowManager::HandleConfigureRequest(const XConfigureRequestEvent& e) {
     return false;
 
   VLOG(1) << "Handling configure request for " << e.window << " to pos ("
-          << ((e.value_mask & CWX) ? StringPrintf("%d", e.x) : string("undef"))
+          << ((e.value_mask & CWX) ? StringPrintf("%d", e.x) :
+              std::string("undef"))
           << ", "
-          << ((e.value_mask & CWY) ? StringPrintf("%d", e.y) : string("undef"))
+          << ((e.value_mask & CWY) ? StringPrintf("%d", e.y) :
+              std::string("undef"))
           << ") and size "
           << ((e.value_mask & CWWidth) ?
-                  StringPrintf("%d", e.width) : string("undef "))
+                  StringPrintf("%d", e.width) : std::string("undef "))
           << "x"
           << ((e.value_mask & CWHeight) ?
-                  StringPrintf("%d", e.height) : string(" undef"));
+                  StringPrintf("%d", e.height) : std::string(" undef"));
   if (win->override_redirect()) {
     LOG(WARNING) << "Huh?  Got a ConfigureRequest event for override-redirect "
                  << "window " << e.window;
@@ -1010,7 +1015,7 @@ bool WindowManager::HandleConfigureRequest(const XConfigureRequestEvent& e) {
     if (req_width != win->client_width() || req_height != win->client_height())
       win->ResizeClient(req_width, req_height, Window::GRAVITY_NORTHWEST);
   } else {
-    for (set<EventConsumer*>::iterator it = event_consumers_.begin();
+    for (std::set<EventConsumer*>::iterator it = event_consumers_.begin();
          it != event_consumers_.end(); ++it) {
       if ((*it)->HandleWindowConfigureRequest(
               win, req_x, req_y, req_width, req_height))
@@ -1091,7 +1096,7 @@ bool WindowManager::HandleDestroyNotify(const XDestroyWindowEvent& e) {
 
 bool WindowManager::HandleEnterNotify(const XEnterWindowEvent& e) {
   VLOG(1) << "Handling enter notify for " << e.window;
-  for (set<EventConsumer*>::iterator it = event_consumers_.begin();
+  for (std::set<EventConsumer*>::iterator it = event_consumers_.begin();
        it != event_consumers_.end(); ++it) {
     if ((*it)->HandlePointerEnter(e.window, e.time))
       return true;
@@ -1113,7 +1118,7 @@ bool WindowManager::HandleFocusChange(const XFocusChangeEvent& e) {
   Window* win = GetWindow(e.window);
   if (win)
     win->set_focused(focus_in);
-  for (set<EventConsumer*>::iterator it = event_consumers_.begin();
+  for (std::set<EventConsumer*>::iterator it = event_consumers_.begin();
        it != event_consumers_.end(); ++it) {
     if ((*it)->HandleFocusChange(e.window, focus_in))
       return true;
@@ -1151,7 +1156,7 @@ bool WindowManager::HandleKeyRelease(const XKeyEvent& e) {
 
 bool WindowManager::HandleLeaveNotify(const XLeaveWindowEvent& e) {
   VLOG(1) << "Handling leave notify for " << e.window;
-  for (set<EventConsumer*>::iterator it = event_consumers_.begin();
+  for (std::set<EventConsumer*>::iterator it = event_consumers_.begin();
        it != event_consumers_.end(); ++it) {
     if ((*it)->HandlePointerLeave(e.window, e.time))
       return true;
@@ -1195,7 +1200,7 @@ bool WindowManager::HandleMapRequest(const XMapRequestEvent& e) {
 }
 
 bool WindowManager::HandleMotionNotify(const XMotionEvent& e) {
-  for (set<EventConsumer*>::iterator it = event_consumers_.begin();
+  for (std::set<EventConsumer*>::iterator it = event_consumers_.begin();
        it != event_consumers_.end(); ++it) {
     if ((*it)->HandlePointerMotion(e.window, e.x, e.y, e.time))
       return true;
@@ -1213,7 +1218,7 @@ bool WindowManager::HandlePropertyNotify(const XPropertyEvent& e) {
           << (deleted ? "deleted" : "added") << " property " << e.atom
           << " (" << GetXAtomName(e.atom) << ")";
   if (e.atom == GetXAtom(ATOM_NET_WM_NAME)) {
-    string title;
+    std::string title;
     if (deleted || !xconn_->GetStringProperty(win->xid(), e.atom, &title)) {
       win->set_title("");
     } else {
@@ -1325,7 +1330,7 @@ bool WindowManager::HandleUnmapNotify(const XUnmapEvent& e) {
   SetWmStateProperty(e.window, 0);  // WithdrawnState
   win->set_mapped(false);
   win->HideComposited();
-  for (set<EventConsumer*>::iterator it = event_consumers_.begin();
+  for (std::set<EventConsumer*>::iterator it = event_consumers_.begin();
        it != event_consumers_.end(); ++it) {
     (*it)->HandleWindowUnmap(win);
   }
@@ -1341,13 +1346,14 @@ bool WindowManager::HandleUnmapNotify(const XUnmapEvent& e) {
 void WindowManager::LaunchTerminalCallback() {
   LOG(INFO) << "Launching xterm via: " << FLAGS_wm_xterm_command;
 
-  const string command = StringPrintf("%s &", FLAGS_wm_xterm_command.c_str());
+  const std::string command = StringPrintf("%s &",
+                                           FLAGS_wm_xterm_command.c_str());
   if (system(command.c_str()) < 0)
     LOG(WARNING) << "Unable to launch xterm via: " << command;
 }
 
 void WindowManager::LaunchChromeCallback(bool loop) {
-  const string command = StringPrintf(
+  const std::string command = StringPrintf(
       "%s %s&", FLAGS_wm_chrome_command.c_str(), (loop ? "--loop " : ""));
   LOG(INFO) << "Launching chrome via: " << command;
   if (system(command.c_str()) < 0)
@@ -1360,7 +1366,7 @@ void WindowManager::ToggleClientWindowDebugging() {
     return;
   }
 
-  vector<XWindow> xids;
+  std::vector<XWindow> xids;
   if (!xconn_->GetChildWindows(root_, &xids))
     return;
 
@@ -1368,7 +1374,8 @@ void WindowManager::ToggleClientWindowDebugging() {
   static const char* kBgColor = "#fff";
   static const char* kFgColor = "#000";
 
-  for (vector<XWindow>::iterator it = xids.begin(); it != xids.end(); ++it) {
+  for (std::vector<XWindow>::iterator it = xids.begin();
+       it != xids.end(); ++it) {
     int x = 0, y = 0, width = 0, height = 0;
     if (!xconn_->GetWindowGeometry(*it, &x, &y, &width, &height))
       continue;
@@ -1400,11 +1407,11 @@ void WindowManager::ToggleClientWindowDebugging() {
     text->Raise(rect);
 
     client_window_debugging_actors_.push_back(
-        ref_ptr<ClutterInterface::Actor>(group));
+        std::tr1::shared_ptr<ClutterInterface::Actor>(group));
     client_window_debugging_actors_.push_back(
-        ref_ptr<ClutterInterface::Actor>(rect));
+        std::tr1::shared_ptr<ClutterInterface::Actor>(rect));
     client_window_debugging_actors_.push_back(
-        ref_ptr<ClutterInterface::Actor>(text));
+        std::tr1::shared_ptr<ClutterInterface::Actor>(text));
   }
 }
 

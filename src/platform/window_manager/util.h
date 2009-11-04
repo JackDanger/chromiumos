@@ -10,9 +10,8 @@
 #include <map>
 #include <sys/time.h>
 
-#include <glog/logging.h>
-
 #include "base/basictypes.h"
+#include "base/logging.h"
 
 typedef unsigned int uint;
 
@@ -26,7 +25,7 @@ class Stacker {
   Stacker() {}
 
   // Get the (top-to-bottom) ordered list of items.
-  const list<T>& items() const { return items_; }
+  const std::list<T>& items() const { return items_; }
 
   // Has a particular item been registered?
   bool Contains(T item) const {
@@ -37,7 +36,7 @@ class Stacker {
   // present.  Slow but useful for testing.
   int GetIndex(T item) const {
     int i = 0;
-    for (typename list<T>::const_iterator it = items_.begin();
+    for (typename std::list<T>::const_iterator it = items_.begin();
          it != items_.end(); ++it, ++i) {
       if (*it == item)
         return i;
@@ -53,7 +52,7 @@ class Stacker {
       LOG(WARNING) << "Got request for item under not-present item " << item;
       return NULL;
     }
-    typename list<T>::iterator list_it = map_it->second;
+    typename std::list<T>::iterator list_it = map_it->second;
     list_it++;
     if (list_it == items_.end()) {
       return NULL;
@@ -97,7 +96,8 @@ class Stacker {
                    << " above not-present item " << other_item;
       return;
     }
-    typename list<T>::iterator new_it = items_.insert(other_it->second, item);
+    typename std::list<T>::iterator new_it = items_.insert(other_it->second,
+                                                           item);
     index_.insert(make_pair(item, new_it));
   }
 
@@ -118,8 +118,8 @@ class Stacker {
     // Lists don't support operator+ or operator-, so we need to use ++.
     // Make a copy of the iterator before doing this so that we don't screw
     // up the previous value in the map.
-    typename list<T>::iterator new_it = other_it->second;
-    typename list<T>::iterator it = items_.insert(++new_it, item);
+    typename std::list<T>::iterator new_it = other_it->second;
+    typename std::list<T>::iterator it = items_.insert(++new_it, item);
     index_.insert(make_pair(item, it));
   }
 
@@ -136,9 +136,9 @@ class Stacker {
 
  private:
   // Items stacked from top to bottom.
-  list<T> items_;
+  std::list<T> items_;
 
-  typedef map<T, typename list<T>::iterator> IteratorMap;
+  typedef std::map<T, typename std::list<T>::iterator> IteratorMap;
 
   // Index into 'items_'.
   IteratorMap index_;
@@ -179,8 +179,8 @@ class ByteMap {
 
 
 template<class K, class V>
-V FindWithDefault(const map<K, V>& the_map, const K& key, const V& def) {
-  typename map<K, V>::const_iterator it = the_map.find(key);
+V FindWithDefault(const std::map<K, V>& the_map, const K& key, const V& def) {
+  typename std::map<K, V>::const_iterator it = the_map.find(key);
   if (it == the_map.end()) {
     return def;
   }

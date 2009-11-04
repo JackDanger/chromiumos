@@ -7,9 +7,7 @@
 
 #include <glib.h>  // for gboolean and gint
 
-#include <glog/logging.h>
-
-#include "base/callback.h"
+#include <chromeos/callback.h>
 #include "base/scoped_ptr.h"
 
 namespace chromeos {

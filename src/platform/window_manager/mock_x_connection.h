@@ -5,6 +5,11 @@
 #ifndef __PLATFORM_WINDOW_MANAGER_MOCK_X_CONNECTION_H__
 #define __PLATFORM_WINDOW_MANAGER_MOCK_X_CONNECTION_H__
 
+#include <tr1/memory>
+#include <string>
+
+#include "base/logging.h"
+
 #include "window_manager/x_connection.h"
 
 namespace chromeos {
@@ -53,14 +58,15 @@ class MockXConnection : public XConnection {
   bool SelectShapeEventsOnWindow(XWindow xid);
   bool GetWindowBoundingRegion(XWindow xid, ByteMap* bytemap);
   bool SelectXRandREventsOnWindow(XWindow xid);
-  bool GetAtom(const string& name, XAtom* atom_out);
-  bool GetAtoms(const vector<string>& names, vector<XAtom>* atoms_out);
-  bool GetAtomName(XAtom atom, string* name);
-  bool GetIntArrayProperty(XWindow xid, XAtom xatom, vector<int>* values);
+  bool GetAtom(const std::string& name, XAtom* atom_out);
+  bool GetAtoms(const std::vector<std::string>& names,
+                std::vector<XAtom>* atoms_out);
+  bool GetAtomName(XAtom atom, std::string* name);
+  bool GetIntArrayProperty(XWindow xid, XAtom xatom, std::vector<int>* values);
   bool SetIntArrayProperty(
-      XWindow xid, XAtom xatom, XAtom type, const vector<int>& values);
-  bool GetStringProperty(XWindow xid, XAtom xatom, string* out);
-  bool SetStringProperty(XWindow xid, XAtom xatom, const string& value);
+      XWindow xid, XAtom xatom, XAtom type, const std::vector<int>& values);
+  bool GetStringProperty(XWindow xid, XAtom xatom, std::string* out);
+  bool SetStringProperty(XWindow xid, XAtom xatom, const std::string& value);
   bool DeletePropertyIfExists(XWindow xid, XAtom xatom);
   bool SendEvent(XWindow xid, XEvent* event, int event_mask);
   bool WaitForEvent(XWindow xid, int event_mask, XEvent* event_out) {
@@ -69,12 +75,12 @@ class MockXConnection : public XConnection {
   XWindow GetSelectionOwner(XAtom atom);
   bool SetSelectionOwner(XAtom atom, XWindow xid, Time timestamp);
   bool SetWindowCursor(XWindow xid, uint32 shape);
-  bool GetChildWindows(XWindow xid, vector<XWindow>* children_out);
+  bool GetChildWindows(XWindow xid, std::vector<XWindow>* children_out);
   bool GetParentWindow(XWindow xid, XWindow* parent);
   // Treat keycodes and keysyms as equivalent for key_bindings_test.
   KeySym GetKeySymFromKeyCode(uint32 keycode) { return keycode; }
   uint32 GetKeyCodeFromKeySym(KeySym keysym) { return keysym; }
-  string GetStringFromKeySym(KeySym keysym) { return ""; }
+  std::string GetStringFromKeySym(KeySym keysym) { return ""; }
   bool GrabKey(KeyCode keycode, uint32 modifiers) { return true; }
   bool UngrabKey(KeyCode keycode, uint32 modifiers) { return true; }
   bool SetDetectableKeyboardAutoRepeat(bool detectable) { return true; }
@@ -92,8 +98,8 @@ class MockXConnection : public XConnection {
     bool override_redirect;
     bool redirected;
     int event_mask;
-    map<XAtom, vector<int> > int_properties;
-    map<XAtom, string> string_properties;
+    std::map<XAtom, std::vector<int> > int_properties;
+    std::map<XAtom, std::string> string_properties;
     XWindow transient_for;
     uint32 cursor;
     XSizeHints size_hints;
@@ -108,7 +114,7 @@ class MockXConnection : public XConnection {
     bool xrandr_events_selected;
 
     // Client messages sent to the window.
-    vector<XClientMessageEvent> client_messages;
+    std::vector<XClientMessageEvent> client_messages;
 
     // Has the window has been mapped, unmapped, or configured via XConnection
     // methods?  Used to check that changes aren't made to override-redirect
@@ -165,7 +171,7 @@ class MockXConnection : public XConnection {
   bool GrabServerImpl() { return true; }
   bool UngrabServerImpl() { return true; }
 
-  map<XWindow, ref_ptr<WindowInfo> > windows_;
+  std::map<XWindow, std::tr1::shared_ptr<WindowInfo> > windows_;
 
   // All windows other than the overlay and root, in top-to-bottom stacking
   // order.
@@ -176,9 +182,9 @@ class MockXConnection : public XConnection {
   XWindow root_;
   XWindow overlay_;
   XAtom next_atom_;
-  map<string, XAtom> name_to_atom_;
-  map<XAtom, string> atom_to_name_;
-  map<XAtom, XWindow> selection_owners_;
+  std::map<std::string, XAtom> name_to_atom_;
+  std::map<XAtom, std::string> atom_to_name_;
+  std::map<XAtom, XWindow> selection_owners_;
   XWindow focused_xid_;
 
   // Window that has currently grabbed the pointer, or None.

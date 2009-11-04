@@ -10,10 +10,10 @@ extern "C" {
 #include <X11/Xutil.h>
 }
 #include <gflags/gflags.h>
-#include <glog/logging.h>
 
 #include "base/scoped_ptr.h"
-#include "base/strutil.h"
+#include "base/logging.h"
+#include "chromeos/obsolete_logging.h"
 #include "window_manager/x_connection.h"
 
 namespace chromeos {
@@ -52,8 +52,8 @@ struct Action {
   scoped_ptr<Closure> end_closure;
 
   // The set of key combinations currently bound to this action.
-  set<KeyBindings::KeyCombo,
-      KeyBindings::KeyComboComparator> bindings;
+  std::set<KeyBindings::KeyCombo,
+           KeyBindings::KeyComboComparator> bindings;
 
   DISALLOW_COPY_AND_ASSIGN(Action);
 };
@@ -75,7 +75,7 @@ KeyBindings::~KeyBindings() {
   CHECK_EQ(bindings_.size(), 0);
 }
 
-bool KeyBindings::AddAction(const string& action_name,
+bool KeyBindings::AddAction(const std::string& action_name,
                             Closure* begin_closure,
                             Closure* repeat_closure,
                             Closure* end_closure) {
@@ -89,7 +89,7 @@ bool KeyBindings::AddAction(const string& action_name,
   return true;
 }
 
-bool KeyBindings::RemoveAction(const string& action_name) {
+bool KeyBindings::RemoveAction(const std::string& action_name) {
   ActionMap::iterator iter = actions_.find(action_name);
   if (iter == actions_.end()) {
     LOG(WARNING) << "Attempting to remove non-existant action: " << action_name;
@@ -106,7 +106,7 @@ bool KeyBindings::RemoveAction(const string& action_name) {
 }
 
 bool KeyBindings::AddBinding(const KeyCombo& combo,
-                             const string& action_name) {
+                             const std::string& action_name) {
   if (bindings_.find(combo) != bindings_.end()) {
     LOG(WARNING) << "Attempt to overwrite existing key binding for action: "
                  << action_name;
@@ -187,7 +187,7 @@ bool KeyBindings::HandleKeyRelease(KeySym keysym, uint32 modifiers) {
     return false;
   }
 
-  const string& action_name = bindings_iter->second;
+  const std::string& action_name = bindings_iter->second;
   ActionMap::iterator action_iter = actions_.find(action_name);
   CHECK(action_iter != actions_.end());
   Action* const action = action_iter->second;

@@ -6,7 +6,10 @@
 
 #include <cairomm/context.h>
 
-#include "base/strutil.h"
+#include <base/command_line.h>
+#include <base/string_util.h>
+#include <chromeos/obsolete_logging.h>
+#include <chromeos/string.h>
 #include "window_manager/atom_cache.h"
 #include "window_manager/real_x_connection.h"
 #include "window_manager/util.h"
@@ -103,7 +106,7 @@ static void DrawImage(Glib::RefPtr<Gdk::Pixbuf>& image,
       0, 0);  // x and y dither
 }
 
-Tab::Tab(const string& image_filename, const string& title)
+Tab::Tab(const std::string& image_filename, const std::string& title)
     : image_(Gdk::Pixbuf::create_from_file(image_filename)),
       title_(title) {
 }
@@ -253,7 +256,7 @@ FloatingTab::FloatingTab(MockChrome* chrome, Tab* tab,
   // image.
   show_all();
   xid_ = GDK_WINDOW_XWINDOW(Glib::unwrap(get_window()));
-  vector<int> type_params;
+  std::vector<int> type_params;
   type_params.push_back(initial_x);
   type_params.push_back(initial_y);
   type_params.push_back(drag_start_offset_x);
@@ -305,7 +308,7 @@ ChromeWindow::ChromeWindow(MockChrome* chrome, int width, int height)
 }
 
 void ChromeWindow::InsertTab(Tab* tab, size_t index) {
-  ref_ptr<TabInfo> info(new TabInfo(tab));
+  std::tr1::shared_ptr<TabInfo> info(new TabInfo(tab));
   if (index > tabs_.size()) {
     index = tabs_.size();
   }
@@ -326,7 +329,7 @@ void ChromeWindow::InsertTab(Tab* tab, size_t index) {
 
 Tab* ChromeWindow::RemoveTab(size_t index) {
   CHECK_LT(index, tabs_.size());
-  ref_ptr<TabInfo> info = tabs_[index];
+  std::tr1::shared_ptr<TabInfo> info = tabs_[index];
   tabs_.erase(tabs_.begin() + index);
   if (active_tab_index_ >= static_cast<int>(tabs_.size())) {
     active_tab_index_ = static_cast<int>(tabs_.size()) - 1;
@@ -336,7 +339,7 @@ Tab* ChromeWindow::RemoveTab(size_t index) {
 
 void ChromeWindow::ActivateTab(int index) {
   CHECK_GE(index, 0);
-  CHECK_LT(index, tabs_.size());
+  CHECK_LT(index, static_cast<int>(tabs_.size()));
   if (index == active_tab_index_) {
     return;
   }
@@ -481,7 +484,7 @@ void ChromeWindow::DrawView() {
   int height = height_ - y;
 
   if (active_tab_index_ >= 0) {
-    CHECK_LT(active_tab_index_, tabs_.size());
+    CHECK_LT(active_tab_index_, static_cast<int>(tabs_.size()));
     tabs_[active_tab_index_]->tab->RenderToGtkWidget(this, x, y, width, height);
   } else {
     get_window()->clear_area(x, y, width, height);
@@ -526,7 +529,7 @@ bool ChromeWindow::on_button_press_event(GdkEventButton* event) {
   tab_drag_start_offset_x_ = event->x - tabs_[tab_index]->start_x;
   tab_drag_start_offset_y_ = event->y;
   if (tab_index != active_tab_index_) {
-    CHECK_LT(tab_index, tabs_.size());
+    CHECK_LT(tab_index, static_cast<int>(tabs_.size()));
     active_tab_index_ = tab_index;
     DrawTabs();
     DrawView();
@@ -802,8 +805,8 @@ bool PanelTitlebar::on_motion_notify_event(GdkEventMotion* event) {
 }
 
 Panel::Panel(MockChrome* chrome,
-             const string& image_filename,
-             const string& title)
+             const std::string& image_filename,
+             const std::string& title)
     : chrome_(chrome),
       titlebar_(new PanelTitlebar(this)),
       image_(Gdk::Pixbuf::create_from_file(image_filename)),
@@ -814,7 +817,7 @@ Panel::Panel(MockChrome* chrome,
   set_size_request(width_, height_);
   realize();
   xid_ = GDK_WINDOW_XWINDOW(Glib::unwrap(get_window()));
-  vector<int> type_params;
+  std::vector<int> type_params;
   type_params.push_back(titlebar_->xid());
   type_params.push_back(0);  // initially collapsed
   CHECK(chrome_->wm_ipc()->SetWindowType(
@@ -880,8 +883,8 @@ MockChrome::MockChrome()
 }
 
 ChromeWindow* MockChrome::CreateWindow(int width, int height) {
-  ref_ptr<ChromeWindow> win(new ChromeWindow(this, width, height));
-  CHECK(windows_.insert(make_pair(win->xid(), win)).second);
+  std::tr1::shared_ptr<ChromeWindow> win(new ChromeWindow(this, width, height));
+  CHECK(windows_.insert(std::make_pair(win->xid(), win)).second);
   return win.get();
 }
 
@@ -890,10 +893,10 @@ void MockChrome::CloseWindow(ChromeWindow* win) {
   CHECK_EQ(windows_.erase(win->xid()), 1);
 }
 
-Panel* MockChrome::CreatePanel(const string& image_filename,
-                               const string& title) {
-  ref_ptr<Panel> panel(new Panel(this, image_filename, title));
-  CHECK(panels_.insert(make_pair(panel->xid(), panel)).second);
+Panel* MockChrome::CreatePanel(const std::string& image_filename,
+                               const std::string& title) {
+  std::tr1::shared_ptr<Panel> panel(new Panel(this, image_filename, title));
+  CHECK(panels_.insert(std::make_pair(panel->xid(), panel)).second);
   return panel.get();
 }
 
@@ -937,15 +940,19 @@ void MockChrome::HandleDroppedFloatingTab(Tab* tab) {
 int main(int argc, char** argv) {
   Gtk::Main kit(argc, argv);
   google::ParseCommandLineFlags(&argc, &argv, true);
-  google::InitGoogleLogging(argv[0]);
+  CommandLine::Init(argc, argv);
+  logging::InitLogging(NULL,
+                       logging::LOG_ONLY_TO_SYSTEM_DEBUG_LOG,
+                       logging::DONT_LOCK_LOG_FILE,
+                       logging::APPEND_TO_OLD_LOG_FILE);
 
-  vector<string> filenames;
-  SplitStringUsing(FLAGS_tab_images, ",", &filenames);
+  std::vector<std::string> filenames;
+  chromeos::SplitStringUsing(FLAGS_tab_images, ",", &filenames);
   CHECK(!filenames.empty())
       << "At least one image must be supplied using --tab_images";
 
-  vector<string> titles;
-  SplitStringUsing(FLAGS_tab_titles, ",", &titles);
+  std::vector<std::string> titles;
+  chromeos::SplitStringUsing(FLAGS_tab_titles, ",", &titles);
   CHECK_EQ(filenames.size(), titles.size())
       << "Must specify same number of tab images and titles";
 
@@ -962,12 +969,12 @@ int main(int argc, char** argv) {
   }
 
   filenames.clear();
-  SplitStringUsing(FLAGS_panel_images, ",", &filenames);
+  chromeos::SplitStringUsing(FLAGS_panel_images, ",", &filenames);
   CHECK(!filenames.empty())
       << "At least one image must be supplied using --panel_images";
 
   titles.clear();
-  SplitStringUsing(FLAGS_panel_titles, ",", &titles);
+  chromeos::SplitStringUsing(FLAGS_panel_titles, ",", &titles);
   CHECK_EQ(filenames.size(), titles.size())
       << "Must specify same number of panel images and titles";
 

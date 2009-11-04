@@ -5,13 +5,14 @@
 import os
 import sys
 
-SOURCES=['chromeos/dbus/dbus.cc', 'util.cc']
+SOURCES=['chromeos/dbus/dbus.cc',
+         'chromeos/string.cc',
+         'util.cc']
 
 env = Environment(
-    CPPPATH=[ '.', '../platform' ],
+    CPPPATH=[ '.', '../third_party/chrome/files' ],
     CCFLAGS=['-m32', '-fno-exceptions'],
-    LINKFLAGS=['-m32' ],
-    LIBS = ['glog']
+    LINKFLAGS=['-m32' ]
 )
 
 # glib and dbug environment
@@ -28,8 +29,8 @@ if ARGUMENTS.get('debug', 0):
 env_test = env.Clone()
 
 env_test.Append(
-    LIBS = ['gtest', 'chromeos'],
-    LIBPATH = ['.'],
+    LIBS = ['gtest', 'chromeos', 'base', 'rt'],
+    LIBPATH = ['.', '../third_party/chrome'],
   )
 
 unittest_sources =['chromeos/glib/object_unittest.cc']

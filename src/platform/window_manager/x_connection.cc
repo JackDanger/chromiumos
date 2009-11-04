@@ -4,7 +4,7 @@
 
 #include "window_manager/x_connection.h"
 
-#include <glog/logging.h>
+#include "base/logging.h"
 
 namespace chromeos {
 
@@ -40,7 +40,7 @@ bool XConnection::RemapWindowIfMapped(XWindow xid) {
 
 bool XConnection::GetIntProperty(XWindow xid, XAtom xatom, int* value) {
   CHECK(value);
-  vector<int> values;
+  std::vector<int> values;
   if (!GetIntArrayProperty(xid, xatom, &values)) {
     return false;
   }
@@ -77,7 +77,7 @@ bool XConnection::UngrabServer() {
 
 bool XConnection::SetIntProperty(
     XWindow xid, XAtom xatom, XAtom type, int value) {
-  vector<int> values(1, value);
+  std::vector<int> values(1, value);
   return SetIntArrayProperty(xid, xatom, type, values);
 }
 

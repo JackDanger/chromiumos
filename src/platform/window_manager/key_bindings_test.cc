@@ -2,22 +2,23 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include <glog/logging.h>
 #include <gtest/gtest.h>
 #include <vector>
 
 #include "base/basictypes.h"
-#include "base/callback.h"
+#include <base/command_line.h>
 #include "base/scoped_ptr.h"
 #include "base/stl_util-inl.h"
-#include "base/strutil.h"
+#include "base/string_util.h"
+#include "chromeos/callback.h"
+#include "chromeos/obsolete_logging.h"
 #include "window_manager/key_bindings.h"
 #include "window_manager/mock_x_connection.h"
 
 namespace chromeos {
 
 struct TestAction {
-  explicit TestAction(const string& name_param)
+  explicit TestAction(const std::string& name_param)
       : name(name_param),
         begin_call_count(0),
         repeat_call_count(0),
@@ -45,7 +46,7 @@ struct TestAction {
     ++end_call_count;
   }
 
-  string name;
+  std::string name;
   int begin_call_count;
   int repeat_call_count;
   int end_call_count;
@@ -88,7 +89,7 @@ class KeyBindingTest : public ::testing::Test {
 
   scoped_ptr<chromeos::XConnection> xconn_;
   scoped_ptr<chromeos::KeyBindings> bindings_;
-  vector<TestAction*> actions_;
+  std::vector<TestAction*> actions_;
 
   static const int kNumActions = 10;
 };
@@ -337,7 +338,12 @@ TEST_F(KeyBindingTest, ManyActionsAndBindings) {
 }  // namespace
 
 int main(int argc, char **argv) {
-  google::InitGoogleLogging(argv[0]);
+  CommandLine::Init(argc, argv);
+  logging::InitLogging(NULL,
+                       logging::LOG_ONLY_TO_SYSTEM_DEBUG_LOG,
+                       logging::DONT_LOCK_LOG_FILE,
+                       logging::APPEND_TO_OLD_LOG_FILE);
+
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

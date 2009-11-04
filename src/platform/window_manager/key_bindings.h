@@ -31,9 +31,10 @@ extern "C" {
 #include <X11/Xlib.h>
 }
 #include <map>
+#include <string>
 
 #include "base/basictypes.h"
-#include "base/callback.h"
+#include "chromeos/callback.h"
 
 typedef ::Window XWindow;
 
@@ -75,18 +76,18 @@ class KeyBindings {
 
   // Add a new action. This will fail if the action already exists.
   // NOTE: The KeyBindings class will take ownership of passed in callbacks.
-  bool AddAction(const string& action_name,
+  bool AddAction(const std::string& action_name,
                  Closure* begin_closure,   // [optional] On combo press
                  Closure* repeat_closure,  // [optional] On combo auto-repeat
                  Closure* end_closure);    // [optional] On combo release
 
   // Removes an action. Any key bindings to this action will also be removed.
-  bool RemoveAction(const string& action_name);
+  bool RemoveAction(const std::string& action_name);
 
   // Add a binding from the given KeyCombo to the action. KeyCombo's must be
   // unique, but it is fine to have more than one combo map to a given action.
   bool AddBinding(const KeyCombo& combo,
-                  const string& action_name);
+                  const std::string& action_name);
 
   // Remove the KeyCombo. This may fail if the action to which the combo was
   // bound has been removed, in which case the combo was already cleaned up.
@@ -103,10 +104,10 @@ class KeyBindings {
 
   XConnection* xconn_;  // Weak reference
 
-  typedef map<string, Action*> ActionMap;
+  typedef std::map<std::string, Action*> ActionMap;
   ActionMap actions_;
 
-  typedef map<KeyCombo, string, KeyComboComparator> BindingsMap;
+  typedef std::map<KeyCombo, std::string, KeyComboComparator> BindingsMap;
   BindingsMap bindings_;
 
   DISALLOW_COPY_AND_ASSIGN(KeyBindings);

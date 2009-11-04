@@ -7,7 +7,8 @@
 #include <algorithm>
 
 #include <gflags/gflags.h>
-#include <glog/logging.h>
+
+#include <base/logging.h>
 
 #include "window_manager/clutter_interface.h"
 #include "window_manager/panel.h"
@@ -114,11 +115,11 @@ void PanelBar::HandleWindowUnmap(Window* win) {
     return;
   }
 
-  vector<XWindow> input_windows;
+  std::vector<XWindow> input_windows;
   panel->GetInputWindows(&input_windows);
-  for (vector<XWindow>::const_iterator it = input_windows.begin();
+  for (std::vector<XWindow>::const_iterator it = input_windows.begin();
        it != input_windows.end(); ++it) {
-    CHECK_EQ(panel_input_windows_.erase(*it), 1);
+    CHECK(panel_input_windows_.erase(*it) == 1);
   }
 
   if (dragged_panel_ == panel) {
@@ -200,7 +201,7 @@ bool PanelBar::HandleButtonPress(
     return true;
   }
 
-  map<XWindow, Panel*>::iterator it = panel_input_windows_.find(xid);
+  std::map<XWindow, Panel*>::iterator it = panel_input_windows_.find(xid);
   if (it != panel_input_windows_.end()) {
     it->second->HandleInputWindowButtonPress(xid, x, y, button, timestamp);
     return true;
@@ -228,7 +229,7 @@ bool PanelBar::HandleButtonPress(
 
 bool PanelBar::HandleButtonRelease(
     XWindow xid, int x, int y, int button, Time timestamp) {
-  map<XWindow, Panel*>::iterator it = panel_input_windows_.find(xid);
+  std::map<XWindow, Panel*>::iterator it = panel_input_windows_.find(xid);
   if (it != panel_input_windows_.end()) {
     it->second->HandleInputWindowButtonRelease(xid, x, y, button);
     return true;
@@ -250,7 +251,7 @@ bool PanelBar::HandlePointerLeave(XWindow xid, Time timestamp) {
 }
 
 bool PanelBar::HandlePointerMotion(XWindow xid, int x, int y, Time timestamp) {
-  map<XWindow, Panel*>::iterator it = panel_input_windows_.find(xid);
+  std::map<XWindow, Panel*>::iterator it = panel_input_windows_.find(xid);
   if (it != panel_input_windows_.end()) {
     it->second->HandleInputWindowPointerMotion(xid, x, y);
     return true;
@@ -469,7 +470,8 @@ bool PanelBar::TakeFocus() {
 }
 
 
-bool PanelBar::PanelTitlebarContainsPoint::operator()(ref_ptr<Panel>& p) {
+bool PanelBar::PanelTitlebarContainsPoint::operator()(
+    std::tr1::shared_ptr<Panel>& p) {
   return (center_x_ >= p->snapped_titlebar_left() &&
           center_x_ < p->snapped_right());
 }
@@ -487,14 +489,14 @@ void PanelBar::AddPanel(
   const int right = expanded ?
       x_ + width_ - kBarPadding :
       x_ + width_ - collapsed_panel_width_ - kBarPadding;
-  ref_ptr<Panel> panel(
+  std::tr1::shared_ptr<Panel> panel(
       new Panel(this, panel_win, titlebar_win, right));
 
-  vector<XWindow> input_windows;
+  std::vector<XWindow> input_windows;
   panel->GetInputWindows(&input_windows);
-  for (vector<XWindow>::const_iterator it = input_windows.begin();
+  for (std::vector<XWindow>::const_iterator it = input_windows.begin();
        it != input_windows.end(); ++it) {
-    CHECK(panel_input_windows_.insert(make_pair(*it, panel.get())).second);
+    CHECK(panel_input_windows_.insert(std::make_pair(*it, panel.get())).second);
   }
 
   if (!expanded) {
@@ -517,7 +519,7 @@ void PanelBar::ExpandPanel(Panel* panel, bool create_anchor) {
   Panels::iterator it =
       FindPanelInVectorByWindow(collapsed_panels_, *(panel->panel_win()));
   CHECK(it != collapsed_panels_.end());
-  ref_ptr<Panel> ref = *it;
+  std::tr1::shared_ptr<Panel> ref = *it;
 
   if (create_anchor) {
     CreateAnchor(panel);
@@ -544,7 +546,7 @@ void PanelBar::CollapsePanel(Panel* panel) {
   Panels::iterator it =
       FindPanelInVectorByWindow(expanded_panels_, *(panel->panel_win()));
   CHECK(it != expanded_panels_.end());
-  ref_ptr<Panel> ref = *it;
+  std::tr1::shared_ptr<Panel> ref = *it;
 
   if (anchor_panel_ == panel) {
     DestroyAnchor();
@@ -552,7 +554,7 @@ void PanelBar::CollapsePanel(Panel* panel) {
 
   panel->SetState(false);
   expanded_panels_.erase(it);
-  InsertCollapsedPanel(ref_ptr<Panel>(ref));
+  InsertCollapsedPanel(std::tr1::shared_ptr<Panel>(ref));
   PackCollapsedPanels();
 
   // Give up the focus if this panel had it.
@@ -677,7 +679,7 @@ void PanelBar::RepositionExpandedPanels(Panel* fixed_panel) {
 
   // First, find the index of the fixed panel.
   int fixed_index = GetPanelIndex(expanded_panels_, *fixed_panel);
-  CHECK_LT(fixed_index, expanded_panels_.size());
+  CHECK_LT(fixed_index, static_cast<int>(expanded_panels_.size()));
 
   // Next, check if the panel has moved to the other side of another panel.
   const int center_x = fixed_panel->cur_panel_center();
@@ -687,7 +689,7 @@ void PanelBar::RepositionExpandedPanels(Panel* fixed_panel) {
         i == expanded_panels_.size() - 1) {
       if (panel != fixed_panel) {
         // If it has, then we reorder the panels.
-        ref_ptr<Panel> ref = expanded_panels_[fixed_index];
+        std::tr1::shared_ptr<Panel> ref = expanded_panels_[fixed_index];
         expanded_panels_.erase(expanded_panels_.begin() + fixed_index);
         if (i < expanded_panels_.size()) {
           expanded_panels_.insert(expanded_panels_.begin() + i, ref);
@@ -715,17 +717,18 @@ void PanelBar::RepositionExpandedPanels(Panel* fixed_panel) {
 
   // Move panels over to the right of the fixed panel until all of the ones
   // on the left will fit.
-  int avail_width = max(fixed_panel->cur_panel_left() - kBarPadding - x_, 0);
+  int avail_width = std::max(fixed_panel->cur_panel_left() - kBarPadding - x_,
+                             0);
   while (total_width > avail_width) {
     new_fixed_index--;
-    CHECK_GE(new_fixed_index, 0);
+    CHECK(new_fixed_index >= 0);
     total_width -= expanded_panels_[new_fixed_index]->panel_width();
   }
 
   // Reorder the fixed panel if its index changed.
   if (new_fixed_index != fixed_index) {
     Panels::iterator it = expanded_panels_.begin() + fixed_index;
-    ref_ptr<Panel> ref = *it;
+    std::tr1::shared_ptr<Panel> ref = *it;
     expanded_panels_.erase(it);
     expanded_panels_.insert(expanded_panels_.begin() + new_fixed_index, ref);
     fixed_index = new_fixed_index;
@@ -739,17 +742,18 @@ void PanelBar::RepositionExpandedPanels(Panel* fixed_panel) {
     total_width += (*it)->panel_width();
   }
 
-  avail_width = max(x_ + width_ - (fixed_panel->cur_right() + kBarPadding), 0);
+  avail_width = std::max(x_ + width_ - (fixed_panel->cur_right() + kBarPadding),
+                         0);
   while (total_width > avail_width) {
     new_fixed_index++;
-    CHECK_LT(new_fixed_index, expanded_panels_.size());
+    CHECK_LT(new_fixed_index, static_cast<int>(expanded_panels_.size()));
     total_width -= expanded_panels_[new_fixed_index]->panel_width();
   }
 
   // Do the reordering again.
   if (new_fixed_index != fixed_index) {
     Panels::iterator it = expanded_panels_.begin() + fixed_index;
-    ref_ptr<Panel> ref = *it;
+    std::tr1::shared_ptr<Panel> ref = *it;
     expanded_panels_.erase(it);
     expanded_panels_.insert(expanded_panels_.begin() + new_fixed_index, ref);
     fixed_index = new_fixed_index;
@@ -766,7 +770,7 @@ void PanelBar::RepositionExpandedPanels(Panel* fixed_panel) {
     if (panel->cur_right() > boundary) {
       panel->Move(boundary, kAnimMs);
     } else if (panel->cur_panel_left() < x_) {
-      panel->Move(min(boundary, x_ + panel->panel_width() + kBarPadding),
+      panel->Move(std::min(boundary, x_ + panel->panel_width() + kBarPadding),
                   kAnimMs);
     }
     boundary = panel->cur_panel_left() - kBarPadding;
@@ -779,14 +783,15 @@ void PanelBar::RepositionExpandedPanels(Panel* fixed_panel) {
     if (panel->cur_panel_left() < boundary) {
       panel->Move(boundary + panel->panel_width(), kAnimMs);
     } else if (panel->cur_right() > x_ + width_) {
-      panel->Move(max(boundary + panel->panel_width(), width_ - kBarPadding),
-                  kAnimMs);
+      panel->Move(
+          std::max(boundary + panel->panel_width(), width_ - kBarPadding),
+                   kAnimMs);
     }
     boundary = panel->cur_right() + kBarPadding;
   }
 }
 
-void PanelBar::InsertCollapsedPanel(ref_ptr<Panel> new_panel) {
+void PanelBar::InsertCollapsedPanel(std::tr1::shared_ptr<Panel> new_panel) {
   size_t index = 0;
   for (; index < collapsed_panels_.size(); ++index) {
     Panel* panel = collapsed_panels_[index].get();
@@ -797,7 +802,7 @@ void PanelBar::InsertCollapsedPanel(ref_ptr<Panel> new_panel) {
   collapsed_panels_.insert(collapsed_panels_.begin() + index, new_panel);
 }
 
-void PanelBar::InsertExpandedPanel(ref_ptr<Panel> new_panel) {
+void PanelBar::InsertExpandedPanel(std::tr1::shared_ptr<Panel> new_panel) {
   size_t index = 0;
   for (; index < expanded_panels_.size(); ++index) {
     Panel* panel = expanded_panels_[index].get();

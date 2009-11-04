@@ -2,10 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include <glog/logging.h>
 #include <gtest/gtest.h>
 
+#include <base/command_line.h>
 #include "base/scoped_ptr.h"
+#include "base/logging.h"
 #include "window_manager/clutter_interface.h"
 #include "window_manager/layout_manager.h"
 #include "window_manager/mock_x_connection.h"
@@ -567,7 +568,7 @@ TEST_F(LayoutManagerTest, SetWmStateMaximized) {
   MockXConnection::InitMapEvent(&event, xid);
   EXPECT_TRUE(wm_->HandleEvent(&event));
 
-  vector<int> atoms;
+  std::vector<int> atoms;
   ASSERT_TRUE(xconn_->GetIntArrayProperty(
                   xid, wm_->GetXAtom(ATOM_NET_WM_STATE), &atoms));
   ASSERT_EQ(2, atoms.size());
@@ -612,7 +613,11 @@ TEST_F(LayoutManagerTest, Resize) {
 }  // namespace chromeos
 
 int main(int argc, char **argv) {
-  google::InitGoogleLogging(argv[0]);
+  CommandLine::Init(argc, argv);
+  logging::InitLogging(NULL,
+                       logging::LOG_ONLY_TO_SYSTEM_DEBUG_LOG,
+                       logging::DONT_LOCK_LOG_FILE,
+                       logging::APPEND_TO_OLD_LOG_FILE);
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

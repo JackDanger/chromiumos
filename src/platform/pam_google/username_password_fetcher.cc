@@ -7,7 +7,6 @@
 // and password.
 
 #include "pam_google/username_password_fetcher.h"
-#include <glog/logging.h>
 #include "pam_google/google_username_password.h"
 #include "pam_google/offline_credential_store.h"
 #include "pam_google/pam_prompt_wrapper.h"

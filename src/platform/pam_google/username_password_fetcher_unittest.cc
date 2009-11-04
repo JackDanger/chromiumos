@@ -20,13 +20,13 @@ class PamPromptWrapperMock : public PamPromptWrapper {
   PamPromptWrapperMock() {}
   ~PamPromptWrapperMock() {}
   int GetUsername(pam_handle_t *pamh, char *response, int response_len) {
-    int len = min(static_cast<int>(strlen(kFakeUser)), response_len - 1);
+    int len = std::min(static_cast<int>(strlen(kFakeUser)), response_len - 1);
     strncpy(response, kFakeUser, len);
     response[len] = '\0';
     return PAM_SUCCESS;
   }
   int GetPassword(pam_handle_t *pamh, char *response, int response_len) {
-    int len = min(static_cast<int>(strlen(kFakePass)), response_len - 1);
+    int len = std::min(static_cast<int>(strlen(kFakePass)), response_len - 1);
     strncpy(response, kFakePass, len);
     response[len] = '\0';
     return PAM_SUCCESS;

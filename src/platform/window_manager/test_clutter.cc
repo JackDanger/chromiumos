@@ -13,7 +13,8 @@ extern "C" {
 #include <X11/extensions/shape.h>
 #include <X11/extensions/Xcomposite.h>
 }
-#include <glog/logging.h>
+#include <base/command_line.h>
+#include "base/logging.h"
 #include <iostream>
 #include <string>
 
@@ -124,7 +125,11 @@ static GdkFilterReturn FilterEvent(GdkXEvent* xevent,
 int main(int argc, char** argv) {
   gdk_init(&argc, &argv);
   clutter_init(&argc, &argv);
-  google::InitGoogleLogging(argv[0]);
+  CommandLine::Init(argc, argv);
+  logging::InitLogging(NULL,
+                       logging::LOG_ONLY_TO_SYSTEM_DEBUG_LOG,
+                       logging::DONT_LOCK_LOG_FILE,
+                       logging::APPEND_TO_OLD_LOG_FILE);
 
   if (argc != 2) {
     cerr << kUsage;

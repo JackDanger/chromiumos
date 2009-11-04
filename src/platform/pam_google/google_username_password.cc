@@ -11,7 +11,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <glog/logging.h>
+#include "base/logging.h"
 #include <curl/curl.h>
 
 #include <string>

@@ -7,7 +7,9 @@
 #include <algorithm>
 
 #include <gflags/gflags.h>
-#include <glog/logging.h>
+
+#include "base/logging.h"
+#include "chromeos/obsolete_logging.h"
 
 #include "window_manager/atom_cache.h"
 #include "window_manager/shadow.h"
@@ -97,8 +99,10 @@ Window::Window(WindowManager* wm, XWindow xid)
   }
 
   if (!actor_->IsUsingTexturePixmapExtension()) {
-    LOG_FIRST_N(WARNING, 1) <<
+    static bool logged = false;
+    LOG_IF(WARNING, !logged) <<
         "Not using texture-from-pixmap extension -- expect slowness";
+    logged = true;
   }
   actor_->SetTexturePixmapWindow(xid_);
   actor_->Move(composited_x_, composited_y_, 0);
@@ -225,7 +229,7 @@ void Window::FetchAndApplyWmProtocols() {
   supports_wm_take_focus_ = false;
   supports_wm_delete_window_ = false;
 
-  vector<int> wm_protocols;
+  std::vector<int> wm_protocols;
   if (!wm_->xconn()->GetIntArrayProperty(
           xid_, wm_->GetXAtom(ATOM_WM_PROTOCOLS), &wm_protocols)) {
     return;
@@ -233,7 +237,7 @@ void Window::FetchAndApplyWmProtocols() {
 
   XAtom wm_take_focus = wm_->GetXAtom(ATOM_WM_TAKE_FOCUS);
   XAtom wm_delete_window = wm_->GetXAtom(ATOM_WM_DELETE_WINDOW);
-  for (vector<int>::const_iterator it = wm_protocols.begin();
+  for (std::vector<int>::const_iterator it = wm_protocols.begin();
        it != wm_protocols.end(); ++it) {
     if (static_cast<XAtom>(*it) == wm_take_focus) {
       VLOG(2) << "Window " << xid_ << " supports WM_TAKE_FOCUS";
@@ -251,7 +255,7 @@ void Window::FetchAndApplyWmState() {
   wm_state_maximized_vert_ = false;
   wm_state_modal_ = false;
 
-  vector<int> state_atoms;
+  std::vector<int> state_atoms;
   if (!wm_->xconn()->GetIntArrayProperty(
           xid_, wm_->GetXAtom(ATOM_NET_WM_STATE), &state_atoms)) {
     return;
@@ -261,7 +265,7 @@ void Window::FetchAndApplyWmState() {
   XAtom max_horz_atom = wm_->GetXAtom(ATOM_NET_WM_STATE_MAXIMIZED_HORZ);
   XAtom max_vert_atom = wm_->GetXAtom(ATOM_NET_WM_STATE_MAXIMIZED_VERT);
   XAtom modal_atom = wm_->GetXAtom(ATOM_NET_WM_STATE_MODAL);
-  for (vector<int>::const_iterator it = state_atoms.begin();
+  for (std::vector<int>::const_iterator it = state_atoms.begin();
        it != state_atoms.end(); ++it) {
     XAtom atom = static_cast<XAtom>(*it);
     if (atom == fullscreen_atom)
@@ -329,8 +333,8 @@ bool Window::HandleWmStateMessage(const XClientMessageEvent& event) {
   return UpdateWmStateProperty();
 }
 
-bool Window::ChangeWmState(const vector<pair<XAtom, bool> >& states) {
-  for (vector<pair<XAtom, bool> >::const_iterator it = states.begin();
+bool Window::ChangeWmState(const std::vector<std::pair<XAtom, bool> >& states) {
+  for (std::vector<std::pair<XAtom, bool> >::const_iterator it = states.begin();
        it != states.end(); ++it) {
     XAtom xatom = it->first;
     int action = it->second;  // 0 is remove, 1 is add
@@ -404,9 +408,9 @@ void Window::GetMaxSize(int desired_width, int desired_height,
   CHECK_GT(desired_height, 0);
 
   if (max_width_hint_ > 0)
-    desired_width = min(max_width_hint_, desired_width);
+    desired_width = std::min(max_width_hint_, desired_width);
   if (min_width_hint_ > 0)
-    desired_width = max(min_width_hint_, desired_width);
+    desired_width = std::max(min_width_hint_, desired_width);
 
   if (width_inc_hint_ > 0) {
     int base_width =
@@ -420,9 +424,9 @@ void Window::GetMaxSize(int desired_width, int desired_height,
   }
 
   if (max_height_hint_ > 0)
-    desired_height = min(max_height_hint_, desired_height);
+    desired_height = std::min(max_height_hint_, desired_height);
   if (min_height_hint_ > 0)
-    desired_height = max(min_height_hint_, desired_height);
+    desired_height = std::max(min_height_hint_, desired_height);
 
   if (height_inc_hint_ > 0) {
     int base_height =
@@ -683,7 +687,7 @@ void Window::SetWmStateInternal(int action, bool* value) {
 bool Window::UpdateWmStateProperty() {
   XAtom wm_state_atom = wm_->GetXAtom(ATOM_NET_WM_STATE);
 
-  vector<int> values;
+  std::vector<int> values;
   if (wm_state_fullscreen_)
     values.push_back(wm_->GetXAtom(ATOM_NET_WM_STATE_FULLSCREEN));
   if (wm_state_maximized_horz_)

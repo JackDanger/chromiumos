@@ -50,7 +50,7 @@ class Shadow {
 
   // Helper method for Init().  Given the base name of an image file,
   // creates and returns a new texture actor.
-  ClutterInterface::Actor* InitTexture(const string& filename);
+  ClutterInterface::Actor* InitTexture(const std::string& filename);
 
   // Static ClutterTextures that we clone for each shadow.
   static ClutterInterface::Actor* top_texture_;

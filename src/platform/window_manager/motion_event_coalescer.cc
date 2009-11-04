@@ -4,6 +4,8 @@
 
 #include "window_manager/motion_event_coalescer.h"
 
+#include "chromeos/obsolete_logging.h"
+
 namespace chromeos {
 
 MotionEventCoalescer::MotionEventCoalescer(Closure* cb, int timeout_ms)

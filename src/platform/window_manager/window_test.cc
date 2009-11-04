@@ -2,8 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include <glog/logging.h>
 #include <gtest/gtest.h>
+#include <base/command_line.h>
+#include "base/logging.h"
 
 #include "base/scoped_ptr.h"
 #include "window_manager/clutter_interface.h"
@@ -227,7 +228,7 @@ TEST_F(WindowTest, WmProtocols) {
 
   // Set its WM_PROTOCOLS property to indicate that it supports both
   // message types.
-  vector<int> values;
+  std::vector<int> values;
   values.push_back(static_cast<int>(wm_->GetXAtom(ATOM_WM_DELETE_WINDOW)));
   values.push_back(static_cast<int>(wm_->GetXAtom(ATOM_WM_TAKE_FOCUS)));
   xconn_->SetIntArrayProperty(xid,
@@ -332,7 +333,7 @@ TEST_F(WindowTest, WmState) {
 
   // Check that the window's _NET_WM_STATE property was updated in response
   // to the messages.
-  vector<int> values;
+  std::vector<int> values;
   ASSERT_TRUE(xconn_->GetIntArrayProperty(xid, wm_state_atom, &values));
   ASSERT_EQ(1, values.size());
   EXPECT_EQ(fullscreen_atom, values[0]);
@@ -358,10 +359,10 @@ TEST_F(WindowTest, WmState) {
 
   // Test that ChangeWmState() works for clearing the modal state and
   // setting both maximized states.
-  vector<pair<XAtom, bool> > changed_states;
-  changed_states.push_back(make_pair(modal_atom, false));
-  changed_states.push_back(make_pair(max_horz_atom, true));
-  changed_states.push_back(make_pair(max_vert_atom, true));
+  std::vector<std::pair<XAtom, bool> > changed_states;
+  changed_states.push_back(std::make_pair(modal_atom, false));
+  changed_states.push_back(std::make_pair(max_horz_atom, true));
+  changed_states.push_back(std::make_pair(max_vert_atom, true));
   EXPECT_TRUE(win.ChangeWmState(changed_states));
   values.clear();
   ASSERT_TRUE(xconn_->GetIntArrayProperty(xid, wm_state_atom, &values));
@@ -433,7 +434,11 @@ TEST_F(WindowTest, Shape) {
 }  // namespace chromeos
 
 int main(int argc, char **argv) {
-  google::InitGoogleLogging(argv[0]);
+  CommandLine::Init(argc, argv);
+  logging::InitLogging(NULL,
+                       logging::LOG_ONLY_TO_SYSTEM_DEBUG_LOG,
+                       logging::DONT_LOCK_LOG_FILE,
+                       logging::APPEND_TO_OLD_LOG_FILE);
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

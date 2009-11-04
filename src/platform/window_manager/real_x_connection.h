@@ -49,25 +49,26 @@ class RealXConnection : public XConnection {
   bool SelectShapeEventsOnWindow(XWindow xid);
   bool GetWindowBoundingRegion(XWindow xid, ByteMap* bytemap);
   bool SelectXRandREventsOnWindow(XWindow xid);
-  bool GetAtom(const string& name, XAtom* atom_out);
-  bool GetAtoms(const vector<string>& names, vector<XAtom>* atoms_out);
-  bool GetAtomName(XAtom atom, string* name);
-  bool GetIntArrayProperty(XWindow xid, XAtom xatom, vector<int>* values);
+  bool GetAtom(const std::string& name, XAtom* atom_out);
+  bool GetAtoms(const std::vector<std::string>& names,
+                std::vector<XAtom>* atoms_out);
+  bool GetAtomName(XAtom atom, std::string* name);
+  bool GetIntArrayProperty(XWindow xid, XAtom xatom, std::vector<int>* values);
   bool SetIntArrayProperty(
-      XWindow xid, XAtom xatom, XAtom type, const vector<int>& values);
-  bool GetStringProperty(XWindow xid, XAtom xatom, string* out);
-  bool SetStringProperty(XWindow xid, XAtom xatom, const string& value);
+      XWindow xid, XAtom xatom, XAtom type, const std::vector<int>& values);
+  bool GetStringProperty(XWindow xid, XAtom xatom, std::string* out);
+  bool SetStringProperty(XWindow xid, XAtom xatom, const std::string& value);
   bool DeletePropertyIfExists(XWindow xid, XAtom xatom);
   bool SendEvent(XWindow xid, XEvent* event, int event_mask);
   bool WaitForEvent(XWindow xid, int event_mask, XEvent* event_out);
   XWindow GetSelectionOwner(XAtom atom);
   bool SetSelectionOwner(XAtom atom, XWindow xid, Time timestamp);
   bool SetWindowCursor(XWindow xid, uint32 shape);
-  bool GetChildWindows(XWindow xid, vector<XWindow>* children_out);
+  bool GetChildWindows(XWindow xid, std::vector<XWindow>* children_out);
   bool GetParentWindow(XWindow xid, XWindow* parent);
   KeySym GetKeySymFromKeyCode(uint32 keycode);
   uint32 GetKeyCodeFromKeySym(KeySym keysym);
-  string GetStringFromKeySym(KeySym keysym);
+  std::string GetStringFromKeySym(KeySym keysym);
   bool GrabKey(KeyCode keycode, uint32 modifiers);
   bool UngrabKey(KeyCode keycode, uint32 modifiers);
   bool SetDetectableKeyboardAutoRepeat(bool detectable);
@@ -89,7 +90,7 @@ class RealXConnection : public XConnection {
   int GetLastErrorCode();
 
   // Get a string describing an error code.
-  string GetErrorText(int error_code);
+  std::string GetErrorText(int error_code);
 
   // The actual connection to the X server.
   Display* display_;

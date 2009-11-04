@@ -9,7 +9,7 @@ extern "C" {
 }
 
 #include <gflags/gflags.h>
-#include <glog/logging.h>
+#include "chromeos/obsolete_logging.h"
 
 #include "window_manager/panel_bar.h"
 #include "window_manager/window.h"
@@ -96,10 +96,10 @@ Panel::Panel(PanelBar* panel_bar,
 
   // Constrain the size of the panel if we've been requested to do so.
   int panel_width = (FLAGS_panel_max_width > 0) ?
-      min(panel_win_->client_width(), FLAGS_panel_max_width) :
+      std::min(panel_win_->client_width(), FLAGS_panel_max_width) :
       panel_win_->client_width();
   int panel_height = (FLAGS_panel_max_height > 0) ?
-      min(panel_win_->client_height(), FLAGS_panel_max_height) :
+      std::min(panel_win_->client_height(), FLAGS_panel_max_height) :
       panel_win_->client_height();
   if (panel_width != panel_win_->client_width() ||
       panel_height != panel_win_->client_height()) {
@@ -197,7 +197,7 @@ int Panel::titlebar_width() const {
   return titlebar_win_->client_width();
 }
 
-void Panel::GetInputWindows(vector<XWindow>* windows_out) {
+void Panel::GetInputWindows(std::vector<XWindow>* windows_out) {
   CHECK(windows_out);
   windows_out->clear();
   windows_out->reserve(5);
@@ -213,7 +213,7 @@ void Panel::HandleInputWindowButtonPress(
   if (button != 1) {
     return;
   }
-  DCHECK_EQ(drag_xid_, None);
+  DCHECK(drag_xid_ == None);
 
   if (!wm()->xconn()->AddActivePointerGrabForWindow(
           xid, ButtonReleaseMask|PointerMotionMask, timestamp)) {
@@ -304,8 +304,8 @@ void Panel::ApplyResize() {
     dy = 0;
   }
 
-  drag_last_width_ = max(drag_orig_width_ + dx, kPanelMinWidth);
-  drag_last_height_ = max(drag_orig_height_ + dy, kPanelMinHeight);
+  drag_last_width_ = std::max(drag_orig_width_ + dx, kPanelMinWidth);
+  drag_last_height_ = std::max(drag_orig_height_ + dy, kPanelMinHeight);
 
   if (FLAGS_panel_opaque_resize) {
     Resize(drag_last_width_, drag_last_height_, drag_gravity_, false);

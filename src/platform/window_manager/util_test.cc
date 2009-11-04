@@ -2,10 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include <glog/logging.h>
 #include <gtest/gtest.h>
 
-#include "base/strutil.h"
+#include <base/command_line.h>
+#include "base/logging.h"
+#include "chromeos/string.h"
 #include "window_manager/util.h"
 #include "window_manager/test_lib.h"
 
@@ -16,14 +17,14 @@ class UtilTest : public ::testing::Test {
   // Helper function for testStacker().
   // 'expected' is a space-separated list of strings in the order in which
   // they should appear in 'actual'.
-  void CheckStackerOutput(const list<string>& actual,
-                          const string& expected) {
-    vector<string> expected_parts;
+  void CheckStackerOutput(const std::list<std::string>& actual,
+                          const std::string& expected) {
+    std::vector<std::string> expected_parts;
     SplitString(expected, &expected_parts);
     ASSERT_EQ(actual.size(), expected_parts.size());
 
     int i = 0;
-    for (list<string>::const_iterator it = actual.begin();
+    for (std::list<std::string>::const_iterator it = actual.begin();
          it != actual.end(); ++it, ++i) {
       EXPECT_EQ(*it, expected_parts[i]);
     }
@@ -31,7 +32,7 @@ class UtilTest : public ::testing::Test {
 };
 
 TEST_F(UtilTest, Stacker) {
-  Stacker<string> stacker;
+  Stacker<std::string> stacker;
 
   stacker.AddOnTop("b");
   stacker.AddOnBottom("c");
@@ -56,7 +57,7 @@ TEST_F(UtilTest, Stacker) {
 
   EXPECT_EQ(NULL, stacker.GetUnder("not-present"));
   EXPECT_EQ(NULL, stacker.GetUnder("d"));
-  const string* str = NULL;
+  const std::string* str = NULL;
   ASSERT_TRUE((str = stacker.GetUnder("c2")) != NULL);
   EXPECT_EQ("d", *str);
   ASSERT_TRUE((str = stacker.GetUnder("b")) != NULL);
@@ -140,7 +141,11 @@ TEST_F(UtilTest, ByteMap) {
 }  // namespace chromeos
 
 int main(int argc, char **argv) {
-  google::InitGoogleLogging(argv[0]);
+  CommandLine::Init(argc, argv);
+  logging::InitLogging(NULL,
+                       logging::LOG_ONLY_TO_SYSTEM_DEBUG_LOG,
+                       logging::DONT_LOCK_LOG_FILE,
+                       logging::APPEND_TO_OLD_LOG_FILE);
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

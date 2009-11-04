@@ -10,9 +10,9 @@ extern "C" {
 }
 #include <deque>
 #include <map>
+#include <tr1/memory>
 
 #include "base/basictypes.h"
-#include "base/ref_ptr.h"
 #include "base/scoped_ptr.h"
 #include "window_manager/clutter_interface.h"
 #include "window_manager/event_consumer.h"
@@ -103,13 +103,13 @@ class PanelBar : public EventConsumer {
   class PanelTitlebarContainsPoint {
    public:
     PanelTitlebarContainsPoint(int center_x) : center_x_(center_x) {}
-    bool operator()(ref_ptr<Panel>& p);
+    bool operator()(std::tr1::shared_ptr<Panel>& p);
    private:
     int center_x_;
   };
 
   // Save some typing.
-  typedef vector<ref_ptr<Panel> > Panels;
+  typedef std::vector<std::tr1::shared_ptr<Panel> > Panels;
 
   int num_panels() const {
     return expanded_panels_.size() + collapsed_panels_.size();
@@ -165,11 +165,11 @@ class PanelBar : public EventConsumer {
 
   // Insert a panel into 'collapsed_panels_' in the correct position (in
   // terms of left-to-right positioning).
-  void InsertCollapsedPanel(ref_ptr<Panel> new_panel);
+  void InsertCollapsedPanel(std::tr1::shared_ptr<Panel> new_panel);
 
   // Insert a panel into 'expanded_panels_' in the correct position (in
   // terms of left-to-right positioning).
-  void InsertExpandedPanel(ref_ptr<Panel> new_panel);
+  void InsertExpandedPanel(std::tr1::shared_ptr<Panel> new_panel);
 
   // Create an anchor for a panel.  If there's a previous anchor, we
   // destroy it.
@@ -229,7 +229,7 @@ class PanelBar : public EventConsumer {
   // If we need to give the focus to a panel, we choose this one.
   Panel* desired_panel_to_focus_;
 
-  map<XWindow, Panel*> panel_input_windows_;
+  std::map<XWindow, Panel*> panel_input_windows_;
 
   // Is the panel bar visible?
   bool is_visible_;

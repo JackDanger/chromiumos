@@ -12,11 +12,11 @@ extern "C" {
 #include <glib.h>  // for guint
 #include <map>
 #include <string>
+#include <tr1/memory>
 
 #include <gtest/gtest_prod.h>  // for FRIEND_TEST() macro
 
 #include "base/basictypes.h"
-#include "base/ref_ptr.h"
 #include "base/scoped_ptr.h"
 #include "window_manager/event_consumer.h"
 #include "window_manager/key_bindings.h"
@@ -335,7 +335,7 @@ class LayoutManager : public EventConsumer {
     double overview_scale_;
 
     // Transient windows belonging to this toplevel window, keyed by XID.
-    map<XWindow, ref_ptr<TransientWindow> > transients_;
+    std::map<XWindow, std::tr1::shared_ptr<TransientWindow> > transients_;
 
     // Transient windows in top-to-bottom stacking order.
     scoped_ptr<Stacker<TransientWindow*> > stacked_transients_;
@@ -469,17 +469,17 @@ class LayoutManager : public EventConsumer {
 
   // Information about toplevel windows, stored in the order in which
   // we'll display them in overview mode.
-  typedef deque<ref_ptr<ToplevelWindow> > ToplevelWindows;
+  typedef std::deque<std::tr1::shared_ptr<ToplevelWindow> > ToplevelWindows;
   ToplevelWindows toplevels_;
 
   // Map from input windows to the toplevel windows they represent.
-  map<XWindow, ToplevelWindow*> input_to_toplevel_;
+  std::map<XWindow, ToplevelWindow*> input_to_toplevel_;
 
   // Map from transient windows' XIDs to the toplevel windows that own
   // them.  This is based on the transient windows' WM_TRANSIENT_FOR hints
   // at the time that they were mapped; we ignore any subsequent changes to
   // this hint.
-  map<XWindow, ToplevelWindow*> transient_to_toplevel_;
+  std::map<XWindow, ToplevelWindow*> transient_to_toplevel_;
 
   // Currently-magnified toplevel window in overview mode, or NULL if no
   // window is magnified.

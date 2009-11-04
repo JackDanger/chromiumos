@@ -4,7 +4,7 @@
 
 #include "window_manager/mock_x_connection.h"
 
-#include <glog/logging.h>
+#include "base/logging.h"
 
 #include "window_manager/util.h"
 
@@ -224,7 +224,7 @@ XWindow MockXConnection::CreateWindow(
     int event_mask) {
   XWindow xid = next_window_;
   next_window_++;
-  ref_ptr<WindowInfo> info(new WindowInfo(xid, parent));
+  std::tr1::shared_ptr<WindowInfo> info(new WindowInfo(xid, parent));
   info->x = x;
   info->y = y;
   info->width = width;
@@ -236,7 +236,8 @@ XWindow MockXConnection::CreateWindow(
 }
 
 bool MockXConnection::DestroyWindow(XWindow xid) {
-  map<XWindow, ref_ptr<WindowInfo> >::iterator it = windows_.find(xid);
+  std::map<XWindow,
+           std::tr1::shared_ptr<WindowInfo> >::iterator it = windows_.find(xid);
   if (it == windows_.end())
     return false;
   windows_.erase(it);
@@ -245,13 +246,13 @@ bool MockXConnection::DestroyWindow(XWindow xid) {
     focused_xid_ = None;
 
   // Release any selections held by this window.
-  vector<XAtom> orphaned_selections;
-  for (map<XAtom, XWindow>::const_iterator it = selection_owners_.begin();
+  std::vector<XAtom> orphaned_selections;
+  for (std::map<XAtom, XWindow>::const_iterator it = selection_owners_.begin();
        it != selection_owners_.end(); ++it) {
     if (it->second == xid)
       orphaned_selections.push_back(it->first);
   }
-  for (vector<XAtom>::const_iterator it = orphaned_selections.begin();
+  for (std::vector<XAtom>::const_iterator it = orphaned_selections.begin();
        it != orphaned_selections.end(); ++it) {
     selection_owners_.erase(*it);
   }
@@ -293,9 +294,9 @@ bool MockXConnection::SelectXRandREventsOnWindow(XWindow xid) {
   return true;
 }
 
-bool MockXConnection::GetAtom(const string& name, XAtom* atom_out) {
+bool MockXConnection::GetAtom(const std::string& name, XAtom* atom_out) {
   CHECK(atom_out);
-  map<string, XAtom>::const_iterator it = name_to_atom_.find(name);
+  std::map<std::string, XAtom>::const_iterator it = name_to_atom_.find(name);
   if (it != name_to_atom_.end()) {
     *atom_out = it->second;
     return true;
@@ -308,7 +309,7 @@ bool MockXConnection::GetAtom(const string& name, XAtom* atom_out) {
 }
 
 bool MockXConnection::GetAtoms(
-    const vector<string>& names, vector<XAtom>* atoms_out) {
+    const std::vector<std::string>& names, std::vector<XAtom>* atoms_out) {
   CHECK(atoms_out);
   atoms_out->clear();
   for (size_t i = 0; i < names.size(); ++i) {
@@ -321,11 +322,11 @@ bool MockXConnection::GetAtoms(
 }
 
 bool MockXConnection::GetIntArrayProperty(
-    XWindow xid, XAtom xatom, vector<int>* values) {
+    XWindow xid, XAtom xatom, std::vector<int>* values) {
   WindowInfo* info = GetWindowInfo(xid);
   if (!info)
     return false;
-  map<XAtom, vector<int> >::const_iterator it =
+  std::map<XAtom, std::vector<int> >::const_iterator it =
       info->int_properties.find(xatom);
   if (it == info->int_properties.end())
     return false;
@@ -334,7 +335,7 @@ bool MockXConnection::GetIntArrayProperty(
 }
 
 bool MockXConnection::SetIntArrayProperty(
-    XWindow xid, XAtom xatom, XAtom type, const vector<int>& values) {
+    XWindow xid, XAtom xatom, XAtom type, const std::vector<int>& values) {
   WindowInfo* info = GetWindowInfo(xid);
   if (!info)
     return false;
@@ -343,11 +344,14 @@ bool MockXConnection::SetIntArrayProperty(
   return true;
 }
 
-bool MockXConnection::GetStringProperty(XWindow xid, XAtom xatom, string* out) {
+bool MockXConnection::GetStringProperty(XWindow xid,
+                                        XAtom xatom,
+                                        std::string* out) {
   WindowInfo* info = GetWindowInfo(xid);
   if (!info)
     return false;
-  map<XAtom, string>::const_iterator it = info->string_properties.find(xatom);
+  std::map<XAtom, std::string>::const_iterator it =
+      info->string_properties.find(xatom);
   if (it == info->string_properties.end())
     return false;
   *out = it->second;
@@ -355,7 +359,7 @@ bool MockXConnection::GetStringProperty(XWindow xid, XAtom xatom, string* out) {
 }
 
 bool MockXConnection::SetStringProperty(
-    XWindow xid, XAtom xatom, const string& value) {
+    XWindow xid, XAtom xatom, const std::string& value) {
   WindowInfo* info = GetWindowInfo(xid);
   if (!info)
     return false;
@@ -381,9 +385,9 @@ bool MockXConnection::SendEvent(XWindow xid, XEvent* event, int event_mask) {
   return true;
 }
 
-bool MockXConnection::GetAtomName(XAtom atom, string* name) {
+bool MockXConnection::GetAtomName(XAtom atom, std::string* name) {
   CHECK(name);
-  map<XAtom, string>::const_iterator it = atom_to_name_.find(atom);
+  std::map<XAtom, std::string>::const_iterator it = atom_to_name_.find(atom);
   if (it == atom_to_name_.end())
     return false;
   *name = it->second;
@@ -391,7 +395,7 @@ bool MockXConnection::GetAtomName(XAtom atom, string* name) {
 }
 
 XWindow MockXConnection::GetSelectionOwner(XAtom atom) {
-  map<XAtom, XWindow>::const_iterator it = selection_owners_.find(atom);
+  std::map<XAtom, XWindow>::const_iterator it = selection_owners_.find(atom);
   return (it == selection_owners_.end()) ? None : it->second;
 }
 
@@ -410,7 +414,7 @@ bool MockXConnection::SetWindowCursor(XWindow xid, uint32 shape) {
 }
 
 bool MockXConnection::GetChildWindows(XWindow xid,
-                                      vector<XWindow>* children_out) {
+                                      std::vector<XWindow>* children_out) {
   CHECK(children_out);
   children_out->clear();
 
@@ -419,7 +423,7 @@ bool MockXConnection::GetChildWindows(XWindow xid,
     return false;
 
   // Add the children in bottom-to-top order to match XQueryTree().
-  for (list<XWindow>::const_reverse_iterator it =
+  for (std::list<XWindow>::const_reverse_iterator it =
          stacked_xids_->items().rbegin();
        it != stacked_xids_->items().rend(); ++it) {
     const WindowInfo* child_info = GetWindowInfo(*it);
@@ -463,7 +467,8 @@ MockXConnection::WindowInfo::WindowInfo(XWindow xid, XWindow parent)
 MockXConnection::WindowInfo::~WindowInfo() {}
 
 MockXConnection::WindowInfo* MockXConnection::GetWindowInfo(XWindow xid) {
-  map<XWindow, ref_ptr<WindowInfo> >::iterator it = windows_.find(xid);
+  std::map<XWindow, std::tr1::shared_ptr<WindowInfo> >::iterator it =
+      windows_.find(xid);
   return (it != windows_.end()) ? it->second.get() : NULL;
 }
 

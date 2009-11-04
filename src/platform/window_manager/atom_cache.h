@@ -76,7 +76,7 @@ class AtomCache {
   // the X server.  Looks up the atom using XGetAtomName() if it's not
   // already present in the cache.  Only pass atoms that were received from
   // the X server (empty strings will be returned for invalid atoms).
-  const string& GetName(XAtom xatom);
+  const std::string& GetName(XAtom xatom);
 
  private:
   XConnection* xconn_;  // not owned
@@ -85,8 +85,8 @@ class AtomCache {
   // server's IDs to atoms' string names.  These maps aren't necessarily in
   // sync; 'atom_to_xatom_' is constant after the constructor finishes but
   // GetName() caches additional string mappings in 'xatom_to_string_'.
-  map<Atom, XAtom> atom_to_xatom_;
-  map<XAtom, string> xatom_to_string_;
+  std::map<Atom, XAtom> atom_to_xatom_;
+  std::map<XAtom, std::string> xatom_to_string_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomCache);
 };

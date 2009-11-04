@@ -6,12 +6,15 @@
 #define __PLATFORM_WINDOW_MANAGER_WM_IPC_H__
 
 #include <gdk/gdk.h>  // for GdkEventClient
-#include <glog/logging.h>
 extern "C" {
 #include <X11/Xlib.h>
 }
 
+#include <vector>
+
 #include "base/basictypes.h"
+#include "base/logging.h"
+#include "chromeos/obsolete_logging.h"
 
 typedef ::Atom XAtom;
 typedef ::Window XWindow;
@@ -72,8 +75,10 @@ class WmIpc {
   // gtk_widget_show()).  Type-specific parameters may also be supplied
   // ('params' is mandatory for GetWindowType() but optional for
   // SetWindowType()).  false is returned if an error occurs.
-  bool GetWindowType(XWindow xid, WindowType* type, vector<int>* params);
-  bool SetWindowType(XWindow xid, WindowType type, const vector<int>* params);
+  bool GetWindowType(XWindow xid, WindowType* type, std::vector<int>* params);
+  bool SetWindowType(XWindow xid,
+                     WindowType type,
+                     const std::vector<int>* params);
 
   // Messages are sent via ClientMessageEvents that have 'message_type' set
   // to _CHROME_WM_MESSAGE, 'format' set to 32 (that is, 32-bit values),
@@ -213,7 +218,7 @@ class WmIpc {
 
   // Set a property on the chosen window that contains system metrics
   // information.  False returned on error.
-  bool SetSystemMetricsProperty(XWindow xid, const string& metrics);
+  bool SetSystemMetricsProperty(XWindow xid, const std::string& metrics);
 
  private:
   XConnection* xconn_;     // not owned

@@ -4,8 +4,9 @@
 
 #include <dlfcn.h>
 #include <glib-object.h>
-#include <glog/logging.h>
 #include <vector>
+
+#include <base/logging.h>
 
 #include "chromeos_cros_api.h"  // NOLINT
 #include "chromeos_network.h"  // NOLINT

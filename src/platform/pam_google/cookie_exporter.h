@@ -4,6 +4,9 @@
 #ifndef CHROMEOS_PAM_GOOGLE_COOKIE_EXPORTER_H_
 #define CHROMEOS_PAM_GOOGLE_COOKIE_EXPORTER_H_
 
+#include <string>
+#include <vector>
+
 namespace chromeos_pam {
 class CookieExporter {
  public:

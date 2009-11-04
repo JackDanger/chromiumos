@@ -4,7 +4,7 @@
 
 #include "window_manager/clutter_interface.h"
 
-#include <glog/logging.h>
+#include "chromeos/obsolete_logging.h"
 
 #include "window_manager/util.h"
 
@@ -174,7 +174,8 @@ XWindow RealClutterInterface::StageActor::GetStageXWindow() {
   return clutter_x11_get_stage_window(CLUTTER_STAGE(clutter_actor_));
 }
 
-void RealClutterInterface::StageActor::SetStageColor(const string& color_str) {
+void RealClutterInterface::StageActor::SetStageColor(
+    const std::string& color_str) {
   CHECK(clutter_actor_);
   ClutterColor color;
   CHECK(InitColor(&color, color_str));
@@ -327,8 +328,8 @@ RealClutterInterface::ContainerActor* RealClutterInterface::CreateGroup() {
 }
 
 RealClutterInterface::Actor* RealClutterInterface::CreateRectangle(
-    const string& color_str,
-    const string& border_color_str,
+    const std::string& color_str,
+    const std::string& border_color_str,
     int border_width) {
   ClutterColor color, border_color;
   CHECK(InitColor(&color, color_str));
@@ -343,7 +344,7 @@ RealClutterInterface::Actor* RealClutterInterface::CreateRectangle(
 }
 
 RealClutterInterface::Actor* RealClutterInterface::CreateImage(
-    const string& filename) {
+    const std::string& filename) {
   GError* error = NULL;
   ClutterActor* clutter_actor =
       clutter_texture_new_from_file(filename.c_str(), &error);
@@ -365,7 +366,9 @@ RealClutterInterface::TexturePixmapActor*
 }
 
 RealClutterInterface::Actor* RealClutterInterface::CreateText(
-    const string& font_name, const string& text, const string& color_str) {
+    const std::string& font_name,
+    const std::string& text,
+    const std::string& color_str) {
   ClutterColor color;
   CHECK(InitColor(&color, color_str));
   return new Actor(
@@ -385,7 +388,7 @@ RealClutterInterface::Actor* RealClutterInterface::CloneActor(
 
 // static
 bool RealClutterInterface::InitColor(
-    ClutterColor* color, const string& hex_str) {
+    ClutterColor* color, const std::string& hex_str) {
   CHECK(color);
   return clutter_color_from_string(color, hex_str.c_str());
 }
@@ -435,7 +438,9 @@ MockClutterInterface::ContainerActor::ContainerActor()
 }
 
 MockClutterInterface::ContainerActor::~ContainerActor() {
-  for (list<Actor*>::const_iterator it = stacked_children_->items().begin();
+  typedef std::list<Actor*>::const_iterator iterator;
+
+  for (iterator it = stacked_children_->items().begin();
        it != stacked_children_->items().end(); ++it) {
     (*it)->set_parent(NULL);
   }

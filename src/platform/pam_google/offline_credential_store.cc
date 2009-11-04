@@ -6,8 +6,9 @@
 
 #include <ctype.h>
 #include <stdio.h>
-#include <glog/logging.h>
 #include <openssl/evp.h>
+#include "chromeos/obsolete_logging.h"
+
 #include "pam_google/pam_prompt_wrapper.h"  // for kUserEnvVariable.
 
 namespace {
@@ -102,7 +103,7 @@ void OfflineCredentialStore::Store(const string& name,
                                    const Blob& hash) {
   if (!credentials_loaded_)
     LoadCredentials();
-  credentials_[name] = pair<Blob, string>(hash, salt);
+  credentials_[name] = std::pair<Blob, std::string>(hash, salt);
 
   // store new credentials to disk
   ScopedFilePointer fp(fopen(path_.c_str(), "w+"));
@@ -110,7 +111,7 @@ void OfflineCredentialStore::Store(const string& name,
     LOG(WARNING) << "Could not open offline credential store.";
     return;
   }
-  for (map<string, pair<Blob, string> >::iterator it = credentials_.begin();
+  for (map<string, std::pair<Blob, string> >::iterator it = credentials_.begin();
        it != credentials_.end(); ++it) {
     int count_written = fwrite(it->first.data(), 1, it->first.size(), fp.Get());
     if (static_cast<int>(it->first.size()) != count_written) {
@@ -153,7 +154,7 @@ void OfflineCredentialStore::Store(const string& name,
 bool OfflineCredentialStore::Contains(const string& name, const Blob& hash) {
   if (!credentials_loaded_)
     LoadCredentials();
-  map<string, pair<Blob, string> >::iterator it = credentials_.find(name);
+  map<string, std::pair<Blob, string> >::iterator it = credentials_.find(name);
   if(credentials_.end() != it && it->second.first == hash)
     return true;
   return false;
@@ -163,7 +164,7 @@ string OfflineCredentialStore::GetSalt(const string& name) {
   static const int kSaltLength = 16;
   if (!credentials_loaded_)
     LoadCredentials();
-  map<string, pair<Blob, string> >::iterator it = credentials_.find(name);
+  map<string, std::pair<Blob, string> >::iterator it = credentials_.find(name);
   if (credentials_.end() != it) {
     return string(it->second.second);
   }
@@ -219,7 +220,7 @@ bool OfflineCredentialStore::LoadCredentials() {
 
     Blob binary_pass = AsciiDecode(pass);
     if (binary_pass.size() > 0)
-      credentials_[name] = pair<Blob, string>(binary_pass, salt);
+      credentials_[name] = std::pair<Blob, string>(binary_pass, salt);
   }
   return true;
 }

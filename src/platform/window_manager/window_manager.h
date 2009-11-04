@@ -7,6 +7,8 @@
 
 #include <map>
 #include <set>
+#include <vector>
+#include <tr1/memory>
 
 extern "C" {
 #include <X11/Xlib.h>
@@ -16,7 +18,6 @@ extern "C" {
 
 #include <gtest/gtest_prod.h>  // for FRIEND_TEST() macro
 
-#include "base/ref_ptr.h"
 #include "base/scoped_ptr.h"
 #include "window_manager/atom_cache.h"  // for Atom enum
 #include "window_manager/clutter_interface.h"
@@ -97,7 +98,7 @@ class WindowManager {
   XAtom GetXAtom(Atom atom);
 
   // Get the name for an atom from the X server.
-  const string& GetXAtomName(XAtom xatom);
+  const std::string& GetXAtomName(XAtom xatom);
 
   // Get the current time from the server.  This can be useful for e.g.
   // getting a timestamp to pass to XSetInputFocus() when triggered by an
@@ -302,7 +303,7 @@ class WindowManager {
   XWindow client_stacking_win_;
 
   // Windows that are being tracked.
-  map<XWindow, ref_ptr<Window> > client_windows_;
+  std::map<XWindow, std::tr1::shared_ptr<Window> > client_windows_;
 
   // This is a list of tracked (i.e. includes override-redirect) client
   // windows, in most-to-least-recently-mapped order.  Used to set EWMH's
@@ -317,10 +318,11 @@ class WindowManager {
   scoped_ptr<Stacker<XWindow> > stacked_xids_;
 
   // Things that consume events (e.g. LayoutManager, PanelBar, etc.).
-  set<EventConsumer*> event_consumers_;
+  std::set<EventConsumer*> event_consumers_;
 
   // Actors that are currently being used to debug client windows.
-  vector<ref_ptr<ClutterInterface::Actor> > client_window_debugging_actors_;
+  std::vector<std::tr1::shared_ptr<ClutterInterface::Actor> >
+      client_window_debugging_actors_;
 
   // The last window that was passed to SetActiveWindowProperty().
   XWindow active_window_xid_;

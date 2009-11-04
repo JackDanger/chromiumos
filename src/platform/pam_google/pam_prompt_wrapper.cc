@@ -6,10 +6,11 @@
 // registered by the user of pam_google.
 
 #include "pam_google/pam_prompt_wrapper.h"
-#include <glog/logging.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+
+#include "base/logging.h"
 
 namespace chromeos_pam {
 

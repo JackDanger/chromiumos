@@ -4,8 +4,8 @@
 
 #include "chromeos_network.h"  // NOLINT
 
-#include <glog/logging.h>
 #include <algorithm>
+#include <vector>
 #include <cstring>
 
 #include "marshal.h"  // NOLINT

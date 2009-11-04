@@ -4,10 +4,11 @@
 
 #include <algorithm>
 
-#include <glog/logging.h>
 #include <gtest/gtest.h>
 
+#include <base/command_line.h>
 #include "base/scoped_ptr.h"
+#include "base/logging.h"
 #include "window_manager/clutter_interface.h"
 #include "window_manager/event_consumer.h"
 #include "window_manager/layout_manager.h"
@@ -76,7 +77,7 @@ TEST_F(WindowManagerTest, RegisterExistence) {
   // a title.
   XAtom title_atom = None;
   ASSERT_TRUE(xconn_->GetAtom("_NET_WM_NAME", &title_atom));
-  string window_title;
+  std::string window_title;
   EXPECT_TRUE(
       xconn_->GetStringProperty(wm_->wm_window_, title_atom, &window_title));
   EXPECT_EQ(WindowManager::kWmName, window_title);
@@ -497,7 +498,11 @@ TEST_F(WindowManagerTest, XRandR) {
 }  // namespace chromeos
 
 int main(int argc, char **argv) {
-  google::InitGoogleLogging(argv[0]);
+  CommandLine::Init(argc, argv);
+  logging::InitLogging(NULL,
+                       logging::LOG_ONLY_TO_SYSTEM_DEBUG_LOG,
+                       logging::DONT_LOCK_LOG_FILE,
+                       logging::APPEND_TO_OLD_LOG_FILE);
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

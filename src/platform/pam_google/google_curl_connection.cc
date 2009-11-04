@@ -8,8 +8,8 @@
 
 #include "pam_google/google_curl_connection.h"
 #include <curl/curl.h>
-#include <glog/logging.h>
 #include <string>
+#include "chromeos/obsolete_logging.h"
 #include "pam_google/curl_wrapper.h"
 #include "pam_google/google_cookies.h"
 

@@ -21,8 +21,7 @@ pam_sources = env.Split("""offline_credential_store.cc
                        pam_google.cc
                        pipe_writer.cc""")
 
-test_sources = env.Split("""../base/strutil.cc
-                 pam_google_testrunner.cc
+test_sources = env.Split("""pam_google_testrunner.cc
                  offline_credential_store_unittest.cc
                  google_authenticator_unittest.cc
                  google_cookies_unittest.cc
@@ -35,9 +34,10 @@ test_sources = env.Split("""../base/strutil.cc
                  username_password_fetcher_unittest.cc""")
 
 env.Append(
-    CPPPATH=['..'],
+    CPPPATH=['..', '../../third_party/chrome/files', '../../common'],
     CCFLAGS=['-g', '-fno-exceptions', '-Wall', '-Werror'],
-    LIBS=['glog', 'pam', 'curl', 'ssl'],
+    LIBPATH=['../../third_party/chrome'],
+    LIBS=['pam', 'curl', 'ssl', 'base'],
 )
 
 # Enable local account only if user has specified one

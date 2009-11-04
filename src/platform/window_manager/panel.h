@@ -65,7 +65,7 @@ class Panel {
   int titlebar_width() const;
 
   // Fill the passed-in vector with all of the panel's input windows.
-  void GetInputWindows(vector<XWindow>* windows_out);
+  void GetInputWindows(std::vector<XWindow>* windows_out);
 
   // Handle events occurring in on one of our input windows.
   void HandleInputWindowButtonPress(

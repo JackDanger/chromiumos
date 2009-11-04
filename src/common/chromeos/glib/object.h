@@ -6,9 +6,9 @@
 #define CHROMEOS_GLIB_OBJECT_H_
 
 #include <glib-object.h>
-#include <glog/logging.h>
 
 #include <base/basictypes.h>
+#include <base/logging.h>
 #include <base/scoped_ptr.h>
 
 #include <algorithm>
