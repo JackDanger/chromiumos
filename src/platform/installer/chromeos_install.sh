@@ -11,12 +11,14 @@ then
   echo ""
   echo "Note: You must be the 'chronos' user to run this script."
   echo ""
-  echo "Usage: $0 [destination_device]"
+  echo "Usage: $0 [destination_device] [skip_source_removable_check]"
   echo ""
   echo "This will install the usb image to your machine's hard disk."
   echo "By default, it will attempt to install to '/dev/sda'."
   echo "First 'su chronos' and then run the script. It will ask"
   echo "for the root password before messing with your hard disk."
+  echo "Skips checking whether the source device is removable if second"
+  echo "argument is 'true'."
   exit 1
 fi
 
@@ -24,6 +26,12 @@ DST=/dev/sda
 if [ -n "$1" ]
 then
   DST="$1"
+fi
+
+SKIP_CHECK_SOURCE_REMOVABLE="false"
+if [ "$2" = "true" ]
+then
+  SKIP_CHECK_SOURCE_REMOVABLE="true"
 fi
 
 # First find the root device that we are installing from and verify it.
@@ -50,7 +58,7 @@ then
 fi
 SRC_DEV=${SRC#/dev/}
 REMOVABLE=`cat /sys/block/$SRC_DEV/removable`
-if [ "$REMOVABLE" != "1" ]
+if [ "$SKIP_CHECK_SOURCE_REMOVABLE" = "false" -a "$REMOVABLE" != "1" ]
 then
   echo "Error: Source does not look like a removable device: $SRC_DEV"
   exit 1
