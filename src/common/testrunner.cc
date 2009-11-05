@@ -6,7 +6,7 @@
 
 #include <gtest/gtest.h>
 #include <glib-object.h>
-#include <glog/logging.h>
+#include <base/logging.h>
 
 int main(int argc, char **argv) {
   ::g_type_init();
