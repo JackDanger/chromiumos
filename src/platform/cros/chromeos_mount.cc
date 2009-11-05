@@ -4,7 +4,7 @@
 
 #include "chromeos_mount.h" // NOLINT
 
-#include <glog/logging.h>
+#include <base/logging.h>
 
 #include <cstdlib>
 #include <cstring>
