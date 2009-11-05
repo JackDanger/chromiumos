@@ -32,6 +32,11 @@ install: build
 	mv $(CURDIR)/chrome-linux $(CURDIR)/chrome-chromeos || true
 	mv $(CURDIR)/chrome-chromeos \
 	  $(CURDIR)/debian/chromeos-chrome/opt/google/chrome
+	# Helper scripts for logging Chrome startup events.
+	cp $(CURDIR)/bottle.sh \
+	  $(CURDIR)/debian/chromeos-chrome/opt/google/chrome/bottle.sh
+	cp $(CURDIR)/log.sh \
+	  $(CURDIR)/debian/chromeos-chrome/opt/google/chrome/log.sh
 	# Strip debug info and symbols from chrome exe
 	# (could strip -S to just remove debug info, but that's 80MB bigger)
 	strip $(CURDIR)/debian/chromeos-chrome/opt/google/chrome/chrome

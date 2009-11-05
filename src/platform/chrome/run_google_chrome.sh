@@ -1,13 +1,21 @@
 #!/bin/sh
 
+# Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
 LOOP=
 if [ "$1" = '--loop' ]; then LOOP=1; fi
 
-CHROME="/opt/google/chrome/chrome"
+CHROME_DIR="/opt/google/chrome"
+CHROME="$CHROME_DIR/chrome"
+BOTTLE="$CHROME_DIR/bottle.sh"
 COOKIE_PIPE="/tmp/cookie_pipe"
 DISABLE_CHROME_RESTART="/tmp/disable_chrome_restart"
 SEND_METRICS="/etc/send_metrics"
 USER_DATA_DIR="${HOME}/${CHROMEOS_USER}/.config/google-chrome"
+
+"$BOTTLE" "Booting..." &
 
 # The first time a user runs chrome, we use some initial arguments
 # to set up their environment. From then on, chrome session restore
@@ -65,6 +73,7 @@ if [ -p "$COOKIE_PIPE" ]; then
 fi
 
 while true; do
+  "$BOTTLE" "Starting Chrome" &
   "$CHROME" --enable-plugins \
             --no-first-run $COOKIE_PIPE_ARG  \
             --user-data-dir="$USER_DATA_DIR" \
