@@ -77,6 +77,7 @@ mount -n -t tmpfs -omode=0755,nosuid varrun /var/run
 touch /var/run/.ramfs  # TODO: Is this needed?
 mount -n -t tmpfs -omode=1777,nodev,noexec,nosuid varlock /var/lock
 touch /var/lock/.ramfs # TODO: Is this needed?
+mount -n -t tmpfs media /media
 
 # Bootchart
 if [ \( $HAS_INITRAMFS -eq 0 \) -a \( -d /lib/bootchart \) ]
