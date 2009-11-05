@@ -6,6 +6,8 @@
 
 set -e
 
+HOSTAP_DIR=${HOSTAP_DIR:-wpa_supplicant-0.6.9}
+
 BUILDDIR=$PWD/build
 
 # The number of jobs to pass to tools that can run in parallel (such as make
@@ -16,7 +18,7 @@ rm -rf $BUILDDIR
 mkdir -p $BUILDDIR
 
 # build wpa_supplicant
-pushd wpa_supplicant-0.6.9/wpa_supplicant
+pushd ${HOSTAP_DIR}/wpa_supplicant
 export LIBDIR=/lib
 export BINDIR=/sbin
 
