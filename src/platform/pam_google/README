@@ -1,4 +1,4 @@
 Here are some packages you'll need to compile this module:
 
-scons libcurl4-gnutls-dev libpam0g-dev libgoogle-glog-dev libgtest-dev \
+scons libcurl4-gnutls-dev libpam0g-dev libgtest-dev \
 libsqlite3-dev

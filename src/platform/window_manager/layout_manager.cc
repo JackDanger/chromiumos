@@ -272,7 +272,7 @@ void LayoutManager::HandleWindowMap(Window* win) {
         }
       }
 
-      std::tr1::shared_ptr<ToplevelWindow> toplevel(
+      shared_ptr<ToplevelWindow> toplevel(
           new ToplevelWindow(win, this));
       input_to_toplevel_[toplevel->input_xid()] = toplevel.get();
 

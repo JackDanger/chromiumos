@@ -5,7 +5,7 @@
 #ifndef CHROMEOS_EXCEPTION_H_
 #define CHROMEOS_EXCEPTION_H_
 
-#include <glog/logging.h>
+#include <base/logging.h>
 
 #include <algorithm>
 #include <exception>
