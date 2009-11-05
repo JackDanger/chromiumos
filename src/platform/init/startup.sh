@@ -88,20 +88,10 @@ then
     --exec /lib/bootchart/collector -- $BC_HZ "$BC_LOGS"
 fi
 
-# Prepare for X
-X_SOCKET_DIR=/tmp/.X11-unix
-X_ICE_DIR=/tmp/.ICE-unix
-hostname localhost  # Some things freak out if no hostname is set.
-mkdir -p "$X_SOCKET_DIR" "$X_ICE_DIR"
-chown root:root "$X_SOCKET_DIR" "$X_ICE_DIR"
-chmod 1777 "$X_SOCKET_DIR" "$X_ICE_DIR"
+# Some things freak out if no hostname is set.
+hostname localhost
 
 # create salt for user data dir crypto
 mkdir -p /home/.shadow
 SALT=/home/.shadow/salt
 (test -f "$SALT" || head -c 16 /dev/urandom > "$SALT") &
-
-# Login Manager
-start-stop-daemon --start --quiet --pidfile /var/run/slim.lock \
-  --name slim --startas /usr/bin/slim -- -d
-

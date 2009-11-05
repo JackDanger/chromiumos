@@ -23,7 +23,8 @@ install:
 	dh_testroot
 	dh_prep
 	dh_installdirs
-	cp $(CURDIR)/startup.sh $(CURDIR)/debian/chromeos-init/etc/init.d/chromeos_init.sh
+	cp $(CURDIR)/shutdown.sh $(CURDIR)/debian/chromeos-init/etc/init.d/chromeos_shutdown
+	cp $(CURDIR)/startup.sh $(CURDIR)/debian/chromeos-init/etc/init.d/chromeos_startup
 	cp $(CURDIR)/chrome-ctl $(CURDIR)/debian/chromeos-init/etc/init.d/chrome-ctl
 	cp $(CURDIR)/acpid.conf $(CURDIR)/debian/chromeos-init/etc/init/acpid.conf
 	cp $(CURDIR)/connman.conf $(CURDIR)/debian/chromeos-init/etc/init/connman.conf
@@ -44,6 +45,7 @@ install:
 	cp $(CURDIR)/stop-bootchart.conf $(CURDIR)/debian/chromeos-init/etc/init/stop-bootchart.conf
 	cp $(CURDIR)/syslog.conf $(CURDIR)/debian/chromeos-init/etc/init/syslog.conf
 	cp $(CURDIR)/udev.conf $(CURDIR)/debian/chromeos-init/etc/init/udev.conf
+	cp $(CURDIR)/ui.conf $(CURDIR)/debian/chromeos-init/etc/init/ui.conf
 	cp $(CURDIR)/wpasupplicant.conf $(CURDIR)/debian/chromeos-init/etc/init/wpasupplicant.conf
 
 # Build architecture-independent files here.
