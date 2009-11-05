@@ -30,7 +30,6 @@ install:
 	cp $(CURDIR)/cron.conf $(CURDIR)/debian/chromeos-init/etc/init/cron.conf
 	cp $(CURDIR)/devkit.conf $(CURDIR)/debian/chromeos-init/etc/init/devkit.conf
 	cp $(CURDIR)/dbus.conf $(CURDIR)/debian/chromeos-init/etc/init/dbus.conf
-	cp $(CURDIR)/dbus-wait.conf $(CURDIR)/debian/chromeos-init/etc/init/dbus-wait.conf
 	cp $(CURDIR)/dump-boot-stats.conf $(CURDIR)/debian/chromeos-init/etc/init/dump-boot-stats.conf
 	cp $(CURDIR)/googleguest.conf $(CURDIR)/debian/chromeos-init/etc/init/googleguest.conf
 	cp $(CURDIR)/halt.conf $(CURDIR)/debian/chromeos-init/etc/init/halt.conf
@@ -41,6 +40,7 @@ install:
 	cp $(CURDIR)/procps.conf $(CURDIR)/debian/chromeos-init/etc/init/procps.conf
 	cp $(CURDIR)/reboot.conf $(CURDIR)/debian/chromeos-init/etc/init/reboot.conf
 	cp $(CURDIR)/software-update.conf $(CURDIR)/debian/chromeos-init/etc/init/software-update.conf
+	cp $(CURDIR)/startup.conf $(CURDIR)/debian/chromeos-init/etc/init/startup.conf
 	cp $(CURDIR)/stop-bootchart.conf $(CURDIR)/debian/chromeos-init/etc/init/stop-bootchart.conf
 	cp $(CURDIR)/syslog.conf $(CURDIR)/debian/chromeos-init/etc/init/syslog.conf
 	cp $(CURDIR)/udev.conf $(CURDIR)/debian/chromeos-init/etc/init/udev.conf
