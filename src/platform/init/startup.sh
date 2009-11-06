@@ -8,34 +8,32 @@
 HAS_INITRAMFS=0
 if [ -d /dev/.initramfs ]
 then
+  # The initrd will have mounted /sys, /proc, and /dev for us.
   HAS_INITRAMFS=1
-  ! umount -l /dev
-  ! umount -l /sys
-  ! umount -l /tmp
+else
+  mount -n -t sysfs -onodev,noexec,nosuid sysfs /sys
+  mount -n -t proc -onodev,noexec,nosuid proc /proc
+  mount -n -t tmpfs -omode=0755 udev /dev
 fi
-
-# Mount /proc, /sys, /tmp
-mount -n -t proc -onodev,noexec,nosuid proc /proc
-mount -n -t sysfs -onodev,noexec,nosuid sysfs /sys
-mount -n -t tmpfs tmp /tmp
 
 # Moblin trick: Disable blinking cursor. Without this a splash screen
 # will show a distinct cursor shape even when the cursor is set to none.
 echo 0 > /sys/devices/virtual/graphics/fbcon/cursor_blink
 
-# Mount /dev and pre-populate with the set of devices needed
-# for X to run.
-mount -n -t tmpfs -omode=0755 udev /dev
+# Since we defer udev until later in the boot process, we pre-populate /dev
+# with the set of devices needed for X to run.
 cp -a -f /lib/udev/devices/* /dev
 mknod -m 0600 /dev/initctl p
-mount -n -t tmpfs -onosuid,nodev shmfs /dev/shm
-mount -n -t devpts -onoexec,nosuid,gid=5,mode=0620 devpts /dev/pts
 
 # Splash screen!
 if [ -x /usr/bin/ply-image ]
 then
   /usr/bin/ply-image /usr/share/chromeos-assets/images/login_splash.png &
 fi
+
+mount -n -t tmpfs tmp /tmp
+mount -n -t tmpfs -onosuid,nodev shmfs /dev/shm
+mount -n -t devpts -onoexec,nosuid,gid=5,mode=0620 devpts /dev/pts
 
 # Mount our stateful partition
 ROOT_DEV=$(sed 's/.*root=\([^ ]*\).*/\1/g' /proc/cmdline)
@@ -51,7 +49,7 @@ then
 else
   # $ROOT has an = in it, so we assume it's LABEL= or UUID=. Follow that
   # convention when specifying the stateful partition.
-  STATE_DEV="LABEL=C-STATE"
+  STATE_DEV="/dev/disk/by-label/C-STATE"
 fi
 mount -n -t ext3 "$STATE_DEV" /mnt/stateful_partition
 
@@ -60,7 +58,6 @@ mkdir -p -m 0755 /mnt/stateful_partition/var/cache
 mkdir -p -m 0755 /mnt/stateful_partition/var/log
 mkdir -p -m 0755 /mnt/stateful_partition/home
 mkdir -p -m 0755 /mnt/stateful_partition/etc
-
 chmod 0755 /mnt/stateful_partition/var
 
 # Default to Pacific timezone if we don't have one set
