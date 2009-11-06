@@ -6,7 +6,7 @@
 
 set -e
 
-HOSTAP_DIR=${HOSTAP_DIR:-wpa_supplicant-0.6.9}
+HOSTAP_DIR=${HOSTAP_DIR:-hostap.git}
 
 BUILDDIR=$PWD/build
 
