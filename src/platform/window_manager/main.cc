@@ -13,19 +13,23 @@ extern "C" {
 
 #include <gflags/gflags.h>
 
-#include <base/command_line.h>
-#include <base/file_path.h>
-#include <base/file_util.h>
-#include <base/logging.h>
-#include <base/scoped_ptr.h>
-
+#include "base/command_line.h"
+#include "base/file_path.h"
+#include "base/file_util.h"
+#include "base/logging.h"
+#include "base/scoped_ptr.h"
 #include "window_manager/clutter_interface.h"
 #include "window_manager/window_manager.h"
 #include "window_manager/real_x_connection.h"
 
 DECLARE_bool(wm_use_compositing);  // from window_manager.cc
 
-DEFINE_string(log_dir, ".", "log directory path");
+DEFINE_string(log_dir, ".",
+              "Directory where logs should be written; created if it doesn't "
+              "exist.");
+DEFINE_bool(logtostderr, false,
+            "Should logs be written to stderr instead of to a file in "
+            "--log_dir?");
 
 using chromeos::ClutterInterface;
 using chromeos::MockClutterInterface;
@@ -33,20 +37,23 @@ using chromeos::RealClutterInterface;
 using chromeos::RealXConnection;
 using chromeos::WindowManager;
 
+static const char* kLogFileName = "window_manager.log";
+
 int main(int argc, char** argv) {
   gdk_init(&argc, &argv);
   clutter_init(&argc, &argv);
   google::ParseCommandLineFlags(&argc, &argv, true);
 
-  std::string log_file_path = FLAGS_log_dir;
-  if (!file_util::CreateDirectory(FilePath(log_file_path)))
-      LOG(ERROR) << "Unable to create logging directory" << log_file_path;
-
-  log_file_path += "/window_manager.log";
+  if (!FLAGS_logtostderr) {
+    if (!file_util::CreateDirectory(FilePath(FLAGS_log_dir)))
+      LOG(ERROR) << "Unable to create logging directory " << FLAGS_log_dir;
+  }
 
   CommandLine::Init(argc, argv);
-  logging::InitLogging(log_file_path.c_str(),
-                       logging::LOG_ONLY_TO_FILE,
+  logging::InitLogging((FLAGS_log_dir + "/" + kLogFileName).c_str(),
+                       FLAGS_logtostderr ?
+                         logging::LOG_ONLY_TO_SYSTEM_DEBUG_LOG :
+                         logging::LOG_ONLY_TO_FILE,
                        logging::DONT_LOCK_LOG_FILE,
                        logging::APPEND_TO_OLD_LOG_FILE);
 

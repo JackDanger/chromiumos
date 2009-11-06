@@ -2,9 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include <gflags/gflags.h>
 #include <gtest/gtest.h>
 
-#include <base/command_line.h>
+#include "base/command_line.h"
 #include "base/scoped_ptr.h"
 #include "base/logging.h"
 #include "window_manager/clutter_interface.h"
@@ -13,6 +14,9 @@
 #include "window_manager/util.h"
 #include "window_manager/window.h"
 #include "window_manager/window_manager.h"
+
+DEFINE_bool(logtostderr, false,
+            "Print debugging messages to stderr (suppressed otherwise)");
 
 namespace chromeos {
 
@@ -613,9 +617,12 @@ TEST_F(LayoutManagerTest, Resize) {
 }  // namespace chromeos
 
 int main(int argc, char **argv) {
+  google::ParseCommandLineFlags(&argc, &argv, true);
   CommandLine::Init(argc, argv);
   logging::InitLogging(NULL,
-                       logging::LOG_ONLY_TO_SYSTEM_DEBUG_LOG,
+                       FLAGS_logtostderr ?
+                         logging::LOG_ONLY_TO_SYSTEM_DEBUG_LOG :
+                         logging::LOG_NONE,
                        logging::DONT_LOCK_LOG_FILE,
                        logging::APPEND_TO_OLD_LOG_FILE);
   ::testing::InitGoogleTest(&argc, argv);

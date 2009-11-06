@@ -71,7 +71,7 @@ base_env.Append(CCFLAGS=' -fno-strict-aliasing')
 base_env['CPPPATH'] = ['..',
                        '../../third_party/chrome/files',
                        '../../common']
-                       
+
 base_env['LIBPATH'] = ['../../third_party/chrome',
                        '../../common']
 

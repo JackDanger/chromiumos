@@ -8,8 +8,7 @@
 
 #include <gflags/gflags.h>
 
-#include <base/logging.h>
-
+#include "base/logging.h"
 #include "window_manager/clutter_interface.h"
 #include "window_manager/panel.h"
 #include "window_manager/shadow.h"

@@ -16,11 +16,11 @@
 # the same time as the window manager -- I'm occasionally seeing the WM not
 # notice the window.  Sleep for a second so the WM has a chance to start
 # first.
-(sleep 1 && ./mock_chrome --v=1 --alsologtostderr=1 &)
+(sleep 1 && ./mock_chrome &)
 (sleep 2 && xterm &)
 
 # Uncomment to dump all communication between the WM and X server to a file.
 #XTRACE="xtrace -n -o /tmp/wm_xtrace.log"
 
-exec $XTRACE ./wm --v=1 --alsologtostderr --logbufsecs=0 \
+exec $XTRACE ./wm --logtostderr \
   --wm_background_image=../assets/images/background_1024x768.png

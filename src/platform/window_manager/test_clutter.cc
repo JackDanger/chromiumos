@@ -2,7 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include <iostream>
 #include <stdlib.h>
+#include <string>
+
 extern "C" {
 #include <clutter/clutter.h>
 #include <clutter/x11/clutter-x11.h>
@@ -13,10 +16,9 @@ extern "C" {
 #include <X11/extensions/shape.h>
 #include <X11/extensions/Xcomposite.h>
 }
-#include <base/command_line.h>
+
+#include "base/command_line.h"
 #include "base/logging.h"
-#include <iostream>
-#include <string>
 
 
 using namespace std;

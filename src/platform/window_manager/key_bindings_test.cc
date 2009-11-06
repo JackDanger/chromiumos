@@ -2,11 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include <gflags/gflags.h>
 #include <gtest/gtest.h>
 #include <vector>
 
 #include "base/basictypes.h"
-#include <base/command_line.h>
+#include "base/command_line.h"
+#include "base/logging.h"
 #include "base/scoped_ptr.h"
 #include "base/stl_util-inl.h"
 #include "base/string_util.h"
@@ -14,6 +16,9 @@
 #include "chromeos/obsolete_logging.h"
 #include "window_manager/key_bindings.h"
 #include "window_manager/mock_x_connection.h"
+
+DEFINE_bool(logtostderr, false,
+            "Print debugging messages to stderr (suppressed otherwise)");
 
 namespace chromeos {
 
@@ -338,9 +343,12 @@ TEST_F(KeyBindingTest, ManyActionsAndBindings) {
 }  // namespace
 
 int main(int argc, char **argv) {
+  google::ParseCommandLineFlags(&argc, &argv, true);
   CommandLine::Init(argc, argv);
   logging::InitLogging(NULL,
-                       logging::LOG_ONLY_TO_SYSTEM_DEBUG_LOG,
+                       FLAGS_logtostderr ?
+                         logging::LOG_ONLY_TO_SYSTEM_DEBUG_LOG :
+                         logging::LOG_NONE,
                        logging::DONT_LOCK_LOG_FILE,
                        logging::APPEND_TO_OLD_LOG_FILE);
 

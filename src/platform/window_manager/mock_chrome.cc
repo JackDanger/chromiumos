@@ -6,10 +6,10 @@
 
 #include <cairomm/context.h>
 
-#include <base/command_line.h>
-#include <base/string_util.h>
-#include <chromeos/obsolete_logging.h>
-#include <chromeos/string.h>
+#include "base/command_line.h"
+#include "base/string_util.h"
+#include "chromeos/obsolete_logging.h"
+#include "chromeos/string.h"
 #include "window_manager/atom_cache.h"
 #include "window_manager/real_x_connection.h"
 #include "window_manager/util.h"
