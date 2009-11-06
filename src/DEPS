@@ -42,7 +42,7 @@ deps = {
 
     # hostap
     _third_party_base + "wpa_supplicant/hostap.git":
-        Var("chromiumos_git") + "/hostap.git@08eb154d",
+        Var("chromiumos_git") + "/hostap.git",
 
     # shflags 1.0.3
     _third_party_base + "shflags/files":
