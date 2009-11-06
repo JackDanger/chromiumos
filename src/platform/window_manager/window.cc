@@ -94,7 +94,8 @@ Window::Window(WindowManager* wm, XWindow xid)
             << (override_redirect_ ? "override-redirect " : "")
             << "window " << xid_ << " "
             << "at (" << client_x_ << ", " << client_y_ << ") "
-            << "with dimensions " << client_width_ << "x" << client_height_;
+            << "with dimensions " << client_width_ << "x" << client_height_
+            << " for compositing";
     wm_->xconn()->RedirectWindowForCompositing(xid_);
   }
 
@@ -447,7 +448,6 @@ bool Window::MapClient() {
   VLOG(2) << "Mapping " << xid_;
   if (!wm_->xconn()->MapWindow(xid_))
     return false;
-  mapped_ = true;
   return true;
 }
 
@@ -455,7 +455,6 @@ bool Window::UnmapClient() {
   VLOG(2) << "Unmapping " << xid_;
   if (!wm_->xconn()->UnmapWindow(xid_))
     return false;
-  mapped_ = false;
   return true;
 }
 

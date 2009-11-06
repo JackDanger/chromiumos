@@ -331,25 +331,33 @@ bool WindowManager::Init() {
   gdk_window_add_filter(NULL, FilterEvent, this);
 
   // Look up existing windows (note that this includes windows created
-  // earlier in this method) and then select window management events.
+  // earlier in this method) and select window management events.
   //
-  // TODO: We should be grabbing the server here and then releasing it
-  // after selecting SubstructureRedirectMask.  This doesn't work, though,
-  // since Clutter is using its own X connection (so Clutter calls that we
-  // make while grabbing the server via GDK's connection will block
-  // forever).  We would ideally just use a single X connection for
-  // everything, but I haven't found a way to do this without causing
-  // issues with Clutter not getting all events.  It doesn't seem to
-  // receive any when we call clutter_x11_disable_event_retrieval() and
-  // forward all events using clutter_x11_handle_event(), and it seems to
-  // be missing some events when we use clutter_x11_add_filter() to
-  // sidestep GDK entirely (even if the filter returns
-  // CLUTTER_X11_FILTER_CONTINUE for everything).
-  ManageExistingWindows();
+  // TODO: We should be grabbing the server here, calling
+  // ManageExistingWindows(), selecting SubstructureRedirectMask, and then
+  // releasing the grab.  The grabs lead to deadlocks, though, since
+  // Clutter is using its own X connection (so Clutter calls that we make
+  // while grabbing the server via GDK's connection will block forever).
+  // We would ideally just use a single X connection for everything, but I
+  // haven't found a way to do this without causing issues with Clutter not
+  // getting all events.  It doesn't seem to receive any when we call
+  // clutter_x11_disable_event_retrieval() and forward all events using
+  // clutter_x11_handle_event(), and it seems to be missing some events
+  // when we use clutter_x11_add_filter() to sidestep GDK entirely (even if
+  // the filter returns CLUTTER_X11_FILTER_CONTINUE for everything).
+  //
+  // As a workaround, the order of these operations is reversed -- we
+  // select SubstructureRedirectMask and then query for all windows, so
+  // there's no period where new windows could sneak in unnoticed.  This
+  // creates the possibility of us getting double-notified about windows
+  // being created or mapped, so HandleCreateNotify() and HandleMapNotify()
+  // are careful to bail out early if it looks like they're dealing with a
+  // window that was already handled by ManageExistingWindows().
   CHECK(xconn_->SelectInputOnWindow(
             root_,
             SubstructureRedirectMask|StructureNotifyMask|SubstructureNotifyMask,
             true));  // preserve GDK's existing event mask
+  ManageExistingWindows();
 
   UpdateClientListProperty();
   UpdateClientListStackingProperty();
@@ -1027,6 +1035,12 @@ bool WindowManager::HandleConfigureRequest(const XConfigureRequestEvent& e) {
 }
 
 bool WindowManager::HandleCreateNotify(const XCreateWindowEvent& e) {
+  if (GetWindow(e.window)) {
+    LOG(WARNING) << "Ignoring create notify for already-known window "
+                 << e.window;
+    return false;
+  }
+
   VLOG(1) << "Handling create notify for " << e.window;
 
   if (snooping_key_events_) {
@@ -1060,16 +1074,11 @@ bool WindowManager::HandleCreateNotify(const XCreateWindowEvent& e) {
     LOG(WARNING) << "Window " << e.window << " went away while we were "
                  << "handling its CreateNotify event";
   } else {
-    if (!GetWindow(e.window)) {
-      // override-redirect means that the window manager isn't going to
-      // intercept this window's structure events, but we still need to
-      // composite the window, so we'll create a Window object for it
-      // regardless.
-      TrackWindow(e.window);
-    } else {
-      LOG(WARNING) << "That's weird; got a create notify for " << e.window
-                   << ", which we already know about";
-    }
+    // override-redirect means that the window manager isn't going to
+    // intercept this window's structure events, but we still need to
+    // composite the window, so we'll create a Window object for it
+    // regardless.
+    TrackWindow(e.window);
   }
 
   return true;
@@ -1168,6 +1177,13 @@ bool WindowManager::HandleMapNotify(const XMapEvent& e) {
   Window* win = GetWindow(e.window);
   if (!win)
     return false;
+
+  if (win->mapped()) {
+    LOG(WARNING) << "Ignoring map notify for already-handled window "
+                 << e.window;
+    return false;
+  }
+
   VLOG(1) << "Handling map notify for " << e.window;
   win->set_mapped(true);
   HandleMappedWindow(win);

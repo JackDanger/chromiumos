@@ -114,6 +114,119 @@ TEST_F(WindowManagerTest, RegisterExistence) {
   EXPECT_EQ(cm_atom, root_info->client_messages[1].data.l[1]);
 }
 
+// Test different race conditions where a client window is created and/or
+// mapped while WindowManager::Init() is running.
+TEST_F(WindowManagerTest, ExistingWindows) {
+  // First, test the case where a window has already been mapped before the
+  // WindowManager object is initialized, so no CreateNotify or MapNotify
+  // event is sent.
+  wm_.reset(NULL);
+  xconn_.reset(new MockXConnection);
+  XWindow xid = CreateSimpleWindow(xconn_->GetRootWindow());
+  MockXConnection::WindowInfo* info = xconn_->GetWindowInfoOrDie(xid);
+  xconn_->MapWindow(xid);
+
+  wm_.reset(new WindowManager(xconn_.get(), clutter_.get()));
+  CHECK(wm_->Init());
+  Window* win = wm_->GetWindow(xid);
+  ASSERT_TRUE(win != NULL);
+  EXPECT_TRUE(win->mapped());
+  EXPECT_TRUE(dynamic_cast<const MockClutterInterface::Actor*>(
+                  win->actor())->visible());
+
+  // Now handle the case where the window starts out unmapped and
+  // WindowManager misses the CreateNotify event but receives the
+  // MapRequest (and subsequent MapNotify).
+  wm_.reset(NULL);
+  xconn_.reset(new MockXConnection);
+  xid = CreateSimpleWindow(xconn_->GetRootWindow());
+  info = xconn_->GetWindowInfoOrDie(xid);
+
+  wm_.reset(new WindowManager(xconn_.get(), clutter_.get()));
+  CHECK(wm_->Init());
+  EXPECT_FALSE(info->mapped);
+  win = wm_->GetWindow(xid);
+  ASSERT_TRUE(win != NULL);
+  EXPECT_FALSE(win->mapped());
+  EXPECT_FALSE(dynamic_cast<const MockClutterInterface::Actor*>(
+                   win->actor())->visible());
+
+  XEvent event;
+  MockXConnection::InitMapRequestEvent(&event, *info);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  EXPECT_TRUE(info->mapped);
+
+  MockXConnection::InitMapEvent(&event, xid);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  EXPECT_TRUE(win->mapped());
+  EXPECT_TRUE(dynamic_cast<const MockClutterInterface::Actor*>(
+                  win->actor())->visible());
+
+  // Here, we mimic the case where the window is created after
+  // WindowManager selects SubstructureRedirect but before it queries for
+  // existing windows, so it sees the window immediately but also gets a
+  // CreateNotify event about it.
+  wm_.reset(NULL);
+  xconn_.reset(new MockXConnection);
+  xid = CreateSimpleWindow(xconn_->GetRootWindow());
+  info = xconn_->GetWindowInfoOrDie(xid);
+
+  wm_.reset(new WindowManager(xconn_.get(), clutter_.get()));
+  CHECK(wm_->Init());
+  EXPECT_FALSE(info->mapped);
+  win = wm_->GetWindow(xid);
+  ASSERT_TRUE(win != NULL);
+  EXPECT_FALSE(win->mapped());
+  EXPECT_FALSE(dynamic_cast<const MockClutterInterface::Actor*>(
+                   win->actor())->visible());
+
+  MockXConnection::InitCreateWindowEvent(&event, *info);
+  EXPECT_FALSE(wm_->HandleEvent(&event));  // false because it's already known
+
+  MockXConnection::InitMapRequestEvent(&event, *info);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  EXPECT_TRUE(info->mapped);
+
+  MockXConnection::InitMapEvent(&event, xid);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  EXPECT_TRUE(win->mapped());
+  EXPECT_TRUE(dynamic_cast<const MockClutterInterface::Actor*>(
+                  win->actor())->visible());
+
+  // Finally, test the typical case where a window is created after
+  // WindowManager has been initialized.
+  wm_.reset(NULL);
+  xconn_.reset(new MockXConnection);
+  xid = None;
+  info = NULL;
+
+  wm_.reset(new WindowManager(xconn_.get(), clutter_.get()));
+  CHECK(wm_->Init());
+
+  xid = CreateSimpleWindow(xconn_->GetRootWindow());
+  info = xconn_->GetWindowInfoOrDie(xid);
+
+  MockXConnection::InitCreateWindowEvent(&event, *info);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  EXPECT_FALSE(info->mapped);
+  win = wm_->GetWindow(xid);
+  ASSERT_TRUE(win != NULL);
+  EXPECT_FALSE(win->mapped());
+  EXPECT_FALSE(dynamic_cast<const MockClutterInterface::Actor*>(
+                   win->actor())->visible());
+
+  MockXConnection::InitMapRequestEvent(&event, *info);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  EXPECT_TRUE(info->mapped);
+  EXPECT_FALSE(win->mapped());
+
+  MockXConnection::InitMapEvent(&event, xid);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  EXPECT_TRUE(win->mapped());
+  EXPECT_TRUE(dynamic_cast<const MockClutterInterface::Actor*>(
+                  win->actor())->visible());
+}
+
 TEST_F(WindowManagerTest, InputWindows) {
   // Check that CreateInputWindow() creates windows as requested.
   XWindow xid = wm_->CreateInputWindow(100, 200, 300, 400);

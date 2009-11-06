@@ -591,6 +591,17 @@ void MockXConnection::InitMapEvent(XEvent* event, XWindow xid) {
 }
 
 // static
+void MockXConnection::InitMapRequestEvent(XEvent* event,
+                                          const WindowInfo& info) {
+  CHECK(event);
+  XMapRequestEvent* req_event = &(event->xmaprequest);
+  memset(req_event, 0, sizeof(*req_event));
+  req_event->type = MapRequest;
+  req_event->window = info.xid;
+  req_event->parent = info.parent;
+}
+
+// static
 void MockXConnection::InitUnmapEvent(XEvent* event, XWindow xid) {
   CHECK(event);
   XUnmapEvent* unmap_event = &(event->xunmap);

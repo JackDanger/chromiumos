@@ -165,6 +165,7 @@ class MockXConnection : public XConnection {
   static void InitFocusInEvent(XEvent* event, XWindow xid, int mode);
   static void InitFocusOutEvent(XEvent* event, XWindow xid, int mode);
   static void InitMapEvent(XEvent* event, XWindow xid);
+  static void InitMapRequestEvent(XEvent* event, const WindowInfo& info);
   static void InitUnmapEvent(XEvent* event, XWindow xid);
 
  private:

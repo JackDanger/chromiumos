@@ -287,7 +287,7 @@ class MockClutterInterface : public ClutterInterface {
           scale_x_(1.0),
           scale_y_(1.0),
           opacity_(1.0),
-          visible_(false),
+          visible_(true),
           parent_(NULL) {
     }
     virtual ~Actor();

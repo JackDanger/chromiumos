@@ -242,7 +242,11 @@ class Window {
   // Was override-redirect set when the window was originally created?
   bool override_redirect_;
 
-  // Is the client window currently mapped?
+  // Is the client window currently mapped?  This is only updated when the
+  // Window object is first created and when a MapNotify or UnmapNotify
+  // event is received (dependent on the receiver calling set_mapped()
+  // appropriately), so e.g. a call to MapClient() will not be immediately
+  // reflected in this variable.
   bool mapped_;
 
   // Does the client window have the input focus?
