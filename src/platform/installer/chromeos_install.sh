@@ -150,17 +150,43 @@ then
 fi
 
 # Copy the system image. We sync first to try to make the copy as safe as we
-# can.
+# can. We skip the first block which contains the filesystem label (aka 
+# volume name). It's 16 bytes in length at 120 bytes in the superblock,
+# which is itself at offset 1024 of the device.
 echo ""
 echo "Copying the system image. This might take a while..."
 sync
-sudo dd if="$SRC_PARTITION" of="$DST_PARTITION" bs=1M
-sync
+sudo dd if="$SRC_PARTITION" of="$DST_PARTITION" bs=1M seek=1 skip=1
+# Copy all but the first 2 kibibytes now
+sudo dd if="$SRC_PARTITION" of="$DST_PARTITION" bs=1024 seek=2 skip=2 count=1022
 
-# Fix up the file system label. We skip the first char and prefix with 'H'
+# Check new file system label. We skip the first char and prefix with 'H'
 NEW_LABEL=`expr substr "$LABEL" 2 ${#LABEL}`
 NEW_LABEL="H${NEW_LABEL}"
-sudo tune2fs -L "$NEW_LABEL" "$DST_PARTITION"
+if [ ${#NEW_LABEL} -gt 15 ]
+then
+  echo "New label " "$NEW_LABEL is too long (greater than 15 bytes)"
+fi
+
+# Copy first 2 kibibytes of the partition to a temp file
+TEMP_FILE=/tmp/install_part_head
+sudo dd if="$SRC_PARTITION" of="$TEMP_FILE" bs=1024 count=2
+
+# Manually update the label. First zero it, then write the new label.
+SUPERBLOCK_OFFSET=1024
+LABEL_FIELD_OFFSET=120
+LABEL_FIELD_LENGTH=16
+sudo dd if=/dev/zero of="$TEMP_FILE" bs=1 \
+    seek=$(( $SUPERBLOCK_OFFSET + $LABEL_FIELD_OFFSET )) \
+    count=$LABEL_FIELD_LENGTH conv=notrunc
+echo -n "$NEW_LABEL" | sudo dd of="$TEMP_FILE" \
+    seek=$(( $SUPERBLOCK_OFFSET + $LABEL_FIELD_OFFSET )) \
+    bs=1 count=15 conv=notrunc
+
+# Copy the temp file into the new partition
+sudo dd if="$TEMP_FILE" of="$DST_PARTITION"
+sudo rm -f "$TEMP_FILE"
+sync
 
 # Mount root partition
 mkdir -p "$ROOTFS_DIR"
@@ -180,6 +206,6 @@ sync
 echo "------------------------------------------------------------"
 echo ""
 echo "Installation to '$DST' complete."
-echo "Please remove the USB device, cross your fingers, and reboot."
+echo "Please shutdown, remove the USB device, cross your fingers, and reboot."
 
 trap - EXIT
