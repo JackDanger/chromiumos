@@ -31,7 +31,6 @@ install:
 	cp $(CURDIR)/devkit.conf $(CURDIR)/debian/chromeos-init/etc/init/devkit.conf
 	cp $(CURDIR)/dbus.conf $(CURDIR)/debian/chromeos-init/etc/init/dbus.conf
 	cp $(CURDIR)/dump-boot-stats.conf $(CURDIR)/debian/chromeos-init/etc/init/dump-boot-stats.conf
-	cp $(CURDIR)/googleguest.conf $(CURDIR)/debian/chromeos-init/etc/init/googleguest.conf
 	cp $(CURDIR)/halt.conf $(CURDIR)/debian/chromeos-init/etc/init/halt.conf
 	cp $(CURDIR)/iptables.conf $(CURDIR)/debian/chromeos-init/etc/init/iptables.conf
 	cp $(CURDIR)/netdebug.conf $(CURDIR)/debian/chromeos-init/etc/init/netdebug.conf

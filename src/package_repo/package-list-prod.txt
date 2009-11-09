@@ -69,7 +69,6 @@ e4fsprogs-git
 # Chrome OS packages; keep alphabetized
 chromeos-chrome
 chromeos-connman
-chromeos-controlpanel
 chromeos-cryptohome
 chromeos-init
 chromeos-installer
