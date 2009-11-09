@@ -38,6 +38,14 @@ install:
 	    $(CURDIR)/debian/chromeos-login/etc/X11/
 	cp $(CURDIR)/51x11-chromeos-set-startup \
 	    $(CURDIR)/debian/chromeos-login/etc/X11/Xsession.d/
+	# Scripts for experimentally using the browser as our login manager.
+	cp $(CURDIR)/session_manager.sh \
+	    $(CURDIR)/debian/chromeos-init/etc/init.d/session_manager.sh
+        cp $(CURDIR)/start_login.sh \
+	    $(CURDIR)/debian/chromeos-init/etc/init.d/start_login.sh
+        cp $(CURDIR)/xstart.sh \
+	    $(CURDIR)/debian/chromeos-init/etc/init.d/xstart.sh
+
 
 # Build architecture-independent files here.
 binary-indep: install
