@@ -10,7 +10,8 @@
 SCRIPTS = \
 	$(CURDIR)/memento_updater.sh \
 	$(CURDIR)/memento_updater_logging.sh \
-	$(CURDIR)/ping_omaha.sh
+	$(CURDIR)/ping_omaha.sh \
+	$(CURDIR)/software_update.sh
 
 build: build-stamp
 build-stamp:
@@ -30,8 +31,6 @@ install:
 	dh_installdirs
 	mkdir -p $(CURDIR)/debian/memento-updater/opt/google/memento_updater
 	cp $(SCRIPTS) $(CURDIR)/debian/memento-updater/opt/google/memento_updater/
-	mkdir -p $(CURDIR)/debian/memento-updater/etc/init.d
-	cp $(CURDIR)/software_update.sh $(CURDIR)/debian/memento-updater/etc/init.d/
 
 # Build architecture-independent files here.
 binary-indep: install
