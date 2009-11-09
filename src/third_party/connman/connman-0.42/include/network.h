@@ -102,6 +102,8 @@ int connman_network_set_uint16(struct connman_network *network,
 					const char *key, connman_uint16_t value);
 connman_uint16_t connman_network_get_uint16(struct connman_network *network,
 							const char *key);
+void connman_network_set_scangen(struct connman_network *network, int scangen);
+int connman_network_get_scangen(struct connman_network *network);
 int connman_network_set_blob(struct connman_network *network,
 			const char *key, const void *data, unsigned int size);
 const void *connman_network_get_blob(struct connman_network *network,

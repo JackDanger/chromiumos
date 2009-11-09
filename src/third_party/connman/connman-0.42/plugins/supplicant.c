@@ -186,6 +186,7 @@ struct supplicant_task {
 	gboolean created;
 	enum supplicant_state state;
 	gboolean scanning;
+	int scangen;			/* scan generation number */
 	GSList *scan_results;
 	DBusPendingCall *scan_call;
 	DBusPendingCall *result_call;
@@ -1304,6 +1305,8 @@ static void properties_reply(DBusPendingCall *call, void *user_data)
 				frequency, result.path);
 	}
 
+	connman_network_set_scangen(network, task->scangen);
+
 	if (result.name != NULL && result.name[0] != '\0')
 		connman_network_set_name(network, result.name);
 
@@ -1418,6 +1421,8 @@ static void scan_results_reply(DBusPendingCall *call, void *user_data)
 
 	if (num_results == 0)
 		goto done;
+
+	task->scangen++;
 
 	for (i = 0; i < num_results; i++) {
 		char *path = g_strdup(results[i]);

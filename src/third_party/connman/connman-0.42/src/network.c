@@ -44,6 +44,7 @@ struct connman_network {
 	connman_bool_t hidden;
 	connman_uint8_t strength;
 	connman_uint16_t frequency;
+	int scangen;
 	char *identifier;
 	char *address;
 	char *name;
@@ -1122,6 +1123,29 @@ connman_uint16_t connman_network_get_uint16(struct connman_network *network,
 		return network->wifi.channel;
 
 	return 0;
+}
+
+/**
+ * connman_network_set_scangen:
+ * @network: network structure
+ * @scangen: scan generation number
+ *
+ * Change scan generation number of network
+ */
+void connman_network_set_scangen(struct connman_network *network, int scangen)
+{
+	network->scangen = scangen;
+}
+
+/**
+ * connman_network_get_scangen:
+ * @network: network structure
+ *
+ * Get scan generation number of network
+ */
+int connman_network_get_scangen(struct connman_network *network)
+{
+	return network->scangen;
 }
 
 /**

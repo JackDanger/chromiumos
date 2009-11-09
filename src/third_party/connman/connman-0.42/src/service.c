@@ -63,6 +63,7 @@ struct connman_service {
 	struct connman_network *network;
 	DBusMessage *pending;
 	guint timeout;
+	int scangen;
 };
 
 static void append_path(gpointer value, gpointer user_data)
@@ -1938,9 +1939,10 @@ static enum connman_service_mode convert_wifi_security(const char *security)
 static void update_from_network(struct connman_service *service,
 					struct connman_network *network)
 {
-	connman_uint8_t strength = service->strength;
+	connman_uint8_t strength;
 	GSequenceIter *iter;
 	const char *str;
+	int scangen;
 
 	if (service->state == CONNMAN_SERVICE_STATE_READY)
 		return;
@@ -1959,30 +1961,33 @@ static void update_from_network(struct connman_service *service,
 		service->hidden = TRUE;
 	}
 
-	service->strength = connman_network_get_uint8(network, "Strength");
-	if (service->strength == 0) {
-		/*
-		 * NB: filter out 0-values; it's unclear what they mean
-		 * and they cause anomalous sorting of the priority list
-		 */
-		service->strength = strength;
-	}
-
 	str = connman_network_get_string(network, "WiFi.Mode");
 	service->mode = convert_wifi_mode(str);
 
 	str = connman_network_get_string(network, "WiFi.Security");
 	service->security = convert_wifi_security(str);
 
-	if (service->strength > strength && service->network != NULL) {
-		connman_network_unref(service->network);
-		service->network = connman_network_ref(network);
+	/*
+	 * Update signal strength and preferred network.  There are
+	 * two cases; if the network's scan generation counter is
+	 * different then it must be newer and we switch to it.  Otherwise
+	 * this is another network that maps to the same service and
+	 * we compare signal strength to choose the preferred network.
+	 */
+	strength = connman_network_get_uint8(network, "Strength");
+	scangen = connman_network_get_scangen(network);
+	if (service->scangen != scangen || strength > service->strength) {
+		service->strength = strength;
+		service->scangen = scangen;
+
+		if (service->network != network) {
+			if (service->network != NULL)
+				connman_network_unref(service->network);
+			service->network = connman_network_ref(network);
+		}
 
 		strength_changed(service);
 	}
-
-	if (service->network == NULL)
-		service->network = connman_network_ref(network);
 
 	iter = g_hash_table_lookup(service_hash, service->identifier);
 	if (iter != NULL)
@@ -2062,6 +2067,7 @@ void __connman_service_update_from_network(struct connman_network *network)
 	struct connman_service *service;
 	connman_uint8_t strength;
 	GSequenceIter *iter;
+	int scangen;
 
 	service = __connman_service_lookup_from_network(network);
 	if (service == NULL)
@@ -2070,17 +2076,18 @@ void __connman_service_update_from_network(struct connman_network *network)
 	if (service->network == NULL)
 		return;
 
-	strength = connman_network_get_uint8(service->network, "Strength");
-	if (strength == service->strength)
-		return;
+	strength = connman_network_get_uint8(network, "Strength");
+	scangen = connman_network_get_scangen(network);
+	if (service->scangen != scangen || strength > service->strength) {
+		service->strength = strength;
+		service->scangen = scangen;
 
-	service->strength = strength;
+		strength_changed(service);
 
-	strength_changed(service);
-
-	iter = g_hash_table_lookup(service_hash, service->identifier);
-	if (iter != NULL)
-		g_sequence_sort_changed(iter, service_compare, NULL);
+		iter = g_hash_table_lookup(service_hash, service->identifier);
+		if (iter != NULL)
+			g_sequence_sort_changed(iter, service_compare, NULL);
+	}
 }
 
 void __connman_service_remove_from_network(struct connman_network *network)
