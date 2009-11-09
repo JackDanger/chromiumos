@@ -67,8 +67,10 @@ Window::Window(WindowManager* wm, XWindow xid)
   // Get the window's initial state.
   XWindowAttributes attr;
   if (wm_->xconn()->GetWindowAttributes(xid_, &attr)) {
+    // We update 'mapped_' when we get the MapNotify event instead of doing
+    // it here; things get tricky otherwise since there's a race as to
+    // whether override-redirect windows are mapped or not at this point.
     override_redirect_ = attr.override_redirect;
-    mapped_ = (attr.map_state != IsUnmapped);
     client_x_ = composited_x_ = attr.x;
     client_y_ = composited_y_ = attr.y;
     client_width_ = attr.width;
@@ -308,6 +310,13 @@ void Window::FetchAndApplyShape(bool update_shadow) {
   }
   if (update_shadow)
     UpdateShadowIfNecessary();
+}
+
+bool Window::FetchMapState() {
+  XWindowAttributes attr;
+  if (!wm_->xconn()->GetWindowAttributes(xid_, &attr))
+    return false;
+  return (attr.map_state != IsUnmapped);
 }
 
 bool Window::HandleWmStateMessage(const XClientMessageEvent& event) {

@@ -113,6 +113,11 @@ class Window {
   // or remove a drop shadow as needed.
   void FetchAndApplyShape(bool update_shadow);
 
+  // Query the X server to see if this window is currently mapped or not.
+  // This should only be used for checking the state of an existing window
+  // at startup; use mapped() after that.
+  bool FetchMapState();
+
   // Handle a _NET_WM_STATE message about this window.  Updates our internal
   // copy of the state and the window's _NET_WM_STATE property.
   bool HandleWmStateMessage(const XClientMessageEvent& event);

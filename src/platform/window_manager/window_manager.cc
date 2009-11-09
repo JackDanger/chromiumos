@@ -687,8 +687,10 @@ bool WindowManager::ManageExistingWindows() {
     // XQueryTree() returns child windows in bottom-to-top stacking order.
     stacked_xids_->AddOnTop(xid);
     Window* win = TrackWindow(xid);
-    if (win && win->mapped())
+    if (win && win->FetchMapState()) {
+      win->set_mapped(true);
       HandleMappedWindow(win);
+    }
   }
   return true;
 }

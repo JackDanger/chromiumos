@@ -227,6 +227,59 @@ TEST_F(WindowManagerTest, ExistingWindows) {
                   win->actor())->visible());
 }
 
+// Test that we display override-redirect windows onscreen regardless of
+// whether they're mapped or not by the time that we learn about them.
+TEST_F(WindowManagerTest, OverrideRedirectMapping) {
+  // Test the case where a client has already mapped an override-redirect
+  // window by the time that we receive the CreateNotify event about it.
+  // We should still pay attention to the MapNotify event that comes
+  // afterwards and display the window.
+  XWindow xid = xconn_->CreateWindow(
+        xconn_->GetRootWindow(),
+        10, 20,  // x, y
+        30, 40,  // width, height
+        true,    // override redirect
+        false,   // input only
+        0);      // event mask
+  MockXConnection::WindowInfo* info = xconn_->GetWindowInfoOrDie(xid);
+  xconn_->MapWindow(xid);
+  ASSERT_TRUE(info->mapped);
+
+  XEvent event;
+  MockXConnection::InitCreateWindowEvent(&event, *info);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  MockXConnection::InitMapEvent(&event, xid);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+
+  // Now test the other possibility, where the window isn't mapped on the X
+  // server yet when we receive the CreateNotify event.
+  Window* win = wm_->GetWindow(xid);
+  ASSERT_TRUE(win != NULL);
+  EXPECT_TRUE(dynamic_cast<const MockClutterInterface::Actor*>(
+                  win->actor())->visible());
+
+  XWindow xid2 = xconn_->CreateWindow(
+        xconn_->GetRootWindow(),
+        10, 20,  // x, y
+        30, 40,  // width, height
+        true,    // override redirect
+        false,   // input only
+        0);      // event mask
+  MockXConnection::WindowInfo* info2 = xconn_->GetWindowInfoOrDie(xid2);
+
+  MockXConnection::InitCreateWindowEvent(&event, *info2);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  xconn_->MapWindow(xid2);
+  ASSERT_TRUE(info2->mapped);
+  MockXConnection::InitMapEvent(&event, xid2);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+
+  Window* win2 = wm_->GetWindow(xid2);
+  ASSERT_TRUE(win2 != NULL);
+  EXPECT_TRUE(dynamic_cast<const MockClutterInterface::Actor*>(
+                  win2->actor())->visible());
+}
+
 TEST_F(WindowManagerTest, InputWindows) {
   // Check that CreateInputWindow() creates windows as requested.
   XWindow xid = wm_->CreateInputWindow(100, 200, 300, 400);
