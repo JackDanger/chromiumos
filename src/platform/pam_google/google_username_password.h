@@ -14,6 +14,8 @@
 #include <string.h>
 #include "base/basictypes.h"
 
+#include <string>
+
 // Enable local account only if user has specifically requested it
 #ifdef CHROMEOS_PAM_LOCALACCOUNT
 #include "pam_google/pam_localaccount.h"
@@ -83,8 +85,9 @@ class GoogleUsernamePassword : public GoogleCredentials {
   // in Google Accounts.
   char *username_;
   char *password_;
-  char *salt_;
-  char *system_salt_;
+
+  std::string salt_;
+  std::string system_salt_;
 
   // handle to libcurl, which does urlencoding for us.
   CURL *curl_;
