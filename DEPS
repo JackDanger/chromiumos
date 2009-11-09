@@ -19,9 +19,11 @@
 # No trailing backslash when specifying SVN paths.  That confuses gclient and
 # causes it to re-download the files each time.
 
-# Base is prefixed with "trunk/src/" if this is trunk/DEPS, or "src/" if this
+use_relative_paths=True
+
+# Base is prefixed with "src/" if this is trunk/DEPS, or "" if this
 # is trunk/src/DEPS.
-_third_party_base = "trunk/src/third_party/"
+_third_party_base = "src/third_party/"
 
 vars = {
     "chromiumos_git": "git://chromiumos-git/git/repos"
