@@ -25,7 +25,7 @@
 #include "minixpm.h"
 #include <stdio.h>
 
-#include "images/screenlocker.xpm"
+#include "../../../platform/assets/images/screenlocker.xpm"
 
 /* Returns a pixmap of the xscreensaver logo.
  */

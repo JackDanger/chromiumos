@@ -261,7 +261,7 @@ hsv.o: ../config.h
 hsv.o: $(srcdir)/hsv.h
 hsv.o: $(srcdir)/utils.h
 logo.o: ../config.h
-logo.o: $(srcdir)/images/screenlocker.xpm
+logo.o: $(srcdir)/../../../../platform/assets/images/screenlocker.xpm
 logo.o: $(srcdir)/minixpm.h
 logo.o: $(srcdir)/resources.h
 logo.o: $(srcdir)/utils.h
