@@ -2098,6 +2098,13 @@ void __connman_service_remove_from_network(struct connman_network *network)
 	if (service == NULL)
 		return;
 
+	if (service->network == network) {
+		connman_network_unref(network);
+		/* XXX recalculate */
+		service->network = NULL;
+		service->strength = 0;
+	}
+
 	__connman_service_put(service);
 }
 
