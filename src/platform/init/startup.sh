@@ -87,7 +87,7 @@ then
     # Normally the initrd starts bootchart's collector, but since we aren't
     # using one we have to start it here.
     start-stop-daemon --background --start --quiet \
-      --exec /lib/bootchart/collector -- $BC_HZ "$BC_LOG"
+      --exec /lib/bootchart/collector -- $BC_HZ "$BC_RUN"
   fi
 fi
 
