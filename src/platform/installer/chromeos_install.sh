@@ -124,6 +124,8 @@ trap error_handler EXIT
 # because the user paritition expands to fill the space on the disk.
 # NOTE: We currently create an EFI partition rather than swap since the
 # eeepc can take advantage of this to speed POST time.
+sudo dd if="$SRC" of="$DST" bs=512 count=1
+
 PARTITION_NUM_SECTORS=$((SIZE / 512))
 # size of the device in 512 bytes sectors:
 DEVICE_NUM_SECTORS=$(cat /sys/block/${DST#/dev/}/size)
