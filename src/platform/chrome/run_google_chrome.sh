@@ -75,6 +75,7 @@ fi
 while true; do
   "$BOTTLE" "Starting Chrome" &
   "$CHROME" --enable-plugins \
+            --enable-gview \
             --no-first-run $COOKIE_PIPE_ARG  \
             --user-data-dir="$USER_DATA_DIR" \
             $FIRST_RUN_ARGS \
