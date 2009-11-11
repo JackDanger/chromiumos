@@ -344,6 +344,7 @@ void __connman_service_remove_from_network(struct connman_network *network);
 const char *__connman_service_get_path(struct connman_service *service);
 #define	CONNMAN_SERVICE_ORDER_MAX	32767
 unsigned int __connman_service_get_order(struct connman_service *service);
+const char *__connman_service_get_type(struct connman_service *service);
 
 int __connman_service_set_carrier(struct connman_service *service,
 						connman_bool_t carrier);
@@ -376,6 +377,7 @@ void __connman_notifier_disable(enum connman_service_type type);
 void __connman_notifier_connect(enum connman_service_type type);
 void __connman_notifier_disconnect(enum connman_service_type type);
 void __connman_notifier_offlinemode(connman_bool_t enabled);
+void __connman_notifier_default_changed(struct connman_service *service);
 
 connman_bool_t __connman_notifier_is_enabled(enum connman_service_type type);
 

@@ -1075,6 +1075,17 @@ void __connman_device_set_phyindex(struct connman_device *device,
 }
 
 /**
+ * connman_device_get_interface:
+ * @device: device structure
+ *
+ * Get interface name for device
+ */
+const char *connman_device_get_interface(struct connman_device *device)
+{
+	return device->interface;
+}
+
+/**
  * connman_device_set_interface:
  * @device: device structure
  * @interface: interface name

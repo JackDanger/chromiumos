@@ -217,7 +217,7 @@ static enum connman_service_error string2error(const char *error)
 	return CONNMAN_SERVICE_ERROR_UNKNOWN;
 }
 
-const char *__connman_service_default(void)
+static struct connman_service *get_default(void)
 {
 	struct connman_service *service;
 	GSequenceIter *iter;
@@ -225,16 +225,18 @@ const char *__connman_service_default(void)
 	iter = g_sequence_get_begin_iter(service_list);
 
 	if (g_sequence_iter_is_end(iter) == TRUE)
-		return "";
+		return NULL;
 
 	service = g_sequence_get(iter);
-	if (service == NULL)
-		return "";
+	if (service != NULL && service->state == CONNMAN_SERVICE_STATE_READY)
+		return service;
 
-	if (service->state != CONNMAN_SERVICE_STATE_READY)
-		return "";
+	return NULL;
+}
 
-	return type2string(service->type);
+const char *__connman_service_default(void)
+{
+	return __connman_service_get_type(get_default());
 }
 
 static void state_changed(struct connman_service *service)
@@ -1148,28 +1150,25 @@ int connman_service_set_favorite(struct connman_service *service,
 	return 0;
 }
 
+/**
+ * connman_service_get_device:
+ * @service: service structure
+ *
+ * Return device for specified service.
+ */
+struct connman_device *connman_service_get_device(struct connman_service *service)
+{
+	if (service->device != NULL)
+		return service->device;
+	else if (service->network != NULL)
+		return connman_network_get_device(service->network);
+
+	return NULL;
+}
+
 static void default_changed(void)
 {
-	DBusMessage *signal;
-	DBusMessageIter entry, value;
-	const char *key = "DefaultTechnology";
-	const char *str = __connman_service_default();
-
-	signal = dbus_message_new_signal(CONNMAN_MANAGER_PATH,
-				CONNMAN_MANAGER_INTERFACE, "PropertyChanged");
-	if (signal == NULL)
-		return;
-
-	dbus_message_iter_init_append(signal, &entry);
-
-	dbus_message_iter_append_basic(&entry, DBUS_TYPE_STRING, &key);
-
-	dbus_message_iter_open_container(&entry, DBUS_TYPE_VARIANT,
-					DBUS_TYPE_STRING_AS_STRING, &value);
-	dbus_message_iter_append_basic(&value, DBUS_TYPE_STRING, &str);
-	dbus_message_iter_close_container(&entry, &value);
-
-	g_dbus_send_message(connection, signal);
+	__connman_notifier_default_changed(get_default());
 }
 
 int __connman_service_indicate_state(struct connman_service *service,
@@ -1883,6 +1882,11 @@ unsigned int __connman_service_get_order(struct connman_service *service)
 		order = g_sequence_iter_get_position(iter);
 done:
 	return order;
+}
+
+const char * __connman_service_get_type(struct connman_service *service)
+{
+	return service != NULL ? type2string(service->type) : "";
 }
 
 static enum connman_service_type convert_network_type(struct connman_network *network)

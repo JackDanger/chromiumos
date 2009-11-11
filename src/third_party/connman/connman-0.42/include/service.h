@@ -85,6 +85,10 @@ void connman_service_unref(struct connman_service *service);
 int connman_service_set_favorite(struct connman_service *service,
 						connman_bool_t favorite);
 
+struct connman_device;
+struct connman_device *connman_service_get_device(struct connman_service
+						*service);
+
 #ifdef __cplusplus
 }
 #endif
