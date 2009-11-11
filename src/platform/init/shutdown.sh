@@ -8,12 +8,24 @@
 set +e
 
 # For a given mountpoint, this will kill all processes with open files
-# on that mountpoint so that it can be unmounted.
+# on that mountpoint so that it can be unmounted. It starts off by sending
+# a TERM and if the process hasn't exited quickly enough it will send KILL.
 kill_with_open_files_on() {
   PIDS=$(lsof -t $@ | sort -n | uniq)
   for i in 1 2 3 4 5 6 7 8 9 10; do
     for pid in $PIDS ; do
-      ! kill $pid
+      ! kill -TERM $pid
+    done
+    PIDS=$(lsof -t $@ | sort -n | uniq)
+    if [ -z "$PIDS" ] ; then
+      return
+    fi
+    sleep .1
+  done
+  PIDS=$(lsof -t $@ | sort -n | uniq)
+  for i in 1 2 3 4 5 6 7 8 9 10; do
+    for pid in $PIDS ; do
+      ! kill -KILL $pid
     done
     PIDS=$(lsof -t $@ | sort -n | uniq)
     if [ -z "$PIDS" ] ; then
@@ -33,8 +45,10 @@ mount -n -o remount,ro /
 # to unmount for a clean shutdown.
 kill_with_open_files_on /mnt/stateful_partition /home/chronos
 /usr/sbin/umount.cryptohome
-mount -n -o remount,ro /mnt/stateful_partition
 umount -n /var/cache /var/log /home /mnt/stateful_partition
+
+# Just in case something didn't unmount properly above.
+sync
 
 # Ensure that we always claim success.
 exit 0
