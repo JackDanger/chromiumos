@@ -54,10 +54,14 @@ deps = {
     _third_party_base + "shunit2/files":
         "http://shunit2.googlecode.com/svn/tags/source/2.1.5@294",
 
+    # syslinux
+    _third_party_base + "syslinux/files":
+        Var("chromiumos_git") + "/syslinux.git",
+
     # tpm-emulator
     _third_party_base + "tpm-emulator/files":
         "http://svn.berlios.de/svnroot/repos/tpm-emulator/trunk@341",
-        
+
     # chrome-base
     _third_party_base + "chrome/files/base":
         "http://src.chromium.org/svn/trunk/src/base@29779",
