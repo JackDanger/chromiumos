@@ -691,6 +691,18 @@ static void dnsproxy_default_changed(struct connman_service *service)
 	const char *interface;
 	GSList *list;
 
+	if (service == NULL) {
+		/*
+		 * There is no default; this can happen when no
+		 * devices are operational (e.g. wired unplugged
+		 * and wireless down).  Be paranoid here: there
+		 * should be no servers as everything should be
+		 * torn down; this is just in case.
+		 */
+		dnsproxy_offline_mode(TRUE);
+		return;
+	}
+
 	device = connman_service_get_device(service);
 	if (device == NULL) {
 		connman_error("%s: no device for service %p",
