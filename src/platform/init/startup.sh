@@ -75,22 +75,6 @@ mount -n -t tmpfs -omode=1777,nodev,noexec,nosuid varlock /var/lock
 touch /var/lock/.ramfs # TODO: Is this needed?
 mount -n -t tmpfs media /media
 
-# Bootchart - TODO(tedbo): upstartify this.
-if [ -d /lib/bootchart ]
-then
-  BC_RUN=/var/run/bootchart
-  BC_LOG=/var/log/bootchart
-  BC_HZ=25
-  mkdir -p "$BC_RUN" "$BC_LOG"
-  if [ $HAS_INITRAMFS -eq 0 ]
-  then
-    # Normally the initrd starts bootchart's collector, but since we aren't
-    # using one we have to start it here.
-    start-stop-daemon --background --start --quiet \
-      --exec /lib/bootchart/collector -- $BC_HZ "$BC_RUN"
-  fi
-fi
-
 # Some things freak out if no hostname is set.
 hostname localhost
 
