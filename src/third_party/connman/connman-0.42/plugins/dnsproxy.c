@@ -32,6 +32,8 @@
 
 #define CONNMAN_API_SUBJECT_TO_CHANGE
 #include <connman/plugin.h>
+#include <connman/device.h>
+#include <connman/notifier.h>
 #include <connman/resolver.h>
 #include <connman/log.h>
 
@@ -81,6 +83,7 @@ struct server_data {
 	char *server;
 	GIOChannel *channel;
 	guint watch;
+	gboolean enabled;
 };
 
 struct request_data {
@@ -264,6 +267,7 @@ static struct server_data *create_server(const char *interface,
 	data->interface = g_strdup(interface);
 	data->domain = g_strdup(domain);
 	data->server = g_strdup(server);
+	data->enabled = TRUE;		/* NB: we know this is correct */
 
 	return data;
 }
@@ -545,7 +549,11 @@ static gboolean listener_event(GIOChannel *channel, GIOCondition condition,
 	for (list = server_list; list; list = list->next) {
 		struct server_data *data = list->data;
 
-		_DBG_DNSPROXY("server %s domain %s", data->server, data->domain);
+		_DBG_DNSPROXY("server %s domain %s enabled %d",
+			data->server, data->domain, data->enabled);
+
+		if (data->enabled == FALSE)
+			continue;
 
 		sk = g_io_channel_unix_get_fd(data->channel);
 
@@ -664,6 +672,55 @@ static void destroy_listener(void)
 	g_io_channel_unref(listener_channel);
 }
 
+static void dnsproxy_offline_mode(connman_bool_t isoffline)
+{
+	GSList *list;
+
+	_DBG_DNSPROXY("offline %d", isoffline);
+
+	for (list = server_list; list; list = list->next) {
+		struct server_data *data = list->data;
+
+		data->enabled = !isoffline;
+	}
+}
+
+static void dnsproxy_default_changed(struct connman_service *service)
+{
+	struct connman_device *device;
+	const char *interface;
+	GSList *list;
+
+	device = connman_service_get_device(service);
+	if (device == NULL) {
+		connman_error("%s: no device for service %p",
+			__func__, service);
+		return;
+	}
+	interface = connman_device_get_interface(device);
+	if (interface == NULL) {
+		connman_error("%s: no interface for device %p (service %p)",
+			__func__, device, service);
+		return;
+	}
+
+	_DBG_DNSPROXY("service %p device %p interface %s",
+		service, device, interface);
+
+	for (list = server_list; list; list = list->next) {
+		struct server_data *data = list->data;
+
+		data->enabled = (g_strcmp0(data->interface, interface) == 0);
+	}
+}
+
+static struct connman_notifier dnsproxy_notifier = {
+	.name		= "dnsproxy",
+	.priority	= CONNMAN_NOTIFIER_PRIORITY_DEFAULT,
+	.offline_mode	= dnsproxy_offline_mode,
+	.default_changed= dnsproxy_default_changed,
+};
+
 static int dnsproxy_init(void)
 {
 	int err;
@@ -673,10 +730,12 @@ static int dnsproxy_init(void)
 		return err;
 
 	err = connman_resolver_register(&dnsproxy_resolver);
-	if (err < 0)
+	if (err < 0) {
 		destroy_listener();
+		return err;
+	}
 
-	return err;
+	return connman_notifier_register(&dnsproxy_notifier);
 }
 
 static void dnsproxy_exit(void)
@@ -684,6 +743,8 @@ static void dnsproxy_exit(void)
 	destroy_listener();
 
 	connman_resolver_unregister(&dnsproxy_resolver);
+
+	connman_notifier_unregister(&dnsproxy_notifier);
 }
 
 CONNMAN_PLUGIN_DEFINE(dnsproxy, "DNS proxy resolver plugin", VERSION,
