@@ -92,7 +92,7 @@ xscreensaver.passwd.passwdFont:         -*-dina-bold-r-*-*-12-*-*-*-*-*-*-*
 xscreensaver.Dialog.foreground:         #ffffff
 xscreensaver.Dialog.background:         #000000
 xscreensaver.Dialog.text.foreground:    #666666
-xscreensaver.Dialog.text.background:    #ebeff9
+xscreensaver.Dialog.text.background:    #ffffff
 
 !=============================================================================
 !
@@ -101,11 +101,11 @@ xscreensaver.Dialog.text.background:    #ebeff9
 !=============================================================================
 
 ! Positions relative to upper right corner of cropped image
-xscreensaver.chromeos.username.x:             233
-xscreensaver.chromeos.username.y:             452
-xscreensaver.chromeos.password.x:             542
-xscreensaver.chromeos.password.y:             440
-xscreensaver.chromeos.password.width:         250
+xscreensaver.chromeos.username.x:             375
+xscreensaver.chromeos.username.y:             404
+xscreensaver.chromeos.password.x:             375
+xscreensaver.chromeos.password.y:             462
+xscreensaver.chromeos.password.width:         274
 xscreensaver.chromeos.password.height:        20
 ! Auto centers image and crops to this size
 xscreensaver.chromeos.background.width:       1024

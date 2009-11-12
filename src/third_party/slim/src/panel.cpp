@@ -556,7 +556,7 @@ void Panel::ShowText(){
       int shadowYOffset =
           Cfg::string2int(cfg->getOption("welcome_shadow_yoffset").c_str());
       SlimDrawString8 (draw, &welcomecolor, welcomefont,
-                       input_pass_x - 80, input_pass_y + 40,
+                       welcome_x, welcome_y + 20,
                        lastErrorMessage,
                        &welcomeshadowcolor, shadowXOffset, shadowYOffset);
     }
