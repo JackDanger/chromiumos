@@ -28,6 +28,7 @@ install:
 	cp $(CURDIR)/acpid.conf $(CURDIR)/debian/chromeos-init/etc/init/acpid.conf
 	cp $(CURDIR)/bootchart.conf $(CURDIR)/debian/chromeos-init/etc/init/bootchart.conf
 	cp $(CURDIR)/connman.conf $(CURDIR)/debian/chromeos-init/etc/init/connman.conf
+	cp $(CURDIR)/console-kit.conf $(CURDIR)/debian/chromeos-init/etc/init/console-kit.conf
 	cp $(CURDIR)/cron.conf $(CURDIR)/debian/chromeos-init/etc/init/cron.conf
 	cp $(CURDIR)/devkit.conf $(CURDIR)/debian/chromeos-init/etc/init/devkit.conf
 	cp $(CURDIR)/dbus.conf $(CURDIR)/debian/chromeos-init/etc/init/dbus.conf
