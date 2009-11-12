@@ -3,4 +3,6 @@
 # found in the LICENSE file.
 
 usr/share/slim/themes/chromeos/
+etc/
+etc/init.d/
 etc/pam.d/

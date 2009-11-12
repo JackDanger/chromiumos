@@ -9,4 +9,4 @@ export PATH=/bin:/usr/bin:/usr/local/bin:/usr/bin/X11
 export XAUTHORITY=${HOME}/.Xauthority
 
 /usr/bin/xauth -q -f $HOME/.Xauthority add :0 . $1
-exec /etc/X11/Xsession
+exec /usr/bin/ck-launch-session /etc/X11/chromeos-xsession

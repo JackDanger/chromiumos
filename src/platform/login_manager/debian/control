@@ -12,5 +12,6 @@ Standards-Version: 3.8.0
 Package: chromeos-login
 Architecture: all
 Depends: chromeos-assets, chromeos-pam-google, libpam-mount, slim, chromeos-cryptohome
+Replaces: slim
 Description: Chrome OS login manager
  The Chrome OS login manager.
