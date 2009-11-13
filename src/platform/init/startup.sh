@@ -25,7 +25,6 @@ echo 0 > /sys/devices/virtual/graphics/fbcon/cursor_blink
 # Since we defer udev until later in the boot process, we pre-populate /dev
 # with the set of devices needed for X to run.
 cp -a -f /lib/udev/devices/* /dev
-mknod -m 0600 /dev/initctl p
 
 # Splash screen!
 if [ -x /usr/bin/ply-image ]
