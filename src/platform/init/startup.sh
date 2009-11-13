@@ -15,6 +15,9 @@ else
   mount -n -t tmpfs -omode=0755 udev /dev
 fi
 
+PRE_UPTIME_STAT=$(cat /proc/uptime)
+PRE_DISK_STAT=$(cat /sys/block/sda/stat)
+
 # Moblin trick: Disable blinking cursor. Without this a splash screen
 # will show a distinct cursor shape even when the cursor is set to none.
 echo 0 > /sys/devices/virtual/graphics/fbcon/cursor_blink
@@ -82,3 +85,12 @@ hostname localhost
 mkdir -p /home/.shadow
 SALT=/home/.shadow/salt
 (test -f "$SALT" || head -c 16 /dev/urandom > "$SALT") &
+
+# Write out uptime and disk stats pre/post startup
+cat /proc/uptime > /tmp/uptime-post-startup
+! cat /sys/block/sda/stat > /tmp/disk-post-startup
+echo "$PRE_UPTIME_STAT" > /tmp/uptime-pre-startup
+echo "$PRE_DISK_STAT" > /tmp/disk-pre-startup
+
+# Always return success to avoid killing init
+exit 0
