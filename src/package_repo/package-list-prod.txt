@@ -67,18 +67,18 @@ libpam-mount
 e4fsprogs-git
 
 # Chrome OS packages; keep alphabetized
+chromeos-acpi
 chromeos-chrome
 chromeos-connman
 chromeos-cryptohome
 chromeos-init
 chromeos-installer
+chromeos-libcros
 chromeos-login
 chromeos-monitor-reconfig
 chromeos-pam-google
-chromeos-libcros
 chromeos-ply-image
 chromeos-screenlocker
 chromeos-wm
 chromeos-wpasupplicant
 memento-updater
-
