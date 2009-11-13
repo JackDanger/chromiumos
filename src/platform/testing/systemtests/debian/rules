@@ -1,0 +1,53 @@
+#!/usr/bin/make -f
+# -*- makefile -*-
+# Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# Uncomment this to turn on verbose mode.
+#export DH_VERBOSE=1
+
+# The number of jobs to pass to tools that can run in parallel (such as make
+# and dpkg-buildpackage
+NUM_JOBS=`cat /proc/cpuinfo | grep processor | awk '{a++} END {print a}'`
+
+build: build-stamp
+build-stamp:
+	dh_testdir
+	mkdir site_tests
+	touch $@
+
+clean:
+	dh_testdir
+	dh_testroot
+	rm -f build-stamp
+	rm -rf site_tests
+	dh_clean
+
+install: build
+	dh_testdir
+	dh_testroot
+	dh_prep
+	dh_installdirs
+	mkdir -p $(CURDIR)/debian/chromeos-systemtest/usr/lib/autotest/client/site_tests
+	cp -r $(CURDIR)/site_tests $(CURDIR)/debian/chromeos-systemtest/usr/lib/autotest/client/site_tests/
+
+
+# Build architecture-dependent files here.
+binary-arch: install
+	dh_testdir
+	dh_testroot
+	dh_installman
+	dh_link
+	dh_strip
+	dh_compress
+	dh_fixperms
+	dh_installdeb
+	dh_shlibdeps
+	dh_gencontrol
+	dh_md5sums
+	dh_builddeb
+
+binary: binary-arch
+
+.PHONY: build clean install binary-arch binary

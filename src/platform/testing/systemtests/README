@@ -1,0 +1,8 @@
+This directory contains test cases (classified by test area) for Chrome OS.
+
+Individual tests that require build steps should write their output
+into the site-tests output directory, from which the
+chromeos-systemtests package gets built.
+
+Test cases should exist no more than one level deep, using autotest
+naming conventions.
