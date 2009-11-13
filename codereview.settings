@@ -1,0 +1,4 @@
+# This file is used by gcl to get repository specific information.
+CODE_REVIEW_SERVER: chromereview.prom.corp.google.com
+VIEW_VC: http://chrome-svn/viewvc/chromeos?view=rev&revision=
+CC_LIST: chromeos-reviews@google.com
