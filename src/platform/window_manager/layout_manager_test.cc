@@ -614,6 +614,46 @@ TEST_F(LayoutManagerTest, Resize) {
   EXPECT_EQ(lm_->height(), info->height);
 }
 
+// Test that we let clients resize toplevel windows after they've been
+// mapped.  This isn't what we actually want to do (why would a client even
+// care?  Their window is maximized), but is required to avoid triggering
+// issue 449, where Chrome's option window seems to stop redrawing itself
+// if it doesn't get the size that it asks for.
+TEST_F(LayoutManagerTest, ConfigureToplevel) {
+  // Create and map a toplevel window.
+  XWindow xid = CreateSimpleWindow(xconn_->GetRootWindow());
+  MockXConnection::WindowInfo* info = xconn_->GetWindowInfoOrDie(xid);
+
+  XEvent event;
+  MockXConnection::InitCreateWindowEvent(&event, *info);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  MockXConnection::InitMapEvent(&event, xid);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+
+  // The window should initially be maximized to fit the area available to
+  // the layout manager.
+  EXPECT_EQ(lm_->x(), info->x);
+  EXPECT_EQ(lm_->y(), info->y);
+  EXPECT_EQ(lm_->width(), info->width);
+  EXPECT_EQ(lm_->height(), info->height);
+
+  // Now ask for a new position and larger size.
+  int new_x = 20;
+  int new_y = 40;
+  int new_width = lm_->x() + 10;
+  int new_height = lm_->y() + 5;
+  MockXConnection::InitConfigureRequestEvent(
+      &event, xid, 0, 0, new_width, new_height);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+
+  // The position change should be ignored, but the window should be
+  // resized.
+  EXPECT_EQ(lm_->x(), info->x);
+  EXPECT_EQ(lm_->y(), info->y);
+  EXPECT_EQ(new_width, info->width);
+  EXPECT_EQ(new_height, info->height);
+}
+
 }  // namespace chromeos
 
 int main(int argc, char **argv) {

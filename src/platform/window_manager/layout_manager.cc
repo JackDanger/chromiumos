@@ -382,10 +382,19 @@ bool LayoutManager::HandleWindowConfigureRequest(
     return true;
   }
 
-  // Don't let clients configure toplevel windows once they've been mapped.
+  // Let toplevel windows resize themselves to work around issue 449, where
+  // the Chrome options window doesn't repaint if it doesn't get resized
+  // after it's already mapped.
+  // TODO: Remove this after Chrome has been fixed.
   ToplevelWindow* toplevel = GetToplevelWindowByWindow(*win);
-  if (toplevel)
+  if (toplevel) {
+    if (req_width != toplevel->win()->client_width() ||
+        req_height != toplevel->win()->client_height()) {
+      toplevel->win()->ResizeClient(
+          req_width, req_height, Window::GRAVITY_NORTHWEST);
+    }
     return true;
+  }
 
   return false;
 }
