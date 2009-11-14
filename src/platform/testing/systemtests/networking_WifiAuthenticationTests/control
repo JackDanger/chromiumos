@@ -1,0 +1,16 @@
+AUTHOR = "ChromeOS Team"
+NAME = "WIFI_AUTH_TEST"
+TIME = "SHORT"
+TEST_CATEGORY = "Functional"
+TEST_CLASS = "General"
+TEST_TYPE = "client"
+
+DOC = """
+  Tests that we can connect to the routers specified in router-test.dat
+
+  The test attempts to connect to each router using the given password,
+  once a connection is established we will verify that the IP returned
+  by ifconfig matches an ip range specifed in the same config file.
+"""
+
+job.run_test('networking_WifiAuthenticationTests')
