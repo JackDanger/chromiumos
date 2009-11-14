@@ -1,0 +1,17 @@
+TIME="SHORT"
+AUTHOR = "The Chromium OS Authors"
+DOC = """
+Tests that during shutdown we have no more processes running with open files
+on any of our stateful partitions at the time we run the chromeos_shutdown
+script.
+
+NOTE: You need to shutdown or reboot the device at least once before running
+this test for a given build or else the test is useless.
+"""
+
+NAME = ''
+TEST_CLASS = "General"
+TEST_CATEGORY = 'Functional'
+TEST_TYPE = 'client'
+
+job.run_test('shutdown_NoOpenFilesTestCase')
