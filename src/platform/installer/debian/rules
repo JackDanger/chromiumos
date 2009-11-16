@@ -23,9 +23,12 @@ install:
 	dh_testroot
 	dh_prep
 	dh_installdirs
-	mkdir -p $(CURDIR)/debian/chromeos-installer/usr/sbin
 	cp $(CURDIR)/chromeos_install.sh \
 	  $(CURDIR)/debian/chromeos-installer/usr/sbin/chromeos-install
+	cp $(CURDIR)/postinst.sh \
+	  $(CURDIR)/debian/chromeos-installer/usr/sbin/chromeos-postinst
+	ln -s /usr/sbin/chromeos-postinst \
+	  $(CURDIR)/debian/chromeos-installer/postinst
 
 # Build architecture-independent files here.
 binary-indep: install

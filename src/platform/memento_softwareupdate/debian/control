@@ -10,7 +10,7 @@ Section: utils
 Package: memento-updater
 Section: utils
 Architecture: all
-Depends: bash, grep, gzip, openssl, sed, wget
+Depends: bash, grep, gzip, openssl, sed, wget, chromeos-installer
 Description: Memento Autoupdater
  Autoupdate for Memento. Pings Omaha daily to check for updates.
  Installs updates on a free USB stick partition.
