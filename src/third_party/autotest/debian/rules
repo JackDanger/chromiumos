@@ -27,8 +27,9 @@ install: build
 	dh_testroot
 	dh_prep
 	dh_installdirs
-	mkdir -p $(CURDIR)/debian/autotest/usr/local/autotest/
-	cp -r $(CURDIR)/files/client/* $(CURDIR)/debian/autotest/usr/local/autotest/
+	mkdir -p $(CURDIR)/debian/autotest/mnt/stateful_partition/autotest/
+	cp -r $(CURDIR)/files/client/* \
+	  $(CURDIR)/debian/autotest/mnt/stateful_partition/autotest/
 
 # Build architecture-dependent files here.
 binary-arch: install
