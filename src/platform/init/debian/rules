@@ -47,7 +47,7 @@ install:
 	   $(CURDIR)/udev.conf               \
 	   $(CURDIR)/ui.conf                 \
 	   $(CURDIR)/wpasupplicant.conf      \
-	   $(CURDIR)/debian/chromeos-init/etc/init/
+	   $(CURDIR)/debian/chromeos-init/etc/init.chromeos/
 
 # Build architecture-independent files here.
 binary-indep: install

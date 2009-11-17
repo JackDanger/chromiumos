@@ -3,5 +3,5 @@
 # found in the LICENSE file.
 
 sbin/
-etc/init/
+etc/init.chromeos/
 
