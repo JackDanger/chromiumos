@@ -1,0 +1,18 @@
+# Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+AUTHOR = "ChromeOS Team"
+NAME = "PAM_GOOGLE_LOADER_TEST"
+TIME = "SHORT"
+TEST_CATEGORY = "Functional"
+TEST_CLASS = "General"
+TEST_TYPE = "client"
+
+DOC = """
+  Tests that pam_google.so, the Linux-PAM module that
+  implements authentication with a Google account, exists and can be
+  dynamically loaded properly.
+"""
+
+job.run_test('login_PamModuleLoadTest')
