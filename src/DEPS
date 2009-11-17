@@ -59,6 +59,10 @@ deps = {
     _third_party_base + "wpa_supplicant/hostap.git":
         Var("chromiumos_git") + "/hostap.git",
 
+    # pam-dev
+    _third_party_base + "pam-dev":
+        Var("chromiumos_git") + "/pam-dev.git",
+
     # shflags 1.0.3
     _third_party_base + "shflags/files":
         "http://shflags.googlecode.com/svn/tags/1.0.3@137",
