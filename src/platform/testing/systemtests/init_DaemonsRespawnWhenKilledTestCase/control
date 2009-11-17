@@ -1,0 +1,13 @@
+TIME="SHORT"
+AUTHOR = "The Chromium OS Authors"
+DOC = """
+Tests that daemons restart automatically when killed. This will kill
+a few key daemons and make sure that they have been restarted properly.
+"""
+
+NAME = ''
+TEST_CLASS = "General"
+TEST_CATEGORY = 'Functional'
+TEST_TYPE = 'client'
+
+job.run_test('init_DaemonsRespawnWhenKilledTestCase')
