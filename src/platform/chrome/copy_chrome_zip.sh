@@ -52,14 +52,14 @@ then
   BASE_FROM="http://codf196.jail.google.com/archive/chrome-official"
 else
   # Use most recent snapshot from Chrome buildbot
-  BASE_FROM="http://chrome-web/buildbot/snapshots/chromium-rel-linux-chromeos"
+  BASE_FROM="http://chrome-web/buildbot/snapshots/chromium-rel-linux-chromiumos"
 
   # Chrome OS buildbot does not have http access to chrome-web, so scp
   # the build result instead
   if [ $USER = "chrome-bot" ]
   then
     USE_WGET=0
-    BASE_FROM="chrome-web:~/www/snapshots/chromium-rel-linux-chromeos"
+    BASE_FROM="chrome-web:~/www/snapshots/chromium-rel-linux-chromiumos"
   fi
 fi
 
