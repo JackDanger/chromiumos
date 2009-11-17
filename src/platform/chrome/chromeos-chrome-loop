@@ -4,24 +4,34 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-LOOP=
-if [ "$1" = '--loop' ]; then LOOP=1; fi
-
 CHROME_DIR="/opt/google/chrome"
 CHROME="$CHROME_DIR/chrome"
 BOTTLE="$CHROME_DIR/bottle.sh"
 COOKIE_PIPE="/tmp/cookie_pipe"
 DISABLE_CHROME_RESTART="/tmp/disable_chrome_restart"
 SEND_METRICS="/etc/send_metrics"
-USER_DATA_DIR="${HOME}/${CHROMEOS_USER}/.config/google-chrome"
+
+# Note that Chromium uses .config/chromium instead, but this should be okay,
+# since we're just using this to opt-in to stats collection, which doesn't
+# apply to Chromium anyway.
+USER_DATA_DIR="${HOME}/.config/google-chrome"
+
+# Migrate users' old profile dirs to the new default location.
+# TODO: Remove this after 20091215.
+OLD_USER_DATA_DIR="${HOME}/${CHROMEOS_USER}/.config/google-chrome"
+if test -d "$OLD_USER_DATA_DIR" -a \! -e "$USER_DATA_DIR"; then
+  mkdir -p "${HOME}/.config"
+  mv "$OLD_USER_DATA_DIR" "$USER_DATA_DIR"
+  rmdir "${HOME}/${CHROMEOS_USER}/.config" && rmdir "${HOME}/${CHROMEOS_USER}"
+fi
 
 "$BOTTLE" "Booting..." &
 
 # The first time a user runs chrome, we use some initial arguments
 # to set up their environment. From then on, chrome session restore
 # will take care of opening the tabs they want.
-FIRST_RUN_ARGS=""
-CLIENTSSL_AUTH_ALLOW_ARGS=""
+FIRST_RUN_ARGS=
+CLIENTSSL_AUTH_ALLOW_ARGS=
 # Determine user's domain.
 # TODO: reliably determine the correct domain for all users.
 DOMAIN="${CHROMEOS_USER#*@}"
@@ -57,7 +67,7 @@ if [ ! -d "$USER_DATA_DIR" ]; then
   fi
 fi
 
-# Allow Chromium to automatically send available SSL client certificates 
+# Allow Chromium to automatically send available SSL client certificates
 # to a server. Until a client certificate UI is available in Chromium,
 # this is automatically enabled for internal users.
 if [ $DOMAIN = "google.com" ]; then
@@ -66,7 +76,7 @@ fi
 
 # We want to pass user login credentials to chrome through the cookie
 # pipe, but only for the first invocation of chrome since boot.
-COOKIE_PIPE_ARG=""
+COOKIE_PIPE_ARG=
 if [ -p "$COOKIE_PIPE" ]; then
   # TODO: If we quote $COOKIE_PIPE, then chrome ignores the argument. Why?
   COOKIE_PIPE_ARG="--cookie-pipe=$COOKIE_PIPE"
@@ -76,18 +86,18 @@ while true; do
   "$BOTTLE" "Starting Chrome" &
   "$CHROME" --enable-plugins \
             --enable-gview \
-            --no-first-run $COOKIE_PIPE_ARG  \
-            --user-data-dir="$USER_DATA_DIR" \
+            --no-first-run \
+            $COOKIE_PIPE_ARG \
             $FIRST_RUN_ARGS \
             $CLIENTSSL_AUTH_ALLOW_ARGS
-            
+
   # After the first launch skip the cookie pipe and first run args.
   rm -f "$COOKIE_PIPE"
-  COOKIE_PIPE_ARG=""
-  FIRST_RUN_ARGS=""
+  COOKIE_PIPE_ARG=
+  FIRST_RUN_ARGS=
 
-  # Only loop if --loop is supplied and auto-restart isn't disabled.
-  if test -f "$DISABLE_CHROME_RESTART" -o -z "$LOOP"; then
+  # Exit if auto-restart has been disabled.
+  if test -f "$DISABLE_CHROME_RESTART"; then
     break
   fi
 done

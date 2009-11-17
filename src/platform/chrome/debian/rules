@@ -49,9 +49,9 @@ install: build
 	ln -s /usr/lib/flashplugin-installer/libflashplayer.so \
 	  $(CURDIR)/debian/chromeos-chrome/opt/google/chrome/plugins
 	# ChromeOS chrome startup script
-	cp $(CURDIR)/run_google_chrome.sh \
-	  $(CURDIR)/debian/chromeos-chrome/usr/bin/chromeos-chrome
-	chmod 0755 $(CURDIR)/debian/chromeos-chrome/usr/bin/chromeos-chrome
+	cp $(CURDIR)/chromeos-chrome-loop \
+	  $(CURDIR)/debian/chromeos-chrome/usr/bin/chromeos-chrome-loop
+	chmod 0755 $(CURDIR)/debian/chromeos-chrome/usr/bin/chromeos-chrome-loop
 
 # Build architecture-dependent files here.
 binary-arch: install
