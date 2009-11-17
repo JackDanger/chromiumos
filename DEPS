@@ -24,12 +24,25 @@ use_relative_paths=True
 # Base is prefixed with "src/" if this is trunk/DEPS, or "" if this
 # is trunk/src/DEPS.
 _third_party_base = "src/third_party/"
+_platform_base = "src/platform/"
 
 vars = {
     "chromiumos_git": "git://chromiumos-git/git/repos"
 }
 
 deps = {
+    # cros
+    _platform_base + "cros":
+        Var("chromiumos_git") + "/cros.git",
+
+    # login_manager
+    _platform_base + "login_manager":
+        Var("chromiumos_git") + "/login_manager.git",
+
+    # pam_google
+    _platform_base + "pam_google":
+        Var("chromiumos_git") + "/pam_google.git",
+
     # gflags 1.1
     _third_party_base + "gflags/files":
         "http://google-gflags.googlecode.com/svn/trunk@31",
