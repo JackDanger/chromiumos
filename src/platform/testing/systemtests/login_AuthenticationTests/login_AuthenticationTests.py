@@ -15,6 +15,7 @@ class login_AuthenticationTests(test.test):
   """
 
   version = 1
+
   def run_once(self):
     fd = open(os.path.join(self.bindir, "authentication-test.dat"))
     # TODO(gauravsh): Change this to read data from a simple CSV file rather
@@ -25,11 +26,11 @@ class login_AuthenticationTests(test.test):
       if not success:
         raise error.TestFail("Failed to Authenticate")
     except Exception, e:
-      raise error.TestError("Error running the test");
+      raise error.TestError(e)
 
-   def RunAuthenticationTests(self,auth_data):
+  def RunAuthenticationTests(self,auth_data):
     for username, properties in auth_data.iteritems():
-      login_cmd = "./login_AuthenticationTest"
+      login_cmd = os.path.join(self.bindir, "./login_AuthenticationTest")
       password = properties.get("password", None)
       cmdline = [login_cmd, username, password]
       return_code = subprocess.call(cmdline)
