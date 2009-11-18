@@ -14,13 +14,9 @@ int main(int argc, char** argv) {
   if (!dlhandle)
     exit(1);
 
-  // Since dlsym can return NULL is the symbol is defined in the module as
-  // equal to NULL, the right way to check for an error is symbol resolution
-  // is to clear the last error (if any), call dlsym, and then check if dlerror
-  // returns anything post-resolution.
-  dlerror();
-  dlsym(dlhandle, kPamFunction);
-  if (dlerror())
+  // We want to know that the symbol is non-NULL in the module, not just that
+  // it is defined.
+  if (!dlsym(dlhandle, kPamFunction))
     exit(2);
 
   return EXIT_SUCCESS;

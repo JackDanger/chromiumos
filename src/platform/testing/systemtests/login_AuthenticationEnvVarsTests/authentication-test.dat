@@ -1,0 +1,8 @@
+# A python dictionary listing test user accounts and passwords.
+# TODO(gauravsh): In the future, we can also annotate each account
+# with additional properties (internal or external account, hosted
+# or google, etc.)
+
+{
+  "chromeos.test1@gmail.com":{"password":"chromeosiscool"},
+}

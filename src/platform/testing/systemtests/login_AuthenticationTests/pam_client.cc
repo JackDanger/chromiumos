@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 #include "pam_client.h"
+#include <iostream>
 
 const std::string kServiceName = "slim";
 const std::string kDisplayName = ":0.0";
@@ -36,7 +37,6 @@ PamClient::PamClient(UserCredentials* user_credentials)
   pam_conversation_callback_.conv = PamConversationCallback;
   pam_conversation_callback_.appdata_ptr =
     static_cast<void*>(user_credentials);
-
   last_pam_result_ = pam_start(kServiceName.c_str(), NULL,
                                &pam_conversation_callback_, &pam_handle_);
 
@@ -53,6 +53,8 @@ PamClient::~PamClient() {
 bool PamClient::Authenticate() {
   // TODO(sosa) - add better logging data by adding different cases
   last_pam_result_ = pam_authenticate(pam_handle_, 0);
+  if (last_pam_result_ != PAM_SUCCESS)
+    std::cerr << pam_strerror(pam_handle_, last_pam_result_) << "\n";
   return last_pam_result_ == PAM_SUCCESS;
 }
 

@@ -15,17 +15,16 @@ CXXFLAGS=-Wall -Werror
 SRCDIR=../../../../../
 INCLUDE_DIRS=-I$(SRCDIR)/src/third_party/chrome/files 
 
-AUTH_TEST_BIN=login_AuthenticationTest
-AUTH_TEST_OBJS=login_AuthenticationTest.o pam_client.o
+AUTH_ENV_TEST_BIN=login_AuthenticationEnvVarsTest
+AUTH_ENV_TEST_OBJS=login_AuthenticationEnvVarsTest.o pam_client.o
 
-all:	$(AUTH_TEST_BIN)
+all:	$(AUTH_ENV_TEST_BIN)
 
-$(AUTH_TEST_BIN):	$(AUTH_TEST_OBJS)
-	$(CXX) $(LDFLAGS) $(CXXFLAGS) $(INCLUDE_DIRS) $(AUTH_TEST_OBJS) \
-	-o $(AUTH_TEST_BIN)
-
+$(AUTH_ENV_TEST_BIN):	$(AUTH_ENV_TEST_OBJS)
+	$(CXX) $(LDFLAGS) $(CXXFLAGS) $(INCLUDE_DIRS) $(AUTH_ENV_TEST_OBJS) \
+	-o $(AUTH_ENV_TEST_BIN)
 .cc.o:
 	$(CXX) $(CXXFLAGS) $(INCLUDE_DIRS) -c $< -o $@
 
 clean:	
-	rm -rf *.o $(AUTH_TEST_BIN)
+	rm -rf *.o $(AUTH_ENV_TEST_BIN)

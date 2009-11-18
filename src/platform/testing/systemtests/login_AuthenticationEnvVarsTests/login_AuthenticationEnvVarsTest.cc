@@ -25,12 +25,21 @@ int main(int argc, char* argv[]) {
   user_credentials.username = argv[1];
   user_credentials.password = argv[2];
 
-  PamClient *client = new PamClient(&user_credentials);
-  if (client->Authenticate()) {
-    std::cerr << "Authentication Succeeded\n";
-    return 0;
-  } else {
-    std::cerr << "Authentication Failed\n";
-    return 255;
+  PamClient client(&user_credentials);
+  int return_code = 0;
+  if (client.Authenticate()) {
+    char *chromeos_user = getenv("CHROMEOS_USER");
+    if (chromeos_user) {
+      std::cout << "Authentication Succeeded, user is "
+                << chromeos_user << "\n";
+      return_code = 0;
+    }
+    std::cerr << "Authentication Succeeded, no chromeos user in env\n";
+    return_code = 255;
   }
+  // As we make test cases that test credentials that are expected to fail, we
+  // need to pick a way to signal that back to the calling process.
+  std::cerr << "Authentication Failed\n";
+  return_code = 255;
+  return return_code;
 }
