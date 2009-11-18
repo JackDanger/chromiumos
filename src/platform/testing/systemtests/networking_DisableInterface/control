@@ -1,0 +1,13 @@
+AUTHOR = "Chrome OS Team"
+NAME = "Disable Network Interface"
+TIME = "SHORT"
+TEST_CATEGORY = "Functional"
+TEST_CLASS = "Network"
+TEST_TYPE = "client"
+
+DOC = """
+This test checks whether a network interface can be disabled.
+"""
+
+job.run_test('networking_DisableInterface', iface_name = 'eth0', tag = 'eth0')
+job.run_test('networking_DisableInterface', iface_name = 'wlan0', tag = 'wlan0')
