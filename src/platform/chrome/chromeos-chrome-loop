@@ -4,6 +4,9 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# Perform some initial setup for the browser if necessary and then run
+# it in a loop.
+
 CHROME_DIR="/opt/google/chrome"
 CHROME="$CHROME_DIR/chrome"
 BOTTLE="$CHROME_DIR/bottle.sh"
@@ -11,18 +14,21 @@ COOKIE_PIPE="/tmp/cookie_pipe"
 DISABLE_CHROME_RESTART="/tmp/disable_chrome_restart"
 SEND_METRICS="/etc/send_metrics"
 
-# Note that Chromium uses .config/chromium instead, but this should be okay,
-# since we're just using this to opt-in to stats collection, which doesn't
-# apply to Chromium anyway.
-USER_DATA_DIR="${HOME}/.config/google-chrome"
+# NOTE: Do not edit the following line.
+# Unofficial and official builds use different default profile dirs.
+# For official builds, debian/rules sets the next line to
+# "google-chrome" when the package is being built.
+PROFILE_DIR=chromium
+
+USER_DATA_DIR="$HOME/.config/$PROFILE_DIR"
 
 # Migrate users' old profile dirs to the new default location.
 # TODO: Remove this after 20091215.
-OLD_USER_DATA_DIR="${HOME}/${CHROMEOS_USER}/.config/google-chrome"
+OLD_USER_DATA_DIR="$HOME/$CHROMEOS_USER/.config/$PROFILE_DIR"
 if test -d "$OLD_USER_DATA_DIR" -a \! -e "$USER_DATA_DIR"; then
-  mkdir -p "${HOME}/.config"
+  mkdir -p "$HOME/.config"
   mv "$OLD_USER_DATA_DIR" "$USER_DATA_DIR"
-  rmdir "${HOME}/${CHROMEOS_USER}/.config" && rmdir "${HOME}/${CHROMEOS_USER}"
+  rmdir "$HOME/$CHROMEOS_USER/.config" && rmdir "$HOME/$CHROMEOS_USER"
 fi
 
 "$BOTTLE" "Booting..." &
@@ -42,8 +48,7 @@ if [ ! -d "$USER_DATA_DIR" ]; then
     # Automatically opt-in to Chrome OS stats collecting.  This does
     # not have to be a cryptographically random string, but we do need
     # a 32 byte, printable string.
-    head -c 8 /dev/random | openssl md5 > \
-        "${USER_DATA_DIR}/Consent To Send Stats"
+    head -c 8 /dev/random | openssl md5 >"$USER_DATA_DIR/Consent To Send Stats"
   fi
 
   # Give appropriate stuff to the users based on their domain.
@@ -84,8 +89,7 @@ fi
 
 while true; do
   "$BOTTLE" "Starting Chrome" &
-  "$CHROME" --enable-plugins \
-            --enable-gview \
+  "$CHROME" --enable-gview \
             --no-first-run \
             $COOKIE_PIPE_ARG \
             $FIRST_RUN_ARGS \

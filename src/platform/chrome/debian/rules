@@ -51,6 +51,12 @@ install: build
 	# ChromeOS chrome startup script
 	cp $(CURDIR)/chromeos-chrome-loop \
 	  $(CURDIR)/debian/chromeos-chrome/usr/bin/chromeos-chrome-loop
+	# Make the script use "google-chrome" instead of "chromium" for
+	# official builds.
+	if [ "$(USE_RELEASE_CHROME)" = "1" ]; then \
+	  perl -pi -le '$$_ = "PROFILE_DIR=google-chrome" if /^PROFILE_DIR=/' \
+	    $(CURDIR)/debian/chromeos-chrome/usr/bin/chromeos-chrome-loop; \
+	fi
 	chmod 0755 $(CURDIR)/debian/chromeos-chrome/usr/bin/chromeos-chrome-loop
 
 # Build architecture-dependent files here.
