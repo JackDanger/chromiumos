@@ -136,3 +136,6 @@ libdbus-glib-1-dev
 cdbs
 gtk-doc-tools
 
+# Packages needed to build fio
+libaio-dev
+
