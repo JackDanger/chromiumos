@@ -67,7 +67,7 @@ class WindowManagerTest : public ::testing::Test {
     } else {
       EXPECT_TRUE(exists);
       ASSERT_EQ(expected.size(), actual.size());
-      for (int i = 0; i < actual.size(); ++i)
+      for (size_t i = 0; i < actual.size(); ++i)
         EXPECT_EQ(expected[i], actual[i]);
     }
   }
