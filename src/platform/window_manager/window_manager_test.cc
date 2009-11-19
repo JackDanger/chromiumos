@@ -665,6 +665,157 @@ TEST_F(WindowManagerTest, XRandR) {
   EXPECT_EQ(WindowManager::kPanelBarHeight, wm_->panel_bar_->height());
 }
 
+// Test that the _NET_CLIENT_LIST and _NET_CLIENT_LIST_STACKING properties
+// on the root window get updated correctly.
+TEST_F(WindowManagerTest, ClientListProperties) {
+  XAtom list_atom = None, stacking_atom = None;
+  ASSERT_TRUE(xconn_->GetAtom("_NET_CLIENT_LIST", &list_atom));
+  ASSERT_TRUE(xconn_->GetAtom("_NET_CLIENT_LIST_STACKING", &stacking_atom));
+
+  // Both properties should be unset when there aren't any client windows.
+  std::vector<int> list_xids, stacking_xids;
+  XWindow root_xid = xconn_->GetRootWindow();
+  EXPECT_FALSE(xconn_->GetIntArrayProperty(root_xid, list_atom, &list_xids));
+  EXPECT_FALSE(
+      xconn_->GetIntArrayProperty(root_xid, stacking_atom, &stacking_xids));
+
+  // Create and map a regular window.
+  XWindow xid = CreateSimpleWindow(root_xid);
+  MockXConnection::WindowInfo* info = xconn_->GetWindowInfoOrDie(xid);
+  XEvent event;
+  MockXConnection::InitCreateWindowEvent(&event, *info);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  MockXConnection::InitMapRequestEvent(&event, *info);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  EXPECT_TRUE(info->mapped);
+  MockXConnection::InitMapEvent(&event, xid);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+
+  // Both properties should contain just this window.
+  EXPECT_TRUE(xconn_->GetIntArrayProperty(root_xid, list_atom, &list_xids));
+  ASSERT_EQ(1, list_xids.size());
+  EXPECT_EQ(xid, list_xids[0]);
+  EXPECT_TRUE(
+      xconn_->GetIntArrayProperty(root_xid, stacking_atom, &stacking_xids));
+  ASSERT_EQ(1, stacking_xids.size());
+  EXPECT_EQ(xid, stacking_xids[0]);
+
+  // Create and map an override-redirect window.
+  XWindow override_redirect_xid =
+      xconn_->CreateWindow(
+          root_xid,  // parent
+          0, 0,      // x, y
+          200, 200,  // width, height
+          true,      // override_redirect
+          false,     // input_only
+          0);        // event_mask
+  MockXConnection::WindowInfo* override_redirect_info =
+      xconn_->GetWindowInfoOrDie(override_redirect_xid);
+  MockXConnection::InitCreateWindowEvent(&event, *override_redirect_info);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  ASSERT_TRUE(xconn_->MapWindow(override_redirect_xid));
+  MockXConnection::InitMapEvent(&event, override_redirect_xid);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+
+  // The override-redirect window shouldn't be included.
+  EXPECT_TRUE(xconn_->GetIntArrayProperty(root_xid, list_atom, &list_xids));
+  ASSERT_EQ(1, list_xids.size());
+  EXPECT_EQ(xid, list_xids[0]);
+  EXPECT_TRUE(
+      xconn_->GetIntArrayProperty(root_xid, stacking_atom, &stacking_xids));
+  ASSERT_EQ(1, stacking_xids.size());
+  EXPECT_EQ(xid, stacking_xids[0]);
+
+  // Create and map a second regular window.
+  XWindow xid2 = CreateSimpleWindow(root_xid);
+  MockXConnection::WindowInfo* info2 = xconn_->GetWindowInfoOrDie(xid2);
+  MockXConnection::InitCreateWindowEvent(&event, *info2);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  MockXConnection::InitMapRequestEvent(&event, *info2);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  EXPECT_TRUE(info2->mapped);
+  MockXConnection::InitMapEvent(&event, xid2);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+
+  // The second window should appear after the first in _NET_CLIENT_LIST,
+  // since it was mapped after it, and after the first in
+  // _NET_CLIENT_LIST_STACKING, since it's stacked above it (new windows
+  // get stacked above their siblings).
+  EXPECT_TRUE(xconn_->GetIntArrayProperty(root_xid, list_atom, &list_xids));
+  ASSERT_EQ(2, list_xids.size());
+  EXPECT_EQ(xid, list_xids[0]);
+  EXPECT_EQ(xid2, list_xids[1]);
+  EXPECT_TRUE(
+      xconn_->GetIntArrayProperty(root_xid, stacking_atom, &stacking_xids));
+  ASSERT_EQ(2, stacking_xids.size());
+  EXPECT_EQ(xid, stacking_xids[0]);
+  EXPECT_EQ(xid2, stacking_xids[1]);
+
+  // Raise the override-redirect window above the others.
+  ASSERT_TRUE(xconn_->RaiseWindow(override_redirect_xid));
+  MockXConnection::InitConfigureNotifyEvent(&event, *override_redirect_info);
+  event.xconfigure.above = xid2;
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+
+  // The properties should be unchanged.
+  EXPECT_TRUE(xconn_->GetIntArrayProperty(root_xid, list_atom, &list_xids));
+  ASSERT_EQ(2, list_xids.size());
+  EXPECT_EQ(xid, list_xids[0]);
+  EXPECT_EQ(xid2, list_xids[1]);
+  EXPECT_TRUE(
+      xconn_->GetIntArrayProperty(root_xid, stacking_atom, &stacking_xids));
+  ASSERT_EQ(2, stacking_xids.size());
+  EXPECT_EQ(xid, stacking_xids[0]);
+  EXPECT_EQ(xid2, stacking_xids[1]);
+
+  // Raise the first window on top of the second window.
+  ASSERT_TRUE(xconn_->StackWindow(xid, xid2, true));
+  MockXConnection::InitConfigureNotifyEvent(&event, *info);
+  event.xconfigure.above = xid2;
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+
+  // The list property should be unchanged, but the second window should
+  // appear first in the stacking property since it's now on the bottom.
+  EXPECT_TRUE(xconn_->GetIntArrayProperty(root_xid, list_atom, &list_xids));
+  ASSERT_EQ(2, list_xids.size());
+  EXPECT_EQ(xid, list_xids[0]);
+  EXPECT_EQ(xid2, list_xids[1]);
+  EXPECT_TRUE(
+      xconn_->GetIntArrayProperty(root_xid, stacking_atom, &stacking_xids));
+  ASSERT_EQ(2, stacking_xids.size());
+  EXPECT_EQ(xid2, stacking_xids[0]);
+  EXPECT_EQ(xid, stacking_xids[1]);
+
+  // Destroy the first window.
+  ASSERT_TRUE(xconn_->DestroyWindow(xid));
+  MockXConnection::InitUnmapEvent(&event, xid);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  MockXConnection::InitDestroyWindowEvent(&event, xid);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+
+  // Both properties should just contain the second window now.
+  EXPECT_TRUE(xconn_->GetIntArrayProperty(root_xid, list_atom, &list_xids));
+  ASSERT_EQ(1, list_xids.size());
+  EXPECT_EQ(xid2, list_xids[0]);
+  EXPECT_TRUE(
+      xconn_->GetIntArrayProperty(root_xid, stacking_atom, &stacking_xids));
+  ASSERT_EQ(1, stacking_xids.size());
+  EXPECT_EQ(xid2, stacking_xids[0]);
+
+  // Tell the window manager that the second window was reparented away.
+  XReparentEvent* reparent_event = &(event.xreparent);
+  memset(reparent_event, 0, sizeof(*reparent_event));
+  reparent_event->type = ReparentNotify;
+  reparent_event->window = xid2;
+  reparent_event->parent = 324324;  // arbitrary number
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+
+  // The properties should be unset.
+  EXPECT_FALSE(xconn_->GetIntArrayProperty(root_xid, list_atom, &list_xids));
+  EXPECT_FALSE(
+      xconn_->GetIntArrayProperty(root_xid, stacking_atom, &stacking_xids));
+}
+
 }  // namespace chromeos
 
 int main(int argc, char **argv) {

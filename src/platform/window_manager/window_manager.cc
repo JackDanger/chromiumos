@@ -359,9 +359,6 @@ bool WindowManager::Init() {
             true));  // preserve GDK's existing event mask
   ManageExistingWindows();
 
-  UpdateClientListProperty();
-  UpdateClientListStackingProperty();
-
   if (FLAGS_wm_spawn_chrome_on_start) {
     CHECK(!FLAGS_wm_chrome_command.empty());
     g_idle_add(callback_runner_once,
@@ -692,6 +689,7 @@ bool WindowManager::ManageExistingWindows() {
       HandleMappedWindow(win);
     }
   }
+  UpdateClientListStackingProperty();
   return true;
 }
 
@@ -730,16 +728,16 @@ Window* WindowManager::TrackWindow(XWindow xid) {
 }
 
 void WindowManager::HandleMappedWindow(Window* win) {
-  // _NET_CLIENT_LIST contains mapped, managed (i.e.
-  // non-override-redirect) client windows.  We store all mapped, tracked
-  // (i.e. composited) windows in 'mapped_xids_', since override-redirect
-  // can be turned on and off, but we only need to update the property if
-  // it's actually changing.
-  if (mapped_xids_->Contains(win->xid())) {
-    LOG(WARNING) << "Got map notify for " << win->xid() << ", which is "
-                 << "already listed in 'mapped_xids_'";
-  } else {
-    mapped_xids_->AddOnTop(win->xid());
+  if (!win->override_redirect()) {
+    if (mapped_xids_->Contains(win->xid())) {
+      LOG(WARNING) << "Got map notify for " << win->xid() << ", which is "
+                   << "already listed in 'mapped_xids_'";
+    } else {
+      mapped_xids_->AddOnTop(win->xid());
+      UpdateClientListProperty();
+      // This only includes mapped windows, so we need to update it now.
+      UpdateClientListStackingProperty();
+    }
   }
 
   SetWmStateProperty(win->xid(), 1);  // NormalState
@@ -765,8 +763,14 @@ bool WindowManager::UpdateClientListProperty() {
   for (std::list<XWindow>::const_reverse_iterator it = xids.rbegin();
        it != xids.rend(); ++it) {
     const Window* win = GetWindow(*it);
-    if (win && win->mapped() && !win->override_redirect())
+    if (!win || !win->mapped() || win->override_redirect()) {
+      LOG(WARNING) << "Skipping "
+                   << (!win ? "missing" :
+                       (!win->mapped() ? "unmapped" : "override-redirect"))
+                   << " window " << *it << " when updating _NET_CLIENT_LIST";
+    } else {
       values.push_back(*it);
+    }
   }
   if (!values.empty()) {
     return xconn_->SetIntArrayProperty(
@@ -1075,13 +1079,14 @@ bool WindowManager::HandleCreateNotify(const XCreateWindowEvent& e) {
   if (!xconn_->GetWindowAttributes(e.window, &attr)) {
     LOG(WARNING) << "Window " << e.window << " went away while we were "
                  << "handling its CreateNotify event";
-  } else {
-    // override-redirect means that the window manager isn't going to
-    // intercept this window's structure events, but we still need to
-    // composite the window, so we'll create a Window object for it
-    // regardless.
-    TrackWindow(e.window);
+    return true;
   }
+
+  // override-redirect means that the window manager isn't going to
+  // intercept this window's structure events, but we still need to
+  // composite the window, so we'll create a Window object for it
+  // regardless.
+  Window* win = TrackWindow(e.window);
 
   return true;
 }
@@ -1094,8 +1099,12 @@ bool WindowManager::HandleDestroyNotify(const XDestroyWindowEvent& e) {
 
   // Don't bother doing anything else for windows which aren't direct
   // children of the root window.
-  if (!GetWindow(e.window))
+  Window* win = GetWindow(e.window);
+  if (!win)
     return false;
+
+  if (!win->override_redirect())
+    UpdateClientListStackingProperty();
 
   // TODO: If the code to remove a window gets more involved, move it into
   // a separate RemoveWindow() method -- window_test.cc currently erases
@@ -1189,11 +1198,6 @@ bool WindowManager::HandleMapNotify(const XMapEvent& e) {
   VLOG(1) << "Handling map notify for " << e.window;
   win->set_mapped(true);
   HandleMappedWindow(win);
-
-  // If _NET_CLIENT_LIST changed (i.e. a non-override-redirect window just
-  // got mapped), update the property.
-  if (!win->override_redirect())
-    UpdateClientListProperty();
   return true;
 }
 
@@ -1281,9 +1285,25 @@ bool WindowManager::HandleReparentNotify(const XReparentEvent& e) {
 
     stacked_xids_->Remove(e.window);
 
-    if (GetWindow(e.window)) {
-      if (mapped_xids_->Contains(e.window))
-        mapped_xids_->Remove(e.window);
+    if (mapped_xids_->Contains(e.window)) {
+      mapped_xids_->Remove(e.window);
+      UpdateClientListProperty();
+    }
+
+    Window* win = GetWindow(e.window);
+    if (win) {
+      if (!win->override_redirect())
+        UpdateClientListStackingProperty();
+
+      if (win->mapped()) {
+        // Make sure that all event consumers know that the window's going
+        // away.
+        for (std::set<EventConsumer*>::iterator it = event_consumers_.begin();
+             it != event_consumers_.end(); ++it) {
+          (*it)->HandleWindowUnmap(win);
+        }
+      }
+
       client_windows_.erase(e.window);
 
       // We're not going to be compositing the window anymore, so
@@ -1345,6 +1365,7 @@ bool WindowManager::HandleUnmapNotify(const XUnmapEvent& e) {
   Window* win = GetWindow(e.window);
   if (!win)
     return false;
+
   SetWmStateProperty(e.window, 0);  // WithdrawnState
   win->set_mapped(false);
   win->HideComposited();
@@ -1355,8 +1376,8 @@ bool WindowManager::HandleUnmapNotify(const XUnmapEvent& e) {
 
   if (mapped_xids_->Contains(win->xid())) {
     mapped_xids_->Remove(win->xid());
-    if (!win->override_redirect())
-      UpdateClientListProperty();
+    UpdateClientListProperty();
+    UpdateClientListStackingProperty();
   }
   return true;
 }

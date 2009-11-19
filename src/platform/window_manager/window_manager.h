@@ -305,7 +305,7 @@ class WindowManager {
   // Windows that are being tracked.
   std::map<XWindow, std::tr1::shared_ptr<Window> > client_windows_;
 
-  // This is a list of tracked (i.e. includes override-redirect) client
+  // This is a list of mapped, managed (i.e. not override-redirect) client
   // windows, in most-to-least-recently-mapped order.  Used to set EWMH's
   // _NET_CLIENT_LIST property.
   scoped_ptr<Stacker<XWindow> > mapped_xids_;
@@ -313,8 +313,8 @@ class WindowManager {
   // All immediate children of the root window (even ones that we don't
   // "track", in the sense of having Window objects for them in
   // 'client_windows_') in top-to-bottom stacking order.  EWMH's
-  // _NET_CLIENT_LIST_STACKING property contains the managed windows from
-  // this list.
+  // _NET_CLIENT_LIST_STACKING property contains the managed (i.e. not
+  // override-redirect) windows from this list.
   scoped_ptr<Stacker<XWindow> > stacked_xids_;
 
   // Things that consume events (e.g. LayoutManager, PanelBar, etc.).
