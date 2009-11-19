@@ -1,3 +1,9 @@
+chromeos-systemtests (1.0-2) unstable; urgency=low
+
+  * Add fio dependency.
+
+ -- The Chromium OS Authors <chromium-os-dev@googlegroups.com>  Mon, 16 Nov 2009 18:18:33 -0800
+
 chromeos-systemtests (1.0-1) unstable; urgency=low
 
   * Initial release.
