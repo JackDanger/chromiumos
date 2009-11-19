@@ -2,3 +2,5 @@
 CODE_REVIEW_SERVER: chromereview.prom.corp.google.com
 VIEW_VC: http://chrome-svn/viewvc/chromeos?view=rev&revision=
 CC_LIST: chromeos-reviews@google.com
+GITCL_PREUPLOAD: http://src.chromium.org/viewvc/chrome/trunk/tools/depot_tools/git-cl-upload-hook
+GITCL_PREDCOMMIT: http://src.chromium.org/viewvc/chrome/trunk/tools/depot_tools/git-cl-upload-hook
