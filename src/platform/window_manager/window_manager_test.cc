@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 #include <algorithm>
+#include <cstdarg>
 
 #include <gflags/gflags.h>
 #include <gtest/gtest.h>
@@ -34,7 +35,7 @@ class WindowManagerTest : public ::testing::Test {
   }
 
   // Simple method that creates a toplevel client window and returns its ID.
-  virtual XWindow CreateSimpleWindow(XWindow parent) {
+  XWindow CreateSimpleWindow(XWindow parent) {
     return xconn_->CreateWindow(
         parent,
         10, 20,  // x, y
@@ -42,6 +43,33 @@ class WindowManagerTest : public ::testing::Test {
         false,   // override redirect
         false,   // input only
         0);      // event mask
+  }
+
+  // Fetch an int array property on a window and check that it contains the
+  // expected values.  'num_values' is the number of expected values passed
+  // as varargs.
+  void TestIntArrayProperty(XWindow xid, XAtom atom, int num_values, ...) {
+    std::vector<int> expected;
+
+    va_list args;
+    va_start(args, num_values);
+    CHECK_GE(num_values, 0);
+    for (; num_values; num_values--) {
+      int arg = va_arg(args, int);
+      expected.push_back(arg);
+    }
+    va_end(args);
+
+    std::vector<int> actual;
+    int exists = xconn_->GetIntArrayProperty(xid, atom, &actual);
+    if (expected.empty()) {
+      EXPECT_FALSE(exists);
+    } else {
+      EXPECT_TRUE(exists);
+      ASSERT_EQ(expected.size(), actual.size());
+      for (int i = 0; i < actual.size(); ++i)
+        EXPECT_EQ(expected[i], actual[i]);
+    }
   }
 
   scoped_ptr<MockXConnection> xconn_;
@@ -668,16 +696,14 @@ TEST_F(WindowManagerTest, XRandR) {
 // Test that the _NET_CLIENT_LIST and _NET_CLIENT_LIST_STACKING properties
 // on the root window get updated correctly.
 TEST_F(WindowManagerTest, ClientListProperties) {
+  XWindow root_xid = xconn_->GetRootWindow();
   XAtom list_atom = None, stacking_atom = None;
   ASSERT_TRUE(xconn_->GetAtom("_NET_CLIENT_LIST", &list_atom));
   ASSERT_TRUE(xconn_->GetAtom("_NET_CLIENT_LIST_STACKING", &stacking_atom));
 
   // Both properties should be unset when there aren't any client windows.
-  std::vector<int> list_xids, stacking_xids;
-  XWindow root_xid = xconn_->GetRootWindow();
-  EXPECT_FALSE(xconn_->GetIntArrayProperty(root_xid, list_atom, &list_xids));
-  EXPECT_FALSE(
-      xconn_->GetIntArrayProperty(root_xid, stacking_atom, &stacking_xids));
+  TestIntArrayProperty(root_xid, list_atom, 0);
+  TestIntArrayProperty(root_xid, stacking_atom, 0);
 
   // Create and map a regular window.
   XWindow xid = CreateSimpleWindow(root_xid);
@@ -692,13 +718,8 @@ TEST_F(WindowManagerTest, ClientListProperties) {
   EXPECT_TRUE(wm_->HandleEvent(&event));
 
   // Both properties should contain just this window.
-  EXPECT_TRUE(xconn_->GetIntArrayProperty(root_xid, list_atom, &list_xids));
-  ASSERT_EQ(1, list_xids.size());
-  EXPECT_EQ(xid, list_xids[0]);
-  EXPECT_TRUE(
-      xconn_->GetIntArrayProperty(root_xid, stacking_atom, &stacking_xids));
-  ASSERT_EQ(1, stacking_xids.size());
-  EXPECT_EQ(xid, stacking_xids[0]);
+  TestIntArrayProperty(root_xid, list_atom, 1, xid);
+  TestIntArrayProperty(root_xid, stacking_atom, 1, xid);
 
   // Create and map an override-redirect window.
   XWindow override_redirect_xid =
@@ -718,13 +739,8 @@ TEST_F(WindowManagerTest, ClientListProperties) {
   EXPECT_TRUE(wm_->HandleEvent(&event));
 
   // The override-redirect window shouldn't be included.
-  EXPECT_TRUE(xconn_->GetIntArrayProperty(root_xid, list_atom, &list_xids));
-  ASSERT_EQ(1, list_xids.size());
-  EXPECT_EQ(xid, list_xids[0]);
-  EXPECT_TRUE(
-      xconn_->GetIntArrayProperty(root_xid, stacking_atom, &stacking_xids));
-  ASSERT_EQ(1, stacking_xids.size());
-  EXPECT_EQ(xid, stacking_xids[0]);
+  TestIntArrayProperty(root_xid, list_atom, 1, xid);
+  TestIntArrayProperty(root_xid, stacking_atom, 1, xid);
 
   // Create and map a second regular window.
   XWindow xid2 = CreateSimpleWindow(root_xid);
@@ -741,15 +757,8 @@ TEST_F(WindowManagerTest, ClientListProperties) {
   // since it was mapped after it, and after the first in
   // _NET_CLIENT_LIST_STACKING, since it's stacked above it (new windows
   // get stacked above their siblings).
-  EXPECT_TRUE(xconn_->GetIntArrayProperty(root_xid, list_atom, &list_xids));
-  ASSERT_EQ(2, list_xids.size());
-  EXPECT_EQ(xid, list_xids[0]);
-  EXPECT_EQ(xid2, list_xids[1]);
-  EXPECT_TRUE(
-      xconn_->GetIntArrayProperty(root_xid, stacking_atom, &stacking_xids));
-  ASSERT_EQ(2, stacking_xids.size());
-  EXPECT_EQ(xid, stacking_xids[0]);
-  EXPECT_EQ(xid2, stacking_xids[1]);
+  TestIntArrayProperty(root_xid, list_atom, 2, xid, xid2);
+  TestIntArrayProperty(root_xid, stacking_atom, 2, xid, xid2);
 
   // Raise the override-redirect window above the others.
   ASSERT_TRUE(xconn_->RaiseWindow(override_redirect_xid));
@@ -758,15 +767,8 @@ TEST_F(WindowManagerTest, ClientListProperties) {
   EXPECT_TRUE(wm_->HandleEvent(&event));
 
   // The properties should be unchanged.
-  EXPECT_TRUE(xconn_->GetIntArrayProperty(root_xid, list_atom, &list_xids));
-  ASSERT_EQ(2, list_xids.size());
-  EXPECT_EQ(xid, list_xids[0]);
-  EXPECT_EQ(xid2, list_xids[1]);
-  EXPECT_TRUE(
-      xconn_->GetIntArrayProperty(root_xid, stacking_atom, &stacking_xids));
-  ASSERT_EQ(2, stacking_xids.size());
-  EXPECT_EQ(xid, stacking_xids[0]);
-  EXPECT_EQ(xid2, stacking_xids[1]);
+  TestIntArrayProperty(root_xid, list_atom, 2, xid, xid2);
+  TestIntArrayProperty(root_xid, stacking_atom, 2, xid, xid2);
 
   // Raise the first window on top of the second window.
   ASSERT_TRUE(xconn_->StackWindow(xid, xid2, true));
@@ -776,15 +778,8 @@ TEST_F(WindowManagerTest, ClientListProperties) {
 
   // The list property should be unchanged, but the second window should
   // appear first in the stacking property since it's now on the bottom.
-  EXPECT_TRUE(xconn_->GetIntArrayProperty(root_xid, list_atom, &list_xids));
-  ASSERT_EQ(2, list_xids.size());
-  EXPECT_EQ(xid, list_xids[0]);
-  EXPECT_EQ(xid2, list_xids[1]);
-  EXPECT_TRUE(
-      xconn_->GetIntArrayProperty(root_xid, stacking_atom, &stacking_xids));
-  ASSERT_EQ(2, stacking_xids.size());
-  EXPECT_EQ(xid2, stacking_xids[0]);
-  EXPECT_EQ(xid, stacking_xids[1]);
+  TestIntArrayProperty(root_xid, list_atom, 2, xid, xid2);
+  TestIntArrayProperty(root_xid, stacking_atom, 2, xid2, xid);
 
   // Destroy the first window.
   ASSERT_TRUE(xconn_->DestroyWindow(xid));
@@ -794,13 +789,8 @@ TEST_F(WindowManagerTest, ClientListProperties) {
   EXPECT_TRUE(wm_->HandleEvent(&event));
 
   // Both properties should just contain the second window now.
-  EXPECT_TRUE(xconn_->GetIntArrayProperty(root_xid, list_atom, &list_xids));
-  ASSERT_EQ(1, list_xids.size());
-  EXPECT_EQ(xid2, list_xids[0]);
-  EXPECT_TRUE(
-      xconn_->GetIntArrayProperty(root_xid, stacking_atom, &stacking_xids));
-  ASSERT_EQ(1, stacking_xids.size());
-  EXPECT_EQ(xid2, stacking_xids[0]);
+  TestIntArrayProperty(root_xid, list_atom, 1, xid2);
+  TestIntArrayProperty(root_xid, stacking_atom, 1, xid2);
 
   // Tell the window manager that the second window was reparented away.
   XReparentEvent* reparent_event = &(event.xreparent);
@@ -811,9 +801,8 @@ TEST_F(WindowManagerTest, ClientListProperties) {
   EXPECT_TRUE(wm_->HandleEvent(&event));
 
   // The properties should be unset.
-  EXPECT_FALSE(xconn_->GetIntArrayProperty(root_xid, list_atom, &list_xids));
-  EXPECT_FALSE(
-      xconn_->GetIntArrayProperty(root_xid, stacking_atom, &stacking_xids));
+  TestIntArrayProperty(root_xid, list_atom, 0);
+  TestIntArrayProperty(root_xid, stacking_atom, 0);
 }
 
 }  // namespace chromeos
