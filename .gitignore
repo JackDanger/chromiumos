@@ -15,6 +15,9 @@
 *~
 
 # Ignore DEPS
+src/platform/cros/
+src/platform/login_manager/
+src/platform/pam_google/
 src/third_party/chrome/files/
 src/third_party/connman/build/
 src/third_party/connman/connman-0.42/
@@ -23,6 +26,7 @@ src/third_party/gflags/files/
 src/third_party/google-breakpad/files/
 src/third_party/gtest/files/
 src/third_party/kernel/files/
+src/third_party/pam-dev/
 src/third_party/ply-image/src/
 src/third_party/shflags/files/
 src/third_party/shunit2/files/
