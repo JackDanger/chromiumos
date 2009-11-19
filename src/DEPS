@@ -27,7 +27,7 @@ _third_party_base = "third_party/"
 _platform_base = "platform/"
 
 vars = {
-    "chromiumos_git": "git://chromiumos-git/git/repos"
+    "chromiumos_git": "http://src.chromium.org/git"
 }
 
 deps = {
