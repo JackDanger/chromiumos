@@ -313,6 +313,7 @@ libpolkit2 0.9-4ubuntu1 optional libs pool/main/p/policykit/libpolkit2_0.9-4ubun
 libpopt0 1.14-4 important libs pool/main/p/popt/libpopt0_1.14-4_i386.deb
 libppl-c2 0.10.2-2 standard libs pool/main/p/ppl/libppl-c2_0.10.2-2_i386.deb
 libppl7 0.10.2-2 standard libs pool/main/p/ppl/libppl7_0.10.2-2_i386.deb
+libpq5 8.4.1-1 optional libs pool/main/p/postgresql-8.4/libpq5_8.4.1-1_i386.deb
 libprotobuf-dev 2.0.3-2.2ubuntu1 extra libdevel pool/main/p/protobuf/libprotobuf-dev_2.0.3-2.2ubuntu1_i386.deb
 libprotobuf3 2.0.3-2.2ubuntu1 extra devel pool/main/p/protobuf/libprotobuf3_2.0.3-2.2ubuntu1_i386.deb
 libpth20 2.0.7-12 optional libs pool/main/p/pth/libpth20_2.0.7-12_i386.deb
@@ -478,8 +479,14 @@ protobuf-compiler 2.0.3-2.2ubuntu1 extra devel pool/main/p/protobuf/protobuf-com
 psmisc 22.7-1 standard admin pool/main/p/psmisc/psmisc_22.7-1_i386.deb
 python 2.6.2-0ubuntu1 important python pool/main/p/python-defaults/python_2.6.2-0ubuntu1_all.deb
 python-central 0.6.11ubuntu7 standard python pool/main/p/python-central/python-central_0.6.11ubuntu7_all.deb
+python-cheetah 2.0.1-2ubuntu6 optional text pool/main/c/cheetah/python-cheetah_2.0.1-2ubuntu6_i386.deb
+python-egenix-mxdatetime 3.1.2-1ubuntu1 optional python pool/main/e/egenix-mx-base/python-egenix-mxdatetime_3.1.2-1ubuntu1_i386.deb
+python-egenix-mxtools 3.1.2-1ubuntu1 optional python pool/main/e/egenix-mx-base/python-egenix-mxtools_3.1.2-1ubuntu1_i386.deb
+python-flup 1.0.2-1 optional universe/python pool/universe/f/flup/python-flup_1.0.2-1_all.deb
 python-minimal 2.6.2-0ubuntu1 required python pool/main/p/python-defaults/python-minimal_2.6.2-0ubuntu1_all.deb
+python-psycopg2 2.0.8-0ubuntu2 optional universe/python pool/universe/p/psycopg2/python-psycopg2_2.0.8-0ubuntu2_i386.deb
 python-support 1.0.3ubuntu1 standard python pool/main/p/python-support/python-support_1.0.3ubuntu1_all.deb
+python-webpy 1:0.32+dak1-1 optional universe/python pool/universe/w/webpy/python-webpy_0.32+dak1-1_all.deb
 python2.6 2.6.2-0ubuntu2 important python pool/main/p/python2.6/python2.6_2.6.2-0ubuntu2_i386.deb
 python2.6-minimal 2.6.2-0ubuntu2 required python pool/main/p/python2.6/python2.6-minimal_2.6.2-0ubuntu2_i386.deb
 quilt 0.46-7 optional devel pool/main/q/quilt/quilt_0.46-7_all.deb
