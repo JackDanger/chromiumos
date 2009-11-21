@@ -1,0 +1,6 @@
+# If we don't create generic udev rules, then udev will try to save the
+# history of various devices (i.e. always associate a given device and MAC
+# address with the same wlan number). As we use a keyfob across different
+# machines the ethN and wlanN keep changing.
+SUBSYSTEM=="net", ACTION=="add", DRIVERS=="?*", ATTR{type}=="1", KERNEL=="eth*", NAME="eth0"
+SUBSYSTEM=="net", ACTION=="add", DRIVERS=="?*", ATTR{type}=="1", KERNEL=="wlan*", NAME="wlan0"

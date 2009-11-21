@@ -1,0 +1,7 @@
+The subdirectories of this directory contain static files that are copied
+to the target filesystem's root directory when building an image.  At the
+moment, these files will all be owned by root and world-readable.
+
+'common' contains files that are specific to all architectures; additional
+directories should be created for files that apply only to specific
+targets.
