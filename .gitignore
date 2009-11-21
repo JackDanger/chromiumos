@@ -22,6 +22,7 @@ src/third_party/chrome/files/
 src/third_party/connman/build/
 src/third_party/connman/connman-0.42/
 src/third_party/e2fsprogs/files/
+src/third_party/fio/files/
 src/third_party/gflags/files/
 src/third_party/google-breakpad/files/
 src/third_party/gtest/files/
