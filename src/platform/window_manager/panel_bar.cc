@@ -70,6 +70,17 @@ PanelBar::PanelBar(WindowManager* wm, int x, int y, int width, int height)
 PanelBar::~PanelBar() {
 }
 
+bool PanelBar::HandleWindowMapRequest(Window* win) {
+  if (win->type() != WmIpc::WINDOW_TYPE_CHROME_PANEL &&
+      win->type() != WmIpc::WINDOW_TYPE_CHROME_PANEL_TITLEBAR)
+    return false;
+
+  win->MoveClientOffscreen();
+  win->StackClientBelow(wm_->client_stacking_win());
+  win->MapClient();
+  return true;
+}
+
 void PanelBar::HandleWindowMap(Window* win) {
   CHECK(win);
 

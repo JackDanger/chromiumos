@@ -718,11 +718,6 @@ Window* WindowManager::TrackWindow(XWindow xid) {
     std::tr1::shared_ptr<Window> win_ref(new Window(this, xid));
     client_windows_.insert(std::make_pair(xid, win_ref));
     win = win_ref.get();
-    if (!win->override_redirect()) {
-      // Move non-override-redirect windows offscreen before they get
-      // mapped so they won't accidentally receive events.
-      win->MoveClientOffscreen();
-    }
   }
   return win;
 }
@@ -1210,15 +1205,21 @@ bool WindowManager::HandleMapRequest(const XMapRequestEvent& e) {
     LOG(WARNING) << "Mapping " << e.window << ", which we somehow didn't "
                  << "already know about";
     xconn_->MapWindow(e.window);
-  } else {
-    if (win->override_redirect()) {
-      LOG(WARNING) << "Huh?  Got a MapRequest event for override-redirect "
-                   << "window " << e.window;
-    }
-    win->MapClient();
-    win->StackClientBelow(client_stacking_win_);
+    return true;
   }
-  return true;
+
+  if (win->override_redirect()) {
+    LOG(WARNING) << "Huh?  Got a MapRequest event for override-redirect "
+                 << "window " << e.window;
+  }
+  for (std::set<EventConsumer*>::iterator it = event_consumers_.begin();
+       it != event_consumers_.end(); ++it) {
+    if ((*it)->HandleWindowMapRequest(win))
+      return true;
+  }
+  LOG(WARNING) << "Not mapping window " << win->xid() << " with type "
+               << win->type();
+  return false;
 }
 
 bool WindowManager::HandleMotionNotify(const XMotionEvent& e) {

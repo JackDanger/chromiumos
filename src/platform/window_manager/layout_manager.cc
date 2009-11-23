@@ -175,6 +175,19 @@ bool LayoutManager::IsInputWindow(XWindow xid) {
   return (GetToplevelWindowByInputXid(xid) != NULL);
 }
 
+bool LayoutManager::HandleWindowMapRequest(Window* win) {
+  if (!IsHandledWindowType(win->type()))
+    return false;
+
+  // We preserve info bubbles' initial locations even though they're
+  // ultimately transient windows.
+  if (win->type() != WmIpc::WINDOW_TYPE_CHROME_INFO_BUBBLE)
+    win->MoveClientOffscreen();
+  win->StackClientBelow(wm_->client_stacking_win());
+  win->MapClient();
+  return true;
+}
+
 void LayoutManager::HandleWindowMap(Window* win) {
   CHECK(win);
 
@@ -195,6 +208,9 @@ void LayoutManager::HandleWindowMap(Window* win) {
     }
     return;
   }
+
+  if (!IsHandledWindowType(win->type()))
+    return;
 
   switch (win->type()) {
     // TODO: Remove this.  mock_chrome currently depends on the WM to
@@ -248,6 +264,7 @@ void LayoutManager::HandleWindowMap(Window* win) {
       break;
     }
     case WmIpc::WINDOW_TYPE_CHROME_TOPLEVEL:
+    case WmIpc::WINDOW_TYPE_CHROME_INFO_BUBBLE:
     case WmIpc::WINDOW_TYPE_UNKNOWN: {
       if (win->transient_for_xid() != None) {
         ToplevelWindow* toplevel_owner =
@@ -302,6 +319,7 @@ void LayoutManager::HandleWindowMap(Window* win) {
       break;
     }
     default:
+      NOTREACHED() << "Unexpected window type " << win->type();
       break;
   }
 }
@@ -937,11 +955,19 @@ void LayoutManager::ToplevelWindow::AddTransientWindow(Window* transient_win) {
   }
 
   shared_ptr<TransientWindow> transient(new TransientWindow(transient_win));
-  transient->x_offset =
-      0.5 * (win_->client_width() - transient_win->client_width());
-  transient->y_offset =
-      0.5 * (win_->client_height() - transient_win->client_height());
   transients_[transient_win->xid()] = transient;
+
+  // All transient windows other than info bubbles get centered over their
+  // owner.
+  if (transient_win->type() == WmIpc::WINDOW_TYPE_CHROME_INFO_BUBBLE) {
+    transient->x_offset = transient_win->client_x() - win_->client_x();
+    transient->y_offset = transient_win->client_y() - win_->client_y();
+  } else {
+    transient->x_offset =
+        0.5 * (win_->client_width() - transient_win->client_width());
+    transient->y_offset =
+        0.5 * (win_->client_height() - transient_win->client_height());
+  }
 
   // If the new transient is non-modal, stack it above the top non-modal
   // transient that we have.  If it's modal, just put it on top of all
@@ -1125,6 +1151,16 @@ void LayoutManager::ToplevelWindow::RestackTransientWindowOnTop(
       transient, transient_to_stack_above->win);
 }
 
+
+// static
+bool LayoutManager::IsHandledWindowType(WmIpc::WindowType type) {
+  return (type == WmIpc::WINDOW_TYPE_CHROME_FLOATING_TAB ||
+          type == WmIpc::WINDOW_TYPE_CHROME_INFO_BUBBLE ||
+          type == WmIpc::WINDOW_TYPE_CHROME_TAB_SUMMARY ||
+          type == WmIpc::WINDOW_TYPE_CHROME_TOPLEVEL ||
+          type == WmIpc::WINDOW_TYPE_CREATE_BROWSER_WINDOW ||
+          type == WmIpc::WINDOW_TYPE_UNKNOWN);
+}
 
 LayoutManager::ToplevelWindow* LayoutManager::GetToplevelWindowByInputXid(
     XWindow xid) {

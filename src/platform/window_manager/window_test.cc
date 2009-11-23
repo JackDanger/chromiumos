@@ -64,6 +64,13 @@ TEST_F(WindowTest, WindowType) {
   EXPECT_TRUE(win.FetchAndApplyWindowType(true));  // update_shadow
   EXPECT_EQ(WmIpc::WINDOW_TYPE_CHROME_TAB_SUMMARY, win.type());
   EXPECT_TRUE(win.shadow() == NULL);
+
+  // Nor should info bubbles.
+  ASSERT_TRUE(wm_->wm_ipc()->SetWindowType(
+                  xid, WmIpc::WINDOW_TYPE_CHROME_INFO_BUBBLE, NULL));
+  EXPECT_TRUE(win.FetchAndApplyWindowType(true));  // update_shadow
+  EXPECT_EQ(WmIpc::WINDOW_TYPE_CHROME_INFO_BUBBLE, win.type());
+  EXPECT_TRUE(win.shadow() == NULL);
 }
 
 TEST_F(WindowTest, ChangeClient) {

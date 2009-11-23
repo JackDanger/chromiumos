@@ -90,6 +90,11 @@ class LayoutManager : public EventConsumer {
   // Is the passed-in window an input window?
   bool IsInputWindow(XWindow xid) ;
 
+  // Handle a window's map request.  In most cases, we just restack the
+  // window, move it offscreen, and map it (info bubbles don't get moved,
+  // though).
+  bool HandleWindowMapRequest(Window* win);
+
   // Handle a new window.  This method takes care of moving the client
   // window offscreen so it doesn't get input events and of redrawing the
   // layout if necessary.
@@ -346,6 +351,9 @@ class LayoutManager : public EventConsumer {
 
     DISALLOW_COPY_AND_ASSIGN(ToplevelWindow);
   };
+
+  // Is the passed-in window type one that we should handle?
+  static bool IsHandledWindowType(WmIpc::WindowType type);
 
   // Get the toplevel window represented by the passed-in input window, or
   // NULL if the input window doesn't belong to us.

@@ -14,6 +14,7 @@
 #include "window_manager/util.h"
 #include "window_manager/window.h"
 #include "window_manager/window_manager.h"
+#include "window_manager/wm_ipc.h"
 
 DEFINE_bool(logtostderr, false,
             "Print debugging messages to stderr (suppressed otherwise)");
@@ -235,6 +236,11 @@ TEST_F(LayoutManagerTest, ConfigureTransient) {
   MockXConnection::InitConfigureNotifyEvent(&event, *owner_info);
   EXPECT_TRUE(wm_->HandleEvent(&event));
 
+  EXPECT_EQ(0, owner_info->x);
+  EXPECT_EQ(0, owner_info->y);
+  EXPECT_EQ(lm_->width(), owner_info->width);
+  EXPECT_EQ(lm_->height(), owner_info->height);
+
   // Now create and map a transient window.
   XWindow transient_xid = xconn_->CreateWindow(
       xconn_->GetRootWindow(),
@@ -268,6 +274,32 @@ TEST_F(LayoutManagerTest, ConfigureTransient) {
   EXPECT_EQ(owner_info->y + 10, transient_info->y);
   EXPECT_EQ(200, transient_info->width);
   EXPECT_EQ(150, transient_info->height);
+
+  // Create and map an info bubble window.
+  int bubble_x = owner_info->x + 40;
+  int bubble_y = owner_info->y + 30;
+  XWindow bubble_xid = xconn_->CreateWindow(
+      xconn_->GetRootWindow(),
+      bubble_x, bubble_y,
+      320, 240,  // width, height
+      false,     // override redirect
+      false,     // input only
+      0);        // event mask
+  ASSERT_TRUE(wm_->wm_ipc()->SetWindowType(
+                  bubble_xid, WmIpc::WINDOW_TYPE_CHROME_INFO_BUBBLE, NULL));
+  MockXConnection::WindowInfo* bubble_info =
+      xconn_->GetWindowInfoOrDie(bubble_xid);
+  bubble_info->transient_for = owner_xid;
+  MockXConnection::InitCreateWindowEvent(&event, *bubble_info);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  MockXConnection::InitMapEvent(&event, bubble_xid);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+
+  // The bubble's initial position should be preserved.
+  EXPECT_EQ(bubble_x, bubble_info->x);
+  EXPECT_EQ(bubble_y, bubble_info->y);
+  MockXConnection::InitConfigureNotifyEvent(&event, *owner_info);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
 }
 
 TEST_F(LayoutManagerTest, FocusTransient) {

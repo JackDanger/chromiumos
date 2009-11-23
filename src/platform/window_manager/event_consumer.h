@@ -31,6 +31,12 @@ class EventConsumer {
   // Is the passed-in window an input window owned by this consumer?
   virtual bool IsInputWindow(XWindow xid) { return false; }
 
+  // Handle a window's request to be mapped.  This is invoked to give
+  // consumers a chance to change a window's position, size, or stacking
+  // before it gets mapped (note that the consumer is ultimately
+  // responsible for mapping the window as well).
+  virtual bool HandleWindowMapRequest(Window* win) { return false; }
+
   // Handle a window being mapped.  This method and HandleWindowUnmap()
   // return void so as to be invoked for all consumers -- these events
   // should be relatively infrequent, and having a consumer miss an unmap

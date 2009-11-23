@@ -47,6 +47,10 @@ class PanelBar : public EventConsumer {
     return xid == anchor_input_win_ || panel_input_windows_.count(xid);
   }
 
+  // Handle a window's map request.  If it's a panel or titlebar, we move
+  // it offscreen, restack it, and map it.
+  bool HandleWindowMapRequest(Window* win);
+
   // Handle the addition of a window.  When a panel window is mapped, its
   // titlebar (which must've previously been mapped) is looked up and a new
   // Panel object is created.  Does nothing when passed non-panel windows.

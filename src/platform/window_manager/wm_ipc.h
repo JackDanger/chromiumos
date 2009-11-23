@@ -67,6 +67,11 @@ class WmIpc {
     // A small window that when clicked creates a new browser window.
     WINDOW_TYPE_CREATE_BROWSER_WINDOW,
 
+    // A Chrome info bubble (e.g. the bookmark bubble).  These are
+    // transient RGBA windows; we skip the usual transient behavior of
+    // centering them over their owner and omit drawing a drop shadow.
+    WINDOW_TYPE_CHROME_INFO_BUBBLE,
+
     kNumWindowTypes,
   };
   // Get or set a property describing a window's type.  The window type
