@@ -92,4 +92,8 @@ deps = {
     # fio
     _third_party_base + "fio/files":
         Var("chromiumos_git") + "/fio.git@fio-1.34.2",
+
+    # gpt
+    _third_party_base + "gpt":
+        Var("chromiumos_git") + "/gpt.git",
 }
