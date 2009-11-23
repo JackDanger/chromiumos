@@ -412,6 +412,13 @@ static DBusHandlerResult dhclient_filter(DBusConnection *conn,
 			task->element->ipv4.broadcast = g_strdup(value);
 		}
 
+		if (g_ascii_strcasecmp(key, "new_interface_mtu") == 0) {
+			guint64 mtu = g_ascii_strtoull(value, NULL, 10);
+			/* NB: restrict min MTU per dhclient-script */
+			if (576 <= mtu && mtu < INT_MAX)
+				task->element->ipv4.mtu = (int) mtu;
+		}
+
 		if (g_ascii_strcasecmp(key, "new_domain_name_servers") == 0) {
 			g_free(name_servers);
 			name_servers = g_strdup(value);

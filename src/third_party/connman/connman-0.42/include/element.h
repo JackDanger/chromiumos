@@ -107,6 +107,7 @@ struct connman_element {
 		gchar *network;
 		gchar *broadcast;
 		gchar *nameserver;
+		int mtu;
 	} ipv4;
 };
 

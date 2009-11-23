@@ -425,6 +425,10 @@ static DBusMessage *get_properties(DBusConnection *conn,
 	connman_dbus_dict_append_variant(&dict, "Powered",
 					DBUS_TYPE_BOOLEAN, &device->powered);
 
+	if (device->element.ipv4.mtu != 0)
+		connman_dbus_dict_append_variant(&dict, "Mtu",
+					DBUS_TYPE_INT32, &device->element.ipv4.mtu);
+
 	if (device->driver && device->driver->scan)
 		connman_dbus_dict_append_variant(&dict, "Scanning",
 					DBUS_TYPE_BOOLEAN, &device->scanning);
@@ -553,6 +557,17 @@ static DBusMessage *set_property(DBusConnection *conn,
 
 			reset_scan_trigger(device);
 		}
+	} else if (g_str_equal(name, "Mtu") == TRUE) {
+		int mtu;
+
+		if (type != DBUS_TYPE_INT32)
+			return __connman_error_failed(msg, EINVAL);
+
+		dbus_message_iter_get_basic(&value, &mtu);
+
+		device->element.ipv4.mtu = mtu;		/* XXX */
+
+		connman_element_update(&device->element);
 	} else if (g_str_has_prefix(name, "IPv4.") == TRUE) {
 		int err;
 

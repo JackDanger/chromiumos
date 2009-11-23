@@ -830,6 +830,9 @@ static int set_property(struct connman_element *element,
 		element->ipv4.nameserver = g_strdup(*((const char **) value));
 		__connman_element_unlock(element);
 		break;
+	case CONNMAN_PROPERTY_ID_IPV4_MTU:
+		element->ipv4.mtu = *((const int *) value);
+		break;
 	default:
 		return -EINVAL;
 	}
@@ -892,6 +895,12 @@ int connman_element_get_value(struct connman_element *element,
 		__connman_element_lock(element);
 		*((char **) value) = element->ipv4.nameserver;
 		__connman_element_unlock(element);
+		break;
+	case CONNMAN_PROPERTY_ID_IPV4_MTU:
+		if (element->ipv4.mtu == 0)
+			return connman_element_get_value(element->parent,
+								id, value);
+		*((int *) value) = element->ipv4.mtu;
 		break;
 	default:
 		return -EINVAL;

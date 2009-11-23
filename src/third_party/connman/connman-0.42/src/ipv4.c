@@ -40,6 +40,7 @@ struct connman_ipv4 {
 	struct in_addr address;
 	struct in_addr netmask;
 	struct in_addr broadcast;
+	int mtu;
 };
 
 static int set_ipv4(struct connman_element *element, struct connman_ipv4 *ipv4)
@@ -62,9 +63,9 @@ static int set_ipv4(struct connman_element *element, struct connman_ipv4 *ipv4)
 		return -1;
 	}
 
-	connman_info("setup ipv4 for %s: ipaddr %s netmask %s bcast %s",
+	connman_info("setup ipv4 for %s: ipaddr %s netmask %s bcast %s mtu %d",
 	    ifr.ifr_name, inet_ntoa(ipv4->address), inet_ntoa(ipv4->netmask),
-	    inet_ntoa(ipv4->broadcast));
+	    inet_ntoa(ipv4->broadcast), ipv4->mtu);
 
 	memset(&addr, 0, sizeof(addr));
 	addr.sin_family = AF_INET;
@@ -95,6 +96,15 @@ static int set_ipv4(struct connman_element *element, struct connman_ipv4 *ipv4)
 
 	if (err < 0)
 		DBG(DBG_ANY, "broadcast setting failed (%s)", strerror(errno));
+
+	if (ipv4->mtu != 0) {
+		ifr.ifr_mtu = ipv4->mtu;
+
+		err = ioctl(sk, SIOCSIFMTU, &ifr);
+
+		if (err < 0)
+			DBG(DBG_ANY, "mtu setting failed (%s)", strerror(errno));
+	}
 
 	close(sk);
 
@@ -132,6 +142,8 @@ static int clear_ipv4(struct connman_element *element)
 
 	//err = ioctl(sk, SIOCDIFADDR, &ifr);
 	err = ioctl(sk, SIOCSIFADDR, &ifr);
+
+	/* NB: leave mtu unchanged */
 
 	close(sk);
 
@@ -173,6 +185,7 @@ static int ipv4_probe(struct connman_element *element)
 	struct connman_element *connection;
 	struct connman_ipv4 ipv4;
 	const char *address = NULL, *netmask = NULL, *broadcast = NULL;
+	int mtu = 0;
 
 	_DBG_IPV4("element %p name %s", element, element->name);
 
@@ -182,10 +195,13 @@ static int ipv4_probe(struct connman_element *element)
 				CONNMAN_PROPERTY_ID_IPV4_NETMASK, &netmask);
 	connman_element_get_value(element,
 				CONNMAN_PROPERTY_ID_IPV4_BROADCAST, &broadcast);
+	connman_element_get_value(element,
+				CONNMAN_PROPERTY_ID_IPV4_MTU, &mtu);
 
 	_DBG_IPV4("address %s", address);
 	_DBG_IPV4("netmask %s", netmask);
 	_DBG_IPV4("broadcast %s", broadcast);
+	_DBG_IPV4("mtu %d", mtu);
 
 	if (address == NULL || netmask == NULL)
 		return -EINVAL;
@@ -194,6 +210,7 @@ static int ipv4_probe(struct connman_element *element)
 	ipv4.address.s_addr = inet_addr(address);
 	ipv4.netmask.s_addr = inet_addr(netmask);
 	ipv4.broadcast.s_addr = inet_addr(broadcast);
+	ipv4.mtu = mtu;
 
 	set_ipv4(element, &ipv4);
 
