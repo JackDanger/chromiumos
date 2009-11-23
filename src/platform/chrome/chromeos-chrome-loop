@@ -54,14 +54,14 @@ if [ ! -d "$USER_DATA_DIR" ]; then
   # Give appropriate stuff to the users based on their domain.
   if [ $DOMAIN = "google.com" ]; then
     FIRST_RUN_ARGS="--pinned-tab-count=3 \
-                    http://welcome-cros.appspot.com \
+                    http://www.google.com \
                     https://mail.google.com/a/google.com \
                     https://calendar.google.com/a/google.com \
                     chrome://newtab"
   elif [ $DOMAIN = "gmail.com" ]; then
     FIRST_RUN_ARGS="--pinned-tab-count=2 \
-                    https://mail.google.com/mail \
-                    https://calendar.google.com \
+                    https://www.google.com \
+                    https://mail.google.com \
                     chrome://newtab"
   else
     # TODO: handle other domains.
@@ -90,6 +90,8 @@ fi
 while true; do
   "$BOTTLE" "Starting Chrome" &
   "$CHROME" --enable-gview \
+	    --enable-sync \
+	    --main-menu-url="http://welcome-cros.appspot.com/menu" \
             --no-first-run \
             $COOKIE_PIPE_ARG \
             $FIRST_RUN_ARGS \
