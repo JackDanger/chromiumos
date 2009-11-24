@@ -141,3 +141,6 @@ libaio-dev
 
 # Packages needed for the devkit server
 python-webpy
+
+# Packages needed to build gpt
+uuid-dev
