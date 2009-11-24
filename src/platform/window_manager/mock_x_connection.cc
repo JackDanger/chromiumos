@@ -562,23 +562,27 @@ void MockXConnection::InitDestroyWindowEvent(XEvent* event, XWindow xid) {
 }
 
 // static
-void MockXConnection::InitFocusInEvent(XEvent* event, XWindow xid, int mode) {
+void MockXConnection::InitFocusInEvent(
+    XEvent* event, XWindow xid, int mode, int detail) {
   CHECK(event);
   XFocusChangeEvent* focus_event = &(event->xfocus);
   memset(focus_event, 0, sizeof(*focus_event));
   focus_event->type = FocusIn;
   focus_event->window = xid;
   focus_event->mode = mode;
+  focus_event->detail = detail;
 }
 
 // static
-void MockXConnection::InitFocusOutEvent(XEvent* event, XWindow xid, int mode) {
+void MockXConnection::InitFocusOutEvent(
+    XEvent* event, XWindow xid, int mode, int detail) {
   CHECK(event);
   XFocusChangeEvent* focus_event = &(event->xfocus);
   memset(focus_event, 0, sizeof(*focus_event));
   focus_event->type = FocusOut;
   focus_event->window = xid;
   focus_event->mode = mode;
+  focus_event->detail = detail;
 }
 
 // static

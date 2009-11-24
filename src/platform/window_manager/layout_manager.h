@@ -139,6 +139,7 @@ class LayoutManager : public EventConsumer {
   FRIEND_TEST(LayoutManagerTest, Basic);  // uses SetMode()
   FRIEND_TEST(LayoutManagerTest, Focus);
   FRIEND_TEST(LayoutManagerTest, FocusTransient);
+  FRIEND_TEST(LayoutManagerTest, OverviewFocus);
 
   // A toplevel window that we're managing.
   // TODO: This class is getting large.  It should probably be moved to a
@@ -375,6 +376,10 @@ class LayoutManager : public EventConsumer {
   // Get the ToplevelWindow object that owns the passed-in
   // possibly-transient window.  Returns NULL if the window is unowned.
   ToplevelWindow* GetToplevelWindowOwningTransientWindow(const Window& win);
+
+  // Get the XID of the input window created for a toplevel window.  This
+  // is just used by testing code.
+  XWindow GetInputXidForWindow(const Window& win);
 
   // Modes used to display windows.
   enum Mode {

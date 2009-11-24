@@ -1120,15 +1120,24 @@ bool WindowManager::HandleEnterNotify(const XEnterWindowEvent& e) {
 }
 
 bool WindowManager::HandleFocusChange(const XFocusChangeEvent& e) {
-  // Don't bother doing anything when we lose or gain the focus due to a
-  // grab.
-  if (e.mode != NotifyNormal && e.mode != NotifyWhileGrabbed)
-    return false;
-
   bool focus_in = (e.type == FocusIn);
   VLOG(1) << "Handling focus-" << (focus_in ? "in" : "out") << " event for "
           << e.window << " with mode " << FocusChangeEventModeToName(e.mode)
           << " and detail " << FocusChangeEventDetailToName(e.detail);
+
+  // Don't bother doing anything when we lose or gain the focus due to a
+  // grab, or just hear about it because of the pointer's location.
+  // TODO: Trying to add/remove button grabs and update hints in response
+  // to FocusIn and FocusOut events is likely hopeless; see
+  // http://tronche.com/gui/x/xlib/events/input-focus/normal-and-grabbed.html
+  // for the full insanity.  It would probably be better to just update
+  // things ourselves when we change the focus and rely on the fact that
+  // clients shouldn't be assigning the focus themselves.
+  if (e.mode == NotifyGrab ||
+      e.mode == NotifyUngrab ||
+      e.detail == NotifyPointer) {
+    return false;
+  }
 
   Window* win = GetWindow(e.window);
   if (win)

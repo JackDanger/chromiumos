@@ -417,32 +417,42 @@ TEST_F(WindowManagerTest, IgnoreGrabFocusEvents) {
   EXPECT_TRUE(win->focused());
 
   // We should ignore a focus-out event caused by a grab...
-  MockXConnection::InitFocusOutEvent(&event, xid, NotifyGrab);
+  MockXConnection::InitFocusOutEvent(&event, xid, NotifyGrab, NotifyNonlinear);
   EXPECT_FALSE(wm_->HandleEvent(&event));
   EXPECT_TRUE(win->focused());
 
   // ... but honor one that comes in independently from a grab.
-  MockXConnection::InitFocusOutEvent(&event, xid, NotifyNormal);
+  MockXConnection::InitFocusOutEvent(
+      &event, xid, NotifyNormal, NotifyNonlinear);
   EXPECT_TRUE(wm_->HandleEvent(&event));
   EXPECT_FALSE(win->focused());
 
   // Similarly, we should ignore a focus-in event caused by an ungrab...
-  MockXConnection::InitFocusInEvent(&event, xid, NotifyUngrab);
+  MockXConnection::InitFocusInEvent(
+      &event, xid, NotifyUngrab, NotifyNonlinear);
   EXPECT_FALSE(wm_->HandleEvent(&event));
   EXPECT_FALSE(win->focused());
 
   // ... but honor one that comes in independently.
-  MockXConnection::InitFocusInEvent(&event, xid, NotifyNormal);
+  MockXConnection::InitFocusInEvent(
+      &event, xid, NotifyNormal, NotifyNonlinear);
   EXPECT_TRUE(wm_->HandleEvent(&event));
   EXPECT_TRUE(win->focused());
 
   // We should pay attention to events that come in while a grab is already
   // active, though.
-  MockXConnection::InitFocusOutEvent(&event, xid, NotifyWhileGrabbed);
+  MockXConnection::InitFocusOutEvent(
+      &event, xid, NotifyWhileGrabbed, NotifyNonlinear);
   EXPECT_TRUE(wm_->HandleEvent(&event));
   EXPECT_FALSE(win->focused());
-  MockXConnection::InitFocusInEvent(&event, xid, NotifyWhileGrabbed);
+  MockXConnection::InitFocusInEvent(
+      &event, xid, NotifyWhileGrabbed, NotifyNonlinear);
   EXPECT_TRUE(wm_->HandleEvent(&event));
+  EXPECT_TRUE(win->focused());
+
+  // Events with a detail of NotifyPointer should be ignored.
+  MockXConnection::InitFocusOutEvent(&event, xid, NotifyNormal, NotifyPointer);
+  EXPECT_FALSE(wm_->HandleEvent(&event));
   EXPECT_TRUE(win->focused());
 }
 

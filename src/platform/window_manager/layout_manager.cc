@@ -822,6 +822,7 @@ void LayoutManager::ToplevelWindow::ArrangeForActiveMode(
     win_->MoveComposited(win_x, win_y, kWindowAnimMs);
     win_->ScaleComposited(1.0, 1.0, kWindowAnimMs);
     win_->SetCompositedOpacity(1.0, kWindowAnimMs);
+    TakeFocus(wm()->GetCurrentTimeFromServer());
     state_ = STATE_ACTIVE_MODE_ONSCREEN;
   } else {
     if (state_ == STATE_ACTIVE_MODE_OUT_TO_LEFT) {
@@ -1198,6 +1199,11 @@ LayoutManager::ToplevelWindow*
       transient_to_toplevel_, win.xid(), static_cast<ToplevelWindow*>(NULL));
 }
 
+XWindow LayoutManager::GetInputXidForWindow(const Window& win) {
+  ToplevelWindow* toplevel = GetToplevelWindowByWindow(win);
+  return toplevel ? toplevel->input_xid() : None;
+}
+
 void LayoutManager::SetActiveToplevelWindow(
     ToplevelWindow* toplevel,
     ToplevelWindow::State state_for_new_win,
@@ -1212,13 +1218,6 @@ void LayoutManager::SetActiveToplevelWindow(
   toplevel->set_state(state_for_new_win);
   active_toplevel_ = toplevel;
   ArrangeToplevelWindowsForActiveMode();
-
-  // TODO: Doing a re-layout for active mode is often triggered by user
-  // input.  We should use the timestamp from the key or mouse event
-  // instead of fetching a new one from the server, but it'll require some
-  // changes to KeyBindings so that timestamps will be passed through to
-  // callbacks.
-  toplevel->TakeFocus(wm_->GetCurrentTimeFromServer());
 }
 
 void LayoutManager::SwitchToActiveMode(bool activate_magnified_win) {
