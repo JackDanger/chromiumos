@@ -52,7 +52,7 @@ then
   BASE_FROM="http://codf196.jail.google.com/archive/chrome-official"
 else
   # Use most recent snapshot from Chrome buildbot
-  BASE_FROM="http://chrome-web/buildbot/snapshots/chromium-rel-linux-chromiumos"
+  BASE_FROM="http://build.chromium.org/buildbot/snapshots/chromium-rel-linux-chromiumos"
 
   # Chrome OS buildbot does not have http access to chrome-web, so scp
   # the build result instead
