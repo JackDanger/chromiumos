@@ -7,6 +7,7 @@
 #include "base/logging.h"
 #include "chromeos/obsolete_logging.h"
 
+#include "window_manager/util.h"
 #include "window_manager/x_connection.h"
 
 namespace chromeos {
@@ -71,7 +72,7 @@ AtomCache::AtomCache(XConnection* xconn)
   CHECK_EQ(xatoms.size(), kNumAtoms);
 
   for (size_t i = 0; i < kNumAtoms; ++i) {
-    VLOG(2) << "Registering atom " << xatoms[i]
+    VLOG(2) << "Registering atom " << XidStr(xatoms[i])
             << " (" << kAtomInfos[i].name << ")";
     atom_to_xatom_[kAtomInfos[i].atom] = xatoms[i];
     xatom_to_string_[xatoms[i]] = kAtomInfos[i].name;
@@ -80,7 +81,8 @@ AtomCache::AtomCache(XConnection* xconn)
 
 XAtom AtomCache::GetXAtom(Atom atom) const {
   std::map<Atom, XAtom>::const_iterator it = atom_to_xatom_.find(atom);
-  CHECK(it != atom_to_xatom_.end()) << "Couldn't find X atom for Atom " << atom;
+  CHECK(it != atom_to_xatom_.end())
+      << "Couldn't find X atom for Atom " << XidStr(atom);
   return it->second;
 }
 
@@ -92,7 +94,7 @@ const std::string& AtomCache::GetName(XAtom xatom) {
   }
   std::string name;
   if (!xconn_->GetAtomName(xatom, &name)) {
-    LOG(ERROR) << "Unable to look up name for atom " << xatom;
+    LOG(ERROR) << "Unable to look up name for atom " << XidStr(xatom);
     static const std::string kEmptyName = "";
     return kEmptyName;
   }

@@ -9,6 +9,7 @@
 #include <gflags/gflags.h>
 
 #include "base/logging.h"
+#include "base/string_util.h"
 #include "chromeos/obsolete_logging.h"
 
 #include "window_manager/atom_cache.h"
@@ -25,6 +26,7 @@ namespace chromeos {
 
 Window::Window(WindowManager* wm, XWindow xid)
     : xid_(xid),
+      xid_str_(XidStr(xid_)),
       wm_(wm),
       actor_(wm_->clutter()->CreateTexturePixmap()),
       shadow_(NULL),
@@ -94,7 +96,7 @@ Window::Window(WindowManager* wm, XWindow xid)
     // XConnection::RedirectWindowForCompositing()).
     VLOG(1) << "Redirecting "
             << (override_redirect_ ? "override-redirect " : "")
-            << "window " << xid_ << " "
+            << "window " << xid_str() << " "
             << "at (" << client_x_ << ", " << client_y_ << ") "
             << "with dimensions " << client_width_ << "x" << client_height_
             << " for compositing";
@@ -111,6 +113,7 @@ Window::Window(WindowManager* wm, XWindow xid)
   actor_->Move(composited_x_, composited_y_, 0);
   actor_->SetSize(client_width_, client_height_);
   actor_->SetVisibility(false);
+  actor_->SetName(std::string("window ") + xid_str());
   wm_->stage()->AddActor(actor_.get());
 
   // Properties could've been set on this window after it was created but
@@ -180,7 +183,7 @@ bool Window::FetchAndApplySizeHints() {
     width_inc_hint_ = -1;
     height_inc_hint_ = -1;
   }
-  VLOG(1) << "Size hints for " << xid_ << ":"
+  VLOG(1) << "Size hints for " << xid_str() << ":"
           << " min=" << min_width_hint_ << "x" << min_height_hint_
           << " max=" << max_width_hint_ << "x" << max_height_hint_
           << " base=" << base_width_hint_ << "x" << base_height_hint_
@@ -190,7 +193,7 @@ bool Window::FetchAndApplySizeHints() {
   if (!override_redirect_ &&
       (size_hints.flags & USSize || size_hints.flags & PSize)) {
     VLOG(1) << "Got " << (size_hints.flags & USSize ? "user" : "program")
-            << "-specified size hints for " << xid_ << ": "
+            << "-specified size hints for " << xid_str() << ": "
             << size_hints.width << "x" << size_hints.width;
     ResizeClient(size_hints.width, size_hints.height, GRAVITY_NORTHWEST);
   }
@@ -206,7 +209,7 @@ bool Window::FetchAndApplyTransientHint() {
 
 bool Window::FetchAndApplyWindowType(bool update_shadow) {
   bool result = wm_->wm_ipc()->GetWindowType(xid_, &type_, &type_params_);
-  VLOG(1) << "Window " << xid_ << " has type " << type_;
+  VLOG(1) << "Window " << xid_str() << " has type " << type_;
   if (update_shadow)
     UpdateShadowIfNecessary();
   return result;
@@ -243,10 +246,10 @@ void Window::FetchAndApplyWmProtocols() {
   for (std::vector<int>::const_iterator it = wm_protocols.begin();
        it != wm_protocols.end(); ++it) {
     if (static_cast<XAtom>(*it) == wm_take_focus) {
-      VLOG(2) << "Window " << xid_ << " supports WM_TAKE_FOCUS";
+      VLOG(2) << "Window " << xid_str() << " supports WM_TAKE_FOCUS";
       supports_wm_take_focus_ = true;
     } else if (static_cast<XAtom>(*it) == wm_delete_window) {
-      VLOG(2) << "Window " << xid_ << " supports WM_DELETE_WINDOW";
+      VLOG(2) << "Window " << xid_str() << " supports WM_DELETE_WINDOW";
       supports_wm_delete_window_ = true;
     }
   }
@@ -281,7 +284,7 @@ void Window::FetchAndApplyWmState() {
       wm_state_modal_ = true;
   }
 
-  VLOG(1) << "Fetched NET_WM_STATE_ for " << xid_ << ":"
+  VLOG(1) << "Fetched NET_WM_STATE_ for " << xid_str() << ":"
           << " fullscreen=" << wm_state_fullscreen_
           << " maximized_horz=" << wm_state_maximized_horz_
           << " maximized_vert=" << wm_state_maximized_vert_
@@ -305,7 +308,7 @@ void Window::FetchAndApplyShape(bool update_shadow) {
   if (!shaped_) {
     actor_->ClearAlphaMask();
   } else {
-    VLOG(1) << "Got shape for " << xid_;
+    VLOG(1) << "Got shape for " << xid_str();
     actor_->SetAlphaMask(bytemap.bytes(), bytemap.width(), bytemap.height());
   }
   if (update_shadow)
@@ -358,13 +361,14 @@ bool Window::ChangeWmState(const std::vector<std::pair<XAtom, bool> >& states) {
     else if (xatom == wm_->GetXAtom(ATOM_NET_WM_STATE_MODAL))
       SetWmStateInternal(action, &wm_state_modal_);
     else
-      LOG(ERROR) << "Unsupported _NET_WM_STATE " << xatom << " for " << xid_;
+      LOG(ERROR) << "Unsupported _NET_WM_STATE " << xatom
+                 << " for " << xid_str();
   }
   return UpdateWmStateProperty();
 }
 
 bool Window::TakeFocus(Time timestamp) {
-  VLOG(2) << "Focusing " << xid_ << " using time " << timestamp;
+  VLOG(2) << "Focusing " << xid_str() << " using time " << timestamp;
   if (supports_wm_take_focus_) {
     XEvent event;
     XClientMessageEvent* client_event = &(event.xclient);
@@ -385,7 +389,7 @@ bool Window::TakeFocus(Time timestamp) {
 }
 
 bool Window::SendDeleteRequest(Time timestamp) {
-  VLOG(2) << "Maybe asking " << xid_ << " to delete itself with time "
+  VLOG(2) << "Maybe asking " << xid_str() << " to delete itself with time "
           << timestamp;
   if (!supports_wm_delete_window_)
     return false;
@@ -402,13 +406,13 @@ bool Window::SendDeleteRequest(Time timestamp) {
 }
 
 bool Window::AddPassiveButtonGrab() {
-  VLOG(2) << "Adding passive button grab for " << xid_;
+  VLOG(2) << "Adding passive button grab for " << xid_str();
   return wm_->xconn()->AddPassiveButtonGrabOnWindow(
       xid_, AnyButton, ButtonPressMask);
 }
 
 bool Window::RemovePassiveButtonGrab() {
-  VLOG(2) << "Removing passive button grab for " << xid_;
+  VLOG(2) << "Removing passive button grab for " << xid_str();
   return wm_->xconn()->RemovePassiveButtonGrabOnWindow(xid_, AnyButton);
 }
 
@@ -448,27 +452,27 @@ void Window::GetMaxSize(int desired_width, int desired_height,
   } else {
     *height_out = desired_height;
   }
-  VLOG(2) << "Max size for " << xid_ << " is "
+  VLOG(2) << "Max size for " << xid_str() << " is "
           << *width_out << "x" << *height_out
           << " (desired was " << desired_width << "x" << desired_height << ")";
 }
 
 bool Window::MapClient() {
-  VLOG(2) << "Mapping " << xid_;
+  VLOG(2) << "Mapping " << xid_str();
   if (!wm_->xconn()->MapWindow(xid_))
     return false;
   return true;
 }
 
 bool Window::UnmapClient() {
-  VLOG(2) << "Unmapping " << xid_;
+  VLOG(2) << "Unmapping " << xid_str();
   if (!wm_->xconn()->UnmapWindow(xid_))
     return false;
   return true;
 }
 
 void Window::SaveClientAndCompositedSize(int width, int height) {
-  VLOG(2) << "Setting " << xid_ << "'s client and composited size to "
+  VLOG(2) << "Setting " << xid_str() << "'s client and composited size to "
           << width << "x" << height;
   client_width_ = width;
   client_height_ = height;
@@ -481,7 +485,7 @@ void Window::SaveClientAndCompositedSize(int width, int height) {
 }
 
 bool Window::MoveClient(int x, int y) {
-  VLOG(2) << "Moving " << xid_ << "'s client window to ("
+  VLOG(2) << "Moving " << xid_str() << "'s client window to ("
           << x << ", " << y << ")";
   if (!wm_->xconn()->MoveWindow(xid_, x, y))
     return false;
@@ -511,7 +515,7 @@ bool Window::ResizeClient(int width, int height, Gravity gravity) {
   int dy = (gravity == GRAVITY_SOUTHWEST || gravity == GRAVITY_SOUTHEAST) ?
       height - client_height_ : 0;
 
-  VLOG(2) << "Resizing " << xid_ << "'s client window to "
+  VLOG(2) << "Resizing " << xid_str() << "'s client window to "
           << width << "x" << height;
   if (dx || dy) {
     // If we need to move the window as well due to gravity, do it all in
@@ -552,7 +556,7 @@ bool Window::StackClientBelow(XWindow sibling_xid) {
 }
 
 void Window::MoveComposited(int x, int y, int anim_ms) {
-  VLOG(2) << "Moving " << xid_ << "'s composited window to ("
+  VLOG(2) << "Moving " << xid_str() << "'s composited window to ("
           << x << ", " << y << ") over " << anim_ms << " ms";
   composited_x_ = x;
   composited_y_ = y;
@@ -562,7 +566,7 @@ void Window::MoveComposited(int x, int y, int anim_ms) {
 }
 
 void Window::MoveCompositedX(int x, int anim_ms) {
-  VLOG(2) << "Setting " << xid_ << "'s composited window's X position to "
+  VLOG(2) << "Setting " << xid_str() << "'s composited window's X position to "
           << x << " over " << anim_ms << " ms";
   composited_x_ = x;
   actor_->MoveX(x, anim_ms);
@@ -571,7 +575,7 @@ void Window::MoveCompositedX(int x, int anim_ms) {
 }
 
 void Window::MoveCompositedY(int y, int anim_ms) {
-  VLOG(2) << "Setting " << xid_ << "'s composited window's Y position to "
+  VLOG(2) << "Setting " << xid_str() << "'s composited window's Y position to "
           << y << " over " << anim_ms << " ms";
   composited_y_ = y;
   actor_->MoveY(y, anim_ms);
@@ -580,7 +584,7 @@ void Window::MoveCompositedY(int y, int anim_ms) {
 }
 
 void Window::ShowComposited() {
-  VLOG(2) << "Showing " << xid_ << "'s composited window";
+  VLOG(2) << "Showing " << xid_str() << "'s composited window";
   actor_->SetVisibility(true);
   composited_shown_ = true;
   if (shadow_.get())
@@ -588,7 +592,7 @@ void Window::ShowComposited() {
 }
 
 void Window::HideComposited() {
-  VLOG(2) << "Hiding " << xid_ << "'s composited window";
+  VLOG(2) << "Hiding " << xid_str() << "'s composited window";
   actor_->SetVisibility(false);
   composited_shown_ = false;
   if (shadow_.get())
@@ -604,7 +608,7 @@ void Window::SetCompositedOpacity(double opacity, int anim_ms) {
   // Reset the shadow's opacity as well.
   shadow_opacity_ = combined_opacity;
 
-  VLOG(2) << "Setting " << xid_ << "'s composited window opacity to "
+  VLOG(2) << "Setting " << xid_str() << "'s composited window opacity to "
           << opacity << " (combined is " << combined_opacity << ") over "
           << anim_ms << " ms";
 
@@ -614,7 +618,7 @@ void Window::SetCompositedOpacity(double opacity, int anim_ms) {
 }
 
 void Window::ScaleComposited(double scale_x, double scale_y, int anim_ms) {
-  VLOG(2) << "Scaling " << xid_ << "'s composited window by ("
+  VLOG(2) << "Scaling " << xid_str() << "'s composited window by ("
           << scale_x << ", " << scale_y << ") over " << anim_ms << " ms";
   composited_scale_x_ = scale_x;
   composited_scale_y_ = scale_y;
@@ -625,7 +629,7 @@ void Window::ScaleComposited(double scale_x, double scale_y, int anim_ms) {
 }
 
 void Window::SetShadowOpacity(double opacity, int anim_ms) {
-  VLOG(2) << "Setting " << xid_ << "'s shadow opacity to " << opacity
+  VLOG(2) << "Setting " << xid_str() << "'s shadow opacity to " << opacity
           << " over " << anim_ms << " ms";
   shadow_opacity_ = opacity;
   if (shadow_.get())
@@ -662,6 +666,8 @@ void Window::UpdateShadowIfNecessary() {
     shadow_.reset(NULL);
   } else if (should_have_shadow && !shadow_.get()) {
     shadow_.reset(new Shadow(wm_->clutter()));
+    shadow_->group()->SetName(
+        StringPrintf("shadow group for window 0x%x", xid_));
 
     // Stack it below all of the other windows.
     wm_->stage()->AddActor(shadow_->group());
@@ -688,7 +694,7 @@ void Window::SetWmStateInternal(int action, bool* value) {
       *value = !(*value);
       break;
     default:
-      LOG(WARNING) << "Got _NET_WM_STATE message for " << xid_
+      LOG(WARNING) << "Got _NET_WM_STATE message for " << xid_str()
                    << " with invalid action " << action;
   }
 }
@@ -706,7 +712,7 @@ bool Window::UpdateWmStateProperty() {
   if (wm_state_modal_)
     values.push_back(wm_->GetXAtom(ATOM_NET_WM_STATE_MODAL));
 
-  VLOG(1) << "Updating _NET_WM_STATE for " << xid_ << ":"
+  VLOG(1) << "Updating _NET_WM_STATE for " << xid_str() << ":"
           << " fullscreen=" << wm_state_fullscreen_
           << " maximized_horz=" << wm_state_maximized_horz_
           << " maximized_vert=" << wm_state_maximized_vert_

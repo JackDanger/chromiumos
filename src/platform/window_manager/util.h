@@ -12,6 +12,7 @@
 
 #include "base/basictypes.h"
 #include "base/logging.h"
+#include "base/string_util.h"
 
 typedef unsigned int uint;
 
@@ -194,6 +195,12 @@ double GetCurrentTime();
 
 // Fill 'tv' with the time from 'time'.
 void FillTimeval(double time, struct timeval* tv);
+
+
+// Helper method to convert an XID into a hex string.
+static std::string XidStr(unsigned long xid) {
+  return StringPrintf("0x%x", xid);
+}
 
 }  // namespace chromeos
 

@@ -282,9 +282,10 @@ void LayoutManager::HandleWindowMap(Window* win) {
           }
           break;
         } else {
-          LOG(WARNING) << "Ignoring " << win->xid() << "'s WM_TRANSIENT_FOR "
-                       << "hint of " << win->transient_for_xid() << ", which "
-                       << "isn't a toplevel window";
+          LOG(WARNING) << "Ignoring " << win->xid_str()
+                       << "'s WM_TRANSIENT_FOR hint of "
+                       << XidStr(win->transient_for_xid())
+                       << ", which isn't a toplevel window";
           // Continue on and treat the transient as a toplevel window.
         }
       }
@@ -348,7 +349,7 @@ void LayoutManager::HandleWindowUnmap(Window* win) {
     bool transient_had_focus = win->focused();
     toplevel_owner->RemoveTransientWindow(win);
     if (transient_to_toplevel_.erase(win->xid()) != 1)
-      LOG(WARNING) << "No transient-to-toplevel mapping for " << win->xid();
+      LOG(WARNING) << "No transient-to-toplevel mapping for " << win->xid_str();
     if (transient_had_focus)
       toplevel_owner->TakeFocus(wm_->GetCurrentTimeFromServer());
   }
@@ -495,8 +496,8 @@ bool LayoutManager::HandleChromeMessage(const WmIpc::Message& msg) {
       int y = msg.param(2);
       if (!floating_tab_ || xid != floating_tab_->xid()) {
         LOG(WARNING) << "Ignoring request to move unknown floating tab "
-                     << xid << " (current is "
-                     << (floating_tab_ ? floating_tab_->xid() : 0) << ")";
+                     << XidStr(xid) << " (current is "
+                     << XidStr(floating_tab_ ? floating_tab_->xid() : 0) << ")";
       } else {
         floating_tab_event_coalescer_->StorePosition(x, y);
       }
@@ -521,14 +522,16 @@ bool LayoutManager::HandleChromeMessage(const WmIpc::Message& msg) {
       Window* win = wm_->GetWindow(msg.param(0));
       if (!win) {
         LOG(WARNING) << "Ignoring request to magnify unknown window "
-                     << msg.param(0) << " while switching to overview mode";
+                     << XidStr(msg.param(0))
+                     << " while switching to overview mode";
         return true;
       }
 
       ToplevelWindow* toplevel = GetToplevelWindowByWindow(*win);
       if (!toplevel) {
         LOG(WARNING) << "Ignoring request to magnify non-toplevel window "
-                     << msg.param(0) << " while switching to overview mode";
+                     << XidStr(msg.param(0))
+                     << " while switching to overview mode";
         return true;
       }
 
@@ -555,9 +558,10 @@ bool LayoutManager::HandleClientMessage(const XClientMessageEvent& e) {
   if (e.message_type == wm_->GetXAtom(ATOM_NET_ACTIVE_WINDOW)) {
     if (e.format != XConnection::kLongFormat)
       return true;
-    VLOG(1) << "Got _NET_ACTIVE_WINDOW request to focus " << e.window
-            << " (requestor says its currently-active window is " << e.data.l[2]
-            << "; real active window is " << wm_->active_window_xid() << ")";
+    VLOG(1) << "Got _NET_ACTIVE_WINDOW request to focus " << XidStr(e.window)
+            << " (requestor says its currently-active window is "
+            << XidStr(e.data.l[2]) << "; real active window is "
+            << XidStr(wm_->active_window_xid()) << ")";
     // If we got a _NET_ACTIVE_WINDOW request for a transient, switch to
     // its owner instead.
     ToplevelWindow* toplevel = GetToplevelWindowOwningTransientWindow(*win);
@@ -920,8 +924,8 @@ void LayoutManager::ToplevelWindow::SetPreferredTransientWindowToFocus(
 
   TransientWindow* transient = GetTransientWindow(*transient_win);
   if (!transient) {
-    LOG(ERROR) << "Got request to prefer focusing " << transient_win->xid()
-               << ", which isn't transient for " << win_->xid();
+    LOG(ERROR) << "Got request to prefer focusing " << transient_win->xid_str()
+               << ", which isn't transient for " << win_->xid_str();
     return;
   }
 
@@ -951,7 +955,7 @@ void LayoutManager::ToplevelWindow::AddTransientWindow(Window* transient_win) {
   CHECK(transient_win);
   if (transients_.find(transient_win->xid()) != transients_.end()) {
     LOG(ERROR) << "Got request to add already-present transient window "
-               << transient_win->xid() << " to " << win_->xid();
+               << transient_win->xid_str() << " to " << win_->xid_str();
     return;
   }
 
@@ -1004,7 +1008,7 @@ void LayoutManager::ToplevelWindow::RemoveTransientWindow(
   TransientWindow* transient = GetTransientWindow(*transient_win);
   if (!transient) {
     LOG(ERROR) << "Got request to remove not-present transient window "
-               << transient_win->xid() << " from " << win_->xid();
+               << transient_win->xid_str() << " from " << win_->xid_str();
     return;
   }
   stacked_transients_->Remove(transient);
@@ -1047,13 +1051,13 @@ void LayoutManager::ToplevelWindow::HandleFocusChange(
   DCHECK(focus_win == win_ || GetTransientWindow(*focus_win));
 
   if (focus_in) {
-    VLOG(1) << "Got focus-in for " << focus_win->xid()
+    VLOG(1) << "Got focus-in for " << focus_win->xid_str()
             << "; removing passive button grab";
     focus_win->RemovePassiveButtonGrab();
   } else {
     // Listen for button presses on this window so we'll know when it
     // should be focused again.
-    VLOG(1) << "Got focus-out for " << focus_win->xid()
+    VLOG(1) << "Got focus-out for " << focus_win->xid_str()
             << "; re-adding passive button grab";
     focus_win->AddPassiveButtonGrab();
   }
@@ -1445,7 +1449,8 @@ bool LayoutManager::PointIsBetweenMagnifiedToplevelWindowAndTabSummary(
     return (y >= tab_summary_->client_y() + tab_summary_->client_height() &&
             y < toplevel->overview_y());
   }
-  LOG(WARNING) << "magnified_toplevel_ " << magnified_toplevel_->win()->xid()
+  LOG(WARNING) << "magnified_toplevel_ "
+               << magnified_toplevel_->win()->xid_str()
                << " isn't present in our list of windows";
   return false;
 }

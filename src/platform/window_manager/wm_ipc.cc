@@ -13,6 +13,7 @@ extern "C" {
 #include "chromeos/obsolete_logging.h"
 
 #include "window_manager/atom_cache.h"
+#include "window_manager/util.h"
 #include "window_manager/x_connection.h"
 
 namespace chromeos {
@@ -21,7 +22,7 @@ WmIpc::WmIpc(XConnection* xconn, AtomCache* cache)
     : xconn_(xconn),
       atom_cache_(cache),
       wm_window_(xconn_->GetSelectionOwner(atom_cache_->GetXAtom(ATOM_WM_S0))) {
-  VLOG(1) << "Window manager window is " << wm_window_;
+  VLOG(1) << "Window manager window is " << XidStr(wm_window_);
 }
 
 bool WmIpc::GetWindowType(XWindow xid,
@@ -110,7 +111,7 @@ bool WmIpc::GetMessageGdk(const GdkEventClient& e, Message* msg) {
 }
 
 bool WmIpc::SendMessage(XWindow xid, const Message& msg) {
-  VLOG(2) << "Sending message of type " << msg.type() << " to " << xid;
+  VLOG(2) << "Sending message of type " << msg.type() << " to " << XidStr(xid);
 
   XEvent e;
   e.xclient.type = ClientMessage;

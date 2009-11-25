@@ -12,6 +12,7 @@ extern "C" {
 #include "chromeos/obsolete_logging.h"
 
 #include "window_manager/panel_bar.h"
+#include "window_manager/util.h"
 #include "window_manager/window.h"
 #include "window_manager/window_manager.h"
 #include "window_manager/x_connection.h"
@@ -161,10 +162,6 @@ Panel::~Panel() {
   right_input_win_ = None;
 }
 
-XWindow Panel::xid() const {
-  return panel_win_->xid();
-}
-
 int Panel::cur_right() const {
   return cur_panel_left() + panel_width();
 }
@@ -252,8 +249,8 @@ void Panel::HandleInputWindowButtonRelease(
   }
   if (xid != drag_xid_) {
     LOG(WARNING) << "Ignoring button release for unexpected input window "
-                 << xid << " (currently in drag initiated by " << drag_xid_
-                 << ")";
+                 << XidStr(xid) << " (currently in drag initiated by "
+                 << XidStr(drag_xid_) << ")";
     return;
   }
   wm()->xconn()->RemoveActivePointerGrab(false);  // replay_events=false
@@ -272,8 +269,8 @@ void Panel::HandleInputWindowButtonRelease(
 void Panel::HandleInputWindowPointerMotion(XWindow xid, int x, int y) {
   if (xid != drag_xid_) {
     LOG(WARNING) << "Ignoring motion event for unexpected input window "
-                 << xid << " (currently in drag initiated by " << drag_xid_
-                 << ")";
+                 << XidStr(xid) << " (currently in drag initiated by "
+                 << XidStr(drag_xid_) << ")";
     return;
   }
   resize_event_coalescer_.StorePosition(x, y);

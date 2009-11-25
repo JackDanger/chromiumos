@@ -201,12 +201,14 @@ bool WindowManager::Init() {
 
   stage_ = clutter_->GetDefaultStage();
   stage_window_ = stage_->GetStageXWindow();
+  stage_->SetName("stage");
   stage_->SetSize(width_, height_);
   stage_->SetStageColor("#222");
   stage_->SetVisibility(true);
 
   if (!FLAGS_wm_background_image.empty()) {
     background_.reset(clutter_->CreateImage(FLAGS_wm_background_image));
+    background_->SetName("background");
     background_->Move(0, 0, 0);
     background_->SetSize(width_, height_);
     background_->SetVisibility(true);
@@ -229,8 +231,8 @@ bool WindowManager::Init() {
       // and make events fall through both to the client windows underneath.
       overlay_window_ = xconn_->GetCompositingOverlayWindow(root_);
       CHECK_NE(overlay_window_, None);
-      VLOG(1) << "Reparenting stage window " << stage_window_
-              << " into Xcomposite overlay window " << overlay_window_;
+      VLOG(1) << "Reparenting stage window " << XidStr(stage_window_)
+              << " into Xcomposite overlay window " << XidStr(overlay_window_);
       CHECK(xconn_->ReparentWindow(stage_window_, overlay_window_, 0, 0));
       CHECK(xconn_->RemoveInputRegionFromWindow(overlay_window_));
     } else {
@@ -437,7 +439,7 @@ XWindow WindowManager::CreateInputWindow(
 
 bool WindowManager::ConfigureInputWindow(
     XWindow xid, int x, int y, int width, int height) {
-  VLOG(1) << "Configuring input window " << xid
+  VLOG(1) << "Configuring input window " << XidStr(xid)
           << " to (" << x << ", " << y << ") and size "
           << width << "x" << height;
   return xconn_->ConfigureWindow(xid, x, y, width, height);
@@ -500,7 +502,7 @@ void WindowManager::HandlePanelBarVisibilityChange(bool visible) {
 }
 
 bool WindowManager::SetActiveWindowProperty(XWindow xid) {
-  VLOG(1) << "Setting active window to " << xid;
+  VLOG(1) << "Setting active window to " << XidStr(xid);
   if (!xconn_->SetIntProperty(
           root_, GetXAtom(ATOM_NET_ACTIVE_WINDOW), XA_WINDOW, xid)) {
     return false;
@@ -558,7 +560,7 @@ bool WindowManager::RegisterExistence() {
                                     false,   // input only
                                     PropertyChangeMask);  // event mask
   CHECK_NE(wm_window_, None);
-  VLOG(1) << "Created window " << wm_window_
+  VLOG(1) << "Created window " << XidStr(wm_window_)
           << " for registering ourselves as the window manager";
 
   // Set the window's title and wait for the notify event so we can get a
@@ -647,6 +649,7 @@ ClutterInterface::Actor* WindowManager::CreateActorAbove(
   } else {
     actor->LowerToBottom();
   }
+  actor->SetName("stacking reference");
   return actor;
 }
 
@@ -689,10 +692,10 @@ Window* WindowManager::TrackWindow(XWindow xid) {
   if (xconn_->GetWindowAttributes(xid, &attr) && attr.c_class == InputOnly)
     return NULL;
 
-  VLOG(1) << "Managing window " << xid;
+  VLOG(1) << "Managing window " << XidStr(xid);
   Window* win = GetWindow(xid);
   if (win) {
-    LOG(WARNING) << "Window " << xid << " is already being managed";
+    LOG(WARNING) << "Window " << XidStr(xid) << " is already being managed";
   } else {
     std::tr1::shared_ptr<Window> win_ref(new Window(this, xid));
     client_windows_.insert(std::make_pair(xid, win_ref));
@@ -704,7 +707,7 @@ Window* WindowManager::TrackWindow(XWindow xid) {
 void WindowManager::HandleMappedWindow(Window* win) {
   if (!win->override_redirect()) {
     if (mapped_xids_->Contains(win->xid())) {
-      LOG(WARNING) << "Got map notify for " << win->xid() << ", which is "
+      LOG(WARNING) << "Got map notify for " << win->xid_str() << ", which is "
                    << "already listed in 'mapped_xids_'";
     } else {
       mapped_xids_->AddOnTop(win->xid());
@@ -741,7 +744,8 @@ bool WindowManager::UpdateClientListProperty() {
       LOG(WARNING) << "Skipping "
                    << (!win ? "missing" :
                        (!win->mapped() ? "unmapped" : "override-redirect"))
-                   << " window " << *it << " when updating _NET_CLIENT_LIST";
+                   << " window " << XidStr(*it)
+                   << " when updating _NET_CLIENT_LIST";
     } else {
       values.push_back(*it);
     }
@@ -815,7 +819,7 @@ void WindowManager::SelectKeyEventsOnTree(XWindow root, bool snoop) {
 }
 
 bool WindowManager::HandleButtonPress(const XButtonEvent& e) {
-  VLOG(1) << "Handling button press in window " << e.window;
+  VLOG(1) << "Handling button press in window " << XidStr(e.window);
   // TODO: Also have consumers register the windows that they're interested
   // in, so we don't need to offer the event to all of them here?
   for (std::set<EventConsumer*>::iterator it = event_consumers_.begin();
@@ -827,7 +831,7 @@ bool WindowManager::HandleButtonPress(const XButtonEvent& e) {
 }
 
 bool WindowManager::HandleButtonRelease(const XButtonEvent& e) {
-  VLOG(1) << "Handling button release in window " << e.window;
+  VLOG(1) << "Handling button release in window " << XidStr(e.window);
   for (std::set<EventConsumer*>::iterator it = event_consumers_.begin();
        it != event_consumers_.end(); ++it) {
     if ((*it)->HandleButtonRelease(e.window, e.x, e.y, e.button, e.time))
@@ -845,7 +849,8 @@ bool WindowManager::HandleClientMessage(const XClientMessageEvent& e) {
       if ((*it)->HandleChromeMessage(msg))
         return true;
     }
-    LOG(WARNING) << "Ignoring unhandled WM message of type " << msg.type();
+    LOG(WARNING) << "Ignoring unhandled WM message of type "
+                 << XidStr(msg.type());
   } else {
     for (std::set<EventConsumer*>::iterator it = event_consumers_.begin();
          it != event_consumers_.end(); ++it) {
@@ -853,7 +858,7 @@ bool WindowManager::HandleClientMessage(const XClientMessageEvent& e) {
         return true;
     }
     LOG(WARNING) << "Ignoring unhandled X ClientMessage of type "
-                 << e.message_type << " ("
+                 << XidStr(e.message_type) << " ("
                  << GetXAtomName(e.message_type) << ")";
   }
   return false;
@@ -892,9 +897,9 @@ bool WindowManager::HandleConfigureNotify(const XConfigureEvent& e) {
       // 'above' being unset means that the window is stacked beneath its
       // siblings.
       if (e.above != None) {
-        LOG(WARNING) << "ConfigureNotify for " << e.window << " said that it's "
-                     << "stacked above " << e.above << ", which we don't know "
-                     << "about";
+        LOG(WARNING) << "ConfigureNotify for " << XidStr(e.window)
+                     << " said that it's stacked above " << XidStr(e.above)
+                     << ", which we don't know about";
       }
       stacked_xids_->AddOnBottom(e.window);
     }
@@ -903,8 +908,9 @@ bool WindowManager::HandleConfigureNotify(const XConfigureEvent& e) {
   Window* win = GetWindow(e.window);
   if (!win)
     return false;
-  VLOG(1) << "Handling configure notify for " << e.window << " to pos ("
-          << e.x << ", " << e.y << ") and size " << e.width << "x" << e.height;
+  VLOG(1) << "Handling configure notify for " << XidStr(e.window)
+          << " to pos (" << e.x << ", " << e.y << ") and size "
+          << e.width << "x" << e.height;
 
   // There are several cases to consider here:
   //
@@ -971,7 +977,8 @@ bool WindowManager::HandleConfigureRequest(const XConfigureRequestEvent& e) {
   if (!win)
     return false;
 
-  VLOG(1) << "Handling configure request for " << e.window << " to pos ("
+  VLOG(1) << "Handling configure request for " << XidStr(e.window)
+          << " to pos ("
           << ((e.value_mask & CWX) ? StringPrintf("%d", e.x) :
               std::string("undef"))
           << ", "
@@ -985,7 +992,7 @@ bool WindowManager::HandleConfigureRequest(const XConfigureRequestEvent& e) {
                   StringPrintf("%d", e.height) : std::string(" undef"));
   if (win->override_redirect()) {
     LOG(WARNING) << "Huh?  Got a ConfigureRequest event for override-redirect "
-                 << "window " << e.window;
+                 << "window " << XidStr(e.window);
   }
 
   const int req_x = (e.value_mask & CWX) ? e.x : win->client_x();
@@ -1017,14 +1024,14 @@ bool WindowManager::HandleConfigureRequest(const XConfigureRequestEvent& e) {
 bool WindowManager::HandleCreateNotify(const XCreateWindowEvent& e) {
   if (GetWindow(e.window)) {
     LOG(WARNING) << "Ignoring create notify for already-known window "
-                 << e.window;
+                 << XidStr(e.window);
     return false;
   }
 
-  VLOG(1) << "Handling create notify for " << e.window;
+  VLOG(1) << "Handling create notify for " << XidStr(e.window);
 
   if (snooping_key_events_) {
-    VLOG(1) << "Selecting key events on " << e.window;
+    VLOG(1) << "Selecting key events on " << XidStr(e.window);
     CHECK(xconn_->GrabServer());
     SelectKeyEventsOnTree(e.window, true);
     CHECK(xconn_->UngrabServer());
@@ -1051,8 +1058,8 @@ bool WindowManager::HandleCreateNotify(const XCreateWindowEvent& e) {
 
   XWindowAttributes attr;
   if (!xconn_->GetWindowAttributes(e.window, &attr)) {
-    LOG(WARNING) << "Window " << e.window << " went away while we were "
-                 << "handling its CreateNotify event";
+    LOG(WARNING) << "Window " << XidStr(e.window)
+                 << " went away while we were handling its CreateNotify event";
     return true;
   }
 
@@ -1066,7 +1073,7 @@ bool WindowManager::HandleCreateNotify(const XCreateWindowEvent& e) {
 }
 
 bool WindowManager::HandleDestroyNotify(const XDestroyWindowEvent& e) {
-  VLOG(1) << "Handling destroy notify for " << e.window;
+  VLOG(1) << "Handling destroy notify for " << XidStr(e.window);
 
   if (stacked_xids_->Contains(e.window))
     stacked_xids_->Remove(e.window);
@@ -1089,7 +1096,7 @@ bool WindowManager::HandleDestroyNotify(const XDestroyWindowEvent& e) {
 }
 
 bool WindowManager::HandleEnterNotify(const XEnterWindowEvent& e) {
-  VLOG(1) << "Handling enter notify for " << e.window;
+  VLOG(1) << "Handling enter notify for " << XidStr(e.window);
   for (std::set<EventConsumer*>::iterator it = event_consumers_.begin();
        it != event_consumers_.end(); ++it) {
     if ((*it)->HandlePointerEnter(e.window, e.time))
@@ -1101,7 +1108,8 @@ bool WindowManager::HandleEnterNotify(const XEnterWindowEvent& e) {
 bool WindowManager::HandleFocusChange(const XFocusChangeEvent& e) {
   bool focus_in = (e.type == FocusIn);
   VLOG(1) << "Handling focus-" << (focus_in ? "in" : "out") << " event for "
-          << e.window << " with mode " << FocusChangeEventModeToName(e.mode)
+          << XidStr(e.window) << " with mode "
+          << FocusChangeEventModeToName(e.mode)
           << " and detail " << FocusChangeEventDetailToName(e.detail);
 
   // Don't bother doing anything when we lose or gain the focus due to a
@@ -1158,7 +1166,7 @@ bool WindowManager::HandleKeyRelease(const XKeyEvent& e) {
 }
 
 bool WindowManager::HandleLeaveNotify(const XLeaveWindowEvent& e) {
-  VLOG(1) << "Handling leave notify for " << e.window;
+  VLOG(1) << "Handling leave notify for " << XidStr(e.window);
   for (std::set<EventConsumer*>::iterator it = event_consumers_.begin();
        it != event_consumers_.end(); ++it) {
     if ((*it)->HandlePointerLeave(e.window, e.time))
@@ -1174,38 +1182,38 @@ bool WindowManager::HandleMapNotify(const XMapEvent& e) {
 
   if (win->mapped()) {
     LOG(WARNING) << "Ignoring map notify for already-handled window "
-                 << e.window;
+                 << XidStr(e.window);
     return false;
   }
 
-  VLOG(1) << "Handling map notify for " << e.window;
+  VLOG(1) << "Handling map notify for " << XidStr(e.window);
   win->set_mapped(true);
   HandleMappedWindow(win);
   return true;
 }
 
 bool WindowManager::HandleMapRequest(const XMapRequestEvent& e) {
-  VLOG(1) << "Handling map request for " << e.window;
+  VLOG(1) << "Handling map request for " << XidStr(e.window);
   Window* win = GetWindow(e.window);
   if (!win) {
     // This probably won't do much good; if we don't know about the window,
     // we're not going to be compositing it.
-    LOG(WARNING) << "Mapping " << e.window << ", which we somehow didn't "
-                 << "already know about";
+    LOG(WARNING) << "Mapping " << XidStr(e.window)
+                 << ", which we somehow didn't already know about";
     xconn_->MapWindow(e.window);
     return true;
   }
 
   if (win->override_redirect()) {
     LOG(WARNING) << "Huh?  Got a MapRequest event for override-redirect "
-                 << "window " << e.window;
+                 << "window " << XidStr(e.window);
   }
   for (std::set<EventConsumer*>::iterator it = event_consumers_.begin();
        it != event_consumers_.end(); ++it) {
     if ((*it)->HandleWindowMapRequest(win))
       return true;
   }
-  LOG(WARNING) << "Not mapping window " << win->xid() << " with type "
+  LOG(WARNING) << "Not mapping window " << win->xid_str() << " with type "
                << win->type();
   return false;
 }
@@ -1225,9 +1233,9 @@ bool WindowManager::HandlePropertyNotify(const XPropertyEvent& e) {
     return false;
 
   bool deleted = (e.state == PropertyDelete);
-  VLOG(2) << "Handling property notify for " << win->xid() << " about "
-          << (deleted ? "deleted" : "added") << " property " << e.atom
-          << " (" << GetXAtomName(e.atom) << ")";
+  VLOG(2) << "Handling property notify for " << win->xid_str() << " about "
+          << (deleted ? "deleted" : "added") << " property "
+          << XidStr(e.atom) << " (" << GetXAtomName(e.atom) << ")";
   if (e.atom == GetXAtom(ATOM_NET_WM_NAME)) {
     std::string title;
     if (deleted || !xconn_->GetStringProperty(win->xid(), e.atom, &title)) {
@@ -1257,7 +1265,8 @@ bool WindowManager::HandlePropertyNotify(const XPropertyEvent& e) {
 }
 
 bool WindowManager::HandleReparentNotify(const XReparentEvent& e) {
-  VLOG(1) << "Handling reparent notify for " << e.window << " to " << e.parent;
+  VLOG(1) << "Handling reparent notify for " << XidStr(e.window)
+          << " to " << XidStr(e.parent);
 
   if (e.parent == root_) {
     // If a window got reparented *to* the root window, we want to track
@@ -1318,8 +1327,7 @@ bool WindowManager::HandleReparentNotify(const XReparentEvent& e) {
 
 bool WindowManager::HandleRRScreenChangeNotify(
     const XRRScreenChangeNotifyEvent& e) {
-  VLOG(1) << "Got RRScreenChangeNotify event to "
-          << e.width << "x" << e.height;
+  VLOG(1) << "Got RRScreenChangeNotify event to " << e.width << "x" << e.height;
   if (e.width == width_ && e.height == height_)
     return true;
 
@@ -1343,14 +1351,14 @@ bool WindowManager::HandleShapeNotify(const XShapeEvent& e) {
     return false;
 
   VLOG(1) << "Handling " << (e.kind == ShapeBounding ? "bounding" : "clip")
-          << " shape notify for " << e.window;
+          << " shape notify for " << XidStr(e.window);
   if (e.kind == ShapeBounding)
     win->FetchAndApplyShape(true);  // update_shadow
   return true;
 }
 
 bool WindowManager::HandleUnmapNotify(const XUnmapEvent& e) {
-  VLOG(1) << "Handling unmap notify for " << e.window;
+  VLOG(1) << "Handling unmap notify for " << XidStr(e.window);
   Window* win = GetWindow(e.window);
   if (!win)
     return false;
@@ -1386,6 +1394,8 @@ void WindowManager::ToggleClientWindowDebugging() {
     return;
   }
 
+  LOG(INFO) << "Clutter actors:\n" << stage_->GetDebugString();
+
   std::vector<XWindow> xids;
   if (!xconn_->GetChildWindows(root_, &xids))
     return;
@@ -1402,6 +1412,7 @@ void WindowManager::ToggleClientWindowDebugging() {
 
     ClutterInterface::ContainerActor* group = clutter_->CreateGroup();
     stage_->AddActor(group);
+    group->SetName("debug group");
     group->Lower(overlay_depth_.get());
     group->Move(x, y, 0);
     group->SetSize(width, height);
@@ -1411,15 +1422,17 @@ void WindowManager::ToggleClientWindowDebugging() {
     ClutterInterface::Actor* rect =
         clutter_->CreateRectangle(kBgColor, kFgColor, 1);
     group->AddActor(rect);
+    rect->SetName("debug box");
     rect->Move(0, 0, 0);
     rect->SetSize(width, height);
     rect->SetOpacity(0, 0);
     rect->SetOpacity(0.5, kDebugFadeMs);
     rect->SetVisibility(true);
 
-    ClutterInterface::Actor* text = clutter_->CreateText(
-        "Sans 10pt", StringPrintf("%u (0x%x)", *it, *it), kFgColor);
+    ClutterInterface::Actor* text =
+        clutter_->CreateText("Sans 10pt", XidStr(*it), kFgColor);
     group->AddActor(text);
+    text->SetName("debug label");
     text->Move(3, 3, 0);
     text->SetOpacity(0, 0);
     text->SetOpacity(1, kDebugFadeMs);

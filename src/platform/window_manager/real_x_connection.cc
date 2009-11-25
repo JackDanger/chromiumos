@@ -74,7 +74,7 @@ bool RealXConnection::GetWindowGeometry(
   if (height) *height = height_ret;
   if (int error = UntrapErrors()) {
     LOG(WARNING) << "Got X error while getting geometry for window "
-                 << xid << ": " << GetErrorText(error);
+                 << XidStr(xid) << ": " << GetErrorText(error);
     return false;
   }
   return true;
@@ -84,7 +84,7 @@ bool RealXConnection::MapWindow(XWindow xid) {
   TrapErrors();
   XMapWindow(display_, xid);
   if (int error = UntrapErrors()) {
-    LOG(WARNING) << "Got X error while mapping window " << xid << ": "
+    LOG(WARNING) << "Got X error while mapping window " << XidStr(xid) << ": "
                  << GetErrorText(error);
     return false;
   }
@@ -95,7 +95,7 @@ bool RealXConnection::UnmapWindow(XWindow xid) {
   TrapErrors();
   XUnmapWindow(display_, xid);
   if (int error = UntrapErrors()) {
-    LOG(WARNING) << "Got X error while unmapping window " << xid << ": "
+    LOG(WARNING) << "Got X error while unmapping window " << XidStr(xid) << ": "
                  << GetErrorText(error);
     return false;
   }
@@ -106,7 +106,7 @@ bool RealXConnection::MoveWindow(XWindow xid, int x, int y) {
   TrapErrors();
   XMoveWindow(display_, xid, x, y);
   if (int error = UntrapErrors()) {
-    LOG(WARNING) << "Got X error while moving window " << xid << ": "
+    LOG(WARNING) << "Got X error while moving window " << XidStr(xid) << ": "
                  << GetErrorText(error);
     return false;
   }
@@ -117,7 +117,7 @@ bool RealXConnection::ResizeWindow(XWindow xid, int width, int height) {
   TrapErrors();
   XResizeWindow(display_, xid, width, height);
   if (int error = UntrapErrors()) {
-    LOG(WARNING) << "Got X error while resizing window " << xid << ": "
+    LOG(WARNING) << "Got X error while resizing window " << XidStr(xid) << ": "
                  << GetErrorText(error);
     return false;
   }
@@ -134,8 +134,8 @@ bool RealXConnection::ConfigureWindow(
   changes.height = height;
   XConfigureWindow(display_, xid, CWX | CWY | CWWidth | CWHeight, &changes);
   if (int error = UntrapErrors()) {
-    LOG(WARNING) << "Got X error while configuring window " << xid << ": "
-                 << GetErrorText(error);
+    LOG(WARNING) << "Got X error while configuring window " << XidStr(xid)
+                 << ": " << GetErrorText(error);
     return false;
   }
   return true;
@@ -145,7 +145,7 @@ bool RealXConnection::RaiseWindow(XWindow xid) {
   TrapErrors();
   XRaiseWindow(display_, xid);
   if (int error = UntrapErrors()) {
-    LOG(WARNING) << "Got X error while raising window " << xid << ": "
+    LOG(WARNING) << "Got X error while raising window " << XidStr(xid) << ": "
                  << GetErrorText(error);
     return false;
   }
@@ -153,11 +153,11 @@ bool RealXConnection::RaiseWindow(XWindow xid) {
 }
 
 bool RealXConnection::FocusWindow(XWindow xid, Time event_time) {
-  VLOG(1) << "Focusing window " << xid;
+  VLOG(1) << "Focusing window " << XidStr(xid);
   TrapErrors();
   XSetInputFocus(display_, xid, RevertToParent, event_time);
   if (int error = UntrapErrors()) {
-    LOG(WARNING) << "Got X error while focusing window " << xid << ": "
+    LOG(WARNING) << "Got X error while focusing window " << XidStr(xid) << ": "
                  << GetErrorText(error);
     return false;
   }
@@ -171,7 +171,7 @@ bool RealXConnection::StackWindow(XWindow xid, XWindow other, bool above) {
   changes.stack_mode = above ? Above : Below;
   XConfigureWindow(display_, xid, CWSibling | CWStackMode, &changes);
   if (int error = UntrapErrors()) {
-    LOG(WARNING) << "Got X error while stacking window " << xid << ": "
+    LOG(WARNING) << "Got X error while stacking window " << XidStr(xid) << ": "
                  << GetErrorText(error);
     return false;
   }
@@ -183,8 +183,8 @@ bool RealXConnection::ReparentWindow(
   TrapErrors();
   XReparentWindow(display_, xid, parent, x, y);
   if (int error = UntrapErrors()) {
-    LOG(WARNING) << "Got X error while reparenting window " << xid << ": "
-                 << GetErrorText(error);
+    LOG(WARNING) << "Got X error while reparenting window " << XidStr(xid)
+                 << ": " << GetErrorText(error);
     return false;
   }
   return true;
@@ -197,8 +197,9 @@ bool RealXConnection::SetWindowBorderWidth(XWindow xid, int width) {
   changes.border_width = width;
   XConfigureWindow(display_, xid, CWBorderWidth, &changes);
   if (int error = UntrapErrors()) {
-    LOG(WARNING) << "Got X error while setting " << xid << "'s border width "
-                 << "to " << width << ": " << GetErrorText(error);
+    LOG(WARNING) << "Got X error while setting " << XidStr(xid)
+                 << "'s border width to " << width << ": "
+                 << GetErrorText(error);
     return false;
   }
   return true;
@@ -218,8 +219,8 @@ bool RealXConnection::SelectInputOnWindow(
     XSelectInput(display_, xid, event_mask);
   }
   if (int error = UntrapErrors()) {
-    LOG(WARNING) << "Got X error while selecting input on window " << xid
-                 << ": " << GetErrorText(error);
+    LOG(WARNING) << "Got X error while selecting input on window "
+                 << XidStr(xid) << ": " << GetErrorText(error);
     return false;
   }
   return true;
@@ -236,8 +237,8 @@ bool RealXConnection::DeselectInputOnWindow(XWindow xid, int event_mask) {
     XSelectInput(display_, xid, attr.your_event_mask);
   }
   if (int error = UntrapErrors()) {
-    LOG(WARNING) << "Got X error while deselecting input on window " << xid
-                 << ": " << GetErrorText(error);
+    LOG(WARNING) << "Got X error while deselecting input on window "
+                 << XidStr(xid) << ": " << GetErrorText(error);
     return false;
   }
   return true;
@@ -258,7 +259,7 @@ bool RealXConnection::AddPassiveButtonGrabOnWindow(
               None);          // cursor
   if (int error = UntrapErrors()) {
     LOG(WARNING) << "Got X error while installing passive grab for button "
-                 << button << " on window " << xid << ": "
+                 << button << " on window " << XidStr(xid) << ": "
                  << GetErrorText(error);
     return false;
   }
@@ -270,7 +271,7 @@ bool RealXConnection::RemovePassiveButtonGrabOnWindow(XWindow xid, int button) {
   XUngrabButton(display_, button, None, xid);
   if (int error = UntrapErrors()) {
     LOG(WARNING) << "Got X error while uninstalling passive grab for button "
-                 << button << " on window " << xid << ": "
+                 << button << " on window " << XidStr(xid) << ": "
                  << GetErrorText(error);
     return false;
   }
@@ -292,11 +293,11 @@ bool RealXConnection::AddActivePointerGrabForWindow(XWindow xid,
                             timestamp);
   if (int error = UntrapErrors()) {
     LOG(WARNING) << "Got X error while actively grabbing pointer for window "
-                 << xid << ": " << GetErrorText(error);
+                 << XidStr(xid) << ": " << GetErrorText(error);
     return false;
   } else if (result != GrabSuccess) {
-    LOG(WARNING) << "Active pointer grab for window " << xid << " failed with "
-                 << result;
+    LOG(WARNING) << "Active pointer grab for window " << XidStr(xid)
+                 << " failed with " << result;
     return false;
   }
   return true;
@@ -329,8 +330,8 @@ bool RealXConnection::RemoveInputRegionFromWindow(XWindow xid) {
                           ShapeSet,
                           Unsorted);
   if (int error = UntrapErrors()) {
-    LOG(WARNING) << "Got X error while removing input region from " << xid
-                 << ": " << GetErrorText(error);
+    LOG(WARNING) << "Got X error while removing input region from "
+                 << XidStr(xid) << ": " << GetErrorText(error);
     return false;
   }
   return true;
@@ -343,8 +344,8 @@ bool RealXConnection::GetSizeHintsForWindow(
   int error = UntrapErrors();
   if (!result || error) {
     if (error) {
-      LOG(WARNING) << "Got X error while getting hints for " << xid << ": "
-                   << GetErrorText(error);
+      LOG(WARNING) << "Got X error while getting hints for " << XidStr(xid)
+                   << ": " << GetErrorText(error);
     }
     return false;
   }
@@ -360,7 +361,7 @@ bool RealXConnection::GetTransientHintForWindow(
   XGetTransientForHint(display_, xid, owner_out);
   if (int error = UntrapErrors()) {
     LOG(WARNING) << "Got X error while getting WM_TRANSIENT_FOR for "
-                 << "window " << xid << ": " << GetErrorText(error);
+                 << "window " << XidStr(xid) << ": " << GetErrorText(error);
     return false;
   }
   return true;
@@ -374,7 +375,7 @@ bool RealXConnection::GetWindowAttributes(
   if (!result || error) {
     if (error) {
       LOG(WARNING) << "Got X error while getting attributes for window "
-                   << xid << ": " << GetErrorText(error);
+                   << XidStr(xid) << ": " << GetErrorText(error);
     }
     return false;
   }
@@ -386,8 +387,8 @@ bool RealXConnection::RedirectWindowForCompositing(XWindow xid) {
   // TODO: Manual or Automatic here?
   XCompositeRedirectWindow(display_, xid, CompositeRedirectManual);
   if (int error = UntrapErrors()) {
-    LOG(WARNING) << "Got X error while redirecting window " << xid << ": "
-                 << GetErrorText(error);
+    LOG(WARNING) << "Got X error while redirecting window " << XidStr(xid)
+                 << ": " << GetErrorText(error);
     return false;
   }
   return true;
@@ -399,8 +400,8 @@ bool RealXConnection::UnredirectWindowForCompositing(XWindow xid) {
   // mean when we're *un*-redirecting a window?
   XCompositeUnredirectWindow(display_, xid, CompositeRedirectManual);
   if (int error = UntrapErrors()) {
-    LOG(WARNING) << "Got X error while unredirecting window " << xid << ": "
-                 << GetErrorText(error);
+    LOG(WARNING) << "Got X error while unredirecting window " << XidStr(xid)
+                 << ": " << GetErrorText(error);
     return false;
   }
   return true;
@@ -454,8 +455,8 @@ bool RealXConnection::DestroyWindow(XWindow xid) {
   TrapErrors();
   XDestroyWindow(display_, xid);
   if (int error = UntrapErrors()) {
-    LOG(WARNING) << "Got X error while destroying window " << xid << ": "
-                 << GetErrorText(error);
+    LOG(WARNING) << "Got X error while destroying window " << XidStr(xid)
+                 << ": " << GetErrorText(error);
     return false;
   }
   return true;
@@ -473,7 +474,7 @@ bool RealXConnection::IsWindowShaped(XWindow xid) {
       &bounding_shaped, &x_bounding, &y_bounding, &w_bounding, &h_bounding,
       &clip_shaped, &x_clip, &y_clip, &w_clip, &h_clip);
   if (int error = UntrapErrors()) {
-    LOG(WARNING) << "Got X error while checking if window " << xid
+    LOG(WARNING) << "Got X error while checking if window " << XidStr(xid)
                  << " is shaped: " << GetErrorText(error);
     return false;
   }
@@ -484,8 +485,8 @@ bool RealXConnection::SelectShapeEventsOnWindow(XWindow xid) {
   TrapErrors();
   XShapeSelectInput(display_, xid, ShapeNotifyMask);
   if (int error = UntrapErrors()) {
-    LOG(WARNING) << "Got X error while selecting ShapeNotify events on " << xid
-                 << ": " << GetErrorText(error);
+    LOG(WARNING) << "Got X error while selecting ShapeNotify events on "
+                 << XidStr(xid) << ": " << GetErrorText(error);
     return false;
   }
   return true;
@@ -497,8 +498,8 @@ bool RealXConnection::GetWindowBoundingRegion(XWindow xid, ByteMap* bytemap) {
   XRectangle* rects =
       XShapeGetRectangles(display_, xid, ShapeBounding, &count, &ordering);
   if (int error = UntrapErrors()) {
-    LOG(WARNING) << "Got X error while getting bounding rectangles for " << xid
-                 << ": " << GetErrorText(error);
+    LOG(WARNING) << "Got X error while getting bounding rectangles for "
+                 << XidStr(xid) << ": " << GetErrorText(error);
     return false;
   }
   bytemap->Clear(0x0);
@@ -515,7 +516,7 @@ bool RealXConnection::SelectXRandREventsOnWindow(XWindow xid) {
   XRRSelectInput(display_, xid, RRScreenChangeNotifyMask);
   if (int error = UntrapErrors()) {
     LOG(WARNING) << "Got X error while selecting RRScreenChangeNotify events "
-                 << "on " << xid << ": " << GetErrorText(error);
+                 << "on " << XidStr(xid) << ": " << GetErrorText(error);
     return false;
   }
   return true;
@@ -580,7 +581,7 @@ bool RealXConnection::GetAtomName(XAtom atom, string* name) {
   TrapErrors();
   char* name_ptr = XGetAtomName(display_, atom);
   if (int error = UntrapErrors()) {
-    LOG(WARNING) << "Got X error while looking up atom " << atom << ": "
+    LOG(WARNING) << "Got X error while looking up atom " << XidStr(atom) << ": "
                  << GetErrorText(error);
     if (name_ptr) {
       XFree(name_ptr);
@@ -588,7 +589,7 @@ bool RealXConnection::GetAtomName(XAtom atom, string* name) {
     return false;
   }
   if (!name_ptr) {
-    LOG(WARNING) << "Got NULL string while looking up atom " << atom;
+    LOG(WARNING) << "Got NULL string while looking up atom " << XidStr(atom);
     return false;
   }
   name->assign(name_ptr);
@@ -620,8 +621,9 @@ bool RealXConnection::GetIntArrayProperty(
                      &remaining_bytes,
                      &property);
   if (int error = UntrapErrors()) {
-    LOG(WARNING) << "Got X error while getting int property " << xatom
-                 << " for window " << xid << ": " << GetErrorText(error);
+    LOG(WARNING) << "Got X error while getting int property " << XidStr(xatom)
+                 << " for window " << XidStr(xid) << ": "
+                 << GetErrorText(error);
     return false;
   }
 
@@ -632,15 +634,15 @@ bool RealXConnection::GetIntArrayProperty(
 
   // Only read data containing a single 32-bit item.
   if (format != kLongFormat) {
-    LOG(WARNING) << "Not reading property " << xatom << " for window " << xid
-                 << "; it's supposed to have a 32-bit format but is actually "
-                 << format << "-bit";
+    LOG(WARNING) << "Not reading property " << XidStr(xatom) << " for window "
+                 << XidStr(xid) << "; it's supposed to have a 32-bit format "
+                 << "but is actually " << format << "-bit";
     XFree(property);
     return false;
   }
   if (num_items < 1 || remaining_bytes != 0) {
-    LOG(WARNING) << "Not reading property " << xatom << " for window " << xid
-                 << "; we got " << num_items << " ints and have "
+    LOG(WARNING) << "Not reading property " << XidStr(xatom) << " for window "
+                 << XidStr(xid) << "; we got " << num_items << " ints and have "
                  << remaining_bytes << " byte(s) remaining (we expected at "
                  << "least one int)";
     XFree(property);
@@ -657,9 +659,9 @@ bool RealXConnection::GetIntArrayProperty(
 bool RealXConnection::SetIntArrayProperty(
     XWindow xid, XAtom xatom, XAtom type, const vector<int>& values) {
   if (values.size() > kMaxIntPropertySize) {
-    LOG(WARNING) << "Setting int property " << xatom << " for window " << xid
-                 << " with " << values.size() << " values (max is "
-                 << kMaxIntPropertySize << ")";
+    LOG(WARNING) << "Setting int property " << XidStr(xatom) << " for window "
+                 << XidStr(xid) << " with " << values.size()
+                 << " values (max is " << kMaxIntPropertySize << ")";
   }
 
   CHECK(!values.empty());
@@ -711,19 +713,22 @@ bool RealXConnection::GetStringProperty(XWindow xid, XAtom xatom, string* out) {
   int error = UntrapErrors();
 
   if (result != Success) {
-    LOG(WARNING) << "Unable to get property " << xatom << " for window " << xid;
+    LOG(WARNING) << "Unable to get property " << XidStr(xatom)
+                 << " for window " << XidStr(xid);
     return false;
   }
   if (error) {
-    LOG(WARNING) << "Got X error while getting property " << xatom
-                 << " for window " << xid << ": " << GetErrorText(error);
+    LOG(WARNING) << "Got X error while getting property " << XidStr(xatom)
+                 << " for window " << XidStr(xid) << ": "
+                 << GetErrorText(error);
     return false;
   }
   // Only read data containing 8-bit items.
   if (format == kByteFormat) {
     if (type != XA_STRING && type != utf8_string_atom_) {
-      LOG(WARNING) << "Getting property " << xatom << " with unsupported type "
-                   << type << " as string for " << xid;
+      LOG(WARNING) << "Getting property " << XidStr(xatom)
+                   << " with unsupported type " << type
+                   << " as string for window " << XidStr(xid);
     }
     out->assign(reinterpret_cast<char*>(property), num_items);
   }
@@ -743,9 +748,9 @@ bool RealXConnection::SetStringProperty(
                   reinterpret_cast<const unsigned char*>(value.c_str()),
                   value.size());
   if (int error = UntrapErrors()) {
-    LOG(WARNING) << "Got X error while setting string property " << xatom
-                 << " to \"" << value << "\" for window " << xid << ": "
-                 << GetErrorText(error);
+    LOG(WARNING) << "Got X error while setting string property "
+                 << XidStr(xatom) << " to \"" << value << "\" for window "
+                 << XidStr(xid) << ": " << GetErrorText(error);
     return false;
   }
   return true;
@@ -755,8 +760,9 @@ bool RealXConnection::DeletePropertyIfExists(XWindow xid, XAtom xatom) {
   TrapErrors();
   XDeleteProperty(display_, xid, xatom);
   if (int error = UntrapErrors()) {
-    LOG(WARNING) << "Got X error while deleting property " << xatom
-                 << " for window " << xid << ": " << GetErrorText(error);
+    LOG(WARNING) << "Got X error while deleting property " << XidStr(xatom)
+                 << " for window " << XidStr(xid) << ": "
+                 << GetErrorText(error);
     return false;
   }
   return true;
@@ -771,8 +777,8 @@ bool RealXConnection::SendEvent(XWindow xid, XEvent* event, int event_mask) {
              event_mask,
              event);
   if (int error = UntrapErrors()) {
-    LOG(WARNING) << "Got X error while sending message to window " << xid
-                 << ": " << GetErrorText(error);
+    LOG(WARNING) << "Got X error while sending message to window "
+                 << XidStr(xid) << ": " << GetErrorText(error);
     return false;
   }
   return true;
@@ -784,8 +790,8 @@ bool RealXConnection::WaitForEvent(
   TrapErrors();
   XWindowEvent(display_, xid, event_mask, event_out);
   if (int error = UntrapErrors()) {
-    LOG(WARNING) << "Got X error while waiting for event on window " << xid
-                 << ": " << GetErrorText(error);
+    LOG(WARNING) << "Got X error while waiting for event on window "
+                 << XidStr(xid) << ": " << GetErrorText(error);
     return false;
   }
   return true;
@@ -796,7 +802,7 @@ XWindow RealXConnection::GetSelectionOwner(XAtom atom) {
   XWindow xid = XGetSelectionOwner(display_, atom);
   if (int error = UntrapErrors()) {
     LOG(WARNING) << "Got X error while getting selection owner for "
-                 << atom << ": " << GetErrorText(error);
+                 << XidStr(atom) << ": " << GetErrorText(error);
     return None;
   }
   return xid;
@@ -808,7 +814,7 @@ bool RealXConnection::SetSelectionOwner(
   XSetSelectionOwner(display_, atom, xid, timestamp);
   if (int error = UntrapErrors()) {
     LOG(WARNING) << "Got X error while setting selection owner for "
-                 << atom << ": " << GetErrorText(error);
+                 << XidStr(atom) << ": " << GetErrorText(error);
     return false;
   }
   return true;
@@ -821,8 +827,8 @@ bool RealXConnection::SetWindowCursor(XWindow xid, uint32 shape) {
   XChangeWindowAttributes(display_, xid, CWCursor, &attr);
   // TODO(derat): Do we need to free the result of XCreateFontCursor above?
   if (int error = UntrapErrors()) {
-    LOG(WARNING) << "Got X error while changing cursor for " << xid << ": "
-                 << GetErrorText(error);
+    LOG(WARNING) << "Got X error while changing cursor for " << XidStr(xid)
+                 << ": " << GetErrorText(error);
     return false;
   }
   return true;
@@ -843,7 +849,7 @@ bool RealXConnection::GetChildWindows(XWindow xid,
   int error = UntrapErrors();
   if (!result || error) {
     if (error) {
-      LOG(WARNING) << "Got X error while querying windows under " << xid
+      LOG(WARNING) << "Got X error while querying windows under " << XidStr(xid)
                    << ": " << GetErrorText(error);
     }
     return false;
@@ -874,8 +880,8 @@ bool RealXConnection::GetParentWindow(XWindow xid, XWindow* parent) {
   int error = UntrapErrors();
   if (!result || error) {
     if (error) {
-      LOG(WARNING) << "Got X error while querying parent window for " << xid
-                   << ": " << GetErrorText(error);
+      LOG(WARNING) << "Got X error while querying parent window for "
+                   << XidStr(xid) << ": " << GetErrorText(error);
     }
     return false;
   }

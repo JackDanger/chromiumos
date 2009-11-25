@@ -51,11 +51,13 @@ PanelBar::PanelBar(WindowManager* wm, int x, int y, int width, int height)
       desired_panel_to_focus_(NULL),
       is_visible_(false) {
   wm_->stage()->AddActor(bar_actor_.get());
+  bar_actor_->SetName("panel bar");
   bar_actor_->SetSize(width_, height_);
   bar_actor_->Move(x_, y_ + height, 0);
   bar_actor_->Raise(wm_->panel_bar_depth());
 
   wm_->stage()->AddActor(bar_shadow_->group());
+  bar_shadow_->group()->SetName("shadow group for panel bar");
   bar_shadow_->group()->Lower(wm_->panel_bar_depth());
   bar_shadow_->SetOpacity(0, 0);
   bar_shadow_->Move(x_, y_ + height, 0);
@@ -63,6 +65,7 @@ PanelBar::PanelBar(WindowManager* wm, int x, int y, int width, int height)
   bar_shadow_->Show();
 
   wm_->stage()->AddActor(anchor_actor_.get());
+  anchor_actor_->SetName("panel anchor");
   anchor_actor_->SetOpacity(0, 0);
   anchor_actor_->Raise(bar_actor_.get());
 }
@@ -91,14 +94,15 @@ void PanelBar::HandleWindowMap(Window* win) {
       break;
     case WmIpc::WINDOW_TYPE_CHROME_PANEL: {
       if (win->type_params().empty()) {
-        LOG(WARNING) << "Panel " << win->xid() << " is missing type "
+        LOG(WARNING) << "Panel " << win->xid_str() << " is missing type "
                      << "parameter for titlebar window";
         break;
       }
       Window* titlebar = wm_->GetWindow(win->type_params().at(0));
       if (!titlebar) {
-        LOG(WARNING) << "Unable to find titlebar " << win->type_params()[0]
-                     << " for panel " << win->xid();
+        LOG(WARNING) << "Unable to find titlebar "
+                     << XidStr(win->type_params()[0])
+                     << " for panel " << win->xid_str();
         break;
       }
 
@@ -166,9 +170,9 @@ void PanelBar::HandleWindowUnmap(Window* win) {
     if (it != expanded_panels_.end()) {
       expanded_panels_.erase(it);
     } else {
-      LOG(WARNING) << "Got panel " << panel->xid() << " for window "
-                   << win->xid() << " but didn't find it in collapsed_panels_ "
-                   << " or expanded_panels_";
+      LOG(WARNING) << "Got panel " << panel->xid_str() << " for window "
+                   << win->xid_str() << " but didn't find it in "
+                   << "collapsed_panels_ or expanded_panels_";
     }
   }
 
@@ -224,7 +228,7 @@ bool PanelBar::HandleButtonPress(
     Panel* panel = GetPanelByWindow(*win);
     if (panel) {
       if (win == panel->panel_win()) {
-        VLOG(1) << "Got button press in panel " << panel->xid()
+        VLOG(1) << "Got button press in panel " << panel->xid_str()
                 << "; giving it the focus";
         // Get rid of the passive button grab, and then ungrab the pointer
         // and replay events so the panel will get a copy of the click.
@@ -277,13 +281,13 @@ bool PanelBar::HandleChromeMessage(const WmIpc::Message& msg) {
       Window* win = wm_->GetWindow(xid);
       if (!win) {
         LOG(WARNING) << "Ignoring WM_SET_PANEL_STATE message for unknown "
-                     << "window " << xid;
+                     << "window " << XidStr(xid);
         return true;
       }
       Panel* panel = GetPanelByWindow(*win);
       if (!panel) {
         LOG(WARNING) << "Ignoring WM_SET_PANEL_STATE message for non-panel "
-                     << "window " << xid;
+                     << "window " << win->xid_str();
         return true;
       }
       if (msg.param(1)) {
@@ -298,7 +302,7 @@ bool PanelBar::HandleChromeMessage(const WmIpc::Message& msg) {
       Window* win = wm_->GetWindow(xid);
       if (!win) {
         LOG(WARNING) << "Ignoring WM_MOVE_PANEL message for unknown window "
-                     << xid;
+                     << XidStr(xid);
         return true;
       }
       int x = msg.param(1);
@@ -311,7 +315,7 @@ bool PanelBar::HandleChromeMessage(const WmIpc::Message& msg) {
       Window* win = wm_->GetWindow(xid);
       if (!win) {
         LOG(WARNING) << "Ignoring WM_NOTIFY_PANEL_DRAG_COMPLETE message for "
-                     << "unknown window " << xid;
+                     << "unknown window " << XidStr(xid);
         return true;
       }
       HandlePanelDragComplete(win);
@@ -322,7 +326,7 @@ bool PanelBar::HandleChromeMessage(const WmIpc::Message& msg) {
       Window* win = wm_->GetWindow(xid);
       if (!win) {
         LOG(WARNING) << "Got WM_FOCUS_WINDOW message for unknown window "
-                     << xid;
+                     << XidStr(xid);
         return false;
       }
       Panel* panel = GetPanelByWindow(*win);
@@ -332,7 +336,7 @@ bool PanelBar::HandleChromeMessage(const WmIpc::Message& msg) {
       }
       if (!panel->is_expanded()) {
         LOG(WARNING) << "Ignoring WM_FOCUS_WINDOW message for collapsed panel "
-                     << panel->xid();
+                     << panel->xid_str();
         return true;
       }
       FocusPanel(panel, false);  // remove_pointer_grab=false
@@ -355,7 +359,7 @@ bool PanelBar::HandleFocusChange(XWindow xid, bool focus_in) {
   }
 
   if (!focus_in) {
-    VLOG(1) << "Panel " << panel->xid() << " lost focus; adding passive "
+    VLOG(1) << "Panel " << panel->xid_str() << " lost focus; adding passive "
             << "button grab";
     panel->panel_win()->AddPassiveButtonGrab();
   }
@@ -391,7 +395,7 @@ void PanelBar::MoveAndResize(int x, int y, int width, int height) {
 
 void PanelBar::StorePanelPosition(Window* win, int x, int y) {
   CHECK(win);
-  VLOG(2) << "Got request to move panel " << win->xid()
+  VLOG(2) << "Got request to move panel " << win->xid_str()
           << " to (" << x << ", " << y << ")";
 
   dragged_panel_event_coalescer_.StorePosition(x, y);
@@ -400,7 +404,7 @@ void PanelBar::StorePanelPosition(Window* win, int x, int y) {
     Panel* panel = GetPanelByWindow(*win);
     if (!panel) {
       LOG(WARNING) << "Unable to store position for unknown panel "
-                   << win->xid();
+                   << win->xid_str();
       return;
     }
     StartDrag(panel);
@@ -409,7 +413,8 @@ void PanelBar::StorePanelPosition(Window* win, int x, int y) {
 
 void PanelBar::HandlePanelDragComplete(Window* win) {
   CHECK(win);
-  VLOG(2) << "Got notification that panel drag is complete for " << win->xid();
+  VLOG(2) << "Got notification that panel drag is complete for "
+          << win->xid_str();
 
   if (!dragged_panel_ || dragged_panel_->panel_win() != win) {
     return;
@@ -493,8 +498,8 @@ void PanelBar::AddPanel(
   CHECK(titlebar_win);
 
   VLOG(1) << "Adding " << (expanded ? "expanded" : "collapsed")
-          << " panel with panel window " << panel_win->xid()
-          << " and titlebar window " << titlebar_win->xid();
+          << " panel with panel window " << panel_win->xid_str()
+          << " and titlebar window " << titlebar_win->xid_str();
 
   const int right = expanded ?
       x_ + width_ - kBarPadding :
@@ -522,7 +527,7 @@ void PanelBar::ExpandPanel(Panel* panel, bool create_anchor) {
   CHECK(panel);
   if (panel->is_expanded()) {
     LOG(WARNING) << "Ignoring request to expand already-expanded panel "
-                 << panel->xid();
+                 << panel->xid_str();
     return;
   }
 
@@ -544,7 +549,7 @@ void PanelBar::CollapsePanel(Panel* panel) {
   CHECK(panel);
   if (!panel->is_expanded()) {
     LOG(WARNING) << "Ignoring request to collapse already-collapsed panel "
-                 << panel->xid();
+                 << panel->xid_str();
     return;
   }
 
@@ -628,14 +633,14 @@ void PanelBar::StartDrag(Panel* panel) {
   }
 
   if (dragged_panel_) {
-    LOG(WARNING) << "Abandoning dragged panel " << dragged_panel_->xid()
-                 << " in favor of " << panel->xid();
+    LOG(WARNING) << "Abandoning dragged panel " << dragged_panel_->xid_str()
+                 << " in favor of " << panel->xid_str();
     if (dragged_panel_->is_expanded()) {
       RepositionExpandedPanels(dragged_panel_);
     }
   }
 
-  VLOG(2) << "Starting drag of panel " << panel->xid();
+  VLOG(2) << "Starting drag of panel " << panel->xid_str();
   dragged_panel_ = panel;
 
   if (panel->is_expanded()) {
@@ -825,7 +830,8 @@ void PanelBar::InsertExpandedPanel(std::tr1::shared_ptr<Panel> new_panel) {
 
 void PanelBar::CreateAnchor(Panel* panel) {
   if (anchor_input_win_ != None) {
-    LOG(WARNING) << "Destroying extra input window " << anchor_input_win_;
+    LOG(WARNING) << "Destroying extra input window "
+                 << XidStr(anchor_input_win_);
     wm_->xconn()->DestroyWindow(anchor_input_win_);
   }
   anchor_input_win_ = wm_->CreateInputWindow(

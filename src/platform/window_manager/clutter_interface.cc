@@ -4,8 +4,10 @@
 
 #include "window_manager/clutter_interface.h"
 
-#include "chromeos/obsolete_logging.h"
+#include <cmath>
 
+#include "base/string_util.h"
+#include "chromeos/obsolete_logging.h"
 #include "window_manager/util.h"
 
 namespace chromeos {
@@ -27,6 +29,11 @@ RealClutterInterface::Actor::~Actor() {
     clutter_actor_destroy(clutter_actor_);
     clutter_actor_ = NULL;
   }
+}
+
+void RealClutterInterface::Actor::SetName(const std::string& name) {
+  CHECK(clutter_actor_);
+  clutter_actor_set_name(clutter_actor_, name.c_str());
 }
 
 int RealClutterInterface::Actor::GetWidth() {
@@ -182,6 +189,48 @@ void RealClutterInterface::StageActor::SetStageColor(
   clutter_stage_set_color(CLUTTER_STAGE(clutter_actor_), &color);
 }
 
+std::string RealClutterInterface::StageActor::GetDebugString() {
+  return GetDebugStringInternal(clutter_actor_, 0);
+}
+
+// static
+std::string RealClutterInterface::StageActor::GetDebugStringInternal(
+    ClutterActor* actor, int indent_level) {
+  std::string out;
+  for (int i = 0; i < indent_level; ++i)
+    out += "  ";
+
+  GType type = G_TYPE_FROM_INSTANCE(G_OBJECT(actor));
+  const char* name = clutter_actor_get_name(actor);
+  const char* type_name = g_type_name(type);
+  gdouble scale_x = 0, scale_y = 0;
+  clutter_actor_get_scale(actor, &scale_x, &scale_y);
+  out += StringPrintf("\"%s\" %p (%s%s) (%d, %d) %dx%d "
+                        "scale=(%.2f, %.2f) %.f%%\n",
+                      name ? name : "",
+                      actor,
+                      (CLUTTER_ACTOR_IS_VISIBLE(actor) ? "" : "inv "),
+                      type_name,
+                      static_cast<int>(clutter_actor_get_x(actor)),
+                      static_cast<int>(clutter_actor_get_y(actor)),
+                      static_cast<int>(clutter_actor_get_width(actor)),
+                      static_cast<int>(clutter_actor_get_height(actor)),
+                      scale_x, scale_y,
+                      round((clutter_actor_get_opacity(actor) / 255.0) * 100));
+
+  if (g_type_is_a(type, CLUTTER_TYPE_CONTAINER)) {
+    GList* children = clutter_container_get_children(CLUTTER_CONTAINER(actor));
+    for (GList* node = g_list_first(children);
+         node != NULL;
+         node = g_list_next(node)) {
+      out += GetDebugStringInternal(CLUTTER_ACTOR(node->data),
+                                    indent_level + 1);
+    }
+  }
+
+  return out;
+}
+
 
 RealClutterInterface::TexturePixmapActor::~TexturePixmapActor() {
   ClearAlphaMask();
@@ -210,7 +259,7 @@ bool RealClutterInterface::TexturePixmapActor::SetTexturePixmapWindow(
 
   if (clutter_x11_untrap_x_errors()) {
     LOG(WARNING) << "Got X error while making texture pixmap use window "
-                 << xid;
+                 << XidStr(xid);
     return false;
   }
 

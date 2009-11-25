@@ -34,6 +34,7 @@ Shadow::Shadow(ClutterInterface* clutter)
     : clutter_(clutter) {
   CHECK(clutter_);
   group_.reset(clutter_->CreateGroup());
+  group_->SetName("shadow group");
 
   // Load the images the first time we get called.
   // TODO: Get a proper singleton class and use that instead.
@@ -49,6 +50,15 @@ Shadow::Shadow(ClutterInterface* clutter)
   tr_actor_.reset(clutter_->CloneActor(tr_texture_));
   bl_actor_.reset(clutter_->CloneActor(bl_texture_));
   br_actor_.reset(clutter_->CloneActor(br_texture_));
+
+  top_actor_->SetName("shadow top");
+  bottom_actor_->SetName("shadow bottom");
+  left_actor_->SetName("shadow left");
+  right_actor_->SetName("shadow right");
+  tl_actor_->SetName("shadow tl");
+  tr_actor_->SetName("shadow tr");
+  bl_actor_->SetName("shadow bl");
+  br_actor_->SetName("shadow br");
 
   // Resize the shadow arbitrarily to initialize the positions of the actors.
   Resize(10, 10, 0);
@@ -134,6 +144,7 @@ void Shadow::Init() {
 ClutterInterface::Actor* Shadow::InitTexture(const std::string& filename) {
   ClutterInterface::Actor* actor = clutter_->CreateImage(
       FLAGS_shadow_image_dir + "/" + filename);
+  actor->SetName(filename);
   // Even though we don't actually want to display it, we need to add the
   // actor to the default stage; otherwise Clutter complains that actors
   // that are cloned from it are unmappable.

@@ -44,7 +44,7 @@ class Panel {
   bool is_expanded() const { return is_expanded_; }
 
   // Get the X ID of the panel window.  This is handy for logging.
-  XWindow xid() const;
+  const std::string& xid_str() const { return panel_win_->xid_str(); }
 
   // The current position of one pixel beyond the right edge of the panel.
   int cur_right() const;

@@ -6,7 +6,7 @@
 
 dpi=${dpi:-105}
 display=${display:-:1}
-resolution=${resolution:-1000x720}
+resolution=${resolution:-1024x600}
 
 xinit ./xinit.sh -- /usr/bin/Xephyr $display -ac -br \
   -dpi $dpi -screen $resolution -host-cursor

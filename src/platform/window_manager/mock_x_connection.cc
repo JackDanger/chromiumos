@@ -149,8 +149,8 @@ bool MockXConnection::AddActivePointerGrabForWindow(
   if (!info)
     return false;
   if (pointer_grab_xid_ != None) {
-    LOG(ERROR) << "Pointer is already grabbed for " << pointer_grab_xid_
-               << "; ignoring request to grab it for " << xid;
+    LOG(ERROR) << "Pointer is already grabbed for " << XidStr(pointer_grab_xid_)
+               << "; ignoring request to grab it for " << XidStr(xid);
     return false;
   }
   pointer_grab_xid_ = xid;

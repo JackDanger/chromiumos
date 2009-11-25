@@ -48,6 +48,7 @@ class ClutterInterface {
     Actor() {}
     virtual ~Actor() {}
 
+    virtual void SetName(const std::string& name) = 0;
     virtual int GetWidth() = 0;
     virtual int GetHeight() = 0;
 
@@ -85,6 +86,7 @@ class ClutterInterface {
     virtual ~StageActor() {}
     virtual XWindow GetStageXWindow() = 0;
     virtual void SetStageColor(const std::string& color_str) = 0;
+    virtual std::string GetDebugString() = 0;
    private:
     DISALLOW_COPY_AND_ASSIGN(StageActor);
   };
@@ -168,6 +170,7 @@ class RealClutterInterface : public ClutterInterface {
     ClutterActor* clutter_actor() { return clutter_actor_; }
 
     // Begin ClutterInterface::Actor methods
+    void SetName(const std::string& name);
     int GetWidth();
     int GetHeight();
     void SetVisibility(bool visible);
@@ -215,7 +218,11 @@ class RealClutterInterface : public ClutterInterface {
     virtual ~StageActor() {}
     XWindow GetStageXWindow();
     void SetStageColor(const std::string& color_str);
+    std::string GetDebugString();
    private:
+    // Recursive method called by GetDebugString().
+    static std::string GetDebugStringInternal(
+        ClutterActor* actor, int indent_level);
     DISALLOW_COPY_AND_ASSIGN(StageActor);
   };
 
@@ -305,6 +312,7 @@ class MockClutterInterface : public ClutterInterface {
     }
 
     // Begin ClutterInterface::Actor methods
+    void SetName(const std::string& name) {}
     int GetWidth() { return width_; }
     int GetHeight() { return height_; };
     void SetVisibility(bool visible) { visible_ = visible; }
@@ -368,6 +376,7 @@ class MockClutterInterface : public ClutterInterface {
     virtual ~StageActor() {}
     XWindow GetStageXWindow() { return None; }
     void SetStageColor(const std::string& color_str) {}
+    std::string GetDebugString() { return ""; }
    private:
     DISALLOW_COPY_AND_ASSIGN(StageActor);
   };

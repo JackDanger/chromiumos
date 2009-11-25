@@ -51,6 +51,7 @@ class Window {
   ~Window();
 
   XWindow xid() const { return xid_; }
+  const std::string& xid_str() const { return xid_str_; }
   ClutterInterface::Actor* actor() { return actor_.get(); }
   const Shadow* shadow() const { return shadow_.get(); }
   XWindow transient_for_xid() const { return transient_for_xid_; }
@@ -79,7 +80,7 @@ class Window {
 
   const std::string& title() const { return title_; }
   void set_title(const std::string& title) {
-    VLOG(1) << "Setting " << xid_ << "'s title to \"" << title << "\"";
+    VLOG(1) << "Setting " << xid_str() << "'s title to \"" << title << "\"";
     title_ = title;
   }
 
@@ -234,6 +235,7 @@ class Window {
   bool UpdateWmStateProperty();
 
   XWindow xid_;
+  std::string xid_str_;  // hex for debugging
   WindowManager* wm_;
   scoped_ptr<ClutterInterface::TexturePixmapActor> actor_;
   scoped_ptr<Shadow> shadow_;
