@@ -34,6 +34,7 @@
 using namespace std;
 
 static const char* kMonitorReconfigCommand = "/usr/sbin/monitor_reconfigure";
+static const char kUserEnvVariable[] = "CHROMEOS_USER";
 
 #ifdef USE_PAM
 #include <string>
@@ -642,7 +643,7 @@ void App::Login() {
     };
 #endif
 
-// Close all clients
+    // Close all clients
     KillAllClients(False);
     KillAllClients(True);
 
@@ -652,6 +653,9 @@ void App::Login() {
     // Send TERM signal to clientgroup, if error send KILL
     if(killpg(pid, SIGTERM))
     killpg(pid, SIGKILL);
+
+    // Clear pam environment variable
+    setenv(kUserEnvVariable, "", 1);
 
     HideCursor();
 
