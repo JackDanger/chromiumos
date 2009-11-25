@@ -237,10 +237,6 @@ class WindowManager {
   // Callback when the hotkey for launching an xterm is pressed.
   void LaunchTerminalCallback();
 
-  // Runs --wm_chrome_command.  If 'loop' is true, appends a "--loop"
-  // argument to the command.
-  void LaunchChromeCallback(bool loop);
-
   // Callback to show or hide debugging information about client windows.
   void ToggleClientWindowDebugging();
 

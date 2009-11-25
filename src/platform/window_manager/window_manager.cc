@@ -34,12 +34,7 @@ extern "C" {
 // reporting an error if an overlay window is used.
 DEFINE_bool(wm_use_overlay_window, true, "Create and use an overlay window.");
 
-DEFINE_bool(wm_spawn_chrome_on_start, false,
-            "Spawn chromium-browser on startup? Requires wm_chrome_command "
-            "(note that \"--loop\" gets appended to it).");
 DEFINE_string(wm_xterm_command, "xterm", "Command for hotkey xterm spawn.");
-DEFINE_string(wm_chrome_command, "google-chrome",
-              "Command for hotkey chrome spawn.");
 DEFINE_string(wm_background_image, "", "Background image to display");
 DEFINE_string(wm_lock_screen_command, "xscreensaver-command -l",
               "Command to lock the screen");
@@ -268,16 +263,6 @@ bool WindowManager::Init() {
             XK_t, KeyBindings::kControlMask | KeyBindings::kAltMask),
         "launch-terminal");
   }
-  if (!FLAGS_wm_chrome_command.empty()) {
-    key_bindings_->AddAction(
-        "launch-chrome",
-        NewPermanentCallback(this, &WindowManager::LaunchChromeCallback, false),
-        NULL, NULL);
-    key_bindings_->AddBinding(
-        KeyBindings::KeyCombo(
-            XK_n, KeyBindings::kControlMask | KeyBindings::kAltMask),
-        "launch-chrome");
-  }
   key_bindings_->AddAction(
       "toggle-client-window-debugging",
       NewPermanentCallback(this, &WindowManager::ToggleClientWindowDebugging),
@@ -358,12 +343,6 @@ bool WindowManager::Init() {
             SubstructureRedirectMask|StructureNotifyMask|SubstructureNotifyMask,
             true));  // preserve GDK's existing event mask
   ManageExistingWindows();
-
-  if (FLAGS_wm_spawn_chrome_on_start) {
-    CHECK(!FLAGS_wm_chrome_command.empty());
-    g_idle_add(callback_runner_once,
-               NewCallback(this, &WindowManager::LaunchChromeCallback, true));
-  }
 
   metrics_reporter_.reset(new MetricsReporter(layout_manager_.get(),
                                               wm_ipc_.get()));
@@ -1399,14 +1378,6 @@ void WindowManager::LaunchTerminalCallback() {
                                            FLAGS_wm_xterm_command.c_str());
   if (system(command.c_str()) < 0)
     LOG(WARNING) << "Unable to launch xterm via: " << command;
-}
-
-void WindowManager::LaunchChromeCallback(bool loop) {
-  const std::string command = StringPrintf(
-      "%s %s&", FLAGS_wm_chrome_command.c_str(), (loop ? "--loop " : ""));
-  LOG(INFO) << "Launching chrome via: " << command;
-  if (system(command.c_str()) < 0)
-    LOG(WARNING) << "Unable to launch chrome via: " << command;
 }
 
 void WindowManager::ToggleClientWindowDebugging() {
