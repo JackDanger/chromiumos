@@ -21,7 +21,20 @@ USE_RELEASE_CHROME=0
 # the latest version will be used.
 CHROME_BUILD=
 
+# Option if set will pull a stable version of the Chromium browser
+WGET_STABLE_BUILD=$GET_STABLE_CHROME
+
 # ----------------------------------------------------------------------------
+
+# Check to see if the user wants to grab stable browser build
+while getopts 's' OPTION
+do
+  case $OPTION in
+  s)    WGET_STABLE_BUILD=1
+        ;;
+  esac
+done
+
 
 # Function to download a file using wget or scp
 function download {
@@ -67,41 +80,49 @@ fi
 LOCAL_CHROME="/home/${USER}/trunk/src/build/x86/local_assets/${CHROME_ZIP}"
 # TODO: Support ARM
 
-
-
 # Clobber any existing destination files
 rm -f "./$CHROME_ZIP" ./LATEST
 
-# We support three ways of getting chrome into our image.
+# We support four ways of getting chrome into our image.
 #
 # 1. Use wget to pull the latest Chrome build from the Chrome build server
 # 2. Use scp to pull the latest Chrome build from the Chrome build server;
 #    necessary when running as buildbot, which does not have http access to
 #    that server.
 # 3. Build chrome locally and put the zip image in src/build/local_packages.
+# 4. Use wget to pull a tested version of the browser as opposed to the latest
 
-if [ -f "$LOCAL_CHROME" ]
-then 
-  # Use local Chrome
-  echo "Using locally-build Chrome from $LOCAL_CHROME"
-  cp "$LOCAL_CHROME" .
+if [ "$WGET_STABLE_BUILD" ]
+then
+  echo "Getting a stable version of the browser"
+  download "http://build.chromium.org/buildbot/archives/chromium-chromiumos-r32516.zip"
+  mv "chromium-chromiumos-r32516.zip" "$CHROME_ZIP"
 else
 
-  if [ -z "$CHROME_BUILD" ]
-  then
-    # Find latest build of Chrome
-    echo "Checking for latest build of Chrome"
-    download "${BASE_FROM}/LATEST"
-    CHROME_BUILD=`cat LATEST`
-    echo "Latest build of Chrome is $CHROME_BUILD"
-  fi
+  if [ -f "$LOCAL_CHROME" ]
+  then 
+    # Use local Chrome
+    echo "Using locally-built Chrome from $LOCAL_CHROME"
+    cp "$LOCAL_CHROME" .
+  else
 
-  # Download Chrome build
-  echo "Copying Chrome"
-  download "${BASE_FROM}/${CHROME_BUILD}/${CHROME_ZIP}" || \
-      download "${BASE_FROM}/${CHROME_BUILD}/${CHROME_ZIP_SECOND_TRY}"
-  if [ -f "$CHROME_ZIP_SECOND_TRY" ]
-  then
-    mv "$CHROME_ZIP_SECOND_TRY" "$CHROME_ZIP"
+    # Download Chrome build
+    echo "Copying Chrome"
+    
+    if [ -z "$CHROME_BUILD" ]
+    then
+      # Find latest build of Chrome
+      echo "Checking for latest build of Chrome"
+      download "${BASE_FROM}/LATEST"
+      CHROME_BUILD=`cat LATEST`
+      echo "Latest build of Chrome is $CHROME_BUILD"
+    fi
+
+    download "${BASE_FROM}/${CHROME_BUILD}/${CHROME_ZIP}" || \
+        download "${BASE_FROM}/${CHROME_BUILD}/${CHROME_ZIP_SECOND_TRY}"
+    if [ -f "$CHROME_ZIP_SECOND_TRY" ]
+    then
+      mv "$CHROME_ZIP_SECOND_TRY" "$CHROME_ZIP"
+    fi
   fi
 fi
