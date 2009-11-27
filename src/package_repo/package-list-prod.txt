@@ -82,3 +82,11 @@ chromeos-screenlocker
 chromeos-wm
 chromeos-wpasupplicant
 memento-updater
+
+# For IBus
+ibus
+ibus-anthy
+ibus-chewing
+ibus-gtk
+libibus1
+python-ibus

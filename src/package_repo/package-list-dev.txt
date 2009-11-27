@@ -145,3 +145,24 @@ python-webpy
 
 # Packages needed to build gpt
 uuid-dev
+
+# Packages needed to build IBus
+im-switch
+iso-codes
+python-dbus
+python-gobject-dev
+python-glade2
+python-gtk2
+python-xdg
+python2.6-dev
+
+# Packages needed to build IBus-Chewing
+cmake
+gob2
+libchewing3-dev
+
+# Packages needed to build IBus-Anthy
+cvs
+gettext
+libanthy-dev
+swig

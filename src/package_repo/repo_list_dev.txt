@@ -3,14 +3,15 @@
 # found in the LICENSE file.
 
 # Package list created by list_installed_packages.sh
-# Creation time: Mon Oct  5 22:44:42 UTC 2009
+# Creation time: Tue Nov 17 07:26:21 UTC 2009
 #
 # Contents of /etc/apt/sources.list:
-#   deb file:///home/kwaters/trunk/repo/apt chromeos_dev main restricted multiverse universe
-#   deb http://archive.ubuntu.com/ubuntu karmic main restricted multiverse universe
+#   deb file:///home/yusukes/trunk/repo/apt chromeos_dev main restricted multiverse universe
+#   deb http://chromeos-deb.corp.google.com/ubuntu karmic main restricted
 #
 # package_name version priority section repo_filename
 adduser 3.110ubuntu5 important admin pool/main/a/adduser/adduser_3.110ubuntu5_all.deb
+anthy 9100h-0ubuntu1 optional utils pool/main/a/anthy/anthy_9100h-0ubuntu1_i386.deb
 apt 0.7.21ubuntu1 important admin pool/main/a/apt/apt_0.7.21ubuntu1_i386.deb
 apt-utils 0.7.21ubuntu1 important admin pool/main/a/apt/apt-utils_0.7.21ubuntu1_i386.deb
 aptitude 0.4.11.11-1ubuntu3 important admin pool/main/a/aptitude/aptitude_0.4.11.11-1ubuntu3_i386.deb
@@ -34,6 +35,8 @@ ca-certificates 20090624build2 important misc pool/main/c/ca-certificates/ca-cer
 cabextract 1.2-3 optional universe/utils pool/universe/c/cabextract/cabextract_1.2-3_i386.deb
 ccache 2.4-17 optional devel pool/main/c/ccache/ccache_2.4-17_i386.deb
 cdbs 0.4.59ubuntu2 optional devel pool/main/c/cdbs/cdbs_0.4.59ubuntu2_all.deb
+cmake 2.6.4-1ubuntu2 optional devel pool/main/c/cmake/cmake_2.6.4-1ubuntu2_i386.deb
+cmake-data 2.6.4-1ubuntu2 optional devel pool/main/c/cmake/cmake-data_2.6.4-1ubuntu2_all.deb
 comerr-dev 2.1-1.41.5-1ubuntu3 extra libdevel pool/main/e/e2fsprogs/comerr-dev_2.1-1.41.5-1ubuntu3_i386.deb
 conkeror 0.9~git090223-1 extra universe/web pool/universe/c/conkeror/conkeror_0.9~git090223-1_all.deb
 conkeror-spawn-process-helper 0.9~git090223-1 extra universe/web pool/universe/c/conkeror/conkeror-spawn-process-helper_0.9~git090223-1_i386.deb
@@ -47,6 +50,7 @@ cpp-4.1 4.1.2-26ubuntu1 optional universe/interpreters pool/universe/g/gcc-4.1/c
 cpp-4.4 4.4.0-8ubuntu2 standard interpreters pool/main/g/gcc-4.4/cpp-4.4_4.4.0-8ubuntu2_i386.deb
 crash 4.0-8.9-1ubuntu1 optional utils pool/main/c/crash/crash_4.0-8.9-1ubuntu1_i386.deb
 curl 7.19.5-1ubuntu1 optional web pool/main/c/curl/curl_7.19.5-1ubuntu1_i386.deb
+cvs 1:1.12.13-12ubuntu1 optional devel pool/main/c/cvs/cvs_1.12.13-12ubuntu1_i386.deb
 dash 0.5.5.1-2ubuntu2 required shells pool/main/d/dash/dash_0.5.5.1-2ubuntu2_i386.deb
 dbus 1.2.14-2ubuntu5 optional devel pool/main/d/dbus/dbus_1.2.14-2ubuntu5_i386.deb
 dbus-x11 1.2.14-2ubuntu5 optional x11 pool/main/d/dbus/dbus-x11_1.2.14-2ubuntu5_i386.deb
@@ -79,6 +83,7 @@ dput 0.9.4ubuntu2 optional devel pool/main/d/dput/dput_0.9.4ubuntu2_all.deb
 e2fslibs 1.41.5-1ubuntu3 required libs pool/main/e/e2fsprogs/e2fslibs_1.41.5-1ubuntu3_i386.deb
 e2fsprogs 1.41.5-1ubuntu3 required admin pool/main/e/e2fsprogs/e2fsprogs_1.41.5-1ubuntu3_i386.deb
 eject 2.1.5+deb1+cvs20081104-6 important utils pool/main/e/eject/eject_2.1.5+deb1+cvs20081104-6_i386.deb
+emacsen-common 1.4.19ubuntu1 optional editors pool/main/e/emacsen-common/emacsen-common_1.4.19ubuntu1_all.deb
 fakeroot 1.12.4ubuntu1 optional utils pool/main/f/fakeroot/fakeroot_1.12.4ubuntu1_i386.deb
 fdupes 1.50-PR2-2 optional utils pool/main/f/fdupes/fdupes_1.50-PR2-2_i386.deb
 file 5.03-1ubuntu1 important utils pool/main/f/file/file_5.03-1ubuntu1_i386.deb
@@ -102,10 +107,11 @@ gconf2 2.26.2-1ubuntu1 optional libs pool/main/g/gconf/gconf2_2.26.2-1ubuntu1_i3
 gconf2-common 2.26.2-1ubuntu1 optional libs pool/main/g/gconf/gconf2-common_2.26.2-1ubuntu1_all.deb
 gdb 6.8.50.20090628-1ubuntu3 optional devel pool/main/g/gdb/gdb_6.8.50.20090628-1ubuntu3_i386.deb
 genext2fs 1.4.1-2.1build1 optional admin pool/main/g/genext2fs/genext2fs_1.4.1-2.1build1_i386.deb
-gettext 0.17-6ubuntu2 optional devel pool/main/g/gettext/gettext_0.17-6ubuntu2_i386.deb
-gettext-base 0.17-6ubuntu2 standard utils pool/main/g/gettext/gettext-base_0.17-6ubuntu2_i386.deb
+gettext 0.17-8ubuntu2 optional devel pool/main/g/gettext/gettext_0.17-8ubuntu2_i386.deb
+gettext-base 0.17-8ubuntu2 standard utils pool/main/g/gettext/gettext-base_0.17-8ubuntu2_i386.deb
 gnome-common 2.26.0-2 optional gnome pool/main/g/gnome-common/gnome-common_2.26.0-2_all.deb
 gnupg 1.4.9-4ubuntu4 important utils pool/main/g/gnupg/gnupg_1.4.9-4ubuntu4_i386.deb
+gob2 2.0.16-1 extra devel pool/main/g/gob2/gob2_2.0.16-1_i386.deb
 gperf 3.0.3-1build2 optional devel pool/main/g/gperf/gperf_3.0.3-1build2_i386.deb
 gpgv 1.4.9-4ubuntu4 important utils pool/main/g/gnupg/gpgv_1.4.9-4ubuntu4_i386.deb
 grep 2.5.4-4 required utils pool/main/g/grep/grep_2.5.4-4_i386.deb
@@ -117,6 +123,7 @@ hostname 2.95 required admin pool/main/h/hostname/hostname_2.95_i386.deb
 html2text 1.3.2a-14 optional web pool/main/h/html2text/html2text_1.3.2a-14_i386.deb
 hunspell-en-us 20070829-2ubuntu3 optional text pool/main/h/hunspell-en-us/hunspell-en-us_20070829-2ubuntu3_all.deb
 ifupdown 0.6.8ubuntu19 important admin pool/main/i/ifupdown/ifupdown_0.6.8ubuntu19_i386.deb
+im-switch 1.16ubuntu1 optional x11 pool/main/i/im-switch/im-switch_1.16ubuntu1_all.deb
 initramfs-tools 0.92bubuntu32 important utils pool/main/i/initramfs-tools/initramfs-tools_0.92bubuntu32_all.deb
 initscripts 2.86.ds1-61ubuntu13 required admin pool/main/s/sysvinit/initscripts_2.86.ds1-61ubuntu13_i386.deb
 install-info 4.13a.dfsg.1-4 important doc pool/main/t/texinfo/install-info_4.13a.dfsg.1-4_i386.deb
@@ -124,6 +131,7 @@ intltool 0.41.0-0ubuntu1 optional devel pool/main/i/intltool/intltool_0.41.0-0ub
 intltool-debian 0.35.0+20060710.1 optional devel pool/main/i/intltool-debian/intltool-debian_0.35.0+20060710.1_all.deb
 iproute 20090324-1 important net pool/main/i/iproute/iproute_20090324-1_i386.deb
 iputils-ping 3:20071127-1build1 important net pool/main/i/iputils/iputils-ping_20071127-1build1_i386.deb
+iso-codes 3.10.2-1 standard libs pool/main/i/iso-codes/iso-codes_3.10.2-1_all.deb
 jade 1.2.1-47build2 optional text pool/main/j/jade/jade_1.2.1-47build2_i386.deb
 kbd 1.15-1ubuntu1 important utils pool/main/k/kbd/kbd_1.15-1ubuntu1_i386.deb
 kernel-package 11.015 optional misc pool/main/k/kernel-package/kernel-package_11.015_all.deb
@@ -139,6 +147,8 @@ lib64stdc++6 4.4.0-8ubuntu2 optional libs pool/main/g/gcc-4.4/lib64stdc++6_4.4.0
 libacl1 2.2.47-2 required libs pool/main/a/acl/libacl1_2.2.47-2_i386.deb
 libaio-dev 0.3.107-3ubuntu1 optional libdevel pool/main/liba/libaio/libaio-dev_0.3.107-3ubuntu1_i386.deb
 libaio1 0.3.107-3ubuntu1 optional libs pool/main/liba/libaio/libaio1_0.3.107-3ubuntu1_i386.deb
+libanthy-dev 9100h-0ubuntu1 optional libdevel pool/main/a/anthy/libanthy-dev_9100h-0ubuntu1_i386.deb
+libanthy0 9100h-0ubuntu1 optional libs pool/main/a/anthy/libanthy0_9100h-0ubuntu1_i386.deb
 libapr1 1.3.5-2 optional libs pool/main/a/apr/libapr1_1.3.5-2_i386.deb
 libaprutil1 1.3.7+dfsg-1 optional libs pool/main/a/apr-util/libaprutil1_1.3.7+dfsg-1_i386.deb
 libapt-pkg-perl 0.1.23 optional perl pool/main/liba/libapt-pkg-perl/libapt-pkg-perl_0.1.23_i386.deb
@@ -164,6 +174,9 @@ libcairo2-dev 1.8.8-2ubuntu1 optional libdevel pool/main/c/cairo/libcairo2-dev_1
 libcairomm-1.0-1 1.8.0-1 optional libs pool/main/c/cairomm/libcairomm-1.0-1_1.8.0-1_i386.deb
 libcairomm-1.0-dev 1.8.0-1 optional libdevel pool/main/c/cairomm/libcairomm-1.0-dev_1.8.0-1_i386.deb
 libcap2 1:2.16-5 important libs pool/main/libc/libcap2/libcap2_2.16-5_i386.deb
+libchewing3 0.3.2-1 optional libs pool/main/libc/libchewing/libchewing3_0.3.2-1_i386.deb
+libchewing3-data 0.3.2-1 optional misc pool/main/libc/libchewing/libchewing3-data_0.3.2-1_i386.deb
+libchewing3-dev 0.3.2-1 optional libdevel pool/main/libc/libchewing/libchewing3-dev_0.3.2-1_i386.deb
 libck-connector0 0.3.0-2ubuntu4 optional libs pool/main/c/consolekit/libck-connector0_0.3.0-2ubuntu4_i386.deb
 libclass-accessor-perl 0.33-1 important perl pool/main/libc/libclass-accessor-perl/libclass-accessor-perl_0.33-1_all.deb
 libcloog-ppl0 0.15-1 standard libs pool/main/c/cloog-ppl/libcloog-ppl0_0.15-1_i386.deb
@@ -198,6 +211,8 @@ libedit2 2.11~20080614-2 standard libs pool/main/libe/libedit/libedit2_2.11~2008
 libept0 0.5.26build1 important libs pool/main/libe/libept/libept0_0.5.26build1_i386.deb
 libexpat1 2.0.1-4 standard libs pool/main/e/expat/libexpat1_2.0.1-4_i386.deb
 libexpat1-dev 2.0.1-4 optional libdevel pool/main/e/expat/libexpat1-dev_2.0.1-4_i386.deb
+libffi-dev 3.0.7-2ubuntu1 extra libdevel pool/main/libf/libffi/libffi-dev_3.0.7-2ubuntu1_i386.deb
+libffi5 3.0.7-2ubuntu1 extra libs pool/main/libf/libffi/libffi5_3.0.7-2ubuntu1_i386.deb
 libfont-afm-perl 1.20-1 standard perl pool/main/libf/libfont-afm-perl/libfont-afm-perl_1.20-1_all.deb
 libfontconfig1 2.6.0-1ubuntu12 optional libs pool/main/f/fontconfig/libfontconfig1_2.6.0-1ubuntu12_i386.deb
 libfontconfig1-dev 2.6.0-1ubuntu12 optional libdevel pool/main/f/fontconfig/libfontconfig1-dev_2.6.0-1ubuntu12_i386.deb
@@ -214,8 +229,9 @@ libgcrypt11-dev 1.4.4-2ubuntu1 optional libdevel pool/main/libg/libgcrypt11/libg
 libgdbm3 1.8.3-4 important libs pool/main/g/gdbm/libgdbm3_1.8.3-4_i386.deb
 libgl1-mesa-dev 7.5-1ubuntu1 extra libdevel pool/main/m/mesa/libgl1-mesa-dev_7.5-1ubuntu1_i386.deb
 libgl1-mesa-glx 7.5-1ubuntu1 optional libs pool/main/m/mesa/libgl1-mesa-glx_7.5-1ubuntu1_i386.deb
-libglib2.0-0 2.21.2-0ubuntu1 optional libs pool/main/g/glib2.0/libglib2.0-0_2.21.2-0ubuntu1_i386.deb
-libglib2.0-dev 2.21.2-0ubuntu1 optional libdevel pool/main/g/glib2.0/libglib2.0-dev_2.21.2-0ubuntu1_i386.deb
+libglade2-0 1:2.6.4-1 optional libs pool/main/libg/libglade2/libglade2-0_2.6.4-1_i386.deb
+libglib2.0-0 2.21.4-0ubuntu1 optional libs pool/main/g/glib2.0/libglib2.0-0_2.21.4-0ubuntu1_i386.deb
+libglib2.0-dev 2.21.4-0ubuntu1 optional libdevel pool/main/g/glib2.0/libglib2.0-dev_2.21.4-0ubuntu1_i386.deb
 libglibmm-2.4-1c2a 2.20.0-1 optional libs pool/main/g/glibmm2.4/libglibmm-2.4-1c2a_2.20.0-1_i386.deb
 libglibmm-2.4-dev 2.20.0-1 optional libdevel pool/main/g/glibmm2.4/libglibmm-2.4-dev_2.20.0-1_i386.deb
 libgmp3c2 2:4.3.1+dfsg-1ubuntu2 standard libs pool/main/g/gmp/libgmp3c2_4.3.1+dfsg-1ubuntu2_i386.deb
@@ -228,10 +244,10 @@ libgpgme11 1.1.8-2ubuntu3 optional libs pool/main/g/gpgme1.0/libgpgme11_1.1.8-2u
 libgpm2 1.20.4-3.2 important libs pool/main/g/gpm/libgpm2_1.20.4-3.2_i386.deb
 libgssapi-krb5-2 1.7dfsg~beta3-1 standard libs pool/main/k/krb5/libgssapi-krb5-2_1.7dfsg~beta3-1_i386.deb
 libgssrpc4 1.7dfsg~beta3-1 standard libs pool/main/k/krb5/libgssrpc4_1.7dfsg~beta3-1_i386.deb
-libgtk2.0-0 2.17.2-0ubuntu2 optional libs pool/main/g/gtk+2.0/libgtk2.0-0_2.17.2-0ubuntu2_i386.deb
-libgtk2.0-bin 2.17.2-0ubuntu2 optional misc pool/main/g/gtk+2.0/libgtk2.0-bin_2.17.2-0ubuntu2_all.deb
-libgtk2.0-common 2.17.2-0ubuntu2 optional misc pool/main/g/gtk+2.0/libgtk2.0-common_2.17.2-0ubuntu2_all.deb
-libgtk2.0-dev 2.17.2-0ubuntu2 optional libdevel pool/main/g/gtk+2.0/libgtk2.0-dev_2.17.2-0ubuntu2_i386.deb
+libgtk2.0-0 2.17.7-0ubuntu3 optional libs pool/main/g/gtk+2.0/libgtk2.0-0_2.17.7-0ubuntu3_i386.deb
+libgtk2.0-bin 2.17.7-0ubuntu3 optional misc pool/main/g/gtk+2.0/libgtk2.0-bin_2.17.7-0ubuntu3_all.deb
+libgtk2.0-common 2.17.7-0ubuntu3 optional misc pool/main/g/gtk+2.0/libgtk2.0-common_2.17.7-0ubuntu3_all.deb
+libgtk2.0-dev 2.17.7-0ubuntu3 optional libdevel pool/main/g/gtk+2.0/libgtk2.0-dev_2.17.7-0ubuntu3_i386.deb
 libgtkmm-2.4-1c2a 1:2.16.0-2 optional libs pool/main/g/gtkmm2.4/libgtkmm-2.4-1c2a_2.16.0-2_i386.deb
 libgtkmm-2.4-dev 1:2.16.0-2 optional libdevel pool/main/g/gtkmm2.4/libgtkmm-2.4-dev_2.16.0-2_i386.deb
 libhal-dev 0.5.12+git20090626-0ubuntu2 optional libdevel pool/main/h/hal/libhal-dev_0.5.12+git20090626-0ubuntu2_i386.deb
@@ -318,8 +334,9 @@ libprotobuf3 2.0.3-2.2ubuntu1 extra devel pool/main/p/protobuf/libprotobuf3_2.0.
 libpth20 2.0.7-12 optional libs pool/main/p/pth/libpth20_2.0.7-12_i386.deb
 libpthread-stubs0 0.1-2 optional libs pool/main/libp/libpthread-stubs/libpthread-stubs0_0.1-2_i386.deb
 libpthread-stubs0-dev 0.1-2 optional libdevel pool/main/libp/libpthread-stubs/libpthread-stubs0-dev_0.1-2_i386.deb
-libpython2.6 2.6.2-0ubuntu2 optional libs pool/main/p/python2.6/libpython2.6_2.6.2-0ubuntu2_i386.deb
+libpython2.6 2.6.2-0ubuntu3 optional libs pool/main/p/python2.6/libpython2.6_2.6.2-0ubuntu3_i386.deb
 libreadline5 5.2-4 important libs pool/main/r/readline5/libreadline5_5.2-4_i386.deb
+libreadline6 6.0-5 important libs pool/main/r/readline6/libreadline6_6.0-5_i386.deb
 libruby1.8 1.8.7.174-1 optional libs pool/main/r/ruby1.8/libruby1.8_1.8.7.174-1_i386.deb
 libsasl2-2 2.1.23.dfsg1-1ubuntu1 important libs pool/main/c/cyrus-sasl2/libsasl2-2_2.1.23.dfsg1-1ubuntu1_i386.deb
 libsasl2-modules 2.1.23.dfsg1-1ubuntu1 important devel pool/main/c/cyrus-sasl2/libsasl2-modules_2.1.23.dfsg1-1ubuntu1_i386.deb
@@ -408,6 +425,7 @@ libxml-parser-perl 2.36-1.1build2 standard perl pool/main/libx/libxml-parser-per
 libxml2 2.7.3.dfsg-1ubuntu1 standard libs pool/main/libx/libxml2/libxml2_2.7.3.dfsg-1ubuntu1_i386.deb
 libxml2-dev 2.7.3.dfsg-1ubuntu1 optional libdevel pool/main/libx/libxml2/libxml2-dev_2.7.3.dfsg-1ubuntu1_i386.deb
 libxml2-utils 2.7.3.dfsg-1ubuntu1 optional text pool/main/libx/libxml2/libxml2-utils_2.7.3.dfsg-1ubuntu1_i386.deb
+libxmlrpc-core-c3 1.06.27-1ubuntu6 optional libs pool/main/x/xmlrpc-c/libxmlrpc-core-c3_1.06.27-1ubuntu6_i386.deb
 libxmu-dev 2:1.0.4-1build1 optional libdevel pool/main/libx/libxmu/libxmu-dev_1.0.4-1build1_i386.deb
 libxmu-headers 2:1.0.4-1build1 optional x11 pool/main/libx/libxmu/libxmu-headers_1.0.4-1build1_all.deb
 libxmu6 2:1.0.4-1build1 optional libs pool/main/libx/libxmu/libxmu6_1.0.4-1build1_i386.deb
@@ -477,17 +495,26 @@ procps 1:3.2.8-1ubuntu1 required admin pool/main/p/procps/procps_3.2.8-1ubuntu1_
 protobuf-compiler 2.0.3-2.2ubuntu1 extra devel pool/main/p/protobuf/protobuf-compiler_2.0.3-2.2ubuntu1_i386.deb
 psmisc 22.7-1 standard admin pool/main/p/psmisc/psmisc_22.7-1_i386.deb
 python 2.6.2-0ubuntu1 important python pool/main/p/python-defaults/python_2.6.2-0ubuntu1_all.deb
+python-cairo 1.8.6-1ubuntu1 optional python pool/main/p/pycairo/python-cairo_1.8.6-1ubuntu1_i386.deb
 python-central 0.6.11ubuntu7 standard python pool/main/p/python-central/python-central_0.6.11ubuntu7_all.deb
 python-cheetah 2.0.1-2ubuntu6 optional text pool/main/c/cheetah/python-cheetah_2.0.1-2ubuntu6_i386.deb
+python-dbus 0.83.0-1ubuntu2 optional python pool/main/d/dbus-python/python-dbus_0.83.0-1ubuntu2_i386.deb
+python-dev 2.6.2-0ubuntu1 optional python pool/main/p/python-defaults/python-dev_2.6.2-0ubuntu1_all.deb
 python-egenix-mxdatetime 3.1.2-1ubuntu1 optional python pool/main/e/egenix-mx-base/python-egenix-mxdatetime_3.1.2-1ubuntu1_i386.deb
 python-egenix-mxtools 3.1.2-1ubuntu1 optional python pool/main/e/egenix-mx-base/python-egenix-mxtools_3.1.2-1ubuntu1_i386.deb
 python-flup 1.0.2-1 optional universe/python pool/universe/f/flup/python-flup_1.0.2-1_all.deb
+python-glade2 2.16.0-0ubuntu1 optional python pool/main/p/pygtk/python-glade2_2.16.0-0ubuntu1_i386.deb
+python-gobject 2.18.0-0ubuntu2 optional python pool/main/p/pygobject/python-gobject_2.18.0-0ubuntu2_i386.deb
+python-gobject-dev 2.18.0-0ubuntu2 optional python pool/main/p/pygobject/python-gobject-dev_2.18.0-0ubuntu2_all.deb
+python-gtk2 2.16.0-0ubuntu1 optional python pool/main/p/pygtk/python-gtk2_2.16.0-0ubuntu1_i386.deb
 python-minimal 2.6.2-0ubuntu1 required python pool/main/p/python-defaults/python-minimal_2.6.2-0ubuntu1_all.deb
 python-psycopg2 2.0.8-0ubuntu2 optional universe/python pool/universe/p/psycopg2/python-psycopg2_2.0.8-0ubuntu2_i386.deb
 python-support 1.0.3ubuntu1 standard python pool/main/p/python-support/python-support_1.0.3ubuntu1_all.deb
 python-webpy 1:0.32+dak1-1 optional universe/python pool/universe/w/webpy/python-webpy_0.32+dak1-1_all.deb
-python2.6 2.6.2-0ubuntu2 important python pool/main/p/python2.6/python2.6_2.6.2-0ubuntu2_i386.deb
-python2.6-minimal 2.6.2-0ubuntu2 required python pool/main/p/python2.6/python2.6-minimal_2.6.2-0ubuntu2_i386.deb
+python-xdg 0.15-1.1ubuntu5 optional python pool/main/p/pyxdg/python-xdg_0.15-1.1ubuntu5_all.deb
+python2.6 2.6.2-0ubuntu3 important python pool/main/p/python2.6/python2.6_2.6.2-0ubuntu3_i386.deb
+python2.6-dev 2.6.2-0ubuntu3 optional python pool/main/p/python2.6/python2.6-dev_2.6.2-0ubuntu3_i386.deb
+python2.6-minimal 2.6.2-0ubuntu3 required python pool/main/p/python2.6/python2.6-minimal_2.6.2-0ubuntu3_i386.deb
 quilt 0.46-7 optional devel pool/main/q/quilt/quilt_0.46-7_all.deb
 readline-common 5.2-4 important utils pool/main/r/readline5/readline-common_5.2-4_all.deb
 realpath 1.15 optional utils pool/main/r/realpath/realpath_1.15_i386.deb
@@ -506,6 +533,7 @@ startup-tasks 0.3.10-2 required admin pool/main/u/upstart/startup-tasks_0.3.10-2
 strace 4.5.18-1ubuntu1 standard utils pool/main/s/strace/strace_4.5.18-1ubuntu1_i386.deb
 subversion 1.6.1dfsg-1ubuntu2 optional devel pool/main/s/subversion/subversion_1.6.1dfsg-1ubuntu2_i386.deb
 sudo 1.7.0-1ubuntu2 important admin pool/main/s/sudo/sudo_1.7.0-1ubuntu2_i386.deb
+swig 1.3.36-1ubuntu2 optional interpreters pool/main/s/swig1.3/swig_1.3.36-1ubuntu2_i386.deb
 sysklogd 1.5-5ubuntu3 important admin pool/main/s/sysklogd/sysklogd_1.5-5ubuntu3_i386.deb
 syslinux 2:3.63+dfsg-2ubuntu3 optional utils pool/main/s/syslinux/syslinux_3.63+dfsg-2ubuntu3_i386.deb
 system-services 0.3.10-2 required admin pool/main/u/upstart/system-services_0.3.10-2_i386.deb
@@ -526,6 +554,7 @@ ubuntu-minimal 1.148 important metapackages pool/main/u/ubuntu-meta/ubuntu-minim
 ucf 3.0018 standard utils pool/main/u/ucf/ucf_3.0018_all.deb
 udev 143-7 important admin pool/main/u/udev/udev_143-7_i386.deb
 unzip 6.0-1 optional utils pool/main/u/unzip/unzip_6.0-1_i386.deb
+update-inetd 4.31 optional admin pool/main/u/update-inetd/update-inetd_4.31_all.deb
 upstart 0.3.10-2 required admin pool/main/u/upstart/upstart_0.3.10-2_i386.deb
 upstart-compat-sysv 0.3.10-2 required admin pool/main/u/upstart/upstart-compat-sysv_0.3.10-2_i386.deb
 upstart-logd 0.3.10-2 required admin pool/main/u/upstart/upstart-logd_0.3.10-2_i386.deb
