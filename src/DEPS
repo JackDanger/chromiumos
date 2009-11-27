@@ -43,6 +43,18 @@ deps = {
     _platform_base + "pam_google":
         Var("chromiumos_git") + "/pam_google.git",
 
+    # IBus framework
+    _third_party_base + "ibus/files":
+        Var("chromiumos_git") + "/ibus.git",
+
+    # IBus input method for Traditional Chinese
+    _third_party_base + "ibus-chewing/files":
+        Var("chromiumos_git") + "/ibus-chewing.git",
+
+    # IBus input method for Japanese
+    _third_party_base + "ibus-anthy/files":
+        Var("chromiumos_git") + "/ibus-anthy.git",
+
     # gflags 1.1
     _third_party_base + "gflags/files":
         "http://google-gflags.googlecode.com/svn/trunk@31",
