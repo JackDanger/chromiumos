@@ -33,6 +33,11 @@ fi
 
 "$BOTTLE" "Booting..." &
 
+# Start IBus daemon so users can input CJK characters.
+# TODO(yusukes): should not launch ibus-daemon when no IME is configured.
+export GTK_IM_MODULE=ibus
+(sleep 5; /usr/bin/ibus-daemon) &
+
 # The first time a user runs chrome, we use some initial arguments
 # to set up their environment. From then on, chrome session restore
 # will take care of opening the tabs they want.
