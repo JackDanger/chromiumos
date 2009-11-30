@@ -135,7 +135,10 @@ function cryptohome::format() {
   local mapperdev="${2:-$DEFAULT_MAPPER_DEVICE}"
   local loopdev="${3:-$DEFAULT_LOOP_DEVICE}"
   [[ $# -lt 1 ]] && return 1  # argument sanity check
-  $mkfs__ext4 -b $BLOCK_SIZE -E lazy_itable_init=1,resize=$blocks "$mapperdev"
+  $mkfs__ext4 -b $BLOCK_SIZE \
+              -O ^huge_file \
+              -E lazy_itable_init=1,resize=$blocks \
+              "$mapperdev"
   $tune2fs -c -1 -i 0 "$mapperdev" # we'll be checking later.
 }
 
