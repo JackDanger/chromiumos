@@ -262,13 +262,15 @@ static struct connman_driver dhclient_driver = {
 	.change		= dhclient_change,
 };
 
-static int add_hostroute(char *ifname, const char *ipaddr, const char *gateway)
+static int add_hostroute(char *ifname, const struct in_addr ipaddr,
+	const struct in_addr gateway)
 {
 	struct rtentry rt;
 	struct sockaddr_in addr;
 	int sk, err;
 
-	_DBG_DHCLIENT("ifname %s ipaddr %s gateway %s", ifname, ipaddr, gateway);
+	_DBG_DHCLIENT("ifname %s ipaddr %s gateway %s", ifname,
+	    inet_ntoa(ipaddr), inet_ntoa(gateway));
 
 	sk = socket(PF_INET, SOCK_DGRAM, 0);
 	if (sk < 0) {
@@ -281,12 +283,12 @@ static int add_hostroute(char *ifname, const char *ipaddr, const char *gateway)
 
 	memset(&addr, 0, sizeof(addr));
 	addr.sin_family = AF_INET;
-	addr.sin_addr.s_addr = inet_addr(ipaddr);
+	addr.sin_addr = ipaddr;
 	memcpy(&rt.rt_dst, &addr, sizeof(rt.rt_dst));
 
 	memset(&addr, 0, sizeof(addr));
 	addr.sin_family = AF_INET;
-	addr.sin_addr.s_addr = inet_addr(gateway);
+	addr.sin_addr = gateway;
 	memcpy(&rt.rt_gateway, &addr, sizeof(rt.rt_gateway));
 
 	memset(&addr, 0, sizeof(addr));
@@ -299,8 +301,8 @@ static int add_hostroute(char *ifname, const char *ipaddr, const char *gateway)
 	err = ioctl(sk, SIOCADDRT, &rt);
 	if (err < 0)
 		connman_error("Adding host route for DNS server %s failed "
-				"(%s gateway %s)", ipaddr, gateway,
-							strerror(errno));
+				"(%s gateway %s)", inet_ntoa(ipaddr),
+				inet_ntoa(gateway), strerror(errno));
 	close(sk);
 
 	return err;
@@ -329,13 +331,31 @@ static void dhclient_add_dnsproxys(struct dhclient_task *task,
 	/* TODO(sleffler): max 5 servers accepted */
 	servers = g_strsplit(server_spec, " ", 5);
 	for (i = 0; servers[i] != NULL; i++) {
+		struct in_addr gwaddr, ipaddr;
+		in_addr_t netmask;
+
 		/*
-		 * Add resolver and host route to reach server as
-		 * DNS proxy does SO_BINDTODEVICE on socket used to
-		 * fwd requests which bypasses the routing table.
+		 * Add resolver entry.
 		 */
 		connman_resolver_append(ifname, domain_name, servers[i]);
-		add_hostroute(ifname, servers[i], task->element->ipv4.gateway);
+		/*
+		 * Setup host route for the dns server as the proxy code
+		 * does SO_BINDTODEVICE on the socket used to fw requests.
+		 */
+		gwaddr.s_addr = inet_addr(task->element->ipv4.gateway);
+		netmask = inet_addr(task->element->ipv4.netmask);
+		ipaddr.s_addr = inet_addr(servers[i]);
+		if ((ipaddr.s_addr & netmask) == (gwaddr.s_addr & netmask)) {
+			/*
+			 * Skip host route if the server is on the local
+			 * segment (in which case it's directly reachable).
+			 */
+			_DBG_DHCLIENT("suppress host route to %s (gw %s nm %s)",
+			    servers[i], task->element->ipv4.gateway,
+			    task->element->ipv4.netmask);
+			continue;
+		}
+		add_hostroute(ifname, ipaddr, gwaddr);
 	}
 	g_strfreev(servers);
 	if (i == 0)
