@@ -82,6 +82,8 @@ base_env.ParseConfig('pkg-config --cflags --libs x11 libpcrecpp ' +
 
 base_env.ProtocolBuffer('system_metrics.pb.cc', 'system_metrics.proto');
 
+base_env.Program('screenshot', 'screenshot.cc')
+
 # Define an IPC library that will be used both by the WM and by client apps.
 srcs = Split('''\
   atom_cache.cc

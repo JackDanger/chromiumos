@@ -4,6 +4,7 @@
 *.o
 wm
 test_clutter
+screenshot
 mock_app
 mock_chrome
 *_test

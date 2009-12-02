@@ -14,7 +14,7 @@ NUM_JOBS=`cat /proc/cpuinfo | grep processor | awk '{a++} END {print a}'`
 build: build-stamp
 build-stamp:
 	dh_testdir
-	scons -j$(NUM_JOBS) wm
+	scons -j$(NUM_JOBS) wm screenshot
 	touch $@
 
 clean:
@@ -31,6 +31,7 @@ install: build
 	dh_installdirs
 	mkdir -p $(CURDIR)/debian/chromeos-wm/usr/bin
 	cp $(CURDIR)/wm $(CURDIR)/debian/chromeos-wm/usr/bin/chromeos-wm
+	cp $(CURDIR)/screenshot $(CURDIR)/debian/chromeos-wm/usr/bin/.
 
 binary-arch: install
 	dh_testdir

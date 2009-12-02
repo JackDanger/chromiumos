@@ -243,6 +243,12 @@ class WindowManager {
   // Callback to show or hide the hotkey overlay images.
   void ToggleHotkeyOverlay();
 
+  // Write a screenshot to disk.  If 'use_active_window' is true, the
+  // screenshot will contain the currently-active client window's offscreen
+  // pixmap.  Otherwise, the composited image from the root window will be
+  // captured.
+  void TakeScreenshot(bool use_active_window);
+
   XConnection* xconn_;         // not owned
   ClutterInterface* clutter_;  // not owned
 

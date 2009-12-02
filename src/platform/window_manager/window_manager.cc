@@ -30,10 +30,6 @@ extern "C" {
 #include "window_manager/window.h"
 #include "window_manager/x_connection.h"
 
-// TODO: Make this flag unecessary! On at least one machine, the X Server is
-// reporting an error if an overlay window is used.
-DEFINE_bool(wm_use_overlay_window, true, "Create and use an overlay window.");
-
 DEFINE_string(wm_xterm_command, "xterm", "Command for hotkey xterm spawn.");
 DEFINE_string(wm_background_image, "", "Background image to display");
 DEFINE_string(wm_lock_screen_command, "xscreensaver-command -l",
@@ -41,6 +37,11 @@ DEFINE_string(wm_lock_screen_command, "xscreensaver-command -l",
 DEFINE_string(wm_configure_monitor_command,
               "/usr/sbin/monitor_reconfigure",
               "Command to configure an external monitor");
+DEFINE_string(screenshot_binary,
+              "/usr/bin/screenshot",
+              "Path to the screenshot binary");
+DEFINE_string(screenshot_output_dir,
+              ".", "Output directory for screenshots");
 
 DEFINE_bool(wm_use_compositing, true, "Use compositing");
 
@@ -226,18 +227,14 @@ bool WindowManager::Init() {
   overlay_depth_.reset(CreateActorAbove(floating_tab_depth_.get()));
 
   if (FLAGS_wm_use_compositing) {
-    if (FLAGS_wm_use_overlay_window) {
-      // Create the compositing overlay, put the stage's window inside of it,
-      // and make events fall through both to the client windows underneath.
-      overlay_window_ = xconn_->GetCompositingOverlayWindow(root_);
-      CHECK_NE(overlay_window_, None);
-      VLOG(1) << "Reparenting stage window " << XidStr(stage_window_)
-              << " into Xcomposite overlay window " << XidStr(overlay_window_);
-      CHECK(xconn_->ReparentWindow(stage_window_, overlay_window_, 0, 0));
-      CHECK(xconn_->RemoveInputRegionFromWindow(overlay_window_));
-    } else {
-      CHECK(xconn_->RaiseWindow(stage_window_));
-    }
+    // Create the compositing overlay, put the stage's window inside of it,
+    // and make events fall through both to the client windows underneath.
+    overlay_window_ = xconn_->GetCompositingOverlayWindow(root_);
+    CHECK_NE(overlay_window_, None);
+    VLOG(1) << "Reparenting stage window " << XidStr(stage_window_)
+            << " into Xcomposite overlay window " << XidStr(overlay_window_);
+    CHECK(xconn_->ReparentWindow(stage_window_, overlay_window_, 0, 0));
+    CHECK(xconn_->RemoveInputRegionFromWindow(overlay_window_));
     CHECK(xconn_->RemoveInputRegionFromWindow(stage_window_));
   }
 
@@ -283,13 +280,13 @@ bool WindowManager::Init() {
   }
   if (!FLAGS_wm_configure_monitor_command.empty()) {
     key_bindings_->AddAction(
-        "configure_monitor",
+        "configure-monitor",
         NewPermanentCallback(this, &WindowManager::ConfigureExternalMonitor),
         NULL, NULL);
     key_bindings_->AddBinding(
         KeyBindings::KeyCombo(
             XK_m, KeyBindings::kControlMask | KeyBindings::kAltMask),
-        "configure_monitor");
+        "configure-monitor");
   }
 
   key_bindings_->AddAction(
@@ -298,6 +295,22 @@ bool WindowManager::Init() {
       NULL, NULL);
   key_bindings_->AddBinding(
       KeyBindings::KeyCombo(XK_F8), "toggle-hotkey-overlay");
+
+  if (!FLAGS_screenshot_binary.empty()) {
+    key_bindings_->AddAction(
+        "take-root-screenshot",
+        NewPermanentCallback(this, &WindowManager::TakeScreenshot, false),
+        NULL, NULL);
+    key_bindings_->AddAction(
+        "take-window-screenshot",
+        NewPermanentCallback(this, &WindowManager::TakeScreenshot, true),
+        NULL, NULL);
+    key_bindings_->AddBinding(
+        KeyBindings::KeyCombo(XK_Print), "take-root-screenshot");
+    key_bindings_->AddBinding(
+        KeyBindings::KeyCombo(XK_Print, KeyBindings::kShiftMask),
+        "take-window-screenshot");
+  }
 
   // We need to create the layout manager after the stage so we can stack
   // its input windows correctly.
@@ -1461,6 +1474,42 @@ void WindowManager::ToggleHotkeyOverlay() {
     group->SetOpacity(0, kHotkeyOverlayAnimMs);
     SetKeyEventSnooping(false);
   }
+}
+
+void WindowManager::TakeScreenshot(bool use_active_window) {
+  std::string message;
+
+  XWindow xid = None;
+  if (use_active_window) {
+    if (active_window_xid_ == None) {
+      message = "No active window to use for screenshot";
+      LOG(WARNING) << message;
+    } else {
+      xid = active_window_xid_;
+    }
+  } else {
+    xid = root_;
+  }
+
+  if (xid != None) {
+    // TODO: Include the date and time in the screenshot.
+    std::string filename = StringPrintf("%s/screenshot.png",
+                                        FLAGS_screenshot_output_dir.c_str());
+    const std::string command =
+        StringPrintf("%s %s 0x%x",
+                     FLAGS_screenshot_binary.c_str(), filename.c_str(), xid);
+    if (system(command.c_str()) < 0) {
+      message = StringPrintf("Taking screenshot via \"%s\" failed",
+                             command.c_str());
+      LOG(WARNING) << message;
+    } else {
+      message = StringPrintf("Saved screenshot of window %s to %s",
+                             XidStr(xid).c_str(), filename.c_str());
+      LOG(INFO) << message;
+    }
+  }
+
+  // TODO: Display the message onscreen.
 }
 
 }  // namespace chromeos
