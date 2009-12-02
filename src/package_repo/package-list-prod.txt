@@ -83,6 +83,11 @@ chromeos-wm
 chromeos-wpasupplicant
 memento-updater
 
+# For wireless support
+iw
+libnl1
+linux-firmware
+
 # For IBus
 ibus
 ibus-anthy

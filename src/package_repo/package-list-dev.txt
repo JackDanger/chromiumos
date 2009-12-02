@@ -166,3 +166,6 @@ cvs
 gettext
 libanthy-dev
 swig
+
+# Packages needed to build wireless tools
+libnl-dev

@@ -1124,7 +1124,8 @@ static void extract_capabilites(DBusMessageIter *value,
 static unsigned char calculate_strength(struct supplicant_task *task,
 					struct supplicant_result *result)
 {
-	if (task->range->max_qual.qual == 0) {
+	/* TODO(sleffler) check of quality == -1 is a hack for nl80211 */
+	if (task->range->max_qual.qual == 0 || result->quality == -1) {
 		unsigned char strength;
 
 		if (result->level > 0)

@@ -294,6 +294,8 @@ libncurses5 5.7+20090523-1ubuntu1 required libs pool/main/n/ncurses/libncurses5_
 libncursesw5 5.7+20090523-1ubuntu1 important libs pool/main/n/ncurses/libncursesw5_5.7+20090523-1ubuntu1_i386.deb
 libneon27-gnutls 0.28.4-3 optional libs pool/main/n/neon27/libneon27-gnutls_0.28.4-3_i386.deb
 libnewt0.52 0.52.10-4 important libs pool/main/n/newt/libnewt0.52_0.52.10-4_i386.deb
+libnl-dev 1.1-5 optional libdevel pool/main/libn/libnl/libnl-dev_1.1-5_i386.deb
+libnl1 1.1-5 optional libs pool/main/libn/libnl/libnl1_1.1-5_i386.deb
 libnspr4-0d 4.7.5-0ubuntu1 optional libs pool/main/n/nspr/libnspr4-0d_4.7.5-0ubuntu1_i386.deb
 libnspr4-dev 4.7.5-0ubuntu1 optional libdevel pool/main/n/nspr/libnspr4-dev_4.7.5-0ubuntu1_i386.deb
 libnss3-1d 3.12.3-0ubuntu2 optional libs pool/main/n/nss/libnss3-1d_3.12.3-0ubuntu2_i386.deb
