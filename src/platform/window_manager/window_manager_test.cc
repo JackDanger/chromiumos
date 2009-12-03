@@ -112,7 +112,7 @@ TEST_F(WindowManagerTest, RegisterExistence) {
   std::string window_title;
   EXPECT_TRUE(
       xconn_->GetStringProperty(wm_->wm_window_, title_atom, &window_title));
-  EXPECT_EQ(WindowManager::kWmName, window_title);
+  EXPECT_EQ(WindowManager::GetWmName(), window_title);
 
   // Check that the window and compositing manager selections are owned by
   // the window manager's window.

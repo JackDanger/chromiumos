@@ -47,8 +47,6 @@ DEFINE_bool(wm_use_compositing, true, "Use compositing");
 
 namespace chromeos {
 
-const char* WindowManager::kWmName = "chromeos-wm";
-
 const int WindowManager::kPanelBarHeight = 18;
 
 // Time to spend fading the hotkey overlay in or out, in milliseconds.
@@ -579,7 +577,7 @@ bool WindowManager::RegisterExistence() {
   // Set the window's title and wait for the notify event so we can get a
   // timestamp from the server.
   CHECK(xconn_->SetStringProperty(
-            wm_window_, GetXAtom(ATOM_NET_WM_NAME), kWmName));
+            wm_window_, GetXAtom(ATOM_NET_WM_NAME), GetWmName()));
   XEvent event;
   xconn_->WaitForEvent(wm_window_, PropertyChangeMask, &event);
   Time timestamp = event.xproperty.time;

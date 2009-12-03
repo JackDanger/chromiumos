@@ -4,6 +4,7 @@
 
 #include <cmath>
 #include <cstdlib>
+#include <ctime>
 
 extern "C" {
 #include <clutter/clutter.h>
@@ -18,6 +19,7 @@ extern "C" {
 #include "base/file_util.h"
 #include "base/logging.h"
 #include "base/scoped_ptr.h"
+#include "base/string_util.h"
 #include "window_manager/clutter_interface.h"
 #include "window_manager/window_manager.h"
 #include "window_manager/real_x_connection.h"
@@ -37,20 +39,31 @@ using chromeos::RealClutterInterface;
 using chromeos::RealXConnection;
 using chromeos::WindowManager;
 
-static const char* kLogFileName = "window_manager.log";
+// Get the current time in the local time zone as "YYYYMMDD-HHMMSS".
+std::string GetCurrentTimeAsString() {
+  time_t now = time(NULL);
+  CHECK(now >= 0);
+  struct tm now_tm;
+  CHECK(localtime_r(&now, &now_tm) == &now_tm);
+  char now_str[16];
+  CHECK(strftime(now_str, sizeof(now_str), "%Y%m%d-%H%M%S", &now_tm) == 15);
+  return std::string(now_str);
+}
 
 int main(int argc, char** argv) {
   gdk_init(&argc, &argv);
   clutter_init(&argc, &argv);
   google::ParseCommandLineFlags(&argc, &argv, true);
+  CommandLine::Init(argc, argv);
 
   if (!FLAGS_logtostderr) {
     if (!file_util::CreateDirectory(FilePath(FLAGS_log_dir)))
       LOG(ERROR) << "Unable to create logging directory " << FLAGS_log_dir;
   }
-
-  CommandLine::Init(argc, argv);
-  logging::InitLogging((FLAGS_log_dir + "/" + kLogFileName).c_str(),
+  std::string log_filename = StringPrintf(
+      "%s/%s.%s", FLAGS_log_dir.c_str(), WindowManager::GetWmName(),
+      GetCurrentTimeAsString().c_str());
+  logging::InitLogging(log_filename.c_str(),
                        FLAGS_logtostderr ?
                          logging::LOG_ONLY_TO_SYSTEM_DEBUG_LOG :
                          logging::LOG_ONLY_TO_FILE,

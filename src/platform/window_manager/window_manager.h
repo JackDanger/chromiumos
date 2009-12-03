@@ -82,6 +82,10 @@ class WindowManager {
   KeyBindings* key_bindings() { return key_bindings_.get(); }
   WmIpc* wm_ipc() { return wm_ipc_.get(); }
 
+  // Get the title for the window that we create to take ownership of management
+  // selections.  This is also used to name our log files.
+  static const char* GetWmName() { return "chromeos-wm"; }
+
   bool Init();
 
   bool HandleEvent(XEvent* event);
@@ -130,11 +134,6 @@ class WindowManager {
   bool SetActiveWindowProperty(XWindow xid);
 
  private:
-  // Title to use for the window that we create to take ownership of
-  // management selections.  Defined as a static member so we can use it in
-  // tests.
-  static const char* kWmName;
-
   // Height for the panel bar.
   static const int kPanelBarHeight;
 
