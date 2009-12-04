@@ -93,9 +93,9 @@ deps = {
 
     # chrome-base
     _third_party_base + "chrome/files/base":
-        "http://src.chromium.org/svn/trunk/src/base@29779",
+        "http://src.chromium.org/svn/trunk/src/base@33520",
     _third_party_base + "chrome/files/build":
-        "http://src.chromium.org/svn/trunk/src/build@29779",
+        "http://src.chromium.org/svn/trunk/src/build@33520",
 
     # kernel
     _third_party_base + "kernel/files":
