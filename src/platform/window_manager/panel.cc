@@ -32,21 +32,6 @@ static const int kCollapsedTitlebarWidth = 200;
 // Amount of time to take for animations.
 static const int kAnimMs = 150;
 
-// Width of the invisible border drawn around a window for use in resizing,
-// in pixels.
-static const int kResizeBorderWidth = 5;
-
-// Size in pixels of the corner parts of the resize border.
-//
-//       C              W is kResizeBorderWidth
-//   +-------+----      C is kResizeCornerSize
-//   |       | W
-// C |   +---+----
-//   |   |
-//   +---+  window contents
-//   | W |
-static const int kResizeCornerSize = 25;
-
 // Minimum dimensions to which a panel's contents can be resized.
 static const int kPanelMinWidth = 20;
 static const int kPanelMinHeight = 20;
@@ -59,6 +44,9 @@ static const char* kResizeBoxBgColor = "#4181f5";
 static const char* kResizeBoxBorderColor = "#234583";
 static const double kResizeBoxOpacity = 0.3;
 
+const int Panel::kResizeBorderWidth = 5;
+const int Panel::kResizeCornerSize = 25;
+
 Panel::Panel(PanelBar* panel_bar,
              Window* panel_win,
              Window* titlebar_win,
@@ -70,11 +58,11 @@ Panel::Panel(PanelBar* panel_bar,
       resize_event_coalescer_(
           NewPermanentCallback(this, &Panel::ApplyResize),
           kResizeUpdateMs),
-      top_input_win_(wm()->CreateInputWindow(-1, -1, 1, 1)),
-      top_left_input_win_(wm()->CreateInputWindow(-1, -1, 1, 1)),
-      top_right_input_win_(wm()->CreateInputWindow(-1, -1, 1, 1)),
-      left_input_win_(wm()->CreateInputWindow(-1, -1, 1, 1)),
-      right_input_win_(wm()->CreateInputWindow(-1, -1, 1, 1)),
+      top_input_xid_(wm()->CreateInputWindow(-1, -1, 1, 1)),
+      top_left_input_xid_(wm()->CreateInputWindow(-1, -1, 1, 1)),
+      top_right_input_xid_(wm()->CreateInputWindow(-1, -1, 1, 1)),
+      left_input_xid_(wm()->CreateInputWindow(-1, -1, 1, 1)),
+      right_input_xid_(wm()->CreateInputWindow(-1, -1, 1, 1)),
       snapped_right_(initial_right),
       is_expanded_(false),
       drag_xid_(0),
@@ -91,9 +79,6 @@ Panel::Panel(PanelBar* panel_bar,
   // since only one client is allowed to do so for a given window and the
   // app is probably doing it itself.)
   panel_win_->AddPassiveButtonGrab();
-
-  titlebar_win_->StackCompositedBelow(wm()->collapsed_panel_depth(), NULL);
-  panel_win_->StackCompositedBelow(wm()->expanded_panel_depth(), NULL);
 
   // Constrain the size of the panel if we've been requested to do so.
   int panel_width = (FLAGS_panel_max_width > 0) ?
@@ -122,7 +107,6 @@ Panel::Panel(PanelBar* panel_bar,
       titlebar_win_->client_height();
   titlebar_win_->MoveComposited(snapped_titlebar_left(), titlebar_y, kAnimMs);
   titlebar_win_->MoveClientToComposited();
-  titlebar_win_->RaiseClient();
 
   panel_win_->ScaleComposited(1.0, 1.0, 0);
   panel_win_->SetCompositedOpacity(1.0, 0);
@@ -131,11 +115,11 @@ Panel::Panel(PanelBar* panel_bar,
   panel_win_->MoveClientToComposited();
   panel_win_->ShowComposited();
 
-  wm()->xconn()->SetWindowCursor(top_input_win_, XC_top_side);
-  wm()->xconn()->SetWindowCursor(top_left_input_win_, XC_top_left_corner);
-  wm()->xconn()->SetWindowCursor(top_right_input_win_, XC_top_right_corner);
-  wm()->xconn()->SetWindowCursor(left_input_win_, XC_left_side);
-  wm()->xconn()->SetWindowCursor(right_input_win_, XC_right_side);
+  wm()->xconn()->SetWindowCursor(top_input_xid_, XC_top_side);
+  wm()->xconn()->SetWindowCursor(top_left_input_xid_, XC_top_left_corner);
+  wm()->xconn()->SetWindowCursor(top_right_input_xid_, XC_top_right_corner);
+  wm()->xconn()->SetWindowCursor(left_input_xid_, XC_left_side);
+  wm()->xconn()->SetWindowCursor(right_input_xid_, XC_right_side);
   ConfigureInputWindows();
 
   NotifyChromeAboutState();
@@ -146,20 +130,20 @@ Panel::~Panel() {
     wm()->xconn()->RemoveActivePointerGrab(false);  // replay_events=false
     drag_xid_ = None;
   }
-  wm()->xconn()->DestroyWindow(top_input_win_);
-  wm()->xconn()->DestroyWindow(top_left_input_win_);
-  wm()->xconn()->DestroyWindow(top_right_input_win_);
-  wm()->xconn()->DestroyWindow(left_input_win_);
-  wm()->xconn()->DestroyWindow(right_input_win_);
+  wm()->xconn()->DestroyWindow(top_input_xid_);
+  wm()->xconn()->DestroyWindow(top_left_input_xid_);
+  wm()->xconn()->DestroyWindow(top_right_input_xid_);
+  wm()->xconn()->DestroyWindow(left_input_xid_);
+  wm()->xconn()->DestroyWindow(right_input_xid_);
   panel_win_->RemovePassiveButtonGrab();
   panel_bar_ = NULL;
   panel_win_ = NULL;
   titlebar_win_ = NULL;
-  top_input_win_ = None;
-  top_left_input_win_ = None;
-  top_right_input_win_ = None;
-  left_input_win_ = None;
-  right_input_win_ = None;
+  top_input_xid_ = None;
+  top_left_input_xid_ = None;
+  top_right_input_xid_ = None;
+  left_input_xid_ = None;
+  right_input_xid_ = None;
 }
 
 int Panel::cur_right() const {
@@ -198,11 +182,11 @@ void Panel::GetInputWindows(std::vector<XWindow>* windows_out) {
   CHECK(windows_out);
   windows_out->clear();
   windows_out->reserve(5);
-  windows_out->push_back(top_input_win_);
-  windows_out->push_back(top_left_input_win_);
-  windows_out->push_back(top_right_input_win_);
-  windows_out->push_back(left_input_win_);
-  windows_out->push_back(right_input_win_);
+  windows_out->push_back(top_input_xid_);
+  windows_out->push_back(top_left_input_xid_);
+  windows_out->push_back(top_right_input_xid_);
+  windows_out->push_back(left_input_xid_);
+  windows_out->push_back(right_input_xid_);
 }
 
 void Panel::HandleInputWindowButtonPress(
@@ -237,7 +221,8 @@ void Panel::HandleInputWindowButtonPress(
         panel_win_->client_height() + titlebar_win_->client_height());
     resize_actor_->SetOpacity(0, 0);
     resize_actor_->SetOpacity(kResizeBoxOpacity, kAnimMs);
-    resize_actor_->Raise(wm()->expanded_panel_depth());
+    wm()->stacking_manager()->StackActorAtTopOfLayer(
+        resize_actor_.get(), StackingManager::LAYER_EXPANDED_PANEL);
     resize_actor_->SetVisibility(true);
   }
 }
@@ -281,22 +266,22 @@ void Panel::ApplyResize() {
   int dy = resize_event_coalescer_.y() - drag_start_y_;
   drag_gravity_ = Window::GRAVITY_NORTHWEST;
 
-  if (drag_xid_ == top_input_win_) {
+  if (drag_xid_ == top_input_xid_) {
     drag_gravity_ = Window::GRAVITY_SOUTHWEST;
     dx = 0;
     dy *= -1;
-  } else if (drag_xid_ == top_left_input_win_) {
+  } else if (drag_xid_ == top_left_input_xid_) {
     drag_gravity_ = Window::GRAVITY_SOUTHEAST;
     dx *= -1;
     dy *= -1;
-  } else if (drag_xid_ == top_right_input_win_) {
+  } else if (drag_xid_ == top_right_input_xid_) {
     drag_gravity_ = Window::GRAVITY_SOUTHWEST;
     dy *= -1;
-  } else if (drag_xid_ == left_input_win_) {
+  } else if (drag_xid_ == left_input_xid_) {
     drag_gravity_ = Window::GRAVITY_NORTHEAST;
     dx *= -1;
     dy = 0;
-  } else if (drag_xid_ == right_input_win_) {
+  } else if (drag_xid_ == right_input_xid_) {
     drag_gravity_ = Window::GRAVITY_NORTHWEST;
     dy = 0;
   }
@@ -331,12 +316,7 @@ void Panel::SetState(bool is_expanded) {
   }
 
   if (is_expanded) {
-    // TODO: Need to restack client windows!
-
-    // Stack the titlebar above all the other titlebars, but stack its
-    // shadow underneath the panel window (we don't want to cast a shadow
-    // on it).
-    titlebar_win_->StackCompositedBelow(NULL, panel_win_->actor());
+    StackAtTopOfLayer(StackingManager::LAYER_EXPANDED_PANEL);
 
     // Animate the panel sliding up.
     panel_win_->MoveComposited(
@@ -344,7 +324,6 @@ void Panel::SetState(bool is_expanded) {
         panel_bar_->y() - panel_win_->client_height(),
         kAnimMs);
     panel_win_->MoveClientToComposited();
-    panel_win_->RaiseClient();
 
     // Move the titlebar right above the panel.  We left-justify it with
     // the panel before animating it to match the panel's width so it won't
@@ -359,11 +338,8 @@ void Panel::SetState(bool is_expanded) {
           panel_win_->client_height() - titlebar_win_->client_height(),
         kAnimMs);
     titlebar_win_->MoveClientToComposited();
-    titlebar_win_->RaiseClient();
   } else {
-    // Restack the titlebar's shadow directly below it so that it'll cast a
-    // shadow on the panel bar.
-    titlebar_win_->StackCompositedBelow(wm()->collapsed_panel_depth(), NULL);
+    StackAtTopOfLayer(StackingManager::LAYER_COLLAPSED_PANEL);
 
     panel_win_->MoveComposited(
         cur_panel_left(),
@@ -382,7 +358,6 @@ void Panel::SetState(bool is_expanded) {
         panel_bar_->y() + panel_bar_->height() - titlebar_win_->client_height(),
         kAnimMs);
     titlebar_win_->MoveClientToComposited();
-    titlebar_win_->RaiseClient();
   }
 
   // Notify Chrome about the changed state.
@@ -393,6 +368,8 @@ void Panel::SetState(bool is_expanded) {
 }
 
 void Panel::Move(int right, int anim_ms) {
+  // TODO: If the user is dragging the panel, we should probably only move
+  // the X windows (titlebar, panel, and input) when the drag is complete.
   titlebar_win_->MoveComposited(
       right - titlebar_width(),
       titlebar_win_->composited_y(),
@@ -428,12 +405,13 @@ void Panel::HandlePanelBarMove() {
   }
 }
 
-void Panel::Raise() {
-  panel_win_->RaiseClient();
-  titlebar_win_->RaiseClient();
-  panel_win_->StackCompositedBelow(wm()->expanded_panel_depth(), NULL);
-  titlebar_win_->StackCompositedBelow(
-      wm()->expanded_panel_depth(), panel_win_->actor());
+void Panel::StackAtTopOfLayer(StackingManager::Layer layer) {
+  // Put the titlebar and panel in the same layer, but stack the titlebar
+  // higher (the stacking between the two is arbitrary but needs to stay
+  // in sync with ConfigureInputWindows()).
+  wm()->stacking_manager()->StackWindowAtTopOfLayer(panel_win_, layer);
+  wm()->stacking_manager()->StackWindowAtTopOfLayer(titlebar_win_, layer);
+
   /// Ensure that the resize windows are stacked correctly.
   ConfigureInputWindows();
 }
@@ -475,28 +453,31 @@ bool Panel::NotifyChromeAboutState() {
 void Panel::ConfigureInputWindows() {
   if (is_expanded_) {
     if (panel_width() + 2 * (kResizeBorderWidth - kResizeCornerSize) <= 0) {
-      wm()->xconn()->ConfigureWindowOffscreen(top_input_win_);
+      wm()->xconn()->ConfigureWindowOffscreen(top_input_xid_);
     } else {
-      wm()->xconn()->StackWindow(top_input_win_, titlebar_win_->xid(), false);
+      // Stack all of the input windows directly below the panel window
+      // (which is stacked beneath the titlebar) -- we don't want the
+      // corner windows to occlude the titlebar.
+      wm()->xconn()->StackWindow(top_input_xid_, panel_win_->xid(), false);
       wm()->xconn()->ConfigureWindow(
-          top_input_win_,
+          top_input_xid_,
           cur_panel_left() - kResizeBorderWidth + kResizeCornerSize,
           titlebar_win_->client_y() - kResizeBorderWidth,
           panel_width() + 2 * (kResizeBorderWidth - kResizeCornerSize),
           kResizeBorderWidth);
     }
 
-    wm()->xconn()->StackWindow(top_left_input_win_, panel_win_->xid(), false);
+    wm()->xconn()->StackWindow(top_left_input_xid_, panel_win_->xid(), false);
     wm()->xconn()->ConfigureWindow(
-        top_left_input_win_,
+        top_left_input_xid_,
         cur_panel_left() - kResizeBorderWidth,
         titlebar_win_->client_y() - kResizeBorderWidth,
         kResizeCornerSize,
         kResizeCornerSize);
 
-    wm()->xconn()->StackWindow(top_right_input_win_, panel_win_->xid(), false);
+    wm()->xconn()->StackWindow(top_right_input_xid_, panel_win_->xid(), false);
     wm()->xconn()->ConfigureWindow(
-        top_right_input_win_,
+        top_right_input_xid_,
         cur_right() + kResizeBorderWidth - kResizeCornerSize,
         titlebar_win_->client_y() - kResizeBorderWidth,
         kResizeCornerSize,
@@ -508,20 +489,20 @@ void Panel::ConfigureInputWindows() {
         total_height + kResizeBorderWidth - kResizeCornerSize;
 
     if (resize_edge_height <= 0) {
-      wm()->xconn()->ConfigureWindowOffscreen(left_input_win_);
-      wm()->xconn()->ConfigureWindowOffscreen(right_input_win_);
+      wm()->xconn()->ConfigureWindowOffscreen(left_input_xid_);
+      wm()->xconn()->ConfigureWindowOffscreen(right_input_xid_);
     } else {
-      wm()->xconn()->StackWindow(left_input_win_, panel_win_->xid(), false);
+      wm()->xconn()->StackWindow(left_input_xid_, panel_win_->xid(), false);
       wm()->xconn()->ConfigureWindow(
-          left_input_win_,
+          left_input_xid_,
           cur_panel_left() - kResizeBorderWidth,
           titlebar_win_->client_y() - kResizeBorderWidth + kResizeCornerSize,
           kResizeBorderWidth,
           resize_edge_height);
 
-      wm()->xconn()->StackWindow(right_input_win_, panel_win_->xid(), false);
+      wm()->xconn()->StackWindow(right_input_xid_, panel_win_->xid(), false);
       wm()->xconn()->ConfigureWindow(
-          right_input_win_,
+          right_input_xid_,
           cur_right(),
           titlebar_win_->client_y() - kResizeBorderWidth + kResizeCornerSize,
           kResizeBorderWidth,
@@ -529,11 +510,11 @@ void Panel::ConfigureInputWindows() {
     }
   } else {
     // Move the windows offscreen if the panel is collapsed.
-    wm()->xconn()->ConfigureWindowOffscreen(top_input_win_);
-    wm()->xconn()->ConfigureWindowOffscreen(top_left_input_win_);
-    wm()->xconn()->ConfigureWindowOffscreen(top_right_input_win_);
-    wm()->xconn()->ConfigureWindowOffscreen(left_input_win_);
-    wm()->xconn()->ConfigureWindowOffscreen(right_input_win_);
+    wm()->xconn()->ConfigureWindowOffscreen(top_input_xid_);
+    wm()->xconn()->ConfigureWindowOffscreen(top_left_input_xid_);
+    wm()->xconn()->ConfigureWindowOffscreen(top_right_input_xid_);
+    wm()->xconn()->ConfigureWindowOffscreen(left_input_xid_);
+    wm()->xconn()->ConfigureWindowOffscreen(right_input_xid_);
   }
 }
 

@@ -381,6 +381,10 @@ class LayoutManager : public EventConsumer {
   // is just used by testing code.
   XWindow GetInputXidForWindow(const Window& win);
 
+  // Do some initial setup for windows that we're going to manage.
+  // This includes stacking them and moving them offscreen.
+  void DoInitialSetupForWindow(Window* win);
+
   // Modes used to display windows.
   enum Mode {
     // Display 'active_window_' at full size and let it receive input.
@@ -518,6 +522,16 @@ class LayoutManager : public EventConsumer {
   scoped_ptr<MotionEventCoalescer> floating_tab_event_coalescer_;
 
   Metrics metrics_;
+
+  // Have we seen a MapRequest event yet?  We perform some initial setup
+  // (e.g. stacking) in response to MapRequests, so we track this so we can
+  // perform the same setup at the MapNotify point for windows that were
+  // already mapped or were in the process of being mapped when we were
+  // started.
+  // TODO: This is yet another hack that could probably removed in favor of
+  // something more elegant if/when we're sharing an X connection with
+  // Clutter and can safely grab the server at startup.
+  bool saw_map_request_;
 
   DISALLOW_COPY_AND_ASSIGN(LayoutManager);
 };

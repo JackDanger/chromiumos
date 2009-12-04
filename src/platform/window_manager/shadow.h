@@ -31,7 +31,7 @@ class Shadow {
   double opacity() const { return opacity_; }
 
   // Get the group containing all of the actors.
-  ClutterInterface::Actor* group() { return group_.get(); }
+  ClutterInterface::Actor* group() const { return group_.get(); }
 
   void Show();
   void Hide();

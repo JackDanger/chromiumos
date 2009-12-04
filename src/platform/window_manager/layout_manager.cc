@@ -18,6 +18,7 @@ extern "C" {
 #include "base/logging.h"
 #include "window_manager/atom_cache.h"
 #include "window_manager/motion_event_coalescer.h"
+#include "window_manager/stacking_manager.h"
 #include "window_manager/system_metrics.pb.h"
 #include "window_manager/util.h"
 #include "window_manager/window.h"
@@ -85,7 +86,8 @@ LayoutManager::LayoutManager
       floating_tab_event_coalescer_(
           new MotionEventCoalescer(
               NewPermanentCallback(this, &LayoutManager::MoveFloatingTab),
-              kFloatingTabUpdateMs)) {
+              kFloatingTabUpdateMs)),
+      saw_map_request_(false) {
   Resize(width, height);
 
   KeyBindings* kb = wm_->key_bindings();
@@ -176,14 +178,11 @@ bool LayoutManager::IsInputWindow(XWindow xid) {
 }
 
 bool LayoutManager::HandleWindowMapRequest(Window* win) {
+  saw_map_request_ = true;
   if (!IsHandledWindowType(win->type()))
     return false;
 
-  // We preserve info bubbles' initial locations even though they're
-  // ultimately transient windows.
-  if (win->type() != WmIpc::WINDOW_TYPE_CHROME_INFO_BUBBLE)
-    win->MoveClientOffscreen();
-  win->StackClientBelow(wm_->client_stacking_win());
+  DoInitialSetupForWindow(win);
   win->MapClient();
   return true;
 }
@@ -198,7 +197,12 @@ void LayoutManager::HandleWindowMap(Window* win) {
     // them getting mapped and them getting painted in response to the
     // first expose event.
     if (win->type() == WmIpc::WINDOW_TYPE_CHROME_TAB_SUMMARY) {
-      win->StackCompositedAbove(wm_->overview_window_depth(), NULL);
+      // TODO: This is wrong (restacking an override-redirect window), but
+      // the proper fix is probably to make this window not be
+      // override-redirect in Chrome and to give it an alternate mechanism
+      // to provide the appropriate position to us.
+      wm_->stacking_manager()->StackWindowAtTopOfLayer(
+          win, StackingManager::LAYER_TAB_SUMMARY);
       win->SetCompositedOpacity(0, 0);
       win->ShowComposited();
       win->SetCompositedOpacity(1, kWindowAnimMs);
@@ -212,6 +216,11 @@ void LayoutManager::HandleWindowMap(Window* win) {
   if (!IsHandledWindowType(win->type()))
     return;
 
+  // Perform initial setup of windows that were already mapped at startup
+  // (so we never saw MapRequest events for them).
+  if (!saw_map_request_)
+    DoInitialSetupForWindow(win);
+
   switch (win->type()) {
     // TODO: Remove this.  mock_chrome currently depends on the WM to
     // position tab summary windows, but Chrome just creates
@@ -220,7 +229,6 @@ void LayoutManager::HandleWindowMap(Window* win) {
       int x = (width_ - win->client_width()) / 2;
       int y = y_ + height_ - overview_height_ - win->client_height() -
           kTabSummaryPadding;
-      win->StackCompositedAbove(wm_->overview_window_depth(), NULL);
       win->MoveComposited(x, y, 0);
       win->ScaleComposited(1.0, 1.0, 0);
       win->SetCompositedOpacity(0, 0);
@@ -231,15 +239,14 @@ void LayoutManager::HandleWindowMap(Window* win) {
       break;
     }
     case WmIpc::WINDOW_TYPE_CHROME_FLOATING_TAB: {
-      win->HideComposited();
-      win->StackCompositedAbove(wm_->floating_tab_depth(), NULL);
+      wm_->stacking_manager()->StackWindowAtTopOfLayer(
+          win, StackingManager::LAYER_FLOATING_TAB);
       win->ScaleComposited(1.0, 1.0, 0);
       win->SetCompositedOpacity(0.75, 0);
       // No worries if we were already tracking a different tab; it should
       // get destroyed soon enough.
-      if (floating_tab_) {
+      if (floating_tab_)
         floating_tab_->HideComposited();
-      }
       floating_tab_ = win;
       if (!floating_tab_event_coalescer_->IsRunning()) {
         // Start redrawing the tab's position if we aren't already.
@@ -253,10 +260,15 @@ void LayoutManager::HandleWindowMap(Window* win) {
       break;
     }
     case WmIpc::WINDOW_TYPE_CREATE_BROWSER_WINDOW: {
-      DCHECK(!create_browser_window_);
-      win->HideComposited();
-      win->StackCompositedAbove(wm_->overview_window_depth(), NULL);
+      if (create_browser_window_) {
+        LOG(WARNING) << "Got second create-browser window " << win->xid_str()
+                     << " (previous was " << create_browser_window_->xid_str()
+                     << ")";
+        create_browser_window_->HideComposited();
+      }
       create_browser_window_ = win;
+      wm_->stacking_manager()->StackWindowAtTopOfLayer(
+          create_browser_window_, StackingManager::LAYER_TOPLEVEL_WINDOW);
       if (mode_ == MODE_OVERVIEW) {
         create_browser_window_->ShowComposited();
         ArrangeToplevelWindowsForOverviewMode();
@@ -747,6 +759,9 @@ LayoutManager::ToplevelWindow::ToplevelWindow(Window* win,
     win->GetMaxSize(width, height, &width, &height);
   win->ResizeClient(width, height, Window::GRAVITY_NORTHWEST);
 
+  wm()->stacking_manager()->StackXidAtTopOfLayer(
+      input_xid_, StackingManager::LAYER_TOPLEVEL_WINDOW);
+
   // Let the window know that it's maximized.
   vector<pair<XAtom, bool> > wm_state;
   wm_state.push_back(
@@ -822,10 +837,12 @@ void LayoutManager::ToplevelWindow::ArrangeForActiveMode(
     // In any case, give the window input focus and animate it moving to
     // its final location.
     win_->MoveClient(win_x, win_y);
-    win_->StackCompositedAbove(wm()->active_window_depth(), NULL);
     win_->MoveComposited(win_x, win_y, kWindowAnimMs);
     win_->ScaleComposited(1.0, 1.0, kWindowAnimMs);
     win_->SetCompositedOpacity(1.0, kWindowAnimMs);
+    // TODO: This can end up stealing the focus from a panel, for instance
+    // -- we should really only be doing this if we had the focus
+    // initially.
     TakeFocus(wm()->GetCurrentTimeFromServer());
     state_ = STATE_ACTIVE_MODE_ONSCREEN;
   } else {
@@ -854,7 +871,6 @@ void LayoutManager::ToplevelWindow::ArrangeForActiveMode(
     // Fade out the window's shadow entirely so it won't be visible if
     // the window is just slightly offscreen.
     win_->SetShadowOpacity(0, kWindowAnimMs);
-    win_->StackCompositedAbove(wm()->overview_window_depth(), NULL);
     state_ = STATE_ACTIVE_MODE_OFFSCREEN;
     win_->MoveClientOffscreen();
   }
@@ -874,7 +890,6 @@ void LayoutManager::ToplevelWindow::ArrangeForOverviewMode(
     win_->SetCompositedOpacity(0.5, 0);
     MoveAndScaleAllTransientWindows(0);
   }
-  win_->StackCompositedAbove(wm()->overview_window_depth(), NULL);
   win_->MoveComposited(overview_x_, overview_y_, kWindowAnimMs);
   win_->ScaleComposited(overview_scale_, overview_scale_, kWindowAnimMs);
   win_->MoveClientOffscreen();
@@ -1111,7 +1126,7 @@ void LayoutManager::ToplevelWindow::ApplyStackingForTransientWindowAboveWindow(
   CHECK(transient);
   CHECK(other_win);
   transient->win->StackClientAbove(other_win->xid());
-  transient->win->StackCompositedAbove(other_win->actor(), NULL);
+  transient->win->StackCompositedAbove(other_win->actor(), NULL, false);
 }
 
 void LayoutManager::ToplevelWindow::ApplyStackingForAllTransientWindows() {
@@ -1206,6 +1221,15 @@ LayoutManager::ToplevelWindow*
 XWindow LayoutManager::GetInputXidForWindow(const Window& win) {
   ToplevelWindow* toplevel = GetToplevelWindowByWindow(win);
   return toplevel ? toplevel->input_xid() : None;
+}
+
+void LayoutManager::DoInitialSetupForWindow(Window* win) {
+  // We preserve info bubbles' initial locations even though they're
+  // ultimately transient windows.
+  if (win->type() != WmIpc::WINDOW_TYPE_CHROME_INFO_BUBBLE)
+    win->MoveClientOffscreen();
+  wm_->stacking_manager()->StackWindowAtTopOfLayer(
+      win, StackingManager::LAYER_TOPLEVEL_WINDOW);
 }
 
 void LayoutManager::SetActiveToplevelWindow(

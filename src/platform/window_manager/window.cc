@@ -29,7 +29,7 @@ Window::Window(WindowManager* wm, XWindow xid)
       xid_str_(XidStr(xid_)),
       wm_(wm),
       actor_(wm_->clutter()->CreateTexturePixmap()),
-      shadow_(NULL),
+      shadow_(FLAGS_window_drop_shadows ? new Shadow(wm->clutter()) : NULL),
       transient_for_xid_(None),
       override_redirect_(false),
       mapped_(false),
@@ -46,6 +46,7 @@ Window::Window(WindowManager* wm, XWindow xid)
       composited_scale_x_(1.0),
       composited_scale_y_(1.0),
       composited_opacity_(1.0),
+      using_shadow_(false),
       shadow_opacity_(1.0),
       min_width_hint_(-1),
       min_height_hint_(-1),
@@ -116,13 +117,23 @@ Window::Window(WindowManager* wm, XWindow xid)
   actor_->SetName(std::string("window ") + xid_str());
   wm_->stage()->AddActor(actor_.get());
 
+  if (shadow_.get()) {
+    shadow_->group()->SetName(
+        std::string("shadow group for window " + xid_str()));
+    wm_->stage()->AddActor(shadow_->group());
+    shadow_->Move(composited_x_, composited_y_, 0);
+    shadow_->SetOpacity(shadow_opacity_, 0);
+    shadow_->Resize(composited_scale_x_ * client_width_,
+                    composited_scale_y_ * client_height_, 0);
+  }
+
   // Properties could've been set on this window after it was created but
   // before we selected on PropertyChangeMask, so we need to query them
   // here.  Don't create a shadow yet; we still need to check if it's
   // shaped.
   FetchAndApplyWindowType(false);
 
-  // Check if the window is shaped (and create a shadow for if needed).
+  // Check if the window is shaped.
   FetchAndApplyShape(true);
 
   // Check if the client window has set _NET_WM_WINDOW_OPACITY.
@@ -587,7 +598,7 @@ void Window::ShowComposited() {
   VLOG(2) << "Showing " << xid_str() << "'s composited window";
   actor_->SetVisibility(true);
   composited_shown_ = true;
-  if (shadow_.get())
+  if (shadow_.get() && using_shadow_)
     shadow_->Show();
 }
 
@@ -595,7 +606,7 @@ void Window::HideComposited() {
   VLOG(2) << "Hiding " << xid_str() << "'s composited window";
   actor_->SetVisibility(false);
   composited_shown_ = false;
-  if (shadow_.get())
+  if (shadow_.get() && using_shadow_)
     shadow_->Hide();
 }
 
@@ -637,24 +648,38 @@ void Window::SetShadowOpacity(double opacity, int anim_ms) {
 }
 
 void Window::StackCompositedAbove(ClutterInterface::Actor* actor,
-                                  ClutterInterface::Actor* shadow_actor) {
+                                  ClutterInterface::Actor* shadow_actor,
+                                  bool stack_above_shadow_actor) {
   if (actor)
     actor_->Raise(actor);
-  if (shadow_.get())
-    shadow_->group()->Lower(shadow_actor ? shadow_actor : actor_.get());
+  if (shadow_.get()) {
+    if (!shadow_actor || !stack_above_shadow_actor) {
+      shadow_->group()->Lower(shadow_actor ? shadow_actor : actor_.get());
+    } else {
+      shadow_->group()->Raise(shadow_actor);
+    }
+  }
 }
 
 void Window::StackCompositedBelow(ClutterInterface::Actor* actor,
-                                  ClutterInterface::Actor* shadow_actor) {
+                                  ClutterInterface::Actor* shadow_actor,
+                                  bool stack_above_shadow_actor) {
   if (actor)
     actor_->Lower(actor);
-  if (shadow_.get())
-    shadow_->group()->Lower(shadow_actor ? shadow_actor : actor_.get());
+  if (shadow_.get()) {
+    if (!shadow_actor || !stack_above_shadow_actor) {
+      shadow_->group()->Lower(shadow_actor ? shadow_actor : actor_.get());
+    } else {
+      shadow_->group()->Raise(shadow_actor);
+    }
+  }
 }
 
 void Window::UpdateShadowIfNecessary() {
-  bool should_have_shadow =
-      FLAGS_window_drop_shadows &&
+  if (!shadow_.get())
+    return;
+
+  bool should_use_shadow =
       !override_redirect_ &&
       type_ != WmIpc::WINDOW_TYPE_CHROME_FLOATING_TAB &&
       type_ != WmIpc::WINDOW_TYPE_CHROME_INFO_BUBBLE &&
@@ -662,23 +687,13 @@ void Window::UpdateShadowIfNecessary() {
       type_ != WmIpc::WINDOW_TYPE_CREATE_BROWSER_WINDOW &&
       !shaped_;
 
-  if (!should_have_shadow && shadow_.get()) {
-    shadow_.reset(NULL);
-  } else if (should_have_shadow && !shadow_.get()) {
-    shadow_.reset(new Shadow(wm_->clutter()));
-    shadow_->group()->SetName(
-        StringPrintf("shadow group for window 0x%x", xid_));
-
-    // Stack it below all of the other windows.
-    wm_->stage()->AddActor(shadow_->group());
-    shadow_->group()->Lower(wm_->overview_window_depth());
-
-    shadow_->Move(composited_x_, composited_y_, 0);
-    shadow_->SetOpacity(shadow_opacity_, 0);
-    shadow_->Resize(composited_scale_x_ * client_width_,
-                    composited_scale_y_ * client_height_, 0);
+  if (!should_use_shadow && using_shadow_) {
+    shadow_->Hide();
+    using_shadow_ = false;
+  } else if (should_use_shadow && !using_shadow_) {
     if (composited_shown_)
       shadow_->Show();
+    using_shadow_ = true;
   }
 }
 

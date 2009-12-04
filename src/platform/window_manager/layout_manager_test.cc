@@ -5,12 +5,13 @@
 #include <gflags/gflags.h>
 #include <gtest/gtest.h>
 
-#include "base/command_line.h"
 #include "base/scoped_ptr.h"
 #include "base/logging.h"
 #include "window_manager/clutter_interface.h"
 #include "window_manager/layout_manager.h"
 #include "window_manager/mock_x_connection.h"
+#include "window_manager/stacking_manager.h"
+#include "window_manager/test_lib.h"
 #include "window_manager/util.h"
 #include "window_manager/window.h"
 #include "window_manager/window_manager.h"
@@ -21,42 +22,13 @@ DEFINE_bool(logtostderr, false,
 
 namespace chromeos {
 
-class LayoutManagerTest : public ::testing::Test {
+class LayoutManagerTest : public BasicWindowManagerTest {
  protected:
   virtual void SetUp() {
-    xconn_.reset(new MockXConnection);
-    clutter_.reset(new MockClutterInterface);
-    wm_.reset(new WindowManager(xconn_.get(), clutter_.get()));
-    CHECK(wm_->Init());
+    BasicWindowManagerTest::SetUp();
     lm_ = wm_->layout_manager_.get();
   }
 
-  // Simple method that creates a toplevel client window and returns its ID.
-  virtual XWindow CreateSimpleWindow(XWindow parent) {
-    return xconn_->CreateWindow(
-        parent,
-        10, 20,  // x, y
-        30, 40,  // width, height
-        false,   // override redirect
-        false,   // input only
-        0);      // event mask
-  }
-
-  // Get the current value of the _NET_ACTIVE_WINDOW property on the root
-  // window.
-  XWindow GetActiveWindowProperty() {
-    int active_window;
-    if (!xconn_->GetIntProperty(xconn_->GetRootWindow(),
-                                wm_->GetXAtom(ATOM_NET_ACTIVE_WINDOW),
-                                &active_window)) {
-      return None;
-    }
-    return active_window;
-  }
-
-  scoped_ptr<MockXConnection> xconn_;
-  scoped_ptr<MockClutterInterface> clutter_;
-  scoped_ptr<WindowManager> wm_;
   LayoutManager* lm_;  // points to wm_'s copy
 };
 
@@ -140,7 +112,7 @@ TEST_F(LayoutManagerTest, Basic) {
 
 TEST_F(LayoutManagerTest, Focus) {
   // Create a window.
-  XWindow xid = CreateSimpleWindow(xconn_->GetRootWindow());
+  XWindow xid = CreateSimpleWindow();
   MockXConnection::WindowInfo* info = xconn_->GetWindowInfoOrDie(xid);
   ASSERT_EQ(None, xconn_->focused_xid());
 
@@ -170,7 +142,7 @@ TEST_F(LayoutManagerTest, Focus) {
   EXPECT_FALSE(info->all_buttons_grabbed);
 
   // Now create a second window.
-  XWindow xid2 = CreateSimpleWindow(xconn_->GetRootWindow());
+  XWindow xid2 = CreateSimpleWindow();
   MockXConnection::WindowInfo* info2 = xconn_->GetWindowInfoOrDie(xid2);
 
   // When the second window is created, the first should still be active.
@@ -244,7 +216,7 @@ TEST_F(LayoutManagerTest, ConfigureTransient) {
   XEvent event;
 
   // Create and map a toplevel window.
-  XWindow owner_xid = CreateSimpleWindow(xconn_->GetRootWindow());
+  XWindow owner_xid = CreateSimpleWindow();
   MockXConnection::WindowInfo* owner_info =
       xconn_->GetWindowInfoOrDie(owner_xid);
   MockXConnection::InitCreateWindowEvent(&event, *owner_info);
@@ -322,7 +294,7 @@ TEST_F(LayoutManagerTest, ConfigureTransient) {
 
 TEST_F(LayoutManagerTest, FocusTransient) {
   // Create a window.
-  XWindow xid = CreateSimpleWindow(xconn_->GetRootWindow());
+  XWindow xid = CreateSimpleWindow();
   MockXConnection::WindowInfo* info = xconn_->GetWindowInfoOrDie(xid);
 
   // Send CreateNotify, MapNotify, and FocusNotify events.
@@ -340,7 +312,7 @@ TEST_F(LayoutManagerTest, FocusTransient) {
   EXPECT_TRUE(wm_->GetWindow(xid)->focused());
 
   // Now create a transient window.
-  XWindow transient_xid = CreateSimpleWindow(xconn_->GetRootWindow());
+  XWindow transient_xid = CreateSimpleWindow();
   MockXConnection::WindowInfo* transient_info =
       xconn_->GetWindowInfoOrDie(transient_xid);
   transient_info->transient_for = xid;
@@ -427,7 +399,7 @@ TEST_F(LayoutManagerTest, FocusTransient) {
 
   // Now create another top-level window, which we'll switch to
   // automatically.
-  XWindow xid2 = CreateSimpleWindow(xconn_->GetRootWindow());
+  XWindow xid2 = CreateSimpleWindow();
   MockXConnection::WindowInfo* info2 = xconn_->GetWindowInfoOrDie(xid2);
   MockXConnection::InitCreateWindowEvent(&event, *info2);
   EXPECT_TRUE(wm_->HandleEvent(&event));
@@ -518,7 +490,7 @@ TEST_F(LayoutManagerTest, FocusTransient) {
 
 TEST_F(LayoutManagerTest, MultipleTransients) {
   // Create a window.
-  XWindow owner_xid = CreateSimpleWindow(xconn_->GetRootWindow());
+  XWindow owner_xid = CreateSimpleWindow();
   MockXConnection::WindowInfo* owner_info =
       xconn_->GetWindowInfoOrDie(owner_xid);
 
@@ -534,7 +506,7 @@ TEST_F(LayoutManagerTest, MultipleTransients) {
 
   // Create a transient window, send CreateNotify and MapNotify events for
   // it, and check that it has the focus.
-  XWindow first_transient_xid = CreateSimpleWindow(xconn_->GetRootWindow());
+  XWindow first_transient_xid = CreateSimpleWindow();
   MockXConnection::WindowInfo* first_transient_info =
       xconn_->GetWindowInfoOrDie(first_transient_xid);
   first_transient_info->transient_for = owner_xid;
@@ -564,7 +536,7 @@ TEST_F(LayoutManagerTest, MultipleTransients) {
 
   // Now create a second transient window, which should get the focus when
   // it's mapped.
-  XWindow second_transient_xid = CreateSimpleWindow(xconn_->GetRootWindow());
+  XWindow second_transient_xid = CreateSimpleWindow();
   MockXConnection::WindowInfo* second_transient_info =
       xconn_->GetWindowInfoOrDie(second_transient_xid);
   second_transient_info->transient_for = owner_xid;
@@ -642,7 +614,7 @@ TEST_F(LayoutManagerTest, MultipleTransients) {
 }
 
 TEST_F(LayoutManagerTest, SetWmStateMaximized) {
-  XWindow xid = CreateSimpleWindow(xconn_->GetRootWindow());
+  XWindow xid = CreateSimpleWindow();
   MockXConnection::WindowInfo* info = xconn_->GetWindowInfoOrDie(xid);
   XEvent event;
   MockXConnection::InitCreateWindowEvent(&event, *info);
@@ -659,7 +631,7 @@ TEST_F(LayoutManagerTest, SetWmStateMaximized) {
 }
 
 TEST_F(LayoutManagerTest, Resize) {
-  XWindow xid = CreateSimpleWindow(xconn_->GetRootWindow());
+  XWindow xid = CreateSimpleWindow();
   MockXConnection::WindowInfo* info = xconn_->GetWindowInfoOrDie(xid);
   XEvent event;
   MockXConnection::InitCreateWindowEvent(&event, *info);
@@ -699,7 +671,7 @@ TEST_F(LayoutManagerTest, Resize) {
 // if it doesn't get the size that it asks for.
 TEST_F(LayoutManagerTest, ConfigureToplevel) {
   // Create and map a toplevel window.
-  XWindow xid = CreateSimpleWindow(xconn_->GetRootWindow());
+  XWindow xid = CreateSimpleWindow();
   MockXConnection::WindowInfo* info = xconn_->GetWindowInfoOrDie(xid);
 
   XEvent event;
@@ -734,7 +706,7 @@ TEST_F(LayoutManagerTest, ConfigureToplevel) {
 
 TEST_F(LayoutManagerTest, OverviewFocus) {
   // Create and map a toplevel window.
-  XWindow xid = CreateSimpleWindow(xconn_->GetRootWindow());
+  XWindow xid = CreateSimpleWindow();
   MockXConnection::WindowInfo* info = xconn_->GetWindowInfoOrDie(xid);
   XEvent event;
   MockXConnection::InitCreateWindowEvent(&event, *info);
@@ -755,7 +727,7 @@ TEST_F(LayoutManagerTest, OverviewFocus) {
   EXPECT_FALSE(info->all_buttons_grabbed);
 
   // Now create and map a second window.
-  XWindow xid2 = CreateSimpleWindow(xconn_->GetRootWindow());
+  XWindow xid2 = CreateSimpleWindow();
   MockXConnection::WindowInfo* info2 = xconn_->GetWindowInfoOrDie(xid2);
   MockXConnection::InitCreateWindowEvent(&event, *info2);
   EXPECT_TRUE(wm_->HandleEvent(&event));
@@ -813,17 +785,68 @@ TEST_F(LayoutManagerTest, OverviewFocus) {
   EXPECT_TRUE(info2->all_buttons_grabbed);
 }
 
+// Test that already-existing windows get stacked correctly.
+TEST_F(LayoutManagerTest, InitialWindowStacking) {
+  // Reset everything so we can start from scratch.
+  wm_.reset(NULL);
+  xconn_.reset(new MockXConnection);
+  clutter_.reset(new MockClutterInterface);
+  lm_ = NULL;
+
+  // Create and map a toplevel window.
+  XWindow xid = CreateSimpleWindow();
+  MockXConnection::WindowInfo* info = xconn_->GetWindowInfoOrDie(xid);
+  xconn_->MapWindow(xid);
+
+  // Now create a new WindowManager object that will see the toplevel
+  // window as already existing.
+  wm_.reset(new WindowManager(xconn_.get(), clutter_.get()));
+  CHECK(wm_->Init());
+
+  // Get the stacking reference points for toplevel windows and for the
+  // layer beneath them.
+  XWindow toplevel_stacking_xid = FindWithDefault(
+      wm_->stacking_manager()->layer_to_xid_,
+      StackingManager::LAYER_TOPLEVEL_WINDOW,
+      static_cast<XWindow>(None));
+  ASSERT_TRUE(toplevel_stacking_xid != None);
+  ClutterInterface::Actor* toplevel_stacking_actor = FindWithDefault(
+      wm_->stacking_manager()->layer_to_actor_,
+      StackingManager::LAYER_TOPLEVEL_WINDOW,
+      std::tr1::shared_ptr<ClutterInterface::Actor>()).get();
+  ASSERT_TRUE(toplevel_stacking_actor != None);
+
+  XWindow lower_stacking_xid = FindWithDefault(
+      wm_->stacking_manager()->layer_to_xid_,
+      static_cast<StackingManager::Layer>(
+          StackingManager::LAYER_TOPLEVEL_WINDOW + 1),
+      static_cast<XWindow>(None));
+  ASSERT_TRUE(lower_stacking_xid != None);
+  ClutterInterface::Actor* lower_stacking_actor = FindWithDefault(
+      wm_->stacking_manager()->layer_to_actor_,
+      static_cast<StackingManager::Layer>(
+          StackingManager::LAYER_TOPLEVEL_WINDOW + 1),
+      std::tr1::shared_ptr<ClutterInterface::Actor>()).get();
+  ASSERT_TRUE(lower_stacking_actor != None);
+
+  // Check that the toplevel window is stacked between the two reference
+  // points.
+  EXPECT_LT(xconn_->stacked_xids().GetIndex(toplevel_stacking_xid),
+            xconn_->stacked_xids().GetIndex(xid));
+  EXPECT_LT(xconn_->stacked_xids().GetIndex(xid),
+            xconn_->stacked_xids().GetIndex(lower_stacking_xid));
+
+  MockClutterInterface::StageActor* stage = clutter_->GetDefaultStage();
+  Window* win = wm_->GetWindow(xid);
+  ASSERT_TRUE(win != NULL);
+  EXPECT_LT(stage->GetStackingIndex(toplevel_stacking_actor),
+            stage->GetStackingIndex(win->actor()));
+  EXPECT_LT(stage->GetStackingIndex(win->actor()),
+            stage->GetStackingIndex(lower_stacking_actor));
+}
+
 }  // namespace chromeos
 
 int main(int argc, char **argv) {
-  google::ParseCommandLineFlags(&argc, &argv, true);
-  CommandLine::Init(argc, argv);
-  logging::InitLogging(NULL,
-                       FLAGS_logtostderr ?
-                         logging::LOG_ONLY_TO_SYSTEM_DEBUG_LOG :
-                         logging::LOG_NONE,
-                       logging::DONT_LOCK_LOG_FILE,
-                       logging::APPEND_TO_OLD_LOG_FILE);
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
+  return chromeos::InitAndRunTests(&argc, argv, FLAGS_logtostderr);
 }

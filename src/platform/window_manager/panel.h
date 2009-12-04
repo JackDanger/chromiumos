@@ -11,10 +11,13 @@ extern "C" {
 
 #include <vector>
 
+#include <gtest/gtest_prod.h>  // for FRIEND_TEST() macro
+
 #include "base/basictypes.h"
 #include "base/scoped_ptr.h"
 #include "window_manager/clutter_interface.h"
 #include "window_manager/motion_event_coalescer.h"
+#include "window_manager/stacking_manager.h"
 #include "window_manager/window.h"  // for Window::Gravity
 
 typedef ::Window XWindow;
@@ -64,7 +67,8 @@ class Panel {
   int panel_width() const;
   int titlebar_width() const;
 
-  // Fill the passed-in vector with all of the panel's input windows.
+  // Fill the passed-in vector with all of the panel's input windows (in an
+  // arbitrary order).
   void GetInputWindows(std::vector<XWindow>* windows_out);
 
   // Handle events occurring in on one of our input windows.
@@ -87,10 +91,13 @@ class Panel {
   // needed.
   void HandlePanelBarMove();
 
-  // Raise the panel's client and composited windows above other panels.
-  void Raise();
+  // Stack the panel's client and composited windows at the top of the
+  // passed-in layer.
+  void StackAtTopOfLayer(StackingManager::Layer layer);
 
  private:
+  FRIEND_TEST(PanelTest, InputWindows);  // uses '*_input_xid_'
+
   WindowManager* wm();
 
   void Resize(int width, int height,
@@ -118,12 +125,27 @@ class Panel {
   // frequency of their processing.
   MotionEventCoalescer resize_event_coalescer_;
 
+  // Width of the invisible border drawn around a window for use in resizing,
+  // in pixels.
+  static const int kResizeBorderWidth;
+
+  // Size in pixels of the corner parts of the resize border.
+  //
+  //       C              W is kResizeBorderWidth
+  //   +-------+----      C is kResizeCornerSize
+  //   |       | W
+  // C |   +---+----
+  //   |   |
+  //   +---+  titlebar window
+  //   | W |
+  static const int kResizeCornerSize;
+
   // Used to catch clicks for resizing.
-  XWindow top_input_win_;
-  XWindow top_left_input_win_;
-  XWindow top_right_input_win_;
-  XWindow left_input_win_;
-  XWindow right_input_win_;
+  XWindow top_input_xid_;
+  XWindow top_left_input_xid_;
+  XWindow top_right_input_xid_;
+  XWindow left_input_xid_;
+  XWindow right_input_xid_;
 
   // X position of the right edge of where the titlebar wants to be when
   // collapsed.  For collapsed panels that are being dragged, this may be

@@ -5,7 +5,6 @@
 #include <gflags/gflags.h>
 #include <gtest/gtest.h>
 
-#include "base/command_line.h"
 #include "base/logging.h"
 #include "base/scoped_ptr.h"
 #include "window_manager/clutter_interface.h"
@@ -21,66 +20,40 @@ DEFINE_bool(logtostderr, false,
 
 namespace chromeos {
 
-class WindowTest : public ::testing::Test {
- protected:
-  virtual void SetUp() {
-    xconn_.reset(new MockXConnection);
-    clutter_.reset(new MockClutterInterface);
-    wm_.reset(new WindowManager(xconn_.get(), clutter_.get()));
-    CHECK(wm_->Init());
-  }
-  virtual void TearDown() {
-  }
-
-  scoped_ptr<MockXConnection> xconn_;
-  scoped_ptr<MockClutterInterface> clutter_;
-  scoped_ptr<WindowManager> wm_;
-};
+class WindowTest : public BasicWindowManagerTest {};
 
 TEST_F(WindowTest, WindowType) {
-  XWindow xid = xconn_->CreateWindow(
-      xconn_->GetRootWindow(),
-      10, 20,  // x, y
-      30, 40,  // width, height
-      false,   // override redirect
-      false,   // input only
-      0);      // event mask
+  XWindow xid = CreateSimpleWindow();
   Window win(wm_.get(), xid);
 
   // Without a window type, we should have a shadow.
   EXPECT_EQ(WmIpc::WINDOW_TYPE_UNKNOWN, win.type());
-  EXPECT_TRUE(win.shadow() != NULL);
+  EXPECT_TRUE(win.using_shadow());
 
   // Toplevel windows should have shadows too.
   ASSERT_TRUE(wm_->wm_ipc()->SetWindowType(
                   xid, WmIpc::WINDOW_TYPE_CHROME_TOPLEVEL, NULL));
   EXPECT_TRUE(win.FetchAndApplyWindowType(true));  // update_shadow
   EXPECT_EQ(WmIpc::WINDOW_TYPE_CHROME_TOPLEVEL, win.type());
-  EXPECT_TRUE(win.shadow() != NULL);
+  EXPECT_TRUE(win.using_shadow());
 
   // Tab summary windows shouldn't have shadows.
   ASSERT_TRUE(wm_->wm_ipc()->SetWindowType(
                   xid, WmIpc::WINDOW_TYPE_CHROME_TAB_SUMMARY, NULL));
   EXPECT_TRUE(win.FetchAndApplyWindowType(true));  // update_shadow
   EXPECT_EQ(WmIpc::WINDOW_TYPE_CHROME_TAB_SUMMARY, win.type());
-  EXPECT_TRUE(win.shadow() == NULL);
+  EXPECT_FALSE(win.using_shadow());
 
   // Nor should info bubbles.
   ASSERT_TRUE(wm_->wm_ipc()->SetWindowType(
                   xid, WmIpc::WINDOW_TYPE_CHROME_INFO_BUBBLE, NULL));
   EXPECT_TRUE(win.FetchAndApplyWindowType(true));  // update_shadow
   EXPECT_EQ(WmIpc::WINDOW_TYPE_CHROME_INFO_BUBBLE, win.type());
-  EXPECT_TRUE(win.shadow() == NULL);
+  EXPECT_FALSE(win.using_shadow());
 }
 
 TEST_F(WindowTest, ChangeClient) {
-  XWindow xid = xconn_->CreateWindow(
-      xconn_->GetRootWindow(),
-      10, 20,  // x, y
-      30, 40,  // width, height
-      false,   // override redirect
-      false,   // input only
-      0);      // event mask
+  XWindow xid = CreateToplevelWindow(10, 20, 30, 40);
   MockXConnection::WindowInfo* info = xconn_->GetWindowInfoOrDie(xid);
 
   Window window(wm_.get(), xid);
@@ -122,13 +95,7 @@ TEST_F(WindowTest, ChangeClient) {
 }
 
 TEST_F(WindowTest, ChangeComposited) {
-  XWindow xid = xconn_->CreateWindow(
-      xconn_->GetRootWindow(),
-      10, 20,  // x, y
-      30, 40,  // width, height
-      false,   // override redirect
-      false,   // input only
-      0);      // event mask
+  XWindow xid = CreateToplevelWindow(10, 20, 30, 40);
   Window window(wm_.get(), xid);
 
   const MockClutterInterface::Actor* actor =
@@ -163,13 +130,7 @@ TEST_F(WindowTest, ChangeComposited) {
 }
 
 TEST_F(WindowTest, TransientFor) {
-  XWindow xid = xconn_->CreateWindow(
-      xconn_->GetRootWindow(),
-      300, 300,  // x, y
-      60, 40,    // width, height
-      false,     // override redirect
-      false,     // input only
-      0);        // event mask
+  XWindow xid = CreateSimpleWindow();
   MockXConnection::WindowInfo* info = xconn_->GetWindowInfoOrDie(xid);
 
   XWindow owner_xid = 1234;  // arbitrary ID
@@ -184,13 +145,7 @@ TEST_F(WindowTest, TransientFor) {
 }
 
 TEST_F(WindowTest, GetMaxSize) {
-  XWindow xid = xconn_->CreateWindow(
-      xconn_->GetRootWindow(),
-      10, 20,  // x, y
-      30, 40,  // width, height
-      false,   // override redirect
-      false,   // input only
-      0);      // event mask
+  XWindow xid = CreateToplevelWindow(10, 20, 30, 40);
 
   MockXConnection::WindowInfo* info = xconn_->GetWindowInfoOrDie(xid);
   info->size_hints.min_width = 400;
@@ -228,13 +183,7 @@ TEST_F(WindowTest, GetMaxSize) {
 // Test WM_DELETE_WINDOW and WM_TAKE_FOCUS from ICCCM's WM_PROTOCOLS.
 TEST_F(WindowTest, WmProtocols) {
   // Create a window.
-  XWindow xid = xconn_->CreateWindow(
-      xconn_->GetRootWindow(),
-      10, 20,  // x, y
-      30, 40,  // width, height
-      false,   // override redirect
-      false,   // input only
-      0);      // event mask
+  XWindow xid = CreateSimpleWindow();
   MockXConnection::WindowInfo* info = xconn_->GetWindowInfoOrDie(xid);
 
   // Set its WM_PROTOCOLS property to indicate that it supports both
@@ -299,13 +248,7 @@ TEST_F(WindowTest, WmState) {
   // Create a window with its _NET_WM_STATE property set to only
   // _NET_WM_STATE_MODAL and make sure that it's correctly loaded in the
   // constructor.
-  XWindow xid = xconn_->CreateWindow(
-      xconn_->GetRootWindow(),
-      10, 20,  // x, y
-      30, 40,  // width, height
-      false,   // override redirect
-      false,   // input only
-      0);      // event mask
+  XWindow xid = CreateSimpleWindow();
   xconn_->SetIntProperty(xid,
                          wm_state_atom,  // atom
                          XA_ATOM,        // type
@@ -386,13 +329,7 @@ TEST_F(WindowTest, Shape) {
   // Create a shaped window.
   int width = 10;
   int height = 5;
-  XWindow xid = xconn_->CreateWindow(
-      xconn_->GetRootWindow(),
-      10, 20,  // x, y
-      width, height,
-      false,   // override redirect
-      false,   // input only
-      0);      // event mask
+  XWindow xid = CreateToplevelWindow(10, 20, width, height);
   MockXConnection::WindowInfo* info = xconn_->GetWindowInfoOrDie(xid);
   info->shape.reset(new ByteMap(width, height));
   info->shape->Clear(0xff);
@@ -401,9 +338,9 @@ TEST_F(WindowTest, Shape) {
   Window win(wm_.get(), xid);
   EXPECT_TRUE(info->shape_events_selected);
   EXPECT_TRUE(win.shaped());
-  EXPECT_TRUE(win.shadow() == NULL);
+  EXPECT_FALSE(win.using_shadow());
 
-  // Set the opacity for the window's shadow (even though it doesn't have a
+  // Set the opacity for the window's shadow (even though it's not using a
   // shadow right now).
   double shadow_opacity = 0.5;
   win.SetShadowOpacity(shadow_opacity, 0);  // anim_ms
@@ -423,7 +360,7 @@ TEST_F(WindowTest, Shape) {
   info->shape->SetRectangle(width - 3, height - 3, 3, 3, 0x0);
   win.FetchAndApplyShape(true);  // update_shadow
   EXPECT_TRUE(win.shaped());
-  EXPECT_TRUE(win.shadow() == NULL);
+  EXPECT_FALSE(win.using_shadow());
   ASSERT_TRUE(mock_actor->alpha_mask_bytes() != NULL);
   EXPECT_PRED_FORMAT3(BytesAreEqual,
                       info->shape->bytes(),
@@ -438,6 +375,7 @@ TEST_F(WindowTest, Shape) {
   EXPECT_TRUE(mock_actor->alpha_mask_bytes() == NULL);
 
   // The newly-created shadow should have the opacity that we set earlier.
+  EXPECT_TRUE(win.using_shadow());
   ASSERT_TRUE(win.shadow() != NULL);
   EXPECT_EQ(shadow_opacity, win.shadow()->opacity());
 }
@@ -445,14 +383,5 @@ TEST_F(WindowTest, Shape) {
 }  // namespace chromeos
 
 int main(int argc, char **argv) {
-  google::ParseCommandLineFlags(&argc, &argv, true);
-  CommandLine::Init(argc, argv);
-  logging::InitLogging(NULL,
-                       FLAGS_logtostderr ?
-                         logging::LOG_ONLY_TO_SYSTEM_DEBUG_LOG :
-                         logging::LOG_NONE,
-                       logging::DONT_LOCK_LOG_FILE,
-                       logging::APPEND_TO_OLD_LOG_FILE);
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
+  return chromeos::InitAndRunTests(&argc, argv, FLAGS_logtostderr);
 }

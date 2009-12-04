@@ -33,6 +33,7 @@ class KeyBindings;
 class LayoutManager;
 class MetricsReporter;
 class PanelBar;
+class StackingManager;
 class Window;
 class WmIpc;
 class XConnection;
@@ -45,34 +46,12 @@ class WindowManager {
 
   XConnection* xconn() { return xconn_; }
   ClutterInterface* clutter() { return clutter_; }
+  StackingManager* stacking_manager() { return stacking_manager_.get(); }
 
   XWindow root() const { return root_; }
 
   ClutterInterface::StageActor* stage() { return stage_; }
   ClutterInterface::Actor* background() { return background_.get(); }
-  ClutterInterface::Actor* overview_window_depth() {
-    return overview_window_depth_.get();
-  }
-  ClutterInterface::Actor* active_window_depth() {
-    return active_window_depth_.get();
-  }
-  ClutterInterface::Actor* collapsed_panel_depth() {
-    return collapsed_panel_depth_.get();
-  }
-  ClutterInterface::Actor* panel_bar_depth() {
-    return panel_bar_depth_.get();
-  }
-  ClutterInterface::Actor* expanded_panel_depth() {
-    return expanded_panel_depth_.get();
-  }
-  ClutterInterface::Actor* floating_tab_depth() {
-    return floating_tab_depth_.get();
-  }
-  ClutterInterface::Actor* overlay_depth() {
-    return overlay_depth_.get();
-  }
-
-  XWindow client_stacking_win() const { return client_stacking_win_; }
 
   int width() const { return width_; }
   int height() const { return height_; }
@@ -138,7 +117,9 @@ class WindowManager {
   static const int kPanelBarHeight;
 
   friend class LayoutManagerTest;         // uses 'layout_manager_'
+  friend class PanelBarTest;              // uses 'panel_bar_'
   FRIEND_TEST(LayoutManagerTest, Basic);  // uses TrackWindow()
+  FRIEND_TEST(PanelTest, InputWindows);   // uses 'panel_bar_'
   FRIEND_TEST(WindowTest, TransientFor);  // uses TrackWindow()
   FRIEND_TEST(WindowManagerTest, RegisterExistence);
   FRIEND_TEST(WindowManagerTest, EventConsumer);
@@ -269,39 +250,7 @@ class WindowManager {
   // XComposite overlay window.
   XWindow overlay_window_;
 
-  // Stacking reference point: overview windows are stacked above and their
-  // shadows are stacked below.
-  scoped_ptr<ClutterInterface::Actor> overview_window_depth_;
-
-  // Stacking reference point: the active window is stacked above and its
-  // shadow is stacked below.
-  scoped_ptr<ClutterInterface::Actor> active_window_depth_;
-
-  // Stacking reference point: expanded panels are stacked below and their
-  // shadows are stacked directly beneath them.
-  scoped_ptr<ClutterInterface::Actor> expanded_panel_depth_;
-
-  // Stacking reference point: the panel bar is stacked above and its
-  // shadow is stacked below.
-  scoped_ptr<ClutterInterface::Actor> panel_bar_depth_;
-
-  // Stacking reference point: collapsed panels are stacked below and their
-  // shadows are stacked directly beneath them.
-  scoped_ptr<ClutterInterface::Actor> collapsed_panel_depth_;
-
-  // Stacking reference point: floating tabs are stacked above and their
-  // shadows are stacked below.
-  scoped_ptr<ClutterInterface::Actor> floating_tab_depth_;
-
-  // Stacking reference point: overlay images and debugging information are
-  // stacked below.
-  scoped_ptr<ClutterInterface::Actor> overlay_depth_;
-
-  // Offscreen window used to stack client windows (as opposed to the above
-  // Clutter references points).  New client windows get stacked directly
-  // beneath this window initially; panels get raised above it by PanelBar.
-  // TODO: This will need to be replaced by something more sophisticated.
-  XWindow client_stacking_win_;
+  scoped_ptr<StackingManager> stacking_manager_;
 
   // Windows that are being tracked.
   std::map<XWindow, std::tr1::shared_ptr<Window> > client_windows_;

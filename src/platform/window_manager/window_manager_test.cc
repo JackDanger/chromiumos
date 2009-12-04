@@ -8,7 +8,6 @@
 #include <gflags/gflags.h>
 #include <gtest/gtest.h>
 
-#include "base/command_line.h"
 #include "base/scoped_ptr.h"
 #include "base/logging.h"
 #include "window_manager/clutter_interface.h"
@@ -16,6 +15,7 @@
 #include "window_manager/layout_manager.h"
 #include "window_manager/mock_x_connection.h"
 #include "window_manager/panel_bar.h"
+#include "window_manager/test_lib.h"
 #include "window_manager/util.h"
 #include "window_manager/window.h"
 #include "window_manager/window_manager.h"
@@ -25,57 +25,7 @@ DEFINE_bool(logtostderr, false,
 
 namespace chromeos {
 
-class WindowManagerTest : public ::testing::Test {
- protected:
-  virtual void SetUp() {
-    xconn_.reset(new MockXConnection);
-    clutter_.reset(new MockClutterInterface);
-    wm_.reset(new WindowManager(xconn_.get(), clutter_.get()));
-    CHECK(wm_->Init());
-  }
-
-  // Simple method that creates a toplevel client window and returns its ID.
-  XWindow CreateSimpleWindow(XWindow parent) {
-    return xconn_->CreateWindow(
-        parent,
-        10, 20,  // x, y
-        30, 40,  // width, height
-        false,   // override redirect
-        false,   // input only
-        0);      // event mask
-  }
-
-  // Fetch an int array property on a window and check that it contains the
-  // expected values.  'num_values' is the number of expected values passed
-  // as varargs.
-  void TestIntArrayProperty(XWindow xid, XAtom atom, int num_values, ...) {
-    std::vector<int> expected;
-
-    va_list args;
-    va_start(args, num_values);
-    CHECK_GE(num_values, 0);
-    for (; num_values; num_values--) {
-      int arg = va_arg(args, int);
-      expected.push_back(arg);
-    }
-    va_end(args);
-
-    std::vector<int> actual;
-    int exists = xconn_->GetIntArrayProperty(xid, atom, &actual);
-    if (expected.empty()) {
-      EXPECT_FALSE(exists);
-    } else {
-      EXPECT_TRUE(exists);
-      ASSERT_EQ(expected.size(), actual.size());
-      for (size_t i = 0; i < actual.size(); ++i)
-        EXPECT_EQ(expected[i], actual[i]);
-    }
-  }
-
-  scoped_ptr<MockXConnection> xconn_;
-  scoped_ptr<MockClutterInterface> clutter_;
-  scoped_ptr<WindowManager> wm_;
-};
+class WindowManagerTest : public BasicWindowManagerTest {};
 
 class TestEventConsumer : public EventConsumer {
  public:
@@ -150,7 +100,7 @@ TEST_F(WindowManagerTest, ExistingWindows) {
   // event is sent.
   wm_.reset(NULL);
   xconn_.reset(new MockXConnection);
-  XWindow xid = CreateSimpleWindow(xconn_->GetRootWindow());
+  XWindow xid = CreateSimpleWindow();
   MockXConnection::WindowInfo* info = xconn_->GetWindowInfoOrDie(xid);
   xconn_->MapWindow(xid);
 
@@ -167,7 +117,7 @@ TEST_F(WindowManagerTest, ExistingWindows) {
   // MapRequest (and subsequent MapNotify).
   wm_.reset(NULL);
   xconn_.reset(new MockXConnection);
-  xid = CreateSimpleWindow(xconn_->GetRootWindow());
+  xid = CreateSimpleWindow();
   info = xconn_->GetWindowInfoOrDie(xid);
 
   wm_.reset(new WindowManager(xconn_.get(), clutter_.get()));
@@ -196,7 +146,7 @@ TEST_F(WindowManagerTest, ExistingWindows) {
   // CreateNotify event about it.
   wm_.reset(NULL);
   xconn_.reset(new MockXConnection);
-  xid = CreateSimpleWindow(xconn_->GetRootWindow());
+  xid = CreateSimpleWindow();
   info = xconn_->GetWindowInfoOrDie(xid);
 
   wm_.reset(new WindowManager(xconn_.get(), clutter_.get()));
@@ -231,7 +181,7 @@ TEST_F(WindowManagerTest, ExistingWindows) {
   wm_.reset(new WindowManager(xconn_.get(), clutter_.get()));
   CHECK(wm_->Init());
 
-  xid = CreateSimpleWindow(xconn_->GetRootWindow());
+  xid = CreateSimpleWindow();
   info = xconn_->GetWindowInfoOrDie(xid);
 
   MockXConnection::InitCreateWindowEvent(&event, *info);
@@ -375,7 +325,7 @@ TEST_F(WindowManagerTest, EventConsumer) {
 }
 
 TEST_F(WindowManagerTest, Reparent) {
-  XWindow xid = CreateSimpleWindow(xconn_->GetRootWindow());
+  XWindow xid = CreateSimpleWindow();
   MockXConnection::WindowInfo* info = xconn_->GetWindowInfoOrDie(xid);
   ASSERT_FALSE(info->redirected);
 
@@ -403,7 +353,7 @@ TEST_F(WindowManagerTest, Reparent) {
 // Test that we ignore FocusIn and FocusOut events that occur as the result
 // of a keyboard grab or ungrab, but honor other ones.
 TEST_F(WindowManagerTest, IgnoreGrabFocusEvents) {
-  XWindow xid = CreateSimpleWindow(xconn_->GetRootWindow());
+  XWindow xid = CreateSimpleWindow();
   MockXConnection::WindowInfo* info = xconn_->GetWindowInfoOrDie(xid);
 
   XEvent event;
@@ -460,7 +410,7 @@ TEST_F(WindowManagerTest, KeyEventSnooping) {
   XEvent event;
 
   // Create a toplevel window...
-  XWindow xid = CreateSimpleWindow(xconn_->GetRootWindow());
+  XWindow xid = CreateSimpleWindow();
   MockXConnection::WindowInfo* info = xconn_->GetWindowInfoOrDie(xid);
   MockXConnection::InitCreateWindowEvent(&event, *info);
   EXPECT_TRUE(wm_->HandleEvent(&event));
@@ -468,7 +418,7 @@ TEST_F(WindowManagerTest, KeyEventSnooping) {
   EXPECT_TRUE(wm_->HandleEvent(&event));
 
   // ... and a second one.
-  XWindow xid2 = CreateSimpleWindow(xconn_->GetRootWindow());
+  XWindow xid2 = CreateSimpleWindow();
   MockXConnection::WindowInfo* info2 = xconn_->GetWindowInfoOrDie(xid2);
   MockXConnection::InitCreateWindowEvent(&event, *info2);
   EXPECT_TRUE(wm_->HandleEvent(&event));
@@ -477,7 +427,8 @@ TEST_F(WindowManagerTest, KeyEventSnooping) {
 
   // Now create a window that's a child of the first window.  The window
   // manager doesn't expect to receive events for it yet.
-  XWindow child_xid = CreateSimpleWindow(xid);
+  XWindow child_xid = xconn_->CreateWindow(
+      xid, 0, 0, 640, 480, false, false, 0);
   MockXConnection::WindowInfo* child_info =
       xconn_->GetWindowInfoOrDie(child_xid);
 
@@ -511,7 +462,8 @@ TEST_F(WindowManagerTest, KeyEventSnooping) {
   EXPECT_TRUE(child_info->event_mask & SubstructureNotifyMask);
 
   // Create a child of the existing child.
-  XWindow grandchild_xid = CreateSimpleWindow(child_xid);
+  XWindow grandchild_xid = xconn_->CreateWindow(
+      child_xid, 0, 0, 640, 480, false, false, 0);
   MockXConnection::WindowInfo* grandchild_info =
       xconn_->GetWindowInfoOrDie(grandchild_xid);
   MockXConnection::InitCreateWindowEvent(&event, *grandchild_info);
@@ -619,7 +571,7 @@ TEST_F(WindowManagerTest, RestackOverrideRedirectWindows) {
 // window's size, and that we ignore fields that are unset in its
 // 'value_mask' field.
 TEST_F(WindowManagerTest, ConfigureRequestResize) {
-  XWindow xid = CreateSimpleWindow(xconn_->GetRootWindow());
+  XWindow xid = CreateSimpleWindow();
   MockXConnection::WindowInfo* info = xconn_->GetWindowInfoOrDie(xid);
   const int orig_width = info->width;
   const int orig_height = info->height;
@@ -716,7 +668,7 @@ TEST_F(WindowManagerTest, ClientListProperties) {
   TestIntArrayProperty(root_xid, stacking_atom, 0);
 
   // Create and map a regular window.
-  XWindow xid = CreateSimpleWindow(root_xid);
+  XWindow xid = CreateSimpleWindow();
   MockXConnection::WindowInfo* info = xconn_->GetWindowInfoOrDie(xid);
   XEvent event;
   MockXConnection::InitCreateWindowEvent(&event, *info);
@@ -753,7 +705,7 @@ TEST_F(WindowManagerTest, ClientListProperties) {
   TestIntArrayProperty(root_xid, stacking_atom, 1, xid);
 
   // Create and map a second regular window.
-  XWindow xid2 = CreateSimpleWindow(root_xid);
+  XWindow xid2 = CreateSimpleWindow();
   MockXConnection::WindowInfo* info2 = xconn_->GetWindowInfoOrDie(xid2);
   MockXConnection::InitCreateWindowEvent(&event, *info2);
   EXPECT_TRUE(wm_->HandleEvent(&event));
@@ -818,14 +770,5 @@ TEST_F(WindowManagerTest, ClientListProperties) {
 }  // namespace chromeos
 
 int main(int argc, char **argv) {
-  google::ParseCommandLineFlags(&argc, &argv, true);
-  CommandLine::Init(argc, argv);
-  logging::InitLogging(NULL,
-                       FLAGS_logtostderr ?
-                         logging::LOG_ONLY_TO_SYSTEM_DEBUG_LOG :
-                         logging::LOG_NONE,
-                       logging::DONT_LOCK_LOG_FILE,
-                       logging::APPEND_TO_OLD_LOG_FILE);
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
+  return chromeos::InitAndRunTests(&argc, argv, FLAGS_logtostderr);
 }

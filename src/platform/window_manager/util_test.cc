@@ -5,11 +5,10 @@
 #include <gflags/gflags.h>
 #include <gtest/gtest.h>
 
-#include "base/command_line.h"
 #include "base/logging.h"
 #include "chromeos/string.h"
-#include "window_manager/util.h"
 #include "window_manager/test_lib.h"
+#include "window_manager/util.h"
 
 DEFINE_bool(logtostderr, false,
             "Print debugging messages to stderr (suppressed otherwise)");
@@ -145,14 +144,5 @@ TEST_F(UtilTest, ByteMap) {
 }  // namespace chromeos
 
 int main(int argc, char **argv) {
-  google::ParseCommandLineFlags(&argc, &argv, true);
-  CommandLine::Init(argc, argv);
-  logging::InitLogging(NULL,
-                       FLAGS_logtostderr ?
-                         logging::LOG_ONLY_TO_SYSTEM_DEBUG_LOG :
-                         logging::LOG_NONE,
-                       logging::DONT_LOCK_LOG_FILE,
-                       logging::APPEND_TO_OLD_LOG_FILE);
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
+  return chromeos::InitAndRunTests(&argc, argv, FLAGS_logtostderr);
 }

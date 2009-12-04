@@ -119,6 +119,10 @@ class PanelBar : public EventConsumer {
     return expanded_panels_.size() + collapsed_panels_.size();
   }
 
+  // Do some initial setup for windows that we're going to manage.
+  // This includes stacking them and moving them offscreen.
+  void DoInitialSetupForWindow(Window* win);
+
   // Add a panel to the bar.
   void AddPanel(Window* panel_win, Window* titlebar_win, bool expanded);
 
@@ -237,6 +241,9 @@ class PanelBar : public EventConsumer {
 
   // Is the panel bar visible?
   bool is_visible_;
+
+  // Have we already seen a MapRequest event?
+  bool saw_map_request_;
 
   DISALLOW_COPY_AND_ASSIGN(PanelBar);
 };

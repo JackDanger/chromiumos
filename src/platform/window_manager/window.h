@@ -54,6 +54,7 @@ class Window {
   const std::string& xid_str() const { return xid_str_; }
   ClutterInterface::Actor* actor() { return actor_.get(); }
   const Shadow* shadow() const { return shadow_.get(); }
+  bool using_shadow() const { return using_shadow_; }
   XWindow transient_for_xid() const { return transient_for_xid_; }
   bool override_redirect() const { return override_redirect_; }
   WmIpc::WindowType type() const { return type_; }
@@ -207,19 +208,23 @@ class Window {
   // shadow's opacity to the composited window's.
   void SetShadowOpacity(double opacity, int anim_ms);
 
-  // Stack the window directly above 'actor' and its shadow directly below
-  // 'shadow_actor' if supplied or below the window otherwise.  If 'actor'
-  // is NULL, the window's stacking isn't changed (but its shadow's still
-  // is).
+  // Stack the window directly above 'actor' and its shadow directly above
+  // or below 'shadow_actor' if supplied or below the window otherwise.  If
+  // 'actor' is NULL, the window's stacking isn't changed (but its shadow's
+  // still is).  If 'shadow_actor' is supplied, 'stack_above_shadow_actor'
+  // determines whether the shadow will be stacked above or below it.
   void StackCompositedAbove(ClutterInterface::Actor* actor,
-                            ClutterInterface::Actor* shadow_actor);
+                            ClutterInterface::Actor* shadow_actor,
+                            bool stack_above_shadow_actor);
 
-  // Stack the window directly below 'actor' and its shadow directly below
-  // 'shadow_actor' if supplied or below the window otherwise.  If 'actor'
-  // is NULL, the window's stacking isn't changed (but its shadow's still
-  // is).
+  // Stack the window directly below 'actor' and its shadow directly above
+  // or below 'shadow_actor' if supplied or below the window otherwise.  If
+  // 'actor' is NULL, the window's stacking isn't changed (but its shadow's
+  // still is).  If 'shadow_actor' is supplied, 'stack_above_shadow_actor'
+  // determines whether the shadow will be stacked above or below it.
   void StackCompositedBelow(ClutterInterface::Actor* actor,
-                            ClutterInterface::Actor* shadow_actor);
+                            ClutterInterface::Actor* shadow_actor,
+                            bool stack_above_shadow_actor);
 
  private:
   // Hide or show the window's shadow if necessary.
@@ -288,6 +293,9 @@ class Window {
   double composited_scale_x_;
   double composited_scale_y_;
   double composited_opacity_;
+
+  // Are we currently displaying a drop shadow beneath this window?
+  bool using_shadow_;
 
   // Current shadow opacity.  Usually just 'client_opacity_' *
   // 'composited_opacity_', but can be overrided temporarily via

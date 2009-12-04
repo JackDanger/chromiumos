@@ -158,6 +158,11 @@ void RealClutterInterface::Actor::Lower(ClutterInterface::Actor* other) {
   clutter_actor_lower(clutter_actor_, cast_other->clutter_actor_);
 }
 
+void RealClutterInterface::Actor::RaiseToTop() {
+  CHECK(clutter_actor_);
+  clutter_actor_raise_top(clutter_actor_);
+}
+
 void RealClutterInterface::Actor::LowerToBottom() {
   CHECK(clutter_actor_);
   clutter_actor_lower_bottom(clutter_actor_);
@@ -472,6 +477,13 @@ void MockClutterInterface::Actor::Lower(ClutterInterface::Actor* other) {
   CHECK(parent_->stacked_children()->Contains(cast_other));
   parent_->stacked_children()->Remove(this);
   parent_->stacked_children()->AddBelow(this, cast_other);
+}
+
+void MockClutterInterface::Actor::RaiseToTop() {
+  CHECK(parent_);
+  CHECK(parent_->stacked_children()->Contains(this));
+  parent_->stacked_children()->Remove(this);
+  parent_->stacked_children()->AddOnTop(this);
 }
 
 void MockClutterInterface::Actor::LowerToBottom() {

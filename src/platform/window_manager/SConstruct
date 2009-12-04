@@ -58,9 +58,6 @@ base_env['LINKFLAGS'] = '-lgflags -lprotobuf'
 if os.environ.has_key('PKG_CONFIG_PATH'):
   base_env['ENV']['PKG_CONFIG_PATH'] = os.environ['PKG_CONFIG_PATH']
 
-# Add a builder for .proto files
-base_env['BUILDERS']['ProtocolBuffer'] = proto_builder
-
 # Unless we disable strict aliasing, we get warnings about some of the
 # program's command line flags processing code that look like:
 #   'dereferencing type-punned pointer will break strict-aliasing rules'
@@ -71,18 +68,37 @@ base_env.Append(CCFLAGS=' -fno-strict-aliasing')
 base_env['CPPPATH'] = ['..',
                        '../../third_party/chrome/files',
                        '../../common']
-
 base_env['LIBPATH'] = ['../../third_party/chrome',
                        '../../common']
 
 base_env['LIBS'] = ['base', 'chromeos', 'rt']
 
-base_env.ParseConfig('pkg-config --cflags --libs x11 libpcrecpp ' +
-                     'gdk-2.0')
+base_env.ParseConfig('pkg-config --cflags --libs x11')
 
-base_env.ProtocolBuffer('system_metrics.pb.cc', 'system_metrics.proto');
+# Fork off a new environment, add Cairo to it, and build the screenshot
+# program.
+screenshot_env = base_env.Clone()
+screenshot_env.ParseConfig('pkg-config --cflags --libs cairo')
+screenshot_env.Program('screenshot', 'screenshot.cc')
 
-base_env.Program('screenshot', 'screenshot.cc')
+# Start a new environment for the window manager.
+wm_env = base_env.Clone()
+
+# Add a builder for .proto files
+wm_env['BUILDERS']['ProtocolBuffer'] = proto_builder
+
+wm_env.ParseConfig('pkg-config --cflags --libs gdk-2.0 xcomposite libpcrecpp')
+
+if os.system('pkg-config clutter-1.0') == 0:
+  wm_env.ParseConfig('pkg-config --cflags --libs clutter-1.0')
+else:
+  wm_env.ParseConfig('pkg-config --cflags --libs clutter-0.9')
+# Make us still produce a usable binary (for now, at least) on Jaunty
+# systems that are stuck at Clutter 0.9.2.
+if os.system('pkg-config --exact-version=0.9.2 clutter-0.9') == 0:
+  wm_env.Append(CCFLAGS='-DCLUTTER_0_9_2')
+
+wm_env.ProtocolBuffer('system_metrics.pb.cc', 'system_metrics.proto');
 
 # Define an IPC library that will be used both by the WM and by client apps.
 srcs = Split('''\
@@ -93,32 +109,7 @@ srcs = Split('''\
   wm_ipc.cc
   x_connection.cc
 ''')
-libwm_ipc = base_env.Library('wm_ipc', srcs)
-
-# Define a library to be used by tests -- we build it in the same
-# environment as libwm_ipc so we can re-list util.cc and x_connection.c to
-# avoid linking errors.  Surely there's a better way to do this.
-srcs = Split('''\
-  mock_x_connection.cc
-  test_lib.cc
-  util.cc
-  x_connection.cc
-''')
-libtest = base_env.Library('test', Split(srcs))
-
-# Now create a new environment and add things needed just by the window
-# manager.
-wm_env = base_env.Clone()
-wm_env.ParseConfig('pkg-config --cflags --libs xcomposite gdk-2.0')
-if os.system('pkg-config clutter-1.0') == 0:
-  wm_env.ParseConfig('pkg-config --cflags --libs clutter-1.0')
-else:
-  wm_env.ParseConfig('pkg-config --cflags --libs clutter-0.9')
-
-# Make us still produce a usable binary (for now, at least) on Jaunty
-# systems that are stuck at Clutter 0.9.2.
-if os.system('pkg-config --exact-version=0.9.2 clutter-0.9') == 0:
-  wm_env.Append(CCFLAGS='-DCLUTTER_0_9_2')
+libwm_ipc = wm_env.Library('wm_ipc', srcs)
 
 # Create a library with just the additional files needed by the window
 # manager.  This is a bit ugly; we can't include any source files that are
@@ -134,32 +125,37 @@ srcs = Split('''\
   panel.cc
   panel_bar.cc
   shadow.cc
+  stacking_manager.cc
   window.cc
   window_manager.cc
 ''')
 libwm_core = wm_env.Library('wm_core', srcs)
 
-wm_env['LIBS'] += [libwm_core, libwm_ipc]
-wm_env.Program('wm', 'main.cc')
-# This is weird.  We get linking errors about StringPrintf() unless
-# libbase.a appears at the end of the command line, so add it again here.
-wm_env.Append(LIBS=File('../../third_party/chrome/libbase.a'))
+# Define a library to be used by tests.
+srcs = Split('''\
+  mock_x_connection.cc
+  test_lib.cc
+''')
+libtest = wm_env.Library('test', Split(srcs))
 
-test_clutter = wm_env.Clone()
-test_clutter.ParseConfig('pkg-config --cflags --libs gtk+-2.0')
-test_clutter.Program('test_clutter', 'test_clutter.cc')
+wm_env['LIBS'] += [libwm_core, libwm_ipc]
+
+wm_env.Program('wm', 'main.cc')
 
 test_env = wm_env.Clone()
 test_env['LINKFLAGS'].append('-lgtest')
-test_env['LIBS'] += [libtest]
+# libtest needs to be listed first since it depends on wm_core and wm_ipc.
+test_env['LIBS'].insert(0, libtest)
 test_env.Program('key_bindings_test', 'key_bindings_test.cc')
 test_env.Program('layout_manager_test', 'layout_manager_test.cc')
+test_env.Program('panel_bar_test', 'panel_bar_test.cc')
+test_env.Program('panel_test', 'panel_test.cc')
 test_env.Program('shadow_test', 'shadow_test.cc')
-test_env.Program('window_test', 'window_test.cc')
-test_env.Program('window_manager_test', 'window_manager_test.cc')
+test_env.Program('stacking_manager_test', 'stacking_manager_test.cc')
 test_env.Program('util_test', 'util_test.cc')
+test_env.Program('window_manager_test', 'window_manager_test.cc')
+test_env.Program('window_test', 'window_test.cc')
 
-mock_chrome_env = base_env.Clone()
-mock_chrome_env['LIBS'] += libwm_ipc
+mock_chrome_env = wm_env.Clone()
 mock_chrome_env.ParseConfig('pkg-config --cflags --libs gtkmm-2.4')
 mock_chrome_env.Program('mock_chrome', 'mock_chrome.cc')

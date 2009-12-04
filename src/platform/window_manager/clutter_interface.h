@@ -62,9 +62,10 @@ class ClutterInterface {
     virtual void SetClip(int x, int y, int width, int height) = 0;
 
     // Move an actor directly above or below another actor in the stacking
-    // order.
+    // order, or to the top or bottom of all of its siblings.
     virtual void Raise(Actor* other) = 0;
     virtual void Lower(Actor* other) = 0;
+    virtual void RaiseToTop() = 0;
     virtual void LowerToBottom() = 0;
 
    private:
@@ -183,6 +184,7 @@ class RealClutterInterface : public ClutterInterface {
     void SetClip(int x, int y, int width, int height);
     void Raise(ClutterInterface::Actor* other);
     void Lower(ClutterInterface::Actor* other);
+    void RaiseToTop();
     void LowerToBottom();
     // End ClutterInterface::Actor methods
 
@@ -334,6 +336,7 @@ class MockClutterInterface : public ClutterInterface {
     void SetClip(int x, int y, int width, int height) {}
     void Raise(ClutterInterface::Actor* other);
     void Lower(ClutterInterface::Actor* other);
+    void RaiseToTop();
     void LowerToBottom();
     // End ClutterInterface::Actor methods
 

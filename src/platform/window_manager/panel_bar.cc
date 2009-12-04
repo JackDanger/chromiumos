@@ -12,6 +12,7 @@
 #include "window_manager/clutter_interface.h"
 #include "window_manager/panel.h"
 #include "window_manager/shadow.h"
+#include "window_manager/stacking_manager.h"
 #include "window_manager/window.h"
 #include "window_manager/window_manager.h"
 #include "window_manager/x_connection.h"
@@ -49,43 +50,59 @@ PanelBar::PanelBar(WindowManager* wm, int x, int y, int width, int height)
       anchor_panel_(NULL),
       anchor_actor_(wm_->clutter()->CreateImage(FLAGS_panel_anchor_image)),
       desired_panel_to_focus_(NULL),
-      is_visible_(false) {
+      is_visible_(false),
+      saw_map_request_(false) {
+  bar_actor_->SetVisibility(false);
   wm_->stage()->AddActor(bar_actor_.get());
+  wm_->stacking_manager()->StackActorAtTopOfLayer(
+      bar_actor_.get(), StackingManager::LAYER_PANEL_BAR);
   bar_actor_->SetName("panel bar");
   bar_actor_->SetSize(width_, height_);
   bar_actor_->Move(x_, y_ + height, 0);
-  bar_actor_->Raise(wm_->panel_bar_depth());
+  bar_actor_->SetVisibility(true);
 
-  wm_->stage()->AddActor(bar_shadow_->group());
   bar_shadow_->group()->SetName("shadow group for panel bar");
-  bar_shadow_->group()->Lower(wm_->panel_bar_depth());
   bar_shadow_->SetOpacity(0, 0);
+  wm_->stage()->AddActor(bar_shadow_->group());
+  wm_->stacking_manager()->StackActorAtTopOfLayer(
+      bar_shadow_->group(), StackingManager::LAYER_PANEL_BAR);
   bar_shadow_->Move(x_, y_ + height, 0);
   bar_shadow_->Resize(width_, height_, 0);
   bar_shadow_->Show();
 
-  wm_->stage()->AddActor(anchor_actor_.get());
   anchor_actor_->SetName("panel anchor");
   anchor_actor_->SetOpacity(0, 0);
-  anchor_actor_->Raise(bar_actor_.get());
+  wm_->stage()->AddActor(anchor_actor_.get());
+  wm_->stacking_manager()->StackActorAtTopOfLayer(
+      anchor_actor_.get(), StackingManager::LAYER_PANEL_BAR);
 }
 
 PanelBar::~PanelBar() {
 }
 
 bool PanelBar::HandleWindowMapRequest(Window* win) {
+  saw_map_request_ = true;
+
   if (win->type() != WmIpc::WINDOW_TYPE_CHROME_PANEL &&
       win->type() != WmIpc::WINDOW_TYPE_CHROME_PANEL_TITLEBAR)
     return false;
 
-  win->MoveClientOffscreen();
-  win->StackClientBelow(wm_->client_stacking_win());
+  DoInitialSetupForWindow(win);
   win->MapClient();
   return true;
 }
 
 void PanelBar::HandleWindowMap(Window* win) {
   CHECK(win);
+
+  if (win->type() != WmIpc::WINDOW_TYPE_CHROME_PANEL &&
+      win->type() != WmIpc::WINDOW_TYPE_CHROME_PANEL_TITLEBAR)
+    return;
+
+  // Handle initial setup for existing windows for which we never saw a map
+  // request event.
+  if (!saw_map_request_)
+    DoInitialSetupForWindow(win);
 
   switch (win->type()) {
     case WmIpc::WINDOW_TYPE_CHROME_PANEL_TITLEBAR:
@@ -114,7 +131,7 @@ void PanelBar::HandleWindowMap(Window* win) {
       break;
     }
     default:
-      return;
+      NOTREACHED() << "Unhandled window type " << win->type();
   }
 
   if (num_panels() > 0 && !is_visible_) {
@@ -421,8 +438,10 @@ void PanelBar::HandlePanelDragComplete(Window* win) {
   }
 
   if (dragged_panel_->is_expanded()) {
+    dragged_panel_->StackAtTopOfLayer(StackingManager::LAYER_EXPANDED_PANEL);
     RepositionExpandedPanels(dragged_panel_);
   } else {
+    dragged_panel_->StackAtTopOfLayer(StackingManager::LAYER_COLLAPSED_PANEL);
     // Snap collapsed dragged panels to their correct position.
     dragged_panel_->Move(dragged_panel_->snapped_right(), kAnimMs);
   }
@@ -492,6 +511,12 @@ bool PanelBar::PanelTitlebarContainsPoint::operator()(
 }
 
 
+void PanelBar::DoInitialSetupForWindow(Window* win) {
+  wm_->stacking_manager()->StackWindowAtTopOfLayer(
+      win, StackingManager::LAYER_COLLAPSED_PANEL);
+  win->MoveClientOffscreen();
+}
+
 void PanelBar::AddPanel(
     Window* panel_win, Window* titlebar_win, bool expanded) {
   CHECK(panel_win);
@@ -515,9 +540,11 @@ void PanelBar::AddPanel(
   }
 
   if (!expanded) {
+    panel->StackAtTopOfLayer(StackingManager::LAYER_COLLAPSED_PANEL);
     collapsed_panels_.insert(collapsed_panels_.begin(), panel);
     collapsed_panel_width_ += panel->titlebar_width() + kBarPadding;
   } else {
+    panel->StackAtTopOfLayer(StackingManager::LAYER_EXPANDED_PANEL);
     collapsed_panels_.push_back(panel);
     ExpandPanel(panel.get(), false);  // create_anchor
   }
@@ -590,7 +617,7 @@ void PanelBar::FocusPanel(Panel* panel, bool remove_pointer_grab) {
   }
   wm_->SetActiveWindowProperty(panel->panel_win()->xid());
   panel->panel_win()->TakeFocus(wm_->GetCurrentTimeFromServer());
-  panel->Raise();
+  panel->StackAtTopOfLayer(StackingManager::LAYER_EXPANDED_PANEL);
   desired_panel_to_focus_ = panel;
 }
 
@@ -643,33 +670,13 @@ void PanelBar::StartDrag(Panel* panel) {
   VLOG(2) << "Starting drag of panel " << panel->xid_str();
   dragged_panel_ = panel;
 
-  if (panel->is_expanded()) {
-    // Move the panel to the top of the stacking order.  Stack its titlebar
-    // above it, but stack the titlebar's shadow below (so it doesn't cast
-    // a shadow on it).
-    panel->panel_win()->StackCompositedBelow(
-        wm_->expanded_panel_depth(), NULL);
-    panel->titlebar_win()->StackCompositedAbove(
-        panel->panel_win()->actor(), panel->panel_win()->actor());
+  panel->StackAtTopOfLayer(
+      panel->is_expanded() ?
+      StackingManager::LAYER_DRAGGED_EXPANDED_PANEL :
+      StackingManager::LAYER_DRAGGED_COLLAPSED_PANEL);
 
-    // Fix up the stacking of all other windows.
-    for (Panels::iterator it = expanded_panels_.begin();
-         it != expanded_panels_.end(); ++it) {
-      Panel* other_panel = it->get();
-      if (other_panel == panel) {
-        continue;
-      }
-      other_panel->titlebar_win()->StackCompositedAbove(
-          other_panel->panel_win()->actor(), other_panel->panel_win()->actor());
-    }
-  } else {
-    panel->titlebar_win()->StackCompositedBelow(
-        wm_->collapsed_panel_depth(), NULL);
-  }
-
-  if (!dragged_panel_event_coalescer_.IsRunning()) {
+  if (!dragged_panel_event_coalescer_.IsRunning())
     dragged_panel_event_coalescer_.Start();
-  }
 }
 
 void PanelBar::PackCollapsedPanels() {

@@ -29,6 +29,7 @@ HotkeyOverlay::HotkeyOverlay(ClutterInterface* clutter)
       right_alt_pressed_(false),
       left_shift_pressed_(false),
       right_shift_pressed_(false) {
+  group_->SetName("hotkey overlay group");
 }
 
 HotkeyOverlay::~HotkeyOverlay() {
@@ -110,6 +111,7 @@ void HotkeyOverlay::ShowImage(const std::string& filename) {
   if (it == images_.end()) {
     std::tr1::shared_ptr<ClutterInterface::Actor>
         image(clutter_->CreateImage(filename));
+    image->SetName("hotkey overlay image");
     image->SetOpacity(0, 0);
     image->SetVisibility(true);
     group_->AddActor(image.get());

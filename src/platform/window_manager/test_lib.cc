@@ -4,7 +4,16 @@
 
 #include "window_manager/test_lib.h"
 
+#include <vector>
+
+#include <gflags/gflags.h>
+
+#include "base/command_line.h"
 #include "base/string_util.h"
+#include "window_manager/clutter_interface.h"
+#include "window_manager/mock_x_connection.h"
+#include "window_manager/window_manager.h"
+#include "window_manager/wm_ipc.h"
 
 namespace chromeos {
 
@@ -38,6 +47,95 @@ testing::AssertionResult BytesAreEqual(
     }
   }
   return testing::AssertionSuccess();
+}
+
+int InitAndRunTests(int* argc, char** argv, bool log_to_stderr) {
+  google::ParseCommandLineFlags(argc, &argv, true);
+  CommandLine::Init(*argc, argv);
+  logging::InitLogging(NULL,
+                       log_to_stderr ?
+                         logging::LOG_ONLY_TO_SYSTEM_DEBUG_LOG :
+                         logging::LOG_NONE,
+                       logging::DONT_LOCK_LOG_FILE,
+                       logging::APPEND_TO_OLD_LOG_FILE);
+  ::testing::InitGoogleTest(argc, argv);
+  return RUN_ALL_TESTS();
+}
+
+
+void BasicWindowManagerTest::SetUp() {
+  xconn_.reset(new MockXConnection);
+  clutter_.reset(new MockClutterInterface);
+  wm_.reset(new WindowManager(xconn_.get(), clutter_.get()));
+  CHECK(wm_->Init());
+}
+
+XWindow BasicWindowManagerTest::CreateToplevelWindow(
+    int x, int y, int width, int height) {
+  return xconn_->CreateWindow(
+      xconn_->GetRootWindow(),
+      x, y,
+      width, height,
+      false,  // override redirect
+      false,  // input only
+      0);     // event mask
+}
+
+XWindow BasicWindowManagerTest::CreateSimpleWindow() {
+  return CreateToplevelWindow(0, 0, 640, 480);
+}
+
+XWindow BasicWindowManagerTest::CreateTitlebarWindow(int width, int height) {
+  XWindow xid = CreateToplevelWindow(0, 0, width, height);
+  wm_->wm_ipc()->SetWindowType(
+      xid, WmIpc::WINDOW_TYPE_CHROME_PANEL_TITLEBAR, NULL);
+  return xid;
+}
+
+XWindow BasicWindowManagerTest::CreatePanelWindow(
+    int width, int height, XWindow titlebar_xid, bool expanded) {
+  XWindow xid = CreateToplevelWindow(0, 0, width, height);
+  std::vector<int> params;
+  params.push_back(titlebar_xid);
+  params.push_back(expanded ? 1 : 0);
+  wm_->wm_ipc()->SetWindowType(
+      xid, WmIpc::WINDOW_TYPE_CHROME_PANEL, &params);
+  return xid;
+}
+
+XWindow BasicWindowManagerTest::GetActiveWindowProperty() {
+  int active_window;
+  if (!xconn_->GetIntProperty(xconn_->GetRootWindow(),
+                              wm_->GetXAtom(ATOM_NET_ACTIVE_WINDOW),
+                              &active_window)) {
+    return None;
+  }
+  return active_window;
+}
+
+void BasicWindowManagerTest::TestIntArrayProperty(
+    XWindow xid, XAtom atom, int num_values, ...) {
+  std::vector<int> expected;
+
+  va_list args;
+  va_start(args, num_values);
+  CHECK_GE(num_values, 0);
+  for (; num_values; num_values--) {
+    int arg = va_arg(args, int);
+    expected.push_back(arg);
+  }
+  va_end(args);
+
+  std::vector<int> actual;
+  int exists = xconn_->GetIntArrayProperty(xid, atom, &actual);
+  if (expected.empty()) {
+    EXPECT_FALSE(exists);
+  } else {
+    EXPECT_TRUE(exists);
+    ASSERT_EQ(expected.size(), actual.size());
+    for (size_t i = 0; i < actual.size(); ++i)
+      EXPECT_EQ(expected[i], actual[i]);
+  }
 }
 
 }  // namespace chromeos

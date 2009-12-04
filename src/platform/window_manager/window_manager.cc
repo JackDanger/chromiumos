@@ -26,6 +26,7 @@ extern "C" {
 #include "window_manager/layout_manager.h"
 #include "window_manager/metrics_reporter.h"
 #include "window_manager/panel_bar.h"
+#include "window_manager/stacking_manager.h"
 #include "window_manager/util.h"
 #include "window_manager/window.h"
 #include "window_manager/x_connection.h"
@@ -157,14 +158,7 @@ WindowManager::WindowManager(XConnection* xconn, ClutterInterface* clutter)
       background_(NULL),
       stage_window_(None),
       overlay_window_(None),
-      overview_window_depth_(NULL),
-      active_window_depth_(NULL),
-      expanded_panel_depth_(NULL),
-      panel_bar_depth_(NULL),
-      collapsed_panel_depth_(NULL),
-      floating_tab_depth_(NULL),
-      overlay_depth_(NULL),
-      client_stacking_win_(None),
+      stacking_manager_(NULL),
       mapped_xids_(new Stacker<XWindow>),
       stacked_xids_(new Stacker<XWindow>),
       active_window_xid_(None),
@@ -176,7 +170,6 @@ WindowManager::WindowManager(XConnection* xconn, ClutterInterface* clutter)
 
 WindowManager::~WindowManager() {
   xconn_->DestroyWindow(wm_window_);
-  xconn_->DestroyWindow(client_stacking_win_);
 }
 
 bool WindowManager::Init() {
@@ -205,24 +198,18 @@ bool WindowManager::Init() {
   stage_->SetStageColor("#222");
   stage_->SetVisibility(true);
 
+  stacking_manager_.reset(new StackingManager(xconn_, clutter_));
+
   if (!FLAGS_wm_background_image.empty()) {
     background_.reset(clutter_->CreateImage(FLAGS_wm_background_image));
     background_->SetName("background");
     background_->Move(0, 0, 0);
     background_->SetSize(width_, height_);
-    background_->SetVisibility(true);
     stage_->AddActor(background_.get());
+    stacking_manager_->StackActorAtTopOfLayer(
+        background_.get(), StackingManager::LAYER_BACKGROUND);
+    background_->SetVisibility(true);
   }
-
-  // Set up reference points for stacking.
-  // TODO: There has to be a better way to do this.
-  overview_window_depth_.reset(CreateActorAbove(background_.get()));
-  active_window_depth_.reset(CreateActorAbove(overview_window_depth_.get()));
-  expanded_panel_depth_.reset(CreateActorAbove(active_window_depth_.get()));
-  panel_bar_depth_.reset(CreateActorAbove(expanded_panel_depth_.get()));
-  collapsed_panel_depth_.reset(CreateActorAbove(panel_bar_depth_.get()));
-  floating_tab_depth_.reset(CreateActorAbove(collapsed_panel_depth_.get()));
-  overlay_depth_.reset(CreateActorAbove(floating_tab_depth_.get()));
 
   if (FLAGS_wm_use_compositing) {
     // Create the compositing overlay, put the stage's window inside of it,
@@ -235,18 +222,6 @@ bool WindowManager::Init() {
     CHECK(xconn_->RemoveInputRegionFromWindow(overlay_window_));
     CHECK(xconn_->RemoveInputRegionFromWindow(stage_window_));
   }
-
-  // Create a window to use as a reference for stacking client windows.
-  client_stacking_win_ = xconn_->CreateWindow(
-      root_,   // parent
-      -1, -1,  // x, y
-      1, 1,    // width, height
-      true,    // override_redirect
-      false,   // input_only
-      0);      // event_mask
-  CHECK(client_stacking_win_ != None);
-  xconn_->MapWindow(client_stacking_win_);
-  xconn_->RaiseWindow(client_stacking_win_);
 
   // Set up keybindings.
   key_bindings_.reset(new KeyBindings(xconn_));
@@ -322,7 +297,8 @@ bool WindowManager::Init() {
 
   hotkey_overlay_.reset(new HotkeyOverlay(clutter_));
   stage_->AddActor(hotkey_overlay_->group());
-  hotkey_overlay_->group()->Lower(overlay_depth_.get());
+  stacking_manager_->StackActorAtTopOfLayer(
+      hotkey_overlay_->group(), StackingManager::LAYER_HOTKEY_OVERLAY);
   hotkey_overlay_->group()->Move(width_ / 2, height_ / 2, 0);
 
   // Register a callback to get a shot at all the events that come in.
@@ -688,7 +664,7 @@ bool WindowManager::ManageExistingWindows() {
 
 Window* WindowManager::TrackWindow(XWindow xid) {
   // Don't manage our internal windows.
-  if (IsInternalWindow(xid))
+  if (IsInternalWindow(xid) || stacking_manager_->IsInternalWindow(xid))
     return NULL;
   for (std::set<EventConsumer*>::const_iterator it = event_consumers_.begin();
        it != event_consumers_.end(); ++it) {
@@ -965,7 +941,7 @@ bool WindowManager::HandleConfigureNotify(const XConfigureEvent& e) {
     while (above_xid != None) {
       Window* above_win = GetWindow(above_xid);
       if (above_win) {
-        win->StackCompositedAbove(above_win->actor(), NULL);
+        win->StackCompositedAbove(above_win->actor(), NULL, false);
         break;
       }
       const XWindow* above_ptr = stacked_xids_->GetUnder(above_xid);
@@ -1423,8 +1399,9 @@ void WindowManager::ToggleClientWindowDebugging() {
 
     ClutterInterface::ContainerActor* group = clutter_->CreateGroup();
     stage_->AddActor(group);
+    stacking_manager_->StackActorAtTopOfLayer(
+        group, StackingManager::LAYER_DEBUGGING);
     group->SetName("debug group");
-    group->Lower(overlay_depth_.get());
     group->Move(x, y, 0);
     group->SetSize(width, height);
     group->SetVisibility(true);
