@@ -190,11 +190,15 @@ else
   exit 1
 fi
 
+# Return 0 if $1 > $2.
+# $1 and $2 are in "a.b.c.d" format where a, b, c, and d are base 10.
 function version_number_greater_than {
-  # return 0 if $1 > $2
-  # Assumes $1, $2 are in "a.b.c.d" format where a, b, c, d are base 10
-  EXPANDED_A=$(printf '%020d%020d%020d%020d' $(echo "$1" | sed 's/\./ /g' ))
-  EXPANDED_B=$(printf '%020d%020d%020d%020d' $(echo "$2" | sed 's/\./ /g' ))
+  # Replace periods with spaces and strip off leading 0s (lest numbers be
+  # interpreted as octal).
+  REPLACED_A=$(echo "$1" | sed -r 's/(^|\.)0*/ /g')
+  REPLACED_B=$(echo "$2" | sed -r 's/(^|\.)0*/ /g')
+  EXPANDED_A=$(printf '%020d%020d%020d%020d' $REPLACED_A)
+  EXPANDED_B=$(printf '%020d%020d%020d%020d' $REPLACED_B)
   # This is a string compare:
   [[ "$EXPANDED_A" > "$EXPANDED_B" ]]
 }
