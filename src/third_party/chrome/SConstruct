@@ -17,8 +17,8 @@ sources = env.Split("""
                     files/base/atomicops_internals_x86_gcc.cc
                     files/base/base_switches.cc
                     files/base/command_line.cc
-                    files/base/debug_util_posix.cc
                     files/base/debug_util.cc
+                    files/base/debug_util_posix.cc
                     files/base/dynamic_annotations.cc
                     files/base/file_path.cc
                     files/base/file_path.h
@@ -28,15 +28,17 @@ sources = env.Split("""
                     files/base/file_util_posix.cc
                     files/base/lock_impl_posix.cc
                     files/base/logging.cc
+                    files/base/platform_file_posix.cc
                     files/base/platform_thread_posix.cc
                     files/base/safe_strerror_posix.cc
                     files/base/setproctitle_linux.c
+                    files/base/string16.cc
                     files/base/string_piece.cc
                     files/base/string_util.cc
-                    files/base/string16.cc
                     files/base/sys_string_conversions_linux.cc
-                    files/base/time_posix.cc
                     files/base/time.cc
+                    files/base/time_posix.cc
+                    files/base/utf_string_conversion_utils.cc
                     files/base/utf_string_conversions.cc
                     """)
 
