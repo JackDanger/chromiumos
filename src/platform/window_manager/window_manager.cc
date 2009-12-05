@@ -153,11 +153,11 @@ WindowManager::WindowManager(XConnection* xconn, ClutterInterface* clutter)
       root_(None),
       width_(0),
       height_(0),
-      wm_window_(None),
+      wm_xid_(None),
       stage_(NULL),
       background_(NULL),
-      stage_window_(None),
-      overlay_window_(None),
+      stage_xid_(None),
+      overlay_xid_(None),
       stacking_manager_(NULL),
       mapped_xids_(new Stacker<XWindow>),
       stacked_xids_(new Stacker<XWindow>),
@@ -169,7 +169,7 @@ WindowManager::WindowManager(XConnection* xconn, ClutterInterface* clutter)
 }
 
 WindowManager::~WindowManager() {
-  xconn_->DestroyWindow(wm_window_);
+  xconn_->DestroyWindow(wm_xid_);
 }
 
 bool WindowManager::Init() {
@@ -192,7 +192,7 @@ bool WindowManager::Init() {
   }
 
   stage_ = clutter_->GetDefaultStage();
-  stage_window_ = stage_->GetStageXWindow();
+  stage_xid_ = stage_->GetStageXWindow();
   stage_->SetName("stage");
   stage_->SetSize(width_, height_);
   stage_->SetStageColor("#222");
@@ -214,13 +214,13 @@ bool WindowManager::Init() {
   if (FLAGS_wm_use_compositing) {
     // Create the compositing overlay, put the stage's window inside of it,
     // and make events fall through both to the client windows underneath.
-    overlay_window_ = xconn_->GetCompositingOverlayWindow(root_);
-    CHECK_NE(overlay_window_, None);
-    VLOG(1) << "Reparenting stage window " << XidStr(stage_window_)
-            << " into Xcomposite overlay window " << XidStr(overlay_window_);
-    CHECK(xconn_->ReparentWindow(stage_window_, overlay_window_, 0, 0));
-    CHECK(xconn_->RemoveInputRegionFromWindow(overlay_window_));
-    CHECK(xconn_->RemoveInputRegionFromWindow(stage_window_));
+    overlay_xid_ = xconn_->GetCompositingOverlayWindow(root_);
+    CHECK_NE(overlay_xid_, None);
+    VLOG(1) << "Reparenting stage window " << XidStr(stage_xid_)
+            << " into Xcomposite overlay window " << XidStr(overlay_xid_);
+    CHECK(xconn_->ReparentWindow(stage_xid_, overlay_xid_, 0, 0));
+    CHECK(xconn_->RemoveInputRegionFromWindow(overlay_xid_));
+    CHECK(xconn_->RemoveInputRegionFromWindow(stage_xid_));
   }
 
   // Set up keybindings.
@@ -417,7 +417,7 @@ XWindow WindowManager::CreateInputWindow(
     // If the stage has been reparented into the overlay window, we need to
     // stack the input window under the overlay instead of under the stage
     // (because the stage isn't a sibling of the input window).
-    XWindow top_win = overlay_window_ ? overlay_window_ : stage_window_;
+    XWindow top_win = overlay_xid_ ? overlay_xid_ : stage_xid_;
     CHECK(xconn_->StackWindow(xid, top_win, false));
   }
   CHECK(xconn_->MapWindow(xid));
@@ -444,12 +444,12 @@ Time WindowManager::GetCurrentTimeFromServer() {
   // Just set a bogus property on our window and wait for the
   // PropertyNotify event so we can get its timestamp.
   CHECK(xconn_->SetIntProperty(
-            wm_window_,
+            wm_xid_,
             GetXAtom(ATOM_CHROME_GET_SERVER_TIME),    // atom
             XA_ATOM,                                  // type
             GetXAtom(ATOM_CHROME_GET_SERVER_TIME)));  // value
   XEvent event;
-  xconn_->WaitForEvent(wm_window_, PropertyChangeMask, &event);
+  xconn_->WaitForEvent(wm_xid_, PropertyChangeMask, &event);
   return event.xproperty.time;
 }
 
@@ -522,6 +522,9 @@ bool WindowManager::GetManagerSelection(
   msg.format = XConnection::kLongFormat;
   msg.data.l[0] = timestamp;
   msg.data.l[1] = atom;
+  msg.data.l[2] = manager_win;
+  msg.data.l[3] = None;
+  msg.data.l[4] = None;
   CHECK(xconn_->SendEvent(root_,
                           reinterpret_cast<XEvent*>(&msg),
                           StructureNotifyMask));
@@ -540,27 +543,26 @@ bool WindowManager::GetManagerSelection(
 bool WindowManager::RegisterExistence() {
   // Create an offscreen window to take ownership of the selection and
   // receive properties.
-  wm_window_ = xconn_->CreateWindow(root_,   // parent
-                                    -1, -1,  // position
-                                    1, 1,    // dimensions
-                                    true,    // override redirect
-                                    false,   // input only
-                                    PropertyChangeMask);  // event mask
-  CHECK_NE(wm_window_, None);
-  VLOG(1) << "Created window " << XidStr(wm_window_)
+  wm_xid_ = xconn_->CreateWindow(root_,   // parent
+                                 -1, -1,  // position
+                                 1, 1,    // dimensions
+                                 true,    // override redirect
+                                 false,   // input only
+                                 PropertyChangeMask);  // event mask
+  CHECK_NE(wm_xid_, None);
+  VLOG(1) << "Created window " << XidStr(wm_xid_)
           << " for registering ourselves as the window manager";
 
   // Set the window's title and wait for the notify event so we can get a
   // timestamp from the server.
   CHECK(xconn_->SetStringProperty(
-            wm_window_, GetXAtom(ATOM_NET_WM_NAME), GetWmName()));
+            wm_xid_, GetXAtom(ATOM_NET_WM_NAME), GetWmName()));
   XEvent event;
-  xconn_->WaitForEvent(wm_window_, PropertyChangeMask, &event);
+  xconn_->WaitForEvent(wm_xid_, PropertyChangeMask, &event);
   Time timestamp = event.xproperty.time;
 
-  if (!GetManagerSelection(GetXAtom(ATOM_WM_S0), wm_window_, timestamp) ||
-      !GetManagerSelection(
-          GetXAtom(ATOM_NET_WM_CM_S0), wm_window_, timestamp)) {
+  if (!GetManagerSelection(GetXAtom(ATOM_WM_S0), wm_xid_, timestamp) ||
+      !GetManagerSelection(GetXAtom(ATOM_NET_WM_CM_S0), wm_xid_, timestamp)) {
     return false;
   }
 
@@ -601,10 +603,8 @@ bool WindowManager::SetEWMHProperties() {
   // Let clients know that we're the current WM and that we at least
   // partially conform to EWMH.
   XAtom check_atom = GetXAtom(ATOM_NET_SUPPORTING_WM_CHECK);
-  success &= xconn_->SetIntProperty(
-      root_, check_atom, XA_WINDOW, wm_window_);
-  success &= xconn_->SetIntProperty(
-      wm_window_, check_atom, XA_WINDOW, wm_window_);
+  success &= xconn_->SetIntProperty(root_, check_atom, XA_WINDOW, wm_xid_);
+  success &= xconn_->SetIntProperty(wm_xid_, check_atom, XA_WINDOW, wm_xid_);
 
   // State which parts of EWMH we support.
   std::vector<int> supported;
@@ -844,9 +844,21 @@ bool WindowManager::HandleClientMessage(const XClientMessageEvent& e) {
       if ((*it)->HandleClientMessage(e))
         return true;
     }
-    LOG(WARNING) << "Ignoring unhandled X ClientMessage of type "
+    if (e.message_type == GetXAtom(ATOM_MANAGER) &&
+        e.format == 32 &&
+        (e.data.l[1] == GetXAtom(ATOM_WM_S0) ||
+         e.data.l[1] == GetXAtom(ATOM_NET_WM_CM_S0))) {
+      if (e.data.l[2] != wm_xid_) {
+        LOG(WARNING) << "Ignoring client message saying that window "
+                     << XidStr(e.data.l[2]) << " got the "
+                     << GetXAtomName(e.data.l[1]) << " manager selection";
+      }
+      return true;
+    }
+    LOG(WARNING) << "Ignoring unhandled client message of type "
                  << XidStr(e.message_type) << " ("
-                 << GetXAtomName(e.message_type) << ")";
+                 << GetXAtomName(e.message_type) << ") and format "
+                 << e.format;
   }
   return false;
 }

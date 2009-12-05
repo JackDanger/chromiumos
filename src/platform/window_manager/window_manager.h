@@ -128,9 +128,7 @@ class WindowManager {
 
   // Is this one of our internally-created windows?
   bool IsInternalWindow(XWindow xid) {
-    return (xid == stage_window_ ||
-            xid == overlay_window_ ||
-            xid == wm_window_);
+    return (xid == stage_xid_ || xid == overlay_xid_ || xid == wm_xid_);
   }
 
   // Get a manager selection as described in ICCCM section 2.8.  'atom' is
@@ -239,16 +237,16 @@ class WindowManager {
   int height_;
 
   // Offscreen window that we just use for registering as the WM.
-  XWindow wm_window_;
+  XWindow wm_xid_;
 
   ClutterInterface::StageActor* stage_;  // not owned
   scoped_ptr<ClutterInterface::Actor> background_;
 
   // Window containing the Clutter stage.
-  XWindow stage_window_;
+  XWindow stage_xid_;
 
   // XComposite overlay window.
-  XWindow overlay_window_;
+  XWindow overlay_xid_;
 
   scoped_ptr<StackingManager> stacking_manager_;
 

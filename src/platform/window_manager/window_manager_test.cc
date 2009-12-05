@@ -61,7 +61,7 @@ TEST_F(WindowManagerTest, RegisterExistence) {
   ASSERT_TRUE(xconn_->GetAtom("_NET_WM_NAME", &title_atom));
   std::string window_title;
   EXPECT_TRUE(
-      xconn_->GetStringProperty(wm_->wm_window_, title_atom, &window_title));
+      xconn_->GetStringProperty(wm_->wm_xid_, title_atom, &window_title));
   EXPECT_EQ(WindowManager::GetWmName(), window_title);
 
   // Check that the window and compositing manager selections are owned by
@@ -69,8 +69,8 @@ TEST_F(WindowManagerTest, RegisterExistence) {
   XAtom wm_atom = None, cm_atom = None;
   ASSERT_TRUE(xconn_->GetAtom("WM_S0", &wm_atom));
   ASSERT_TRUE(xconn_->GetAtom("_NET_WM_CM_S0", &cm_atom));
-  EXPECT_EQ(wm_->wm_window_, xconn_->GetSelectionOwner(wm_atom));
-  EXPECT_EQ(wm_->wm_window_, xconn_->GetSelectionOwner(cm_atom));
+  EXPECT_EQ(wm_->wm_xid_, xconn_->GetSelectionOwner(wm_atom));
+  EXPECT_EQ(wm_->wm_xid_, xconn_->GetSelectionOwner(cm_atom));
 
   XAtom manager_atom = None;
   ASSERT_TRUE(xconn_->GetAtom("MANAGER", &manager_atom));
@@ -85,11 +85,13 @@ TEST_F(WindowManagerTest, RegisterExistence) {
   EXPECT_EQ(manager_atom, root_info->client_messages[0].message_type);
   EXPECT_EQ(XConnection::kLongFormat, root_info->client_messages[0].format);
   EXPECT_EQ(wm_atom, root_info->client_messages[0].data.l[1]);
+  EXPECT_EQ(wm_->wm_xid_, root_info->client_messages[0].data.l[2]);
 
   EXPECT_EQ(ClientMessage, root_info->client_messages[1].type);
   EXPECT_EQ(manager_atom, root_info->client_messages[1].message_type);
   EXPECT_EQ(XConnection::kLongFormat, root_info->client_messages[1].format);
   EXPECT_EQ(cm_atom, root_info->client_messages[1].data.l[1]);
+  EXPECT_EQ(wm_->wm_xid_, root_info->client_messages[0].data.l[2]);
 }
 
 // Test different race conditions where a client window is created and/or
