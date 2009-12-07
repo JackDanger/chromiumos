@@ -806,7 +806,9 @@ void WindowManager::SelectKeyEventsOnTree(XWindow root, bool snoop) {
 }
 
 bool WindowManager::HandleButtonPress(const XButtonEvent& e) {
-  VLOG(1) << "Handling button press in window " << XidStr(e.window);
+  VLOG(1) << "Handling button press in window " << XidStr(e.window)
+          << " at relative (" << e.x << ", " << e.y << "), absolute ("
+          << e.x_root << ", " << e.y_root << ") with button " << e.button;
   // TODO: Also have consumers register the windows that they're interested
   // in, so we don't need to offer the event to all of them here?
   for (std::set<EventConsumer*>::iterator it = event_consumers_.begin();
@@ -818,7 +820,9 @@ bool WindowManager::HandleButtonPress(const XButtonEvent& e) {
 }
 
 bool WindowManager::HandleButtonRelease(const XButtonEvent& e) {
-  VLOG(1) << "Handling button release in window " << XidStr(e.window);
+  VLOG(1) << "Handling button release in window " << XidStr(e.window)
+          << " at relative (" << e.x << ", " << e.y << "), absolute ("
+          << e.x_root << ", " << e.y_root << ") with button " << e.button;
   for (std::set<EventConsumer*>::iterator it = event_consumers_.begin();
        it != event_consumers_.end(); ++it) {
     if ((*it)->HandleButtonRelease(e.window, e.x, e.y, e.button, e.time))
@@ -828,7 +832,9 @@ bool WindowManager::HandleButtonRelease(const XButtonEvent& e) {
 }
 
 bool WindowManager::HandleClientMessage(const XClientMessageEvent& e) {
-  VLOG(2) << "Handling client message";
+  VLOG(2) << "Handling client message for window " << XidStr(e.window)
+          << " with type " << XidStr(e.message_type) << " ("
+          << GetXAtomName(e.message_type) << ") and format " << e.format;
   WmIpc::Message msg;
   if (wm_ipc_->GetMessage(e, &msg)) {
     for (std::set<EventConsumer*>::iterator it = event_consumers_.begin();
@@ -855,10 +861,7 @@ bool WindowManager::HandleClientMessage(const XClientMessageEvent& e) {
       }
       return true;
     }
-    LOG(WARNING) << "Ignoring unhandled client message of type "
-                 << XidStr(e.message_type) << " ("
-                 << GetXAtomName(e.message_type) << ") and format "
-                 << e.format;
+    LOG(WARNING) << "Ignoring unhandled client message";
   }
   return false;
 }
@@ -1027,7 +1030,10 @@ bool WindowManager::HandleCreateNotify(const XCreateWindowEvent& e) {
     return false;
   }
 
-  VLOG(1) << "Handling create notify for " << XidStr(e.window);
+  VLOG(1) << "Handling create notify for "
+          << (e.override_redirect ? "override-redirect" : "normal")
+          << " window " << XidStr(e.window) << " at (" << e.x << ", " << e.y
+          << ") with size " << e.width << "x" << e.height;
 
   if (snooping_key_events_) {
     VLOG(1) << "Selecting key events on " << XidStr(e.window);
@@ -1141,7 +1147,6 @@ bool WindowManager::HandleKeyPress(const XKeyEvent& e) {
 
   if (snooping_key_events_)
     hotkey_overlay_->HandleKeyPress(keysym);
-
   if (key_bindings_.get()) {
     if (key_bindings_->HandleKeyPress(keysym, e.state))
       return true;
@@ -1155,7 +1160,6 @@ bool WindowManager::HandleKeyRelease(const XKeyEvent& e) {
 
   if (snooping_key_events_)
     hotkey_overlay_->HandleKeyRelease(keysym);
-
   if (key_bindings_.get()) {
     if (key_bindings_->HandleKeyRelease(keysym, e.state))
       return true;

@@ -97,6 +97,7 @@ class Panel {
 
  private:
   FRIEND_TEST(PanelTest, InputWindows);  // uses '*_input_xid_'
+  FRIEND_TEST(PanelTest, Resize);        // uses '*_input_xid_'
 
   WindowManager* wm();
 

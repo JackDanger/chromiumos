@@ -69,7 +69,9 @@ Panel::Panel(PanelBar* panel_bar,
       drag_start_x_(0),
       drag_start_y_(0),
       drag_orig_width_(1),
-      drag_orig_height_(1) {
+      drag_orig_height_(1),
+      drag_last_width_(1),
+      drag_last_height_(1) {
   CHECK(panel_bar_);
   CHECK(panel_win_);
   CHECK(titlebar_win_);
@@ -191,9 +193,8 @@ void Panel::GetInputWindows(std::vector<XWindow>* windows_out) {
 
 void Panel::HandleInputWindowButtonPress(
     XWindow xid, int x, int y, int button, Time timestamp) {
-  if (button != 1) {
+  if (button != 1)
     return;
-  }
   DCHECK(drag_xid_ == None);
 
   if (!wm()->xconn()->AddActivePointerGrabForWindow(
@@ -204,8 +205,8 @@ void Panel::HandleInputWindowButtonPress(
   drag_xid_ = xid;
   drag_start_x_ = x;
   drag_start_y_ = y;
-  drag_orig_width_ = panel_width();
-  drag_orig_height_ = panel_win_->client_height();
+  drag_orig_width_ = drag_last_width_ = panel_width();
+  drag_orig_height_ = drag_last_height_ = panel_win_->client_height();
   resize_event_coalescer_.Start();
 
   if (!FLAGS_panel_opaque_resize) {
@@ -239,6 +240,7 @@ void Panel::HandleInputWindowButtonRelease(
     return;
   }
   wm()->xconn()->RemoveActivePointerGrab(false);  // replay_events=false
+  resize_event_coalescer_.StorePosition(x, y);
   resize_event_coalescer_.Stop();
   drag_xid_ = None;
 

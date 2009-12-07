@@ -110,6 +110,76 @@ TEST_F(PanelTest, InputWindows) {
             right_info->height);
 }
 
+TEST_F(PanelTest, Resize) {
+  int orig_width = 200;
+  int orig_titlebar_height = 20;
+  XWindow titlebar_xid = CreateTitlebarWindow(orig_width, orig_titlebar_height);
+  Window titlebar_win(wm_.get(), titlebar_xid);
+  MockXConnection::WindowInfo* titlebar_info =
+      xconn_->GetWindowInfoOrDie(titlebar_xid);
+
+  int orig_panel_height = 400;
+  XWindow panel_xid =
+      CreatePanelWindow(orig_width, orig_panel_height, titlebar_xid, true);
+  Window panel_win(wm_.get(), panel_xid);
+  MockXConnection::WindowInfo* panel_info =
+      xconn_->GetWindowInfoOrDie(panel_xid);
+
+  // Create a panel and expand it.
+  Panel panel(wm_->panel_bar_.get(), &panel_win, &titlebar_win, 0);
+  panel.SetState(true);
+
+  // The panel should grab the pointer when it gets a button press on one
+  // of its resize windows.
+  panel.HandleInputWindowButtonPress(
+      panel.top_left_input_xid_,
+      0, 0,  // relative x, y
+      1,     // button
+      1);    // timestamp
+  EXPECT_EQ(panel.top_left_input_xid_, xconn_->pointer_grab_xid());
+
+  // Release the button immediately and check that the grab has been
+  // removed.
+  panel.HandleInputWindowButtonRelease(
+      panel.top_left_input_xid_,
+      0, 0,  // relative x, y
+      1);    // button
+  EXPECT_EQ(None, xconn_->pointer_grab_xid());
+
+  // Check that the panel's dimensions are unchanged.
+  EXPECT_EQ(orig_width, titlebar_info->width);
+  EXPECT_EQ(orig_titlebar_height, titlebar_info->height);
+  EXPECT_EQ(orig_width, panel_info->width);
+  EXPECT_EQ(orig_panel_height, panel_info->height);
+
+  int initial_x = titlebar_info->x;
+  EXPECT_EQ(initial_x, panel_info->x);
+  int initial_titlebar_y = titlebar_info->y;
+  EXPECT_EQ(initial_titlebar_y + titlebar_info->height, panel_info->y);
+
+  // Now start a second resize using the upper-left handle.  Drag a few
+  // pixels up and to the left and then let go of the button.
+  panel.HandleInputWindowButtonPress(
+      panel.top_left_input_xid_, 0, 0, 1, 1);
+  EXPECT_EQ(panel.top_left_input_xid_, xconn_->pointer_grab_xid());
+  panel.HandleInputWindowPointerMotion(panel.top_left_input_xid_, -2, -4);
+  panel.HandleInputWindowButtonRelease(panel.top_left_input_xid_, -5, -6, 1);
+  EXPECT_EQ(None, xconn_->pointer_grab_xid());
+
+  // The titlebar should be offset by the drag and made a bit wider.
+  EXPECT_EQ(initial_x - 5, titlebar_info->x);
+  EXPECT_EQ(initial_titlebar_y - 6, titlebar_info->y);
+  EXPECT_EQ(orig_width + 5, titlebar_info->width);
+  EXPECT_EQ(orig_titlebar_height, titlebar_info->height);
+
+  // The panel should move along with its titlebar, and it should get wider
+  // and taller by the amount of the drag.
+  EXPECT_EQ(initial_x - 5, panel_info->x);
+  EXPECT_EQ(titlebar_info->y + titlebar_info->height, panel_info->y);
+  EXPECT_EQ(orig_width + 5, panel_info->width);
+  EXPECT_EQ(orig_panel_height + 6, panel_info->height);
+}
+
 }  // namespace chromeos
 
 int main(int argc, char **argv) {
