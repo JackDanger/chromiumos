@@ -29,20 +29,11 @@ TEST_F(PanelBarTest, Basic) {
   XWindow toplevel_xid = CreateSimpleWindow();
   MockXConnection::WindowInfo* toplevel_info =
       xconn_->GetWindowInfoOrDie(toplevel_xid);
-  XEvent event;
-  MockXConnection::InitCreateWindowEvent(&event, *toplevel_info);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
-  MockXConnection::InitMapRequestEvent(&event, *toplevel_info);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
-  EXPECT_TRUE(toplevel_info->mapped);
-  MockXConnection::InitMapEvent(&event, toplevel_xid);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  SendInitialEventsForWindow(toplevel_xid);
 
   // It should be initially focused.
   EXPECT_EQ(toplevel_xid, xconn_->focused_xid());
-  MockXConnection::InitFocusInEvent(
-      &event, toplevel_xid, NotifyNormal, NotifyAncestor);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  SendFocusEvents(xconn_->GetRootWindow(), toplevel_xid);
   EXPECT_EQ(toplevel_xid, wm_->active_window_xid());
 
   // Now create a panel titlebar, and then the actual panel window.
@@ -50,13 +41,7 @@ TEST_F(PanelBarTest, Basic) {
   XWindow titlebar_xid = CreateTitlebarWindow(100, initial_titlebar_height);
   MockXConnection::WindowInfo* titlebar_info =
       xconn_->GetWindowInfoOrDie(titlebar_xid);
-  MockXConnection::InitCreateWindowEvent(&event, *titlebar_info);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
-  MockXConnection::InitMapRequestEvent(&event, *titlebar_info);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
-  EXPECT_TRUE(titlebar_info->mapped);
-  MockXConnection::InitMapEvent(&event, titlebar_xid);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  SendInitialEventsForWindow(titlebar_xid);
 
   const int initial_panel_width = 250;
   const int initial_panel_height = 400;
@@ -64,13 +49,7 @@ TEST_F(PanelBarTest, Basic) {
       initial_panel_width, initial_panel_height, titlebar_xid, true);
   MockXConnection::WindowInfo* panel_info =
       xconn_->GetWindowInfoOrDie(panel_xid);
-  MockXConnection::InitCreateWindowEvent(&event, *panel_info);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
-  MockXConnection::InitMapRequestEvent(&event, *panel_info);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
-  EXPECT_TRUE(panel_info->mapped);
-  MockXConnection::InitMapEvent(&event, panel_xid);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  SendInitialEventsForWindow(panel_xid);
 
   // The toplevel window should retain the focus and a button grab should
   // be installed on the titlebar window.
@@ -120,6 +99,7 @@ TEST_F(PanelBarTest, Basic) {
   // After a button press on the panel window, its active and passive grabs
   // should be removed and it should be focused.
   xconn_->set_pointer_grab_xid(panel_xid);
+  XEvent event;
   MockXConnection::InitButtonPressEvent(
       &event, panel_xid, 0, 0, 1);  // x, y, button
   EXPECT_TRUE(wm_->HandleEvent(&event));
@@ -129,25 +109,14 @@ TEST_F(PanelBarTest, Basic) {
 
   // Send FocusOut and FocusIn events and check that the active window hint
   // is updated to contain the panel window.
-  MockXConnection::InitFocusOutEvent(
-      &event, toplevel_xid, NotifyNormal, NotifyNonlinear);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
-  MockXConnection::InitFocusInEvent(
-      &event, panel_xid, NotifyNormal, NotifyNonlinear);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  SendFocusEvents(toplevel_xid, panel_xid);
   EXPECT_EQ(panel_xid, wm_->active_window_xid());
 
   // Create a second toplevel window.
   XWindow toplevel_xid2 = CreateSimpleWindow();
   MockXConnection::WindowInfo* toplevel_info2 =
       xconn_->GetWindowInfoOrDie(toplevel_xid2);
-  MockXConnection::InitCreateWindowEvent(&event, *toplevel_info2);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
-  MockXConnection::InitMapRequestEvent(&event, *toplevel_info2);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
-  EXPECT_TRUE(toplevel_info2->mapped);
-  MockXConnection::InitMapEvent(&event, toplevel_xid2);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  SendInitialEventsForWindow(toplevel_xid2);
   Window* toplevel_win2 = wm_->GetWindow(toplevel_xid2);
   ASSERT_TRUE(toplevel_win2 != NULL);
 

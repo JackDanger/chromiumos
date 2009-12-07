@@ -56,6 +56,16 @@ class BasicWindowManagerTest : public ::testing::Test {
   XWindow CreatePanelWindow(
       int width, int height, XWindow titlebar_xid, bool expanded);
 
+  // Make the window manager handle a CreateNotify event and, if the window
+  // isn't override-redirect, a MapRequest.  If it's mapped after this
+  // (expected if we sent a MapRequest), send a MapNotify event.
+  void SendInitialEventsForWindow(XWindow xid);
+
+  // Make the window manager handle FocusNotify events saying that the
+  // focus was passed from 'out_xid' to 'in_xid'.  Events are only sent for
+  // windows that are neither None nor the root window.
+  void SendFocusEvents(XWindow out_xid, XWindow in_xid);
+
   // Get the current value of the _NET_ACTIVE_WINDOW property on the root
   // window.
   XWindow GetActiveWindowProperty();

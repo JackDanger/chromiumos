@@ -358,17 +358,14 @@ TEST_F(WindowManagerTest, IgnoreGrabFocusEvents) {
   XWindow xid = CreateSimpleWindow();
   MockXConnection::WindowInfo* info = xconn_->GetWindowInfoOrDie(xid);
 
-  XEvent event;
-  MockXConnection::InitCreateWindowEvent(&event, *info);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
-  MockXConnection::InitMapEvent(&event, xid);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  SendInitialEventsForWindow(xid);
 
   Window* win = wm_->GetWindow(xid);
   ASSERT_TRUE(win != NULL);
   EXPECT_TRUE(win->focused());
 
   // We should ignore a focus-out event caused by a grab...
+  XEvent event;
   MockXConnection::InitFocusOutEvent(&event, xid, NotifyGrab, NotifyNonlinear);
   EXPECT_FALSE(wm_->HandleEvent(&event));
   EXPECT_TRUE(win->focused());
@@ -414,18 +411,12 @@ TEST_F(WindowManagerTest, KeyEventSnooping) {
   // Create a toplevel window...
   XWindow xid = CreateSimpleWindow();
   MockXConnection::WindowInfo* info = xconn_->GetWindowInfoOrDie(xid);
-  MockXConnection::InitCreateWindowEvent(&event, *info);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
-  MockXConnection::InitMapEvent(&event, xid);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  SendInitialEventsForWindow(xid);
 
   // ... and a second one.
   XWindow xid2 = CreateSimpleWindow();
   MockXConnection::WindowInfo* info2 = xconn_->GetWindowInfoOrDie(xid2);
-  MockXConnection::InitCreateWindowEvent(&event, *info2);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
-  MockXConnection::InitMapEvent(&event, xid2);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  SendInitialEventsForWindow(xid2);
 
   // Now create a window that's a child of the first window.  The window
   // manager doesn't expect to receive events for it yet.
@@ -672,14 +663,7 @@ TEST_F(WindowManagerTest, ClientListProperties) {
   // Create and map a regular window.
   XWindow xid = CreateSimpleWindow();
   MockXConnection::WindowInfo* info = xconn_->GetWindowInfoOrDie(xid);
-  XEvent event;
-  MockXConnection::InitCreateWindowEvent(&event, *info);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
-  MockXConnection::InitMapRequestEvent(&event, *info);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
-  EXPECT_TRUE(info->mapped);
-  MockXConnection::InitMapEvent(&event, xid);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  SendInitialEventsForWindow(xid);
 
   // Both properties should contain just this window.
   TestIntArrayProperty(root_xid, list_atom, 1, xid);
@@ -696,11 +680,7 @@ TEST_F(WindowManagerTest, ClientListProperties) {
           0);        // event_mask
   MockXConnection::WindowInfo* override_redirect_info =
       xconn_->GetWindowInfoOrDie(override_redirect_xid);
-  MockXConnection::InitCreateWindowEvent(&event, *override_redirect_info);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
-  ASSERT_TRUE(xconn_->MapWindow(override_redirect_xid));
-  MockXConnection::InitMapEvent(&event, override_redirect_xid);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  SendInitialEventsForWindow(override_redirect_xid);
 
   // The override-redirect window shouldn't be included.
   TestIntArrayProperty(root_xid, list_atom, 1, xid);
@@ -709,13 +689,7 @@ TEST_F(WindowManagerTest, ClientListProperties) {
   // Create and map a second regular window.
   XWindow xid2 = CreateSimpleWindow();
   MockXConnection::WindowInfo* info2 = xconn_->GetWindowInfoOrDie(xid2);
-  MockXConnection::InitCreateWindowEvent(&event, *info2);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
-  MockXConnection::InitMapRequestEvent(&event, *info2);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
-  EXPECT_TRUE(info2->mapped);
-  MockXConnection::InitMapEvent(&event, xid2);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  SendInitialEventsForWindow(xid2);
 
   // The second window should appear after the first in _NET_CLIENT_LIST,
   // since it was mapped after it, and after the first in
@@ -726,6 +700,7 @@ TEST_F(WindowManagerTest, ClientListProperties) {
 
   // Raise the override-redirect window above the others.
   ASSERT_TRUE(xconn_->RaiseWindow(override_redirect_xid));
+  XEvent event;
   MockXConnection::InitConfigureNotifyEvent(&event, *override_redirect_info);
   event.xconfigure.above = xid2;
   EXPECT_TRUE(wm_->HandleEvent(&event));

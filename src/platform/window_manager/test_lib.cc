@@ -103,6 +103,40 @@ XWindow BasicWindowManagerTest::CreatePanelWindow(
   return xid;
 }
 
+void BasicWindowManagerTest::SendInitialEventsForWindow(XWindow xid) {
+  MockXConnection::WindowInfo* info = xconn_->GetWindowInfoOrDie(xid);
+  XEvent event;
+  MockXConnection::InitCreateWindowEvent(&event, *info);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  if (!info->override_redirect) {
+    MockXConnection::InitMapRequestEvent(&event, *info);
+    EXPECT_TRUE(wm_->HandleEvent(&event));
+    EXPECT_TRUE(info->mapped);
+  }
+  if (info->mapped) {
+    MockXConnection::InitMapEvent(&event, xid);
+    EXPECT_TRUE(wm_->HandleEvent(&event));
+  }
+}
+
+void BasicWindowManagerTest::SendFocusEvents(XWindow out_xid, XWindow in_xid) {
+  XWindow root_xid = xconn_->GetRootWindow();
+
+  XEvent event;
+  if (out_xid != None && out_xid != root_xid) {
+    MockXConnection::InitFocusOutEvent(
+        &event, out_xid, NotifyNormal,
+        (in_xid == root_xid) ? NotifyAncestor : NotifyNonlinear);
+    EXPECT_TRUE(wm_->HandleEvent(&event));
+  }
+  if (in_xid != None && in_xid != root_xid) {
+    MockXConnection::InitFocusInEvent(
+        &event, in_xid, NotifyNormal,
+        (out_xid == root_xid) ? NotifyAncestor : NotifyNonlinear);
+    EXPECT_TRUE(wm_->HandleEvent(&event));
+  }
+}
+
 XWindow BasicWindowManagerTest::GetActiveWindowProperty() {
   int active_window;
   if (!xconn_->GetIntProperty(xconn_->GetRootWindow(),
