@@ -173,7 +173,8 @@ libcairo2 1.8.8-2ubuntu1 optional libs pool/main/c/cairo/libcairo2_1.8.8-2ubuntu
 libcairo2-dev 1.8.8-2ubuntu1 optional libdevel pool/main/c/cairo/libcairo2-dev_1.8.8-2ubuntu1_i386.deb
 libcairomm-1.0-1 1.8.0-1 optional libs pool/main/c/cairomm/libcairomm-1.0-1_1.8.0-1_i386.deb
 libcairomm-1.0-dev 1.8.0-1 optional libdevel pool/main/c/cairomm/libcairomm-1.0-dev_1.8.0-1_i386.deb
-libcap2 1:2.16-5 important libs pool/main/libc/libcap2/libcap2_2.16-5_i386.deb
+libcap-dev 1:2.16-5ubuntu1 optional libdevel pool/main/libc/libcap2/libcap-dev_2.16-5ubuntu1_i386.deb
+libcap2 1:2.16-5ubuntu1 important libs pool/main/libc/libcap2/libcap2_2.16-5ubuntu1_i386.deb
 libchewing3 0.3.2-1 optional libs pool/main/libc/libchewing/libchewing3_0.3.2-1_i386.deb
 libchewing3-data 0.3.2-1 optional misc pool/main/libc/libchewing/libchewing3-data_0.3.2-1_i386.deb
 libchewing3-dev 0.3.2-1 optional libdevel pool/main/libc/libchewing/libchewing3-dev_0.3.2-1_i386.deb

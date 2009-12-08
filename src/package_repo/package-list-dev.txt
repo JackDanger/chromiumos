@@ -169,3 +169,6 @@ swig
 
 # Packages needed to build wireless tools
 libnl-dev
+
+# Packages needed to build chromeos-minijail
+libcap-dev

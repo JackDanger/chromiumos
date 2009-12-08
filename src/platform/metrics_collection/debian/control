@@ -1,0 +1,12 @@
+Source: chromeos-metrics-collection
+Section: unknown
+Priority: extra
+Maintainer: The Chromium OS Authors <chromium-os-dev@googlegroups.com>
+Build-Depends: debhelper (>=7)
+Standards-Version: 3.8.0
+
+Package: chromeos-metrics-collection
+Architecture: all
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Metrics collector package containing scripts and services
+ associated with aggregating and sending out metrics
