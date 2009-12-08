@@ -11,4 +11,4 @@
 
 echo "$1: $2; uptime is $3" >> "$4"
 # sleep creates extra process entries in bootchart, and is unneeded anyhow.
-rm -f $0
+rm -f "$0"
