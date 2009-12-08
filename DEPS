@@ -31,6 +31,11 @@ vars = {
 }
 
 deps = {
+
+    # chromeos-build
+    "tools/chromeos-build":
+        Var("chromiumos_git") + "/chromeos-build.git",
+
     # cros
     _platform_base + "cros":
         Var("chromiumos_git") + "/cros.git",
