@@ -31,6 +31,7 @@ install: build
 	dh_clean -k
 	dh_installdirs
 	$(MAKE) DESTDIR=$(CURDIR)/debian/chromeos-metrics-collection install
+	chmod 0555 $(CURDIR)/debian/chromeos-metrics-collection/usr/sbin/omaha_tracker.sh
 
 binary-indep:
 

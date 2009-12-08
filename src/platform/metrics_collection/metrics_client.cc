@@ -7,6 +7,7 @@
 #include <sys/file.h>
 #include <string.h>
 #include <stdio.h>
+#include <cstdlib>
 #include <iostream>
 #include "platform/metrics_collection/metrics_library.h"
 
