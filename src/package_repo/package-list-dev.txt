@@ -172,3 +172,8 @@ libnl-dev
 
 # Packages needed to build chromeos-minijail
 libcap-dev
+
+# Needed for chromiumos-build
+python-debian
+dpkg-cross
+python-apt
