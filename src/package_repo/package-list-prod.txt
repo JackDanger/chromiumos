@@ -76,6 +76,7 @@ chromeos-installer
 chromeos-libcros
 chromeos-login
 chromeos-minijail
+chromeos-metrics-collection
 chromeos-monitor-reconfig
 chromeos-pam-google
 chromeos-ply-image
