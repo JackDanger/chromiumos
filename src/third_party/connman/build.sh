@@ -28,7 +28,6 @@ pushd connman-0.42
     --enable-wifi=builtin \
     --enable-dhclient=builtin \
     --enable-dnsproxy=builtin 
-automake
 make clean || true
 make -j$NUM_JOBS 
 make install DESTDIR=$BUILDDIR
