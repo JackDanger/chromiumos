@@ -59,6 +59,10 @@ int __connman_selftest(void);
 int __connman_manager_init(gboolean compat);
 void __connman_manager_cleanup(void);
 
+int __connman_metrics_init(void);
+void __connman_metrics_cleanup(void);
+void __connman_metrics_state_changed(const char *state_name);
+
 int __connman_agent_init(void);
 void __connman_agent_cleanup(void);
 
