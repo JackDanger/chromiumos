@@ -1,0 +1,18 @@
+# Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Source: chromeos-microbenchmarks
+Priority: extra
+Maintainer: The Chromium OS Authors <chromium-os-dev@googlegroups.com>
+Build-Depends: debhelper (>= 7)
+Standards-Version: 3.8.0
+Section: libs
+
+Package: chromeos-microbenchmarks
+Section: libs
+Architecture: any
+Depends: libc6, libgcc1, ${shlibs:Depends}, ${misc:Depends}
+Description: Package of microbenchmarks
+ A standalone binary with microbenchmarks compiled in. This is
+ meant for easy deployment and testing on live machines.
