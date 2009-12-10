@@ -29,7 +29,7 @@ install: build
 	 dh_testroot
 	 dh_prep
 	 dh_installdirs
-	 cp $(CURDIR)/libchromeos_microbenchmark_main.a $(CURDIR)/debian/chromeos-microbenchmark/usr/lib/libchromeos_microbenchmark_main.a
+	 cp $(CURDIR)/libmicrobenchmark_main.a $(CURDIR)/debian/chromeos-microbenchmark/usr/lib/libmicrobenchmark_main.a
 	 cp $(CURDIR)/microbenchmark.h $(CURDIR)/debian/chromeos-microbenchmark/usr/include/microbenchmark/microbenchmark.h
 
 # Build architecture-dependent files here.
