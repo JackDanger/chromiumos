@@ -255,6 +255,8 @@ libgtk2.0-common 2.17.7-0ubuntu3 optional misc pool/main/g/gtk+2.0/libgtk2.0-com
 libgtk2.0-dev 2.17.7-0ubuntu3 optional libdevel pool/main/g/gtk+2.0/libgtk2.0-dev_2.17.7-0ubuntu3_i386.deb
 libgtkmm-2.4-1c2a 1:2.16.0-2 optional libs pool/main/g/gtkmm2.4/libgtkmm-2.4-1c2a_2.16.0-2_i386.deb
 libgtkmm-2.4-dev 1:2.16.0-2 optional libdevel pool/main/g/gtkmm2.4/libgtkmm-2.4-dev_2.16.0-2_i386.deb
+libgudev-1.0-0 1:147~-6 optional libs pool/main/u/udev/libgudev-1.0-0_147~-6_i386.deb
+libgudev-1.0-dev 1:147~-6 optional libdevel pool/main/u/udev/libgudev-1.0-dev_147~-6_i386.deb
 libhal-dev 0.5.12+git20090626-0ubuntu2 optional libdevel pool/main/h/hal/libhal-dev_0.5.12+git20090626-0ubuntu2_i386.deb
 libhal1 0.5.12+git20090626-0ubuntu2 optional libs pool/main/h/hal/libhal1_0.5.12+git20090626-0ubuntu2_i386.deb
 libhtml-format-perl 2.04-2 standard perl pool/main/libh/libhtml-format-perl/libhtml-format-perl_2.04-2_all.deb
@@ -382,7 +384,8 @@ libtiff4 3.8.2-11 optional libs pool/main/t/tiff/libtiff4_3.8.2-11_i386.deb
 libtimedate-perl 1.1600-9 important perl pool/main/t/timedate/libtimedate-perl_1.1600-9_all.deb
 libtool 2.2.6a-4 optional devel pool/main/libt/libtool/libtool_2.2.6a-4_i386.deb
 libts-0.0-0 1.0-7 optional libs pool/main/t/tslib/libts-0.0-0_1.0-7_i386.deb
-libudev0 143-7 standard admin pool/main/u/udev/libudev0_143-7_i386.deb
+libudev-dev 147~-6 optional admin pool/main/u/udev/libudev-dev_147~-6_i386.deb
+libudev0 147~-6 required admin pool/main/u/udev/libudev0_147~-6_i386.deb
 liburi-perl 1.37+dfsg-1ubuntu1 standard perl pool/main/libu/liburi-perl/liburi-perl_1.37+dfsg-1ubuntu1_all.deb
 libusb-0.1-4 2:0.1.12-13 important libs pool/main/libu/libusb/libusb-0.1-4_0.1.12-13_i386.deb
 libuuid1 2.16-1ubuntu5 required libs pool/main/u/util-linux/libuuid1_2.16-1ubuntu5_i386.deb

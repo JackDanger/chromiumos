@@ -133,6 +133,9 @@ xutils-dev
 # Packages needed to build chromeos-power
 libdbus-glib-1-dev
 
+# Packages needed to build chromeos-mount
+libgudev-1.0-dev
+
 # Packages needed to build clutter
 cdbs
 gtk-doc-tools
