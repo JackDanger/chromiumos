@@ -1950,27 +1950,27 @@ handle_clientmessage (saver_info *si, XEvent *event, Bool until_idle_p)
 			    ? "activating and locking."
 			    : "locking.");
 	  sprintf (buf, "LOCK ClientMessage received; %s", response);
-	  clientmessage_response (si, window, False, buf, response);
 	  set_locked_p (si, True);
 	  si->selection_mode = 0;
 	  si->demoing_p = False;
-
 	  if (si->lock_id)	/* we're doing it now, so lose the timeout */
 	    {
 	      XtRemoveTimeOut (si->lock_id);
 	      si->lock_id = 0;
 	    }
-
+	  /* sosa@chromium.org - Moved to handle race condition on resume */
 	  if (until_idle_p)
 	    {
 	      if (si->using_mit_saver_extension ||
                   si->using_sgi_saver_extension)
 		{
 		  XForceScreenSaver (si->dpy, ScreenSaverActive);
+                  clientmessage_response (si, window, False, buf, response);
 		  return False;
 		}
 	      else
 		{
+                  clientmessage_response (si, window, False, buf, response);
 		  return True;
 		}
 	    }
