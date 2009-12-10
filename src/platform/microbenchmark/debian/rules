@@ -14,7 +14,7 @@ NUM_JOBS=`cat /proc/cpuinfo | grep processor | awk '{a++} END {print a}'`
 build: build-stamp
 build-stamp:
 	dh_testdir
-	scons -j$(NUM_JOBS) microbenchmark_runner
+	scons -j$(NUM_JOBS) -Q
 	touch $@
 
 clean:
@@ -29,9 +29,8 @@ install: build
 	 dh_testroot
 	 dh_prep
 	 dh_installdirs
-	 mkdir -p $(CURDIR)/debian/chromeos-microbenchmarks/usr/lib/chromeos-microbenchmarks/bin
-	 # TODO(wad) add versioning to microbenchmarks to match the package version.
-	 cp $(CURDIR)/microbenchmark_runner $(CURDIR)/debian/chromeos-microbenchmarks/usr/lib/chromeos-microbenchmarks/bin
+	 cp $(CURDIR)/libchromeos_microbenchmark_main.a $(CURDIR)/debian/chromeos-microbenchmark/usr/lib/libchromeos_microbenchmark_main.a
+	 cp $(CURDIR)/microbenchmark.h $(CURDIR)/debian/chromeos-microbenchmark/usr/include/microbenchmark/microbenchmark.h
 
 # Build architecture-dependent files here.
 binary-arch: install

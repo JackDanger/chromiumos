@@ -11,4 +11,4 @@ COMMON_SH="$(dirname "$0")/../../scripts/common.sh"
 . "$COMMON_SH"
 
 # Make the package
-make_pkg_common "chromeos-microbenchmarks" "$@"
+make_pkg_common "chromeos-microbenchmark" "$@"

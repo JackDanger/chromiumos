@@ -11,15 +11,13 @@ env = Environment()
 driver_sources = env.Split("""microbenchmark.cc
                               main.cc""")
 
-benchmark_sources = env.Split("""benchmarks/getpid.cc
-                                 benchmarks/readwrite.cc""")
-
 env.Append(
     CPPPATH=['..', '../../third_party/chrome/files', '../../common'],
     CCFLAGS=['-g', '-fno-exceptions', '-Wall', '-Werror'],
     LIBPATH=['../../third_party/chrome'],
-    LIBS=['base', 'pthread', 'rt', File('/usr/lib/libgtest.a')],
+    # These need to be included by anyone linking against _main.
+    LIBS=['base', 'gtest', 'rt', 'pthread'],
 )
 
-env_bin = env.Clone()
-env_bin.Program('microbenchmark_runner', driver_sources + benchmark_sources)
+env_mainlib = env.Clone()
+env_mainlib.StaticLibrary('microbenchmark_main', driver_sources)

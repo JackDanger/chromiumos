@@ -1,7 +1,6 @@
 // Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
-// Some portions Copyright (c) 2009 The Chromium Authors.
 
 #include "microbenchmark/microbenchmark.h"
 
@@ -54,7 +53,7 @@ void Microbenchmark::Print() const {
             << per_run_nanoseconds() << "\nMB:"
             << name() << "-adjusted,"
             << runs() << ","
-            << total_nanoseconds() - scaffold_total_nanoseconds() << ""
+            << total_nanoseconds() - scaffold_total_nanoseconds() << ","
             << per_run_nanoseconds() - scaffold_per_run_nanoseconds()
             << "\n";
 }

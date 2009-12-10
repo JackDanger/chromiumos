@@ -1,7 +1,6 @@
 // Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
-// Some portions Copyright (c) 2009 The Chromium Authors.
 //
 // Simple microbenchmark framework
 
@@ -19,6 +18,22 @@
 #include <base/scoped_ptr.h>
 #include <gtest/gtest.h>
 
+// CHROMEOS_MICROBENCHMARK_WITH_SETUP is the primary macro for
+// using a microbenchmark from this framework.
+//
+// For quick use, create a new .cc file in your project.
+// Include this header and create two static functions,
+// one for setup and one for executing the test once.
+// After both are defined, append:
+//   CHROMEOS_MICROBENCHMARK_WITH_SETUP(MySetup, MyTest, 100000)
+// The last argument is the default number of runs.  This may
+// be overridden at run-time and, in the future, may be automatically
+// tweaked to avoid measurement errors.
+//
+// The _NAME function should be of the prototype:
+//   void MyTest(bool scaffold_only);
+// The _SETUP_NAME function should be of the prototype:
+//   void SetupMyTest(uint64 number_of_runs);
 #define CHROMEOS_MICROBENCHMARK_WITH_SETUP(_SETUP_NAME, _NAME, _RUNS) \
 class _NAME ## Class : public Microbenchmark { \
  public: \
@@ -45,6 +60,8 @@ TEST(_NAME, Microbenchmark) { \
   chromeos_benchmark.Print(); \
 }
 
+// This is a shortcut macro.  If you don't need to setup any global state for
+// use in your test, you can use this instead of _WITH_SETUP.
 #define CHROMEOS_MICROBENCHMARK(_NAME, _RUNS) \
   CHROMEOS_MICROBENCHMARK_WITH_SETUP(chromeos::microbenchmark_helper::NoSetup, \
                                      _NAME, \
@@ -53,7 +70,7 @@ namespace chromeos {
 
 namespace microbenchmark_helper {
 void NoSetup(uint64 runs);
-}  // microbenchmark
+}  // microbenchmark_helper
 
 // A simple microbenchmarking abstract class.
 // This class is not thread-safe and should only be invoked
