@@ -14,6 +14,9 @@
 *.so
 *~
 
+# Ignore password
+src/scripts/shared_user_passwd.txt
+
 # Ignore DEPS
 src/platform/cros/
 src/platform/login_manager/
@@ -25,7 +28,11 @@ src/third_party/e2fsprogs/files/
 src/third_party/fio/files/
 src/third_party/gflags/files/
 src/third_party/google-breakpad/files/
+src/third_party/gpt/
 src/third_party/gtest/files/
+src/third_party/ibus-anthy/files/
+src/third_party/ibus-chewing/files/
+src/third_party/ibus/files/
 src/third_party/kernel/files/
 src/third_party/pam-dev/
 src/third_party/ply-image/src/
