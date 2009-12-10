@@ -43,6 +43,7 @@ src/third_party/tpm-emulator/files/
 src/third_party/wpa_supplicant/build/
 src/third_party/wpa_supplicant/hostap.git/
 src/third_party/xscreensaver/xscreensaver-5.08/
+tools/chromiumos-build/
 
 # Top-level directories to ignore
 chroot/
