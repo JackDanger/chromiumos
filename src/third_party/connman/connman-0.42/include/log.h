@@ -71,7 +71,8 @@ enum {
 	DBG_TASK	= 0x00008000,
 	DBG_TEST	= 0x00010000,
 	DBG_UDEV	= 0x00020000,
-	/* 0x000c0000 available */
+	DBG_METRICS	= 0x00040000,
+	/* 0x00080000 available */
 
 	DBG_PLUGIN	= 0x00100000,
 	/* NB: plugins start at DBG_PLUGIN */

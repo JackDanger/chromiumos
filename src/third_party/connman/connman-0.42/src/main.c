@@ -200,6 +200,7 @@ int main(int argc, char *argv[])
 
 	__connman_agent_init();
 	__connman_manager_init(option_compat);
+	__connman_metrics_init();
 	__connman_profile_init();
 
 	__connman_resolver_init();
@@ -235,6 +236,7 @@ int main(int argc, char *argv[])
 	__connman_resolver_cleanup();
 
 	__connman_profile_cleanup();
+	__connman_metrics_cleanup();
 	__connman_manager_cleanup();
 	__connman_agent_cleanup();
 

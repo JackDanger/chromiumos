@@ -252,6 +252,8 @@ static void state_changed(struct connman_service *service)
 	if (str == NULL)
 		return;
 
+	__connman_metrics_state_changed(str);
+
 	signal = dbus_message_new_signal(service->path,
 				CONNMAN_SERVICE_INTERFACE, "PropertyChanged");
 	if (signal == NULL)
