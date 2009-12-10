@@ -1487,7 +1487,7 @@ void WindowManager::TakeScreenshot(bool use_active_window) {
     std::string filename = StringPrintf("%s/screenshot.png",
                                         FLAGS_screenshot_output_dir.c_str());
     const std::string command =
-        StringPrintf("%s %s 0x%x",
+        StringPrintf("%s %s 0x%lx",
                      FLAGS_screenshot_binary.c_str(), filename.c_str(), xid);
     if (system(command.c_str()) < 0) {
       message = StringPrintf("Taking screenshot via \"%s\" failed",

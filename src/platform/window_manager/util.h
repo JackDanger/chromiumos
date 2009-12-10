@@ -199,7 +199,7 @@ void FillTimeval(double time, struct timeval* tv);
 
 // Helper method to convert an XID into a hex string.
 static std::string XidStr(unsigned long xid) {
-  return StringPrintf("0x%x", xid);
+  return StringPrintf("0x%lx", xid);
 }
 
 }  // namespace chromeos
