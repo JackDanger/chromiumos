@@ -26,39 +26,28 @@ use_relative_paths=True
 _third_party_base = "src/third_party/"
 _platform_base = "src/platform/"
 
-vars = {
-    "chromiumos_git": "http://src.chromium.org/git"
-}
-
 deps = {
 
     # chromiumos-build
-    "tools/chromiumos-build":
-        Var("chromiumos_git") + "/chromiumos-build.git",
+    "tools/chromiumos-build": "/chromiumos-build.git",
 
     # cros
-    _platform_base + "cros":
-        Var("chromiumos_git") + "/cros.git",
+    _platform_base + "cros": "/cros.git",
 
     # login_manager
-    _platform_base + "login_manager":
-        Var("chromiumos_git") + "/login_manager.git",
+    _platform_base + "login_manager": "/login_manager.git",
 
     # pam_google
-    _platform_base + "pam_google":
-        Var("chromiumos_git") + "/pam_google.git",
+    _platform_base + "pam_google": "/pam_google.git",
 
     # IBus framework
-    _third_party_base + "ibus/files":
-        Var("chromiumos_git") + "/ibus.git",
+    _third_party_base + "ibus/files": "/ibus.git",
 
     # IBus input method for Traditional Chinese
-    _third_party_base + "ibus-chewing/files":
-        Var("chromiumos_git") + "/ibus-chewing.git",
+    _third_party_base + "ibus-chewing/files": "/ibus-chewing.git",
 
     # IBus input method for Japanese
-    _third_party_base + "ibus-anthy/files":
-        Var("chromiumos_git") + "/ibus-anthy.git",
+    _third_party_base + "ibus-anthy/files": "/ibus-anthy.git",
 
     # gflags 1.1
     _third_party_base + "gflags/files":
@@ -73,12 +62,10 @@ deps = {
         "http://googletest.googlecode.com/svn/trunk@209",
 
     # hostap
-    _third_party_base + "wpa_supplicant/hostap.git":
-        Var("chromiumos_git") + "/hostap.git",
+    _third_party_base + "wpa_supplicant/hostap.git": "/hostap.git",
 
     # pam-dev
-    _third_party_base + "pam-dev":
-        Var("chromiumos_git") + "/pam-dev.git",
+    _third_party_base + "pam-dev": "/pam-dev.git",
 
     # shflags 1.0.3
     _third_party_base + "shflags/files":
@@ -89,8 +76,7 @@ deps = {
         "http://shunit2.googlecode.com/svn/tags/source/2.1.5@294",
 
     # syslinux
-    _third_party_base + "syslinux/files":
-        Var("chromiumos_git") + "/syslinux.git",
+    _third_party_base + "syslinux/files": "/syslinux.git",
 
     # tpm-emulator
     _third_party_base + "tpm-emulator/files":
@@ -103,14 +89,11 @@ deps = {
         "http://src.chromium.org/svn/trunk/src/build@33520",
 
     # kernel
-    _third_party_base + "kernel/files":
-        Var("chromiumos_git") + "/kernel.git",
+    _third_party_base + "kernel/files": "/kernel.git",
 
     # fio
-    _third_party_base + "fio/files":
-        Var("chromiumos_git") + "/fio.git@fio-1.34.2",
+    _third_party_base + "fio/files": "/fio.git@fio-1.34.2",
 
     # gpt
-    _third_party_base + "gpt":
-        Var("chromiumos_git") + "/gpt.git",
+    _third_party_base + "gpt": "/gpt.git",
 }
