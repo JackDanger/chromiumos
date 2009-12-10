@@ -13,8 +13,8 @@ function error_handler() {
   if ! typeset -F cryptohome::log; then
     echo "An error occurred before/in cryptohome." 1>&2
     # Assume common is ok.
-    /bin/mount -t tmpfs tmpfs /home/$DEFAULT_USER
-    /bin/chown $DEFAULT_USER /home/$DEFAULT_USER
+    /bin/mount -t tmpfs tmpfs $DEFAULT_MOUNT_POINT
+    /bin/chown $DEFAULT_USER $DEFAULT_MOUNT_POINT
     exit 1
   fi
 
@@ -43,8 +43,8 @@ trap error_handler ERR;
 function second_chance() {
   cryptohome::log "new image creation failed (again)"
   cryptohome::log "mounting tmpfs"
-  $mount -t tmpfs tmpfs /home/$DEFAULT_USER
-  $chown $DEFAULT_USER /home/$DEFAULT_USER
+  $mount -t tmpfs tmpfs $DEFAULT_MOUNT_POINT
+  $chown $DEFAULT_USER $DEFAULT_MOUNT_POINT
   cryptohome::log "mount completed"
   $exit 0
 }

@@ -17,7 +17,15 @@ export STDERR_FILE=/var/log/cryptohome.stderr.log
 export DEFAULT_USER=chronos
 export DEFAULT_LOOP_DEVICE=/dev/loop0
 export DEFAULT_MAPPER_DEVICE=/dev/mapper/cryptohome
-export DEFAULT_MOUNT_POINT=/home/$DEFAULT_USER
+
+# temporary hack to check if we're doing chrome-login
+CHROME_LOGIN_FILE=/tmp/doing-chrome-login
+MOUNT_POINT=/home/$DEFAULT_USER
+if [ -f ${CHROME_LOGIN_FILE} ]; then
+  MOUNT_POINT=${MOUNT_POINT}/user
+fi
+
+export DEFAULT_MOUNT_POINT=${MOUNT_POINT}
 
 # If the variable is defined and the file exists,
 # encryption will be disabled for users listed in the
