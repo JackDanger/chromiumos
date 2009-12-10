@@ -17,6 +17,10 @@ mkdir -p $BUILDDIR
 
 # build connman
 pushd connman-0.42
+aclocal
+autoconf
+autoheader
+automake
 ./configure \
     --enable-debug \
     --prefix=/usr \
