@@ -38,8 +38,10 @@ openssh-server
 #nvidia-glx-180
 #nvidia-180-modaliases
 
-# People like the Android fonts
+# Fonts
+ttf-dejavu
 ttf-droid
+ttf-sil-abyssinica
 
 # for power events (needed specifically to trap lid-close)
 acpid

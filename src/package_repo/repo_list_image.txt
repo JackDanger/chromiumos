@@ -383,6 +383,7 @@ ttf-dejavu 2.29-2 optional x11 pool/main/t/ttf-dejavu/ttf-dejavu_2.29-2_all.deb
 ttf-dejavu-core 2.29-2 optional x11 pool/main/t/ttf-dejavu/ttf-dejavu-core_2.29-2_all.deb
 ttf-dejavu-extra 2.29-2 optional x11 pool/main/t/ttf-dejavu/ttf-dejavu-extra_2.29-2_all.deb
 ttf-droid 1.00~b112+dfsg+1-0ubuntu1 optional universe/x11 pool/universe/t/ttf-droid/ttf-droid_1.00~b112+dfsg+1-0ubuntu1_all.deb
+ttf-sil-abyssinica 1.0-4 optional x11 pool/main/t/ttf-sil-abyssinica/ttf-sil-abyssinica_1.0-4_all.deb
 tzdata 2009k-2 required libs pool/main/t/tzdata/tzdata_2009k-2_all.deb
 tzdata-java 2009k-2 optional libs pool/main/t/tzdata/tzdata-java_2009k-2_all.deb
 ubuntu-keyring 2008.03.04 important misc pool/main/u/ubuntu-keyring/ubuntu-keyring_2008.03.04_all.deb
