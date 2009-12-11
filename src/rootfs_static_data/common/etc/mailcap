@@ -1,0 +1,5 @@
+# Use Chrome to open text and media files.
+audio/*; google-chrome '%s'
+image/*; google-chrome '%s'
+text/*;  google-chrome '%s'
+video/*; google-chrome '%s'
