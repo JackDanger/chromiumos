@@ -16,6 +16,10 @@ void SplitStringUsing(const std::string& str,
                       const std::string& delim,
                       std::vector<std::string>* parts);
 
+// Copies the string. Use delete (not delete [] or free) to release the returned
+// string.
+char* NewStringCopy(const char* x);
+
 }  // namespace chromeos
 
 #endif /* CHROMEOS_STRING_H_ */

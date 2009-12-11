@@ -6,8 +6,7 @@ import os
 import sys
 
 SOURCES=['chromeos/dbus/dbus.cc',
-         'chromeos/string.cc',
-         'util.cc']
+         'chromeos/string.cc']
 
 env = Environment(
     CPPPATH=[ '.', '../third_party/chrome/files' ],

@@ -4,8 +4,9 @@
 
 #include <chromeos/string.h>
 
-#include <pcrecpp.h>
+#include <cstring>
 
+#include <pcrecpp.h>
 #include "base/logging.h"
 
 namespace chromeos {
@@ -43,6 +44,12 @@ void SplitStringUsing(const std::string& str,
     }
     start = delim_pos + delim.size();
   }
+}
+
+char* NewStringCopy(const char* x) {
+  char* result = static_cast<char*>(::operator new(std::strlen(x) + 1));
+  std::strcpy(result, x);  // NOLINT
+  return result;
 }
 
 }  // namespace chromeos

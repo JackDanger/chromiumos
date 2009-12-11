@@ -14,7 +14,12 @@
 *.so
 *~
 
-# Ignore password
+# Executables
+
+src/common/unittests
+
+# User files
+
 src/scripts/shared_user_passwd.txt
 
 # Ignore DEPS
@@ -50,3 +55,4 @@ chroot/
 repo/
 src/build/
 src/platform/dev/static
+
