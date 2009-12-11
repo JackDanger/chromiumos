@@ -11,8 +11,10 @@ class ui_ScreenSaverRunning(test.test):
 
     def run_once(self):
         # check if the screensaver process is running and alive
+        usr = 'chronos'
+        cmd = 'export DISPLAY=:0.0 && xscreensaver-command -version'
         try:
-            utils.system('export DISPLAY=:0.0 && xscreensaver-command -version')
+            utils.system('su %s -c \'%s\'' % (usr, cmd))
         except error.CmdError, e:
             logging.debug(e)
             raise error.TestFail('xscreensaver is not alive')
