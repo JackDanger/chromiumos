@@ -1309,20 +1309,7 @@ bool WindowManager::HandleReparentNotify(const XReparentEvent& e) {
 
       // We're not going to be compositing the window anymore, so
       // unredirect it so it'll get drawn using the usual path.
-      // TODO: It might be cleaner to defer redirecting client windows
-      // until we get their initial MapRequest so that we don't need to do
-      // anything special for windows that get reparented before they're
-      // mapped, but we'll need to special-case override-redirected windows
-      // in that case.
       xconn_->UnredirectWindowForCompositing(e.window);
-
-      // If the window was already mapped, we need to remap it for the
-      // redirection change to take effect.
-      // TODO: Check that this is really the case here -- it seems to be so
-      // when redirecting a window, at least (if the remap call in
-      // ManageExistingWindows() is removed, the windows never get drawn;
-      // this may be Clutter-specific).
-      xconn_->RemapWindowIfMapped(e.window);
     }
   }
   return true;

@@ -49,10 +49,6 @@ class XConnection {
   virtual bool MapWindow(XWindow xid) = 0;
   virtual bool UnmapWindow(XWindow xid) = 0;
 
-  // Remap a window if it's already mapped.
-  // Grabs the server if it's not grabbed already.
-  bool RemapWindowIfMapped(XWindow xid);
-
   // Move or resize a window.  'width' and 'height' must be positive.
   virtual bool MoveWindow(XWindow xid, int x, int y) = 0;
   virtual bool ResizeWindow(XWindow xid, int width, int height) = 0;

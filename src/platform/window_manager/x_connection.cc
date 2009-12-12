@@ -12,32 +12,6 @@ const int XConnection::kByteFormat = 8;
 const int XConnection::kLongFormat = 32;
 
 
-bool XConnection::RemapWindowIfMapped(XWindow xid) {
-  if (!server_grabbed_) {
-    if (!GrabServer())
-      return false;
-  }
-
-  XWindowAttributes attr;
-  if (!GetWindowAttributes(xid, &attr)) {
-    if (server_grabbed_)
-      CHECK(UngrabServer());
-    return false;
-  }
-
-  if (attr.map_state != IsUnmapped) {
-    if (!UnmapWindow(xid) || !MapWindow(xid)) {
-      if (server_grabbed_)
-        CHECK(UngrabServer());
-      return false;
-    }
-  }
-
-  if (server_grabbed_)
-    CHECK(UngrabServer());
-  return true;
-}
-
 bool XConnection::GetIntProperty(XWindow xid, XAtom xatom, int* value) {
   CHECK(value);
   std::vector<int> values;
