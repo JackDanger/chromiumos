@@ -20,6 +20,7 @@ extern "C" {
 #include "base/logging.h"
 #include "base/scoped_ptr.h"
 #include "base/string_util.h"
+#include "handler/exception_handler.h"
 #include "window_manager/clutter_interface.h"
 #include "window_manager/window_manager.h"
 #include "window_manager/real_x_connection.h"
@@ -32,6 +33,8 @@ DEFINE_string(log_dir, ".",
 DEFINE_bool(logtostderr, false,
             "Should logs be written to stderr instead of to a file in "
             "--log_dir?");
+DEFINE_string(minidump_dir, ".",
+              "Directory where crash minidumps should be written");
 
 using chromeos::ClutterInterface;
 using chromeos::MockClutterInterface;
@@ -55,6 +58,9 @@ int main(int argc, char** argv) {
   clutter_init(&argc, &argv);
   google::ParseCommandLineFlags(&argc, &argv, true);
   CommandLine::Init(argc, argv);
+
+  google_breakpad::ExceptionHandler exception_handler(
+      FLAGS_minidump_dir, NULL, NULL, NULL, true);
 
   if (!FLAGS_logtostderr) {
     if (!file_util::CreateDirectory(FilePath(FLAGS_log_dir)))

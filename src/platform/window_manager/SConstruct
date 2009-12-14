@@ -89,6 +89,10 @@ wm_env['BUILDERS']['ProtocolBuffer'] = proto_builder
 
 wm_env.ParseConfig('pkg-config --cflags --libs gdk-2.0 xcomposite libpcrecpp')
 
+breakpad_path = '../../third_party/google-breakpad/files/src/client/linux'
+wm_env['CPPPATH'].append(breakpad_path)
+wm_env['LIBPATH'].append(breakpad_path)
+
 if os.system('pkg-config clutter-1.0') == 0:
   wm_env.ParseConfig('pkg-config --cflags --libs clutter-1.0')
 else:
@@ -138,7 +142,7 @@ srcs = Split('''\
 ''')
 libtest = wm_env.Library('test', Split(srcs))
 
-wm_env['LIBS'] += [libwm_core, libwm_ipc]
+wm_env['LIBS'] += [libwm_core, libwm_ipc, 'libbreakpad']
 
 wm_env.Program('wm', 'main.cc')
 
