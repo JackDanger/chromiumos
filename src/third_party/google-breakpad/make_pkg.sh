@@ -27,4 +27,10 @@ pushd "$TOP_SCRIPT_DIR/files"
 # No 'deb' target, so do straight install
 make -j$NUM_JOBS
 sudo -E make install
+
+# Build the client library as well.
+pushd src/client/linux
+make -j$NUM_JOBS
+popd
+
 popd
