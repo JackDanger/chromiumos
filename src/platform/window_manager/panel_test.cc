@@ -180,8 +180,34 @@ TEST_F(PanelTest, Resize) {
   EXPECT_EQ(orig_panel_height + 6, panel_info->height);
 }
 
+// Test that the _CHROME_STATE property is updated correctly to reflect the
+// panel's expanded/collapsed state.
+TEST_F(PanelTest, ChromeState) {
+  const XAtom state_atom = wm_->GetXAtom(ATOM_CHROME_STATE);
+  const XAtom collapsed_atom = wm_->GetXAtom(ATOM_CHROME_STATE_COLLAPSED_PANEL);
+
+  // Create a panel.
+  XWindow titlebar_xid = CreateTitlebarWindow(200, 20);
+  Window titlebar_win(wm_.get(), titlebar_xid);
+  XWindow panel_xid = CreatePanelWindow(200, 400, titlebar_xid, false);
+  Window panel_win(wm_.get(), panel_xid);
+  Panel panel(wm_->panel_bar_.get(), &panel_win, &titlebar_win, 0);
+
+  // The panel's content window should have have a collapsed state in
+  // _CHROME_STATE initially.
+  std::vector<int> values;
+  ASSERT_TRUE(xconn_->GetIntArrayProperty(panel_xid, state_atom, &values));
+  ASSERT_EQ(1, values.size());
+  EXPECT_EQ(collapsed_atom, values[0]);
+
+  // After we tell the panel to expand itself, it should remove the
+  // collapsed atom (and additionally, the entire property).
+  panel.SetState(true);
+  EXPECT_FALSE(xconn_->GetIntArrayProperty(panel_xid, state_atom, &values));
+}
+
 }  // namespace chromeos
 
 int main(int argc, char **argv) {
-  return chromeos::InitAndRunTests(&argc, argv, FLAGS_logtostderr);
+  return chromeos::InitAndRunTests(&argc, argv, &FLAGS_logtostderr);
 }

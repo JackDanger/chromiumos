@@ -34,8 +34,11 @@ testing::AssertionResult BytesAreEqual(
     size_t size);
 
 // Called from tests' main() functions to handle a bunch of boilerplate.
-// Its return value should be returned from main().
-int InitAndRunTests(int* argc, char** argv, bool log_to_stderr);
+// Its return value should be returned from main().  We initialize the
+// flag-parsing code, so if the caller wants to set 'log_to_stderr' based
+// on a flag, a pointer to the flag's variable should be passed here (e.g.
+// '&FLAGS_logtostderr').
+int InitAndRunTests(int* argc, char** argv, bool* log_to_stderr);
 
 // A basic test that sets up fake X and Clutter interfaces and creates a
 // WindowManager object.  Also includes several methods that tests can use

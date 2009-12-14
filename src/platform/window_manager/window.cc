@@ -146,6 +146,7 @@ Window::Window(WindowManager* wm, XWindow xid)
   // listening for property changes on the window.
   FetchAndApplyWmProtocols();
   FetchAndApplyWmState();
+  FetchAndApplyChromeState();
   FetchAndApplyTransientHint();
 }
 
@@ -295,11 +296,30 @@ void Window::FetchAndApplyWmState() {
       wm_state_modal_ = true;
   }
 
-  VLOG(1) << "Fetched NET_WM_STATE_ for " << xid_str() << ":"
+  VLOG(1) << "Fetched _NET_WM_STATE for " << xid_str() << ":"
           << " fullscreen=" << wm_state_fullscreen_
           << " maximized_horz=" << wm_state_maximized_horz_
           << " maximized_vert=" << wm_state_maximized_vert_
           << " modal=" << wm_state_modal_;
+}
+
+void Window::FetchAndApplyChromeState() {
+  XAtom state_xatom = wm_->GetXAtom(ATOM_CHROME_STATE);
+  chrome_state_xatoms_.clear();
+  std::vector<int> state_xatoms;
+  if (!wm_->xconn()->GetIntArrayProperty(xid_, state_xatom, &state_xatoms))
+    return;
+
+  std::string debug_str;
+  for (std::vector<int>::const_iterator it = state_xatoms.begin();
+       it != state_xatoms.end(); ++it) {
+    chrome_state_xatoms_.insert(static_cast<XAtom>(*it));
+    if (!debug_str.empty())
+      debug_str += " ";
+    debug_str += wm_->GetXAtomName(static_cast<XAtom>(*it));
+  }
+  VLOG(1) << "Fetched " << wm_->GetXAtomName(state_xatom) << " for "
+          << xid_str() << ": " << debug_str;
 }
 
 void Window::FetchAndApplyShape(bool update_shadow) {
@@ -377,6 +397,19 @@ bool Window::ChangeWmState(const std::vector<std::pair<XAtom, bool> >& states) {
   }
   return UpdateWmStateProperty();
 }
+
+bool Window::ChangeChromeState(
+    const std::vector<std::pair<XAtom, bool> >& states) {
+  for (std::vector<std::pair<XAtom, bool> >::const_iterator it = states.begin();
+       it != states.end(); ++it) {
+    if (it->second)
+      chrome_state_xatoms_.insert(it->first);
+    else
+      chrome_state_xatoms_.erase(it->first);
+  }
+  return UpdateChromeStateProperty();
+}
+
 
 bool Window::TakeFocus(Time timestamp) {
   VLOG(2) << "Focusing " << xid_str() << " using time " << timestamp;
@@ -715,8 +748,6 @@ void Window::SetWmStateInternal(int action, bool* value) {
 }
 
 bool Window::UpdateWmStateProperty() {
-  XAtom wm_state_atom = wm_->GetXAtom(ATOM_NET_WM_STATE);
-
   std::vector<int> values;
   if (wm_state_fullscreen_)
     values.push_back(wm_->GetXAtom(ATOM_NET_WM_STATE_FULLSCREEN));
@@ -732,11 +763,28 @@ bool Window::UpdateWmStateProperty() {
           << " maximized_horz=" << wm_state_maximized_horz_
           << " maximized_vert=" << wm_state_maximized_vert_
           << " modal=" << wm_state_modal_;
+  XAtom wm_state_atom = wm_->GetXAtom(ATOM_NET_WM_STATE);
   if (!values.empty()) {
     return wm_->xconn()->SetIntArrayProperty(
         xid_, wm_state_atom, XA_ATOM, values);
   } else {
     return wm_->xconn()->DeletePropertyIfExists(xid_, wm_state_atom);
+  }
+}
+
+bool Window::UpdateChromeStateProperty() {
+  std::vector<int> values;
+  for (std::set<XAtom>::const_iterator it = chrome_state_xatoms_.begin();
+       it != chrome_state_xatoms_.end(); ++it) {
+    values.push_back(static_cast<int>(*it));
+  }
+
+  XAtom state_xatom = wm_->GetXAtom(ATOM_CHROME_STATE);
+  if (!values.empty()) {
+    return wm_->xconn()->SetIntArrayProperty(
+        xid_, state_xatom, XA_ATOM, values);
+  } else {
+    return wm_->xconn()->DeletePropertyIfExists(xid_, state_xatom);
   }
 }
 

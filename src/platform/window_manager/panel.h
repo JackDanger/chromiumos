@@ -105,6 +105,10 @@ class Panel {
               Window::Gravity gravity,
               bool configure_input_windows);
 
+  // Update the panel window's _CHROME_STATE property to reflect the
+  // current expanded/collapsed state.
+  bool UpdateChromeStateProperty();
+
   // Notify Chrome about the panel's current visibility state.
   bool NotifyChromeAboutState();
 

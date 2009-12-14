@@ -11,6 +11,7 @@ extern "C" {
 #include <gflags/gflags.h>
 #include "chromeos/obsolete_logging.h"
 
+#include "window_manager/atom_cache.h"
 #include "window_manager/panel_bar.h"
 #include "window_manager/util.h"
 #include "window_manager/window.h"
@@ -124,6 +125,7 @@ Panel::Panel(PanelBar* panel_bar,
   wm()->xconn()->SetWindowCursor(right_input_xid_, XC_right_side);
   ConfigureInputWindows();
 
+  UpdateChromeStateProperty();
   NotifyChromeAboutState();
 }
 
@@ -364,6 +366,7 @@ void Panel::SetState(bool is_expanded) {
 
   // Notify Chrome about the changed state.
   is_expanded_ = is_expanded;
+  UpdateChromeStateProperty();
   NotifyChromeAboutState();
 
   ConfigureInputWindows();
@@ -444,6 +447,13 @@ void Panel::Resize(int width, int height,
   if (configure_input_windows) {
     ConfigureInputWindows();
   }
+}
+
+bool Panel::UpdateChromeStateProperty() {
+  XAtom atom = wm()->GetXAtom(ATOM_CHROME_STATE_COLLAPSED_PANEL);
+  std::vector<std::pair<XAtom, bool> > states;
+  states.push_back(std::make_pair(atom, is_expanded_ ? false : true));
+  return panel_win_->ChangeChromeState(states);
 }
 
 bool Panel::NotifyChromeAboutState() {

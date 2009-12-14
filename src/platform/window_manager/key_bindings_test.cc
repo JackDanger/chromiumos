@@ -343,5 +343,5 @@ TEST_F(KeyBindingTest, ManyActionsAndBindings) {
 }  // namespace
 
 int main(int argc, char **argv) {
-  return chromeos::InitAndRunTests(&argc, argv, FLAGS_logtostderr);
+  return chromeos::InitAndRunTests(&argc, argv, &FLAGS_logtostderr);
 }

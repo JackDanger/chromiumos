@@ -125,6 +125,8 @@ class WmIpc {
       // Notify Chrome that the panel state has changed.  Sent to the panel
       // window.
       //   param[0]: new state (0 means collapsed, 1 means expanded)
+      // TODO: Get rid of this; Chrome can just watch for changes to the
+      // _CHROME_STATE property to get the same information.
       CHROME_NOTIFY_PANEL_STATE,
 
       // Instruct the WM to move a floating tab.  The passed-in position is

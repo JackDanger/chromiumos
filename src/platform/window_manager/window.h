@@ -9,6 +9,7 @@ extern "C" {
 #include <X11/Xlib.h>
 }
 #include <gtest/gtest_prod.h>  // for FRIEND_TEST() macro
+#include <set>
 #include <string>
 #include <vector>
 
@@ -16,6 +17,7 @@ extern "C" {
 #include "base/logging.h"
 #include "base/scoped_ptr.h"
 #include "chromeos/obsolete_logging.h"
+#include "window_manager/atom_cache.h"  // for Atom enum
 #include "window_manager/clutter_interface.h"
 #include "window_manager/wm_ipc.h"
 
@@ -41,7 +43,7 @@ class WindowManager;
 //   location.
 //
 // These two locations are not necessarily the same.  When animating a
-// window move, it may be desireable to just move the X window once to the
+// window move, it may be desirable to just move the X window once to the
 // final location and then animate the move on the overlay.  As a result,
 // there are different sets of methods to manipulate the client window and
 // the composited window.
@@ -110,6 +112,10 @@ class Window {
   // window before it's been mapped.
   void FetchAndApplyWmState();
 
+  // Fetch the window's _CHROME_STATE property and update our internal copy
+  // of it.
+  void FetchAndApplyChromeState();
+
   // Check if the window has been shaped using the Shape extension and
   // update its Clutter actor accordingly.  If 'update_shadow' is true, add
   // or remove a drop shadow as needed.
@@ -128,6 +134,11 @@ class Window {
   // for WM-initiated state changes -- client-initiated changes come in
   // through HandleWmStateMessage().
   bool ChangeWmState(const std::vector<std::pair<XAtom, bool> >& states);
+
+  // Set or unset particular _CHROME_STATE values for this window (each
+  // atom's bool value states whether it should be added or removed).
+  // Other existing values in the property remain unchanged.
+  bool ChangeChromeState(const std::vector<std::pair<XAtom, bool> >& states);
 
   // Give keyboard focus to the client window, using a WM_TAKE_FOCUS
   // message if the client supports it or a SetInputFocus request
@@ -239,6 +250,10 @@ class Window {
   // of the 'wm_state_*' members.
   bool UpdateWmStateProperty();
 
+  // Update the window's _CHROME_STATE property based on the current
+  // contents of 'chrome_state_atoms_'.
+  bool UpdateChromeStateProperty();
+
   XWindow xid_;
   std::string xid_str_;  // hex for debugging
   WindowManager* wm_;
@@ -321,10 +336,15 @@ class Window {
 
   // EWMH window state, as set by _NET_WM_STATE client messages and exposed
   // in the window's _NET_WM_STATE property.
+  // TODO: Just store these in a set like we do for _CHROME_STATE below.
   bool wm_state_fullscreen_;
   bool wm_state_maximized_horz_;
   bool wm_state_maximized_vert_;
   bool wm_state_modal_;
+
+  // Chrome window state, as exposed in the window's _CHROME_STATE
+  // property.
+  std::set<XAtom> chrome_state_xatoms_;
 
   DISALLOW_COPY_AND_ASSIGN(Window);
 };

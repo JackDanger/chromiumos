@@ -119,6 +119,7 @@ class WindowManager {
   friend class LayoutManagerTest;         // uses 'layout_manager_'
   friend class PanelBarTest;              // uses 'panel_bar_'
   FRIEND_TEST(LayoutManagerTest, Basic);  // uses TrackWindow()
+  FRIEND_TEST(PanelTest, ChromeState);    // uses 'panel_bar_'
   FRIEND_TEST(PanelTest, InputWindows);   // uses 'panel_bar_'
   FRIEND_TEST(PanelTest, Resize);         // uses 'panel_bar_'
   FRIEND_TEST(WindowTest, TransientFor);  // uses TrackWindow()

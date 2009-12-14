@@ -49,11 +49,11 @@ testing::AssertionResult BytesAreEqual(
   return testing::AssertionSuccess();
 }
 
-int InitAndRunTests(int* argc, char** argv, bool log_to_stderr) {
+int InitAndRunTests(int* argc, char** argv, bool* log_to_stderr) {
   google::ParseCommandLineFlags(argc, &argv, true);
   CommandLine::Init(*argc, argv);
   logging::InitLogging(NULL,
-                       log_to_stderr ?
+                       (log_to_stderr && *log_to_stderr) ?
                          logging::LOG_ONLY_TO_SYSTEM_DEBUG_LOG :
                          logging::LOG_NONE,
                        logging::DONT_LOCK_LOG_FILE,

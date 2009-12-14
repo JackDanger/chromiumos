@@ -325,6 +325,52 @@ TEST_F(WindowTest, WmState) {
   EXPECT_EQ(max_vert_atom, values[1]);
 }
 
+TEST_F(WindowTest, ChromeState) {
+  const XAtom state_atom = wm_->GetXAtom(ATOM_CHROME_STATE);
+  const XAtom collapsed_atom = wm_->GetXAtom(ATOM_CHROME_STATE_COLLAPSED_PANEL);
+  // This isn't an atom that we'd actually set in the _CHROME_STATE
+  // property, but we need another atom besides the collapsed one for
+  // testing.
+  const XAtom other_atom = wm_->GetXAtom(ATOM_NET_WM_STATE_MODAL);
+
+  // Set the "collapsed" atom on a window.  The Window class should load
+  // the initial property in its constructor.
+  XWindow xid = CreateSimpleWindow();
+  xconn_->SetIntProperty(xid,
+                         state_atom,  // atom
+                         XA_ATOM,     // type
+                         collapsed_atom);
+  Window win(wm_.get(), xid);
+
+  // Tell the window to set the other atom.
+  std::vector<std::pair<XAtom, bool> > states;
+  states.push_back(std::make_pair(other_atom, true));
+  EXPECT_TRUE(win.ChangeChromeState(states));
+
+  // Check that both atoms are included in the property.
+  std::vector<int> values;
+  ASSERT_TRUE(xconn_->GetIntArrayProperty(xid, state_atom, &values));
+  ASSERT_EQ(2, values.size());
+  EXPECT_EQ(collapsed_atom, values[0]);
+  EXPECT_EQ(other_atom, values[1]);
+
+  // Now tell the window to unset the "collapsed" atom, and make sure that
+  // only the other atom is present.
+  states.clear();
+  states.push_back(std::make_pair(collapsed_atom, false));
+  EXPECT_TRUE(win.ChangeChromeState(states));
+  values.clear();
+  ASSERT_TRUE(xconn_->GetIntArrayProperty(xid, state_atom, &values));
+  ASSERT_EQ(1, values.size());
+  EXPECT_EQ(other_atom, values[0]);
+
+  // If we also unset the other atom, the property should be removed.
+  states.clear();
+  states.push_back(std::make_pair(other_atom, false));
+  EXPECT_TRUE(win.ChangeChromeState(states));
+  EXPECT_FALSE(xconn_->GetIntArrayProperty(xid, state_atom, &values));
+}
+
 TEST_F(WindowTest, Shape) {
   // Create a shaped window.
   int width = 10;
@@ -383,5 +429,5 @@ TEST_F(WindowTest, Shape) {
 }  // namespace chromeos
 
 int main(int argc, char **argv) {
-  return chromeos::InitAndRunTests(&argc, argv, FLAGS_logtostderr);
+  return chromeos::InitAndRunTests(&argc, argv, &FLAGS_logtostderr);
 }
