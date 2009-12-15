@@ -1,4 +1,7 @@
-This directory contains test cases (classified by test area) for Chrome OS.
+This directory contains server-side test cases for Chromium OS,
+classified by test area. See
+http://autotest.kernel.org/wiki/AutotestApi for documentation on the
+distinction between client side tests and server side tests.
 
 Individual tests that require build steps should write their output
 into the site-tests output directory, from which the
