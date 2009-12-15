@@ -22,7 +22,15 @@ DEFINE_bool(logtostderr, false,
 
 namespace chromeos {
 
-class PanelTest : public BasicWindowManagerTest {};
+class PanelTest : public BasicWindowManagerTest {
+ protected:
+  virtual void SetUp() {
+    BasicWindowManagerTest::SetUp();
+    panel_bar_ = wm_->panel_bar_.get();
+  }
+
+  PanelBar* panel_bar_;  // instance belonging to 'wm_'
+};
 
 TEST_F(PanelTest, InputWindows) {
   XWindow titlebar_xid = CreateTitlebarWindow(200, 20);
@@ -36,7 +44,7 @@ TEST_F(PanelTest, InputWindows) {
       xconn_->GetWindowInfoOrDie(panel_xid);
 
   // Create a panel and expand it.
-  Panel panel(wm_->panel_bar_.get(), &panel_win, &titlebar_win, 0);
+  Panel panel(panel_bar_, &panel_win, &titlebar_win, 0);
   panel.SetState(true);
 
   // Restack the panel and check that its titlebar is stacked above the
@@ -58,7 +66,7 @@ TEST_F(PanelTest, InputWindows) {
 
   // Now move the panel to a new location and check that all of the input
   // windows are moved correctly around it.
-  panel.Move(wm_->panel_bar_->x() + wm_->panel_bar_->width() - 35, 0);
+  panel.Move(panel_bar_->x() + panel_bar_->width() - 35, 0);
 
   MockXConnection::WindowInfo* top_info =
       xconn_->GetWindowInfoOrDie(panel.top_input_xid_);
@@ -126,7 +134,7 @@ TEST_F(PanelTest, Resize) {
       xconn_->GetWindowInfoOrDie(panel_xid);
 
   // Create a panel and expand it.
-  Panel panel(wm_->panel_bar_.get(), &panel_win, &titlebar_win, 0);
+  Panel panel(panel_bar_, &panel_win, &titlebar_win, 0);
   panel.SetState(true);
 
   // The panel should grab the pointer when it gets a button press on one
@@ -191,7 +199,7 @@ TEST_F(PanelTest, ChromeState) {
   Window titlebar_win(wm_.get(), titlebar_xid);
   XWindow panel_xid = CreatePanelWindow(200, 400, titlebar_xid, false);
   Window panel_win(wm_.get(), panel_xid);
-  Panel panel(wm_->panel_bar_.get(), &panel_win, &titlebar_win, 0);
+  Panel panel(panel_bar_, &panel_win, &titlebar_win, 0);
 
   // The panel's content window should have have a collapsed state in
   // _CHROME_STATE initially.

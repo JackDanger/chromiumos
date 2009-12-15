@@ -365,6 +365,31 @@ bool PanelBar::HandleChromeMessage(const WmIpc::Message& msg) {
   return true;
 }
 
+bool PanelBar::HandleClientMessage(const XClientMessageEvent& e) {
+  Window* win = wm_->GetWindow(e.window);
+  if (!win)
+    return false;
+
+  Panel* panel = GetPanelByWindow(*win);
+  if (!panel)
+    return false;
+
+  if (e.message_type == wm_->GetXAtom(ATOM_NET_ACTIVE_WINDOW)) {
+    if (e.format != XConnection::kLongFormat)
+      return true;
+    VLOG(1) << "Got _NET_ACTIVE_WINDOW request to focus " << XidStr(e.window)
+            << " (requestor says its currently-active window is "
+            << XidStr(e.data.l[2]) << "; real active window is "
+            << XidStr(wm_->active_window_xid()) << ")";
+
+    if (!panel->is_expanded())
+      ExpandPanel(panel, false);  // create_anchor=false
+    FocusPanel(panel, false);  // remove_pointer_grab=false
+    return true;
+  }
+  return false;
+}
+
 bool PanelBar::HandleFocusChange(XWindow xid, bool focus_in) {
   Window* win = wm_->GetWindow(xid);
   if (!win) {

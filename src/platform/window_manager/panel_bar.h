@@ -12,6 +12,8 @@ extern "C" {
 #include <map>
 #include <tr1/memory>
 
+#include <gtest/gtest_prod.h>  // for FRIEND_TEST() macro
+
 #include "base/basictypes.h"
 #include "base/scoped_ptr.h"
 #include "window_manager/clutter_interface.h"
@@ -74,6 +76,7 @@ class PanelBar : public EventConsumer {
 
   // Handle messages from client apps.
   bool HandleChromeMessage(const WmIpc::Message& msg);
+  bool HandleClientMessage(const XClientMessageEvent& e);
 
   // Handle windows getting or losing the input focus.
   bool HandleFocusChange(XWindow xid, bool focus_in);
@@ -102,6 +105,8 @@ class PanelBar : public EventConsumer {
   bool TakeFocus();
 
  private:
+  FRIEND_TEST(PanelBarTest, ActiveWindowMessage);
+
   // Returns true if 'center_x' falls within the bounds of a panel's
   // titlebar.
   class PanelTitlebarContainsPoint {

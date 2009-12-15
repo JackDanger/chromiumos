@@ -9,6 +9,7 @@
 #include "base/logging.h"
 #include "window_manager/clutter_interface.h"
 #include "window_manager/mock_x_connection.h"
+#include "window_manager/panel.h"
 #include "window_manager/panel_bar.h"
 #include "window_manager/shadow.h"
 #include "window_manager/test_lib.h"
@@ -22,7 +23,15 @@ DEFINE_bool(logtostderr, false,
 
 namespace chromeos {
 
-class PanelBarTest : public BasicWindowManagerTest {};
+class PanelBarTest : public BasicWindowManagerTest {
+ protected:
+  virtual void SetUp() {
+    BasicWindowManagerTest::SetUp();
+    panel_bar_ = wm_->panel_bar_.get();
+  }
+
+  PanelBar* panel_bar_;  // instance belonging to 'wm_'
+};
 
 TEST_F(PanelBarTest, Basic) {
   // First, create a toplevel window.
@@ -130,6 +139,41 @@ TEST_F(PanelBarTest, Basic) {
             stage->GetStackingIndex(toplevel_win2->actor()));
   EXPECT_LT(stage->GetStackingIndex(panel_win->actor()),
             stage->GetStackingIndex(toplevel_win2->actor()));
+}
+
+// Test that we expand and focus panels in response to _NET_ACTIVE_WINDOW
+// client messages.
+TEST_F(PanelBarTest, ActiveWindowMessage) {
+  // Create a collapsed panel.
+  XWindow titlebar_xid = CreateTitlebarWindow(200, 20);
+  SendInitialEventsForWindow(titlebar_xid);
+  XWindow panel_xid = CreatePanelWindow(200, 400, titlebar_xid, false);
+  SendInitialEventsForWindow(panel_xid);
+
+  // Make sure that it starts out collapsed.
+  Window* panel_win = wm_->GetWindow(panel_xid);
+  ASSERT_TRUE(panel_win != NULL);
+  Panel* panel = panel_bar_->GetPanelByWindow(*panel_win);
+  ASSERT_TRUE(panel != NULL);
+  EXPECT_FALSE(panel->is_expanded());
+  EXPECT_NE(panel_xid, xconn_->focused_xid());
+
+  // After sending a _NET_ACTIVE_WINDOW message asking the window manager
+  // to focus the panel, it should be expanded and get the focus, and the
+  // _NET_ACTIVE_WINDOW property should contain its ID.
+  XEvent event;
+  MockXConnection::InitClientMessageEvent(
+      &event,
+      panel_xid,  // window to focus
+      wm_->GetXAtom(ATOM_NET_ACTIVE_WINDOW),
+      1,          // source indication: client app
+      CurrentTime,
+      None,       // currently-active window
+      None);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  EXPECT_TRUE(panel->is_expanded());
+  EXPECT_EQ(panel_xid, xconn_->focused_xid());
+  EXPECT_EQ(panel_xid, GetActiveWindowProperty());
 }
 
 }  // namespace chromeos
