@@ -295,7 +295,12 @@ class AbstractSSHHost(SiteHost):
             self.run('chown -R %s %s' % (self.target_file_owner, dest))
 
 
-    def ssh_ping(self, timeout=60):
+    def ssh_ping(self, timeout=5):
+        """
+        TODO(petkov): decreased default timeout from 60 to 5 seconds
+        to ensure that wait_down works correctly on Chromium OS. Don't
+        upstream this change assuming the right fix gets implemented.
+        """
         try:
             self.run("true", timeout=timeout, connect_timeout=timeout)
         except error.AutoservSSHTimeout:
