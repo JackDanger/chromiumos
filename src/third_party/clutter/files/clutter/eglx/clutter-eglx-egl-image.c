@@ -210,6 +210,9 @@ create_image_and_texture (ClutterEGLXEGLImage *self)
   CLUTTER_NOTE (TEXTURE, "pixmap=0x%x pixmap-width=%d pixmap-height=%d\n",
                 (guint)pixmap, pixmap_width, pixmap_height);
 
+  if (pixmap == None)
+    return FALSE;
+
   g_assert (_egl_create_image_khr);
   image = _egl_create_image_khr (clutter_eglx_display (),
                                  context,
