@@ -1,0 +1,16 @@
+# Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+AUTHOR = "Chrome OS Team"
+NAME = "BootPerf"
+TIME = "SHORT"
+TEST_CATEGORY = "Benchmark"
+TEST_CLASS = "system"
+TEST_TYPE = "client"
+
+DOC = """
+This test collects the boot performance metrics from the last system reboot.
+"""
+
+job.run_test('system_BootPerf')
