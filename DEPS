@@ -20,6 +20,7 @@
 # causes it to re-download the files each time.
 
 use_relative_paths=True
+use_relative_urls2=True
 
 # Base is prefixed with "src/" if this is trunk/DEPS, or "" if this
 # is trunk/src/DEPS.
