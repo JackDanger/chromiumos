@@ -180,3 +180,9 @@ libcap-dev
 python-debian
 dpkg-cross
 python-apt
+
+# Cross-compiler packages for ARM
+libmpfr-dev-armel-cross
+gfortran-4.4-arm-linux-gnueabi
+gobjc++-4.4-arm-linux-gnueabi
+libstdc++6-4.4-pic-armel-cross
