@@ -51,6 +51,7 @@ class BusConnection {
 
   friend class Proxy;
   friend BusConnection GetSystemBusConnection();
+  friend BusConnection GetPrivateBusConnection(const char* address);
 
   // Constructor takes ownership
   explicit BusConnection(::DBusGConnection* x)
@@ -80,13 +81,23 @@ class Proxy {
       : object_(NULL) {
   }
 
+  // Set |connect_to_name_owner| true if you'd like to use
+  // dbus_g_proxy_new_for_name_owner() rather than dbus_g_proxy_new_for_name().
+  Proxy(const BusConnection& connection,
+        const char* name,
+        const char* path,
+        const char* interface,
+        bool connect_to_name_owner)
+      : object_(GetGProxy(
+          connection, name, path, interface, connect_to_name_owner)) {
+  }
+
+  // Equivalent to Proxy(connection, name, path, interface, false).
   Proxy(const BusConnection& connection,
         const char* name,
         const char* path,
         const char* interface)
-      : object_(::dbus_g_proxy_new_for_name(connection.object_, name, path,
-                                            interface)) {
-    DCHECK(object_) << "Failed to construct proxy.";
+      : object_(GetGProxy(connection, name, path, interface, false)) {
   }
 
   Proxy(const Proxy& x)
@@ -123,6 +134,12 @@ class Proxy {
   }
 
  private:
+  static value_type GetGProxy(const BusConnection& connection,
+                              const char* name,
+                              const char* path,
+                              const char* interface,
+                              bool connect_to_name_owner);
+
   operator int() const;  // for safe bool cast
   friend void swap(Proxy& x, Proxy& y);
 
@@ -280,7 +297,8 @@ bool RetrieveProperty(const Proxy& proxy,
                            G_TYPE_INVALID,
                            G_TYPE_VALUE, &value,
                            G_TYPE_INVALID)){
-    LOG(ERROR) << "Getting property failed: " << (error->message ? error->message : "Unknown Error.");
+    LOG(ERROR) << "Getting property failed: "
+               << (error->message ? error->message : "Unknown Error.");
     return false;
 
   }
@@ -297,6 +315,10 @@ bool RetrieveProperties(const Proxy& proxy,
 // \brief Returns a connection to the system bus.
 
 BusConnection GetSystemBusConnection();
+
+// \brief Returns a private connection to a bus at |address|.
+
+BusConnection GetPrivateBusConnection(const char* address);
 
 }  // namespace dbus
 }  // namespace chromeos

@@ -44,6 +44,38 @@ BusConnection GetSystemBusConnection() {
   return BusConnection(result);
 }
 
+BusConnection GetPrivateBusConnection(const char* address) {
+  // Since dbus-glib does not have an API like dbus_g_connection_open_private(),
+  // we have to implement our own.
+
+  // We have to call _dbus_g_value_types_init() to register standard marshalers
+  // just like as dbus_g_bus_get() and dbus_g_connection_open() do, but the
+  // function is not exported. So we call GetPrivateBusConnection() which calls
+  // dbus_g_bus_get() here instead. Note that if we don't call
+  // _dbus_g_value_types_init(), we might get "WARNING **: No demarshaller
+  // registered for type xxxxx" error and might not be able to handle incoming
+  // signals nor method calls.
+  GetSystemBusConnection();
+
+  ::DBusGConnection* result = NULL;
+  ::DBusConnection* raw_connection
+        = ::dbus_connection_open_private(address, NULL);
+  CHECK(raw_connection);
+
+  ::dbus_connection_setup_with_g_main(raw_connection, NULL);
+  // A reference count of |raw_connection| is transferred to |result|. You don't
+  // have to (and should not) unref the |raw_connection|.
+  result = ::dbus_connection_get_g_connection(raw_connection);
+  CHECK(result);
+
+  ::dbus_connection_set_exit_on_disconnect(
+      ::dbus_g_connection_get_connection(result), FALSE);
+
+  // TODO(yusukes): We should call dbus_connection_close() for private
+  // connections.
+  return BusConnection(result);
+}
+
 bool RetrieveProperties(const Proxy& proxy,
                         const char* interface,
                         glib::ScopedHashTable* result) {
@@ -61,6 +93,36 @@ bool RetrieveProperties(const Proxy& proxy,
   return true;
 }
 
+/* static */
+Proxy::value_type Proxy::GetGProxy(const BusConnection& connection,
+                                   const char* name,
+                                   const char* path,
+                                   const char* interface,
+                                   bool connect_to_name_owner) {
+  value_type result = NULL;
+  if (connect_to_name_owner) {
+    glib::ScopedError error;
+    result = ::dbus_g_proxy_new_for_name_owner(connection.object_,
+                                               name,
+                                               path,
+                                               interface,
+                                               &Resetter(&error).lvalue());
+    if (!result) {
+      LOG(ERROR) << "Failed to construct proxy: "
+                 << (error->message ? error->message : "Unknown Error")
+                 << ": " << path;
+    }
+  } else {
+    result = ::dbus_g_proxy_new_for_name(connection.object_,
+                                         name,
+                                         path,
+                                         interface);
+    if (!result) {
+      LOG(ERROR) << "Failed to construct proxy: " << path;
+    }
+  }
+  return result;
+}
 
 }  // namespace dbus
 }  // namespace chromeos
