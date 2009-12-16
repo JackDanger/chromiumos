@@ -130,13 +130,13 @@ TEST_F(LayoutManagerTest, Focus) {
   EXPECT_EQ(xid, xconn_->focused_xid());
   ASSERT_TRUE(lm_->active_toplevel_ != NULL);
   EXPECT_EQ(xid, lm_->active_toplevel_->win()->xid());
-  EXPECT_EQ(None, wm_->active_window_xid());
+  EXPECT_EQ(None, GetActiveWindowProperty());
   EXPECT_TRUE(info->all_buttons_grabbed);
 
   // We shouldn't actually update _NET_ACTIVE_WINDOW and remove the passive
   // button grab until we get the FocusIn event.
   SendFocusEvents(xconn_->GetRootWindow(), xid);
-  EXPECT_EQ(xid, wm_->active_window_xid());
+  EXPECT_EQ(xid, GetActiveWindowProperty());
   EXPECT_FALSE(info->all_buttons_grabbed);
 
   // Now create a second window.
@@ -161,7 +161,7 @@ TEST_F(LayoutManagerTest, Focus) {
 
   // Now send the appropriate FocusOut and FocusIn events.
   SendFocusEvents(xid, xid2);
-  EXPECT_EQ(xid2, wm_->active_window_xid());
+  EXPECT_EQ(xid2, GetActiveWindowProperty());
   EXPECT_TRUE(info->all_buttons_grabbed);
   EXPECT_FALSE(info2->all_buttons_grabbed);
 
@@ -182,7 +182,7 @@ TEST_F(LayoutManagerTest, Focus) {
 
   // Send the appropriate FocusOut and FocusIn events.
   SendFocusEvents(xid2, xid);
-  EXPECT_EQ(xid, wm_->active_window_xid());
+  EXPECT_EQ(xid, GetActiveWindowProperty());
   EXPECT_FALSE(info->all_buttons_grabbed);
   EXPECT_TRUE(info2->all_buttons_grabbed);
 
@@ -194,7 +194,7 @@ TEST_F(LayoutManagerTest, Focus) {
   EXPECT_EQ(xid2, lm_->active_toplevel_->win()->xid());
 
   SendFocusEvents(None, xid2);
-  EXPECT_EQ(xid2, wm_->active_window_xid());
+  EXPECT_EQ(xid2, GetActiveWindowProperty());
   EXPECT_FALSE(info2->all_buttons_grabbed);
 }
 
@@ -280,7 +280,7 @@ TEST_F(LayoutManagerTest, FocusTransient) {
   EXPECT_EQ(xid, xconn_->focused_xid());
   SendFocusEvents(xconn_->GetRootWindow(), xid);
   EXPECT_FALSE(info->all_buttons_grabbed);
-  EXPECT_EQ(xid, wm_->active_window_xid());
+  EXPECT_EQ(xid, GetActiveWindowProperty());
   EXPECT_TRUE(wm_->GetWindow(xid)->focused());
 
   // Now create a transient window.
@@ -304,9 +304,9 @@ TEST_F(LayoutManagerTest, FocusTransient) {
   EXPECT_FALSE(wm_->GetWindow(xid)->focused());
   EXPECT_TRUE(wm_->GetWindow(transient_xid)->focused());
 
-  // _NET_ACTIVE_WINDOW should still be set to the owner instead of the
-  // transient window, though.
-  EXPECT_EQ(xid, wm_->active_window_xid());
+  // _NET_ACTIVE_WINDOW should also be set to the transient window (EWMH is
+  // vague about this, but it seems to match what other WMs do).
+  EXPECT_EQ(transient_xid, GetActiveWindowProperty());
 
   // Now simulate a button press on the owner window.
   xconn_->set_pointer_grab_xid(xid);
@@ -323,7 +323,7 @@ TEST_F(LayoutManagerTest, FocusTransient) {
   SendFocusEvents(transient_xid, xid);
   EXPECT_FALSE(info->all_buttons_grabbed);
   EXPECT_TRUE(transient_info->all_buttons_grabbed);
-  EXPECT_EQ(xid, wm_->active_window_xid());
+  EXPECT_EQ(xid, GetActiveWindowProperty());
   EXPECT_TRUE(wm_->GetWindow(xid)->focused());
   EXPECT_FALSE(wm_->GetWindow(transient_xid)->focused());
 
@@ -333,6 +333,7 @@ TEST_F(LayoutManagerTest, FocusTransient) {
   EXPECT_TRUE(wm_->HandleEvent(&event));
   EXPECT_EQ(transient_xid, xconn_->focused_xid());
   SendFocusEvents(xid, transient_xid);
+  EXPECT_EQ(transient_xid, GetActiveWindowProperty());
   EXPECT_FALSE(wm_->GetWindow(xid)->focused());
   EXPECT_TRUE(wm_->GetWindow(transient_xid)->focused());
 
@@ -348,17 +349,18 @@ TEST_F(LayoutManagerTest, FocusTransient) {
   MockXConnection::InitButtonPressEvent(&event, xid, 0, 0, 1);
   EXPECT_TRUE(wm_->HandleEvent(&event));
   EXPECT_EQ(transient_xid, xconn_->focused_xid());
+  EXPECT_EQ(transient_xid, GetActiveWindowProperty());
   EXPECT_FALSE(wm_->GetWindow(xid)->focused());
   EXPECT_TRUE(wm_->GetWindow(transient_xid)->focused());
 
-  // Now create another top-level window, which we'll switch to
+  // Now create another toplevel window, which we'll switch to
   // automatically.
   XWindow xid2 = CreateSimpleWindow();
   MockXConnection::WindowInfo* info2 = xconn_->GetWindowInfoOrDie(xid2);
   SendInitialEventsForWindow(xid2);
   EXPECT_EQ(xid2, xconn_->focused_xid());
   SendFocusEvents(transient_xid, xid2);
-  EXPECT_EQ(xid2, wm_->active_window_xid());
+  EXPECT_EQ(xid2, GetActiveWindowProperty());
   EXPECT_FALSE(wm_->GetWindow(xid)->focused());
   EXPECT_FALSE(wm_->GetWindow(transient_xid)->focused());
   EXPECT_TRUE(wm_->GetWindow(xid2)->focused());
@@ -368,7 +370,7 @@ TEST_F(LayoutManagerTest, FocusTransient) {
   lm_->CycleActiveToplevelWindow(false);
   EXPECT_EQ(transient_xid, xconn_->focused_xid());
   SendFocusEvents(xid2, transient_xid);
-  EXPECT_EQ(xid, wm_->active_window_xid());
+  EXPECT_EQ(transient_xid, GetActiveWindowProperty());
   EXPECT_FALSE(wm_->GetWindow(xid)->focused());
   EXPECT_TRUE(wm_->GetWindow(transient_xid)->focused());
   EXPECT_FALSE(wm_->GetWindow(xid2)->focused());
@@ -377,7 +379,7 @@ TEST_F(LayoutManagerTest, FocusTransient) {
   lm_->CycleActiveToplevelWindow(false);
   EXPECT_EQ(xid2, xconn_->focused_xid());
   SendFocusEvents(transient_xid, xid2);
-  EXPECT_EQ(xid2, wm_->active_window_xid());
+  EXPECT_EQ(xid2, GetActiveWindowProperty());
   EXPECT_FALSE(wm_->GetWindow(xid)->focused());
   EXPECT_FALSE(wm_->GetWindow(transient_xid)->focused());
   EXPECT_TRUE(wm_->GetWindow(xid2)->focused());
@@ -402,7 +404,7 @@ TEST_F(LayoutManagerTest, FocusTransient) {
   MockXConnection::InitFocusInEvent(
       &event, transient_xid, NotifyNormal, NotifyNonlinear);
   EXPECT_TRUE(wm_->HandleEvent(&event));
-  EXPECT_EQ(xid, wm_->active_window_xid());
+  EXPECT_EQ(transient_xid, GetActiveWindowProperty());
   EXPECT_FALSE(wm_->GetWindow(xid)->focused());
   EXPECT_TRUE(wm_->GetWindow(transient_xid)->focused());
   EXPECT_FALSE(wm_->GetWindow(xid2)->focused());
@@ -418,7 +420,7 @@ TEST_F(LayoutManagerTest, FocusTransient) {
   MockXConnection::InitFocusInEvent(
       &event, transient_xid, NotifyWhileGrabbed, NotifyPointer);
   EXPECT_FALSE(wm_->HandleEvent(&event));
-  EXPECT_EQ(None, wm_->active_window_xid());
+  EXPECT_EQ(None, GetActiveWindowProperty());
   EXPECT_FALSE(wm_->GetWindow(xid)->focused());
   EXPECT_FALSE(wm_->GetWindow(transient_xid)->focused());
   EXPECT_FALSE(wm_->GetWindow(xid2)->focused());

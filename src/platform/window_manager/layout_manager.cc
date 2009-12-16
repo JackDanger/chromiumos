@@ -288,8 +288,6 @@ void LayoutManager::HandleWindowMap(Window* win) {
           if (mode_ == MODE_ACTIVE &&
               active_toplevel_ != NULL &&
               active_toplevel_->IsWindowOrTransientFocused()) {
-            // The _NET_ACTIVE_WINDOW property should already refer to
-            // 'active_toplevel_', since it previously had the focus.
             active_toplevel_->TakeFocus(wm_->GetCurrentTimeFromServer());
           }
           break;
@@ -492,10 +490,11 @@ bool LayoutManager::HandleFocusChange(XWindow xid, bool focus_in) {
     return false;
   toplevel->HandleFocusChange(win, focus_in);
 
-  // When a transient window gets the focus, we say that its owner is the
-  // "active" window (in the _NET_ACTIVE_WINDOW sense).
+  // Announce that the new window is the "active" window (in the
+  // _NET_ACTIVE_WINDOW sense), regardless of whether it's a toplevel
+  // window or a transient.
   if (focus_in)
-    wm_->SetActiveWindowProperty(toplevel->win()->xid());
+    wm_->SetActiveWindowProperty(win->xid());
 
   return true;
 }

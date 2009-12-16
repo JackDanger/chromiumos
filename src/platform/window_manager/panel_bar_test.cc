@@ -43,7 +43,7 @@ TEST_F(PanelBarTest, Basic) {
   // It should be initially focused.
   EXPECT_EQ(toplevel_xid, xconn_->focused_xid());
   SendFocusEvents(xconn_->GetRootWindow(), toplevel_xid);
-  EXPECT_EQ(toplevel_xid, wm_->active_window_xid());
+  EXPECT_EQ(toplevel_xid, GetActiveWindowProperty());
 
   // Now create a panel titlebar, and then the actual panel window.
   const int initial_titlebar_height = 16;
@@ -119,7 +119,7 @@ TEST_F(PanelBarTest, Basic) {
   // Send FocusOut and FocusIn events and check that the active window hint
   // is updated to contain the panel window.
   SendFocusEvents(toplevel_xid, panel_xid);
-  EXPECT_EQ(panel_xid, wm_->active_window_xid());
+  EXPECT_EQ(panel_xid, GetActiveWindowProperty());
 
   // Create a second toplevel window.
   XWindow toplevel_xid2 = CreateSimpleWindow();
