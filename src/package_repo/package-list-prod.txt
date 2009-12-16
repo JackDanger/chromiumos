@@ -99,3 +99,6 @@ ibus-chewing
 ibus-gtk
 libibus1
 python-ibus
+
+# For partitioning (GPT format)
+gptpart
