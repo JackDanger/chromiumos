@@ -26,6 +26,7 @@ src/scripts/shared_user_passwd.txt
 src/platform/cros/
 src/platform/login_manager/
 src/platform/pam_google/
+src/third_party/autotest/files/
 src/third_party/chrome/files/
 src/third_party/connman/build/
 src/third_party/connman/connman-0.42/
