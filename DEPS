@@ -41,6 +41,9 @@ deps = {
     # pam_google
     _platform_base + "pam_google": "/pam_google.git",
 
+    # autotest
+    _third_party_base + "autotest/files" : "/autotest.git",
+
     # IBus framework
     _third_party_base + "ibus/files": "/ibus.git",
 
