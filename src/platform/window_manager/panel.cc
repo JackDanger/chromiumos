@@ -115,6 +115,7 @@ Panel::Panel(PanelBar* panel_bar,
   panel_win_->SetCompositedOpacity(1.0, 0);
   panel_win_->MoveComposited(
       snapped_panel_left(), panel_bar_->y() + panel_bar_->height(), 0);
+  panel_win_->SetShadowOpacity(0, 0);
   panel_win_->MoveClientToComposited();
   panel_win_->ShowComposited();
 
@@ -327,6 +328,7 @@ void Panel::SetState(bool is_expanded) {
         cur_panel_left(),
         panel_bar_->y() - panel_win_->client_height(),
         kAnimMs);
+    panel_win_->SetShadowOpacity(1.0, kAnimMs);
     panel_win_->MoveClientToComposited();
 
     // Move the titlebar right above the panel.  We left-justify it with
@@ -349,7 +351,8 @@ void Panel::SetState(bool is_expanded) {
         cur_panel_left(),
         panel_bar_->y() + panel_bar_->height(),
         kAnimMs);
-    panel_win_->MoveClientOffscreen();
+    // Hide the shadow so it's not peeking up at the bottom of the screen.
+    panel_win_->SetShadowOpacity(0, kAnimMs);
     panel_win_->MoveClientToComposited();
 
     // Resize and right-justify the titlebar before animating it.

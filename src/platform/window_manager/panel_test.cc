@@ -11,6 +11,7 @@
 #include "window_manager/mock_x_connection.h"
 #include "window_manager/panel.h"
 #include "window_manager/panel_bar.h"
+#include "window_manager/shadow.h"
 #include "window_manager/stacking_manager.h"
 #include "window_manager/test_lib.h"
 #include "window_manager/util.h"
@@ -212,6 +213,40 @@ TEST_F(PanelTest, ChromeState) {
   // collapsed atom (and additionally, the entire property).
   panel.SetState(true);
   EXPECT_FALSE(xconn_->GetIntArrayProperty(panel_xid, state_atom, &values));
+}
+
+// Test that we hide content windows' shadows when panels are collapsed;
+// they can show up across the bottom of the screen otherwise.
+TEST_F(PanelTest, Shadows) {
+  // Create a panel.
+  XWindow titlebar_xid = CreateTitlebarWindow(200, 20);
+  Window titlebar_win(wm_.get(), titlebar_xid);
+  XWindow panel_xid = CreatePanelWindow(200, 400, titlebar_xid, false);
+  Window panel_win(wm_.get(), panel_xid);
+  Panel panel(panel_bar_, &panel_win, &titlebar_win, 0);
+
+  // The titlebar's shadow should be fully visible initially, but the
+  // content window's shadow shouldn't.
+  EXPECT_TRUE(titlebar_win.shadow()->is_shown());
+  EXPECT_TRUE(panel_win.shadow()->is_shown());
+  EXPECT_DOUBLE_EQ(1.0, titlebar_win.shadow()->opacity());
+  EXPECT_DOUBLE_EQ(0.0, panel_win.shadow()->opacity());
+
+  // After we tell the panel to expand itself, the content window's
+  // shadow's visibility should be at 1.
+  panel.SetState(true);
+  EXPECT_TRUE(titlebar_win.shadow()->is_shown());
+  EXPECT_TRUE(panel_win.shadow()->is_shown());
+  EXPECT_DOUBLE_EQ(1.0, titlebar_win.shadow()->opacity());
+  EXPECT_DOUBLE_EQ(1.0, panel_win.shadow()->opacity());
+
+  // The content window's shadow should disappear again if we collapse the
+  // panel.
+  panel.SetState(false);
+  EXPECT_TRUE(titlebar_win.shadow()->is_shown());
+  EXPECT_TRUE(panel_win.shadow()->is_shown());
+  EXPECT_DOUBLE_EQ(1.0, titlebar_win.shadow()->opacity());
+  EXPECT_DOUBLE_EQ(0.0, panel_win.shadow()->opacity());
 }
 
 }  // namespace chromeos

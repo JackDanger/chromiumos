@@ -28,6 +28,7 @@ class Shadow {
   Shadow(ClutterInterface* clutter);
   ~Shadow() {}
 
+  bool is_shown() const { return is_shown_; }
   double opacity() const { return opacity_; }
 
   // Get the group containing all of the actors.
@@ -81,7 +82,9 @@ class Shadow {
 
   ClutterInterface* clutter_;  // not owned
 
-  double opacity_;  // just used for testing
+  // These are just used by tests.
+  bool is_shown_;
+  double opacity_;
 
   // Group containing corner and top/bottom/side actors.
   scoped_ptr<ClutterInterface::ContainerActor> group_;

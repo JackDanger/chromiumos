@@ -31,16 +31,17 @@ int Shadow::kLeftWidth = 0;
 int Shadow::kRightWidth = 0;
 
 Shadow::Shadow(ClutterInterface* clutter)
-    : clutter_(clutter) {
+    : clutter_(clutter),
+      is_shown_(false),
+      opacity_(1.0) {
   CHECK(clutter_);
   group_.reset(clutter_->CreateGroup());
   group_->SetName("shadow group");
 
   // Load the images the first time we get called.
   // TODO: Get a proper singleton class and use that instead.
-  if (!top_texture_) {
+  if (!top_texture_)
     Init();
-  }
 
   top_actor_.reset(clutter_->CloneActor(top_texture_));
   bottom_actor_.reset(clutter_->CloneActor(bottom_texture_));
@@ -75,10 +76,12 @@ Shadow::Shadow(ClutterInterface* clutter)
 }
 
 void Shadow::Show() {
+  is_shown_ = true;
   group_->SetVisibility(true);
 }
 
 void Shadow::Hide() {
+  is_shown_ = false;
   group_->SetVisibility(false);
 }
 
