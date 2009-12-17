@@ -1,0 +1,16 @@
+# Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Source: chromeos-metrics-daemon
+Section: unknown
+Priority: extra
+Maintainer: The Chromium OS Authors <chromium-os-dev@googlegroups.com>
+Build-Depends: debhelper (>=7)
+Standards-Version: 3.8.0
+
+Package: chromeos-metrics-daemon
+Architecture: all
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Metrics daemon for Chrome OS.
+ The metrics daemon collects events and sends them to UMA via Chrome.

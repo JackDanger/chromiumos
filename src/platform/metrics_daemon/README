@@ -1,0 +1,4 @@
+Metrics daemon for Chrome OS.  This program runs as a daemon and collects
+events by polling and listening for d-bus signals.  It then adds timing
+(if needed) and sends the events to Chrome for transport to the UMA server
+at Google.
