@@ -1,0 +1,18 @@
+# Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import os
+import sys
+
+SOURCES=['theme_draw.cc', 'theme_main.cc']
+
+env = Environment(
+    CPPPATH=[ '..' ],
+    CCFLAGS=['-m32', '-fno-exceptions', '-Wall'],
+    LINKFLAGS=['-m32' ],
+)
+
+env.ParseConfig('pkg-config --cflags gtk+-2.0 glib-2.0')
+
+env.SharedLibrary('theme', SOURCES)
