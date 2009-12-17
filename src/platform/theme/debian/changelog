@@ -1,0 +1,5 @@
+chromeos-theme (0.1) unstable; urgency=low
+
+  * Initial release. (Closes: #XXXXXX)
+
+ -- The Chromium OS Authors <chromium-os-dev@googlegroups.com>  Wed, 16 Dec 2009 09:39:42 -0700

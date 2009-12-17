@@ -2,9 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import os
-import sys
-
 SOURCES=['theme_draw.cc', 'theme_main.cc']
 
 env = Environment(

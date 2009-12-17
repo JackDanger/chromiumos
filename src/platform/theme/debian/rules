@@ -1,0 +1,62 @@
+#!/usr/bin/make -f
+# -*- makefile -*-
+# Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# Uncomment this to turn on verbose mode.
+#export DH_VERBOSE=1
+
+# The number of jobs to pass to tools that can run in parallel (such as make
+# and dpkg-buildpackage
+NUM_JOBS=`cat /proc/cpuinfo | grep processor | awk '{a++} END {print a}'`
+
+build: build-stamp
+build-stamp:
+	dh_testdir
+	scons -j$(NUM_JOBS)
+	touch $@
+
+clean:
+	dh_testdir
+	dh_testroot
+	rm -f build-stamp
+	scons -c
+	dh_clean
+
+# NOTE: Ideally we would make 'theme' the default theme such that Gtk
+# automatically loads it, but we aren't running xsettings, which means Gtk
+# always uses Raleigh. To simulate this we create a link from theme's gtkrc
+# to the default place Gtk loads from (/etc/gtk-2.0/gtkrc).
+install: build
+	dh_testdir
+	dh_testroot
+	dh_clean -k
+	dh_installdirs
+	mkdir -p $(CURDIR)/debian/chromeos-theme/usr/share/themes/theme/gtk-2.0
+	mkdir -p $(CURDIR)/debian/chromeos-theme/usr/lib/gtk-2.0/2.10.0/engines
+	cp $(CURDIR)/libtheme.so $(CURDIR)/debian/chromeos-theme/usr/lib/gtk-2.0/2.10.0/engines
+	cp $(CURDIR)/resources/gtkrc $(CURDIR)/debian/chromeos-theme/usr/share/themes/theme/gtk-2.0
+	ln -s /usr/share/themes/theme/gtk-2.0/gtkrc $(CURDIR)/debian/chromeos-theme/etc/gtk-2.0/
+
+# Build architecture-dependent files here.
+binary-arch: install
+	dh_testdir
+	dh_testroot
+	dh_installchangelogs
+	dh_installdocs
+	dh_installexamples
+	dh_installman
+	dh_link
+	dh_strip
+	dh_compress
+	dh_fixperms
+	dh_installdeb
+	dh_shlibdeps
+	dh_gencontrol
+	dh_md5sums
+	dh_builddeb
+
+binary: binary-arch
+
+.PHONY: build clean install binary-arch binary

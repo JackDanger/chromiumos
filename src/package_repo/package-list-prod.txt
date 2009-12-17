@@ -83,6 +83,7 @@ chromeos-monitor-reconfig
 chromeos-pam-google
 chromeos-ply-image
 chromeos-screenlocker
+chromeos-theme
 chromeos-wm
 chromeos-wpasupplicant
 memento-updater
