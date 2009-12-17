@@ -183,7 +183,8 @@ bool WindowManager::Init() {
   wm_ipc_.reset(new WmIpc(xconn_, atom_cache_.get()));
 
   CHECK(RegisterExistence());
-  SetEWMHProperties();
+  SetEwmhGeneralProperties();
+  SetEwmhSizeProperties();
 
   // Set root window's cursor to left pointer.
   if (0 != access("/tmp/use_ugly_x_cursor", F_OK)) {
@@ -569,36 +570,13 @@ bool WindowManager::RegisterExistence() {
   return true;
 }
 
-bool WindowManager::SetEWMHProperties() {
+bool WindowManager::SetEwmhGeneralProperties() {
   bool success = true;
 
   success &= xconn_->SetIntProperty(
       root_, GetXAtom(ATOM_NET_NUMBER_OF_DESKTOPS), XA_CARDINAL, 1);
   success &= xconn_->SetIntProperty(
       root_, GetXAtom(ATOM_NET_CURRENT_DESKTOP), XA_CARDINAL, 0);
-
-  // We don't use pseudo-large desktops, so this is just the screen size.
-  std::vector<int> geometry;
-  geometry.push_back(width_);
-  geometry.push_back(height_);
-  success &= xconn_->SetIntArrayProperty(
-      root_, GetXAtom(ATOM_NET_DESKTOP_GEOMETRY), XA_CARDINAL, geometry);
-
-  // The viewport (top-left corner of the desktop) is just (0, 0) for us.
-  std::vector<int> viewport(2, 0);
-  success &= xconn_->SetIntArrayProperty(
-      root_, GetXAtom(ATOM_NET_DESKTOP_VIEWPORT), XA_CARDINAL, viewport);
-
-  // This isn't really applicable to us (EWMH just says that it should be
-  // used to determine where desktop icons can be placed), but we set it to
-  // the size of the screen minus the panel bar's area.
-  std::vector<int> workarea;
-  workarea.push_back(0);  // x
-  workarea.push_back(0);  // y
-  workarea.push_back(width_);
-  workarea.push_back(height_ - kPanelBarHeight);
-  success &= xconn_->SetIntArrayProperty(
-      root_, GetXAtom(ATOM_NET_WORKAREA), XA_CARDINAL, workarea);
 
   // Let clients know that we're the current WM and that we at least
   // partially conform to EWMH.
@@ -623,6 +601,35 @@ bool WindowManager::SetEWMHProperties() {
   supported.push_back(GetXAtom(ATOM_NET_WORKAREA));
   success &= xconn_->SetIntArrayProperty(
       root_, GetXAtom(ATOM_NET_SUPPORTED), XA_ATOM, supported);
+
+  return success;
+}
+
+bool WindowManager::SetEwmhSizeProperties() {
+  bool success = true;
+
+  // We don't use pseudo-large desktops, so this is just the screen size.
+  std::vector<int> geometry;
+  geometry.push_back(width_);
+  geometry.push_back(height_);
+  success &= xconn_->SetIntArrayProperty(
+      root_, GetXAtom(ATOM_NET_DESKTOP_GEOMETRY), XA_CARDINAL, geometry);
+
+  // The viewport (top-left corner of the desktop) is just (0, 0) for us.
+  std::vector<int> viewport(2, 0);
+  success &= xconn_->SetIntArrayProperty(
+      root_, GetXAtom(ATOM_NET_DESKTOP_VIEWPORT), XA_CARDINAL, viewport);
+
+  // This isn't really applicable to us (EWMH just says that it should be
+  // used to determine where desktop icons can be placed), but we set it to
+  // the size of the screen minus the panel bar's area.
+  std::vector<int> workarea;
+  workarea.push_back(0);  // x
+  workarea.push_back(0);  // y
+  workarea.push_back(width_);
+  workarea.push_back(height_ - kPanelBarHeight);
+  success &= xconn_->SetIntArrayProperty(
+      root_, GetXAtom(ATOM_NET_WORKAREA), XA_CARDINAL, workarea);
 
   return success;
 }
@@ -1331,6 +1338,8 @@ bool WindowManager::HandleRRScreenChangeNotify(
   panel_bar_->MoveAndResize(
       0, height_ - kPanelBarHeight, width_, kPanelBarHeight);
   hotkey_overlay_->group()->Move(width_ / 2, height_ / 2, 0);
+
+  SetEwmhSizeProperties();
 
   return true;
 }

@@ -598,11 +598,24 @@ TEST_F(WindowManagerTest, ConfigureRequestResize) {
 }
 
 TEST_F(WindowManagerTest, XRandR) {
+  // Look up EWMH atoms relating to the screen size.
+  XAtom geometry_atom = None;
+  ASSERT_TRUE(xconn_->GetAtom("_NET_DESKTOP_GEOMETRY", &geometry_atom));
+  XAtom workarea_atom = None;
+  ASSERT_TRUE(xconn_->GetAtom("_NET_WORKAREA", &workarea_atom));
+
   // Make sure that the WM is selecting RRScreenChangeNotify events on the
   // root window.
   XWindow root_xid = xconn_->GetRootWindow();
   MockXConnection::WindowInfo* root_info = xconn_->GetWindowInfoOrDie(root_xid);
   EXPECT_TRUE(root_info->xrandr_events_selected);
+
+  // EWMH size properties should also be set correctly.
+  TestIntArrayProperty(root_xid, geometry_atom, 2,
+                       root_info->width, root_info->height);
+  TestIntArrayProperty(root_xid, workarea_atom, 4,
+                       0, 0, root_info->width,
+                       root_info->height - WindowManager::kPanelBarHeight);
 
   int new_width = root_info->width / 2;
   int new_height = root_info->height / 2;
@@ -646,6 +659,12 @@ TEST_F(WindowManagerTest, XRandR) {
   EXPECT_EQ(new_height - WindowManager::kPanelBarHeight, wm_->panel_bar_->y());
   EXPECT_EQ(new_width, wm_->panel_bar_->width());
   EXPECT_EQ(WindowManager::kPanelBarHeight, wm_->panel_bar_->height());
+
+  // EWMH properties on the root window should be updated as well.
+  TestIntArrayProperty(root_xid, geometry_atom, 2, new_width, new_height);
+  TestIntArrayProperty(root_xid, workarea_atom, 4,
+                       0, 0, new_width,
+                       new_height - WindowManager::kPanelBarHeight);
 }
 
 // Test that the _NET_CLIENT_LIST and _NET_CLIENT_LIST_STACKING properties

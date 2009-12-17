@@ -143,7 +143,11 @@ class WindowManager {
 
   // Set various one-time/unchanging properties on the root window as
   // specified in the Extended Window Manager Hints.
-  bool SetEWMHProperties();
+  bool SetEwmhGeneralProperties();
+
+  // Set EWMH properties on the root window relating to the current screen
+  // size (as stored in 'width_' and 'height_').
+  bool SetEwmhSizeProperties();
 
   // Create a new ClutterGroup directly above 'bottom_actor'.  This is used
   // to create all of the '_depth' actors that are used for stacking.
