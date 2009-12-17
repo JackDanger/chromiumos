@@ -12,4 +12,5 @@ Standards-Version: 3.8.0
 Package: chromeos-screenlocker
 Architecture: any
 Depends: xscreensaver
+Replaces: xscreensaver
 Description: Screen locker configuration for Chrome OS.  Includes custom app-defaults and a pam configuration file.

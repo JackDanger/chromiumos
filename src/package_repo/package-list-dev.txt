@@ -35,7 +35,7 @@ libavahi-common-data
 libavahi-common3
 
 # Packages needed by Chrome OS platform
-libclutter-0.9-dev
+libclutter-1.0-dev
 libcurl4-openssl-dev
 libgtkmm-2.4-dev
 libpam0g-dev
@@ -186,3 +186,41 @@ libmpfr-dev-armel-cross
 gfortran-4.4-arm-linux-gnueabi
 gobjc++-4.4-arm-linux-gnueabi
 libstdc++6-4.4-pic-armel-cross
+
+# Pull these manually to complete ubuntu-minimal without rsyslog
+adduser
+apt
+apt-utils
+bzip2
+console-setup
+debconf
+dhcp3-client
+eject
+gnupg
+ifupdown
+initramfs-tools
+iproute
+iputils-ping
+kbd
+less
+libc6-i686
+locales
+lsb-release
+makedev
+mawk
+module-init-tools
+net-tools
+netbase
+netcat
+ntpdate
+passwd
+procps
+python
+sudo
+tasksel
+tzdata
+ubuntu-keyring
+udev
+upstart
+vim-tiny
+whiptail
