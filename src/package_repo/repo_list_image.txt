@@ -430,8 +430,6 @@ xfonts-encodings 1:1.0.2-3 optional x11 pool/main/x/xfonts-encodings/xfonts-enco
 xfonts-utils 1:7.4+1ubuntu1 optional x11 pool/main/x/xfonts-utils/xfonts-utils_7.4+1ubuntu1_i386.deb
 xkb-data 1.6-1ubuntu5 important x11 pool/main/x/xkeyboard-config/xkb-data_1.6-1ubuntu5_all.deb
 xml-core 0.12 important text pool/main/x/xml-core/xml-core_0.12_all.deb
-xscreensaver 5.08-0ubuntu5 optional x11 pool/main/x/xscreensaver/xscreensaver_5.08-0ubuntu5_i386.deb
-xscreensaver-data 5.08-0ubuntu5 optional x11 pool/main/x/xscreensaver/xscreensaver-data_5.08-0ubuntu5_i386.deb
 xserver-common 2:1.6.4-2ubuntu4 optional x11 pool/main/x/xorg-server/xserver-common_1.6.4-2ubuntu4_all.deb
 xserver-xorg 1:7.4+3ubuntu7 optional x11 pool/main/x/xorg/xserver-xorg_7.4+3ubuntu7_i386.deb
 xserver-xorg-core 2:1.6.4-2ubuntu4 optional x11 pool/main/x/xorg-server/xserver-xorg-core_1.6.4-2ubuntu4_i386.deb

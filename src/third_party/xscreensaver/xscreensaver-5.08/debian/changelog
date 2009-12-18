@@ -1,3 +1,10 @@
+xscreensaver (5.0.8-0ubuntu5cr1) karmic; urgency=low
+
+    * Update versions to be higher than the version on stable karmic
+    * No differences from 5.08 source code we pulled in
+
+ -- The Chromium OS Authors <chromium-os-dev@googlegroups.com>  Thu, 17 Dec 2009 14:11:00 -0800
+
 xscreensaver (5.0.8-chromeos2) karmic; urgency=low
 
     * Initial release
