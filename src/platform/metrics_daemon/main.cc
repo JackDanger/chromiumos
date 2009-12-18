@@ -3,9 +3,14 @@
 // found in the LICENSE file.
 
 
+#include <gflags/gflags.h>
+
 #include "platform/metrics_daemon/metrics_daemon.h"
+
+DEFINE_bool(daemon, true, "run as daemon (use -nodaemon for debugging)");
 
 int main(int argc, char** argv) {
   MetricsDaemon::MetricsDaemon d;
-  d.Run(false);
+  google::ParseCommandLineFlags(&argc, &argv, true);
+  d.Run(FLAGS_daemon, false);
 }

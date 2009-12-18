@@ -6,5 +6,5 @@
 
 int main(int argc, char** argv) {
   MetricsDaemon d;
-  d.Run(true);
+  d.Run(false, true);
 }

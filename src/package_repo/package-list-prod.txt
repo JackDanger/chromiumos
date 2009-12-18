@@ -79,6 +79,7 @@ chromeos-libcros
 chromeos-login
 chromeos-minijail
 chromeos-metrics-collection
+chromeos-metrics-daemon
 chromeos-monitor-reconfig
 chromeos-pam-google
 chromeos-ply-image

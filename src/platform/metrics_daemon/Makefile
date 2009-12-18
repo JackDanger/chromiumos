@@ -12,7 +12,7 @@ CCONFIG = $(shell pkg-config --cflags dbus-1 glib-2.0 dbus-glib-1)
 LDCONFIG = $(shell pkg-config --libs dbus-1 glib-2.0 gthread-2.0 dbus-glib-1)
 
 CFLAGS = $(COPT) -fno-exceptions -Wall -Werror $(INCLUDES) $(CCONFIG)
-LDFLAGS = -L../../third_party/chrome $(LDCONFIG) -lrt -lbase -lpthread
+LDFLAGS = -L../../third_party/chrome $(LDCONFIG) -lrt -lbase -lpthread -lgflags
 
 COMMONSRC = metrics_daemon.cc
 COMMONCSRC = marshal_void__string_boxed.c
@@ -58,7 +58,8 @@ marshal_void__string_boxed.o: marshal_void__string_boxed.h
 .PRECIOUS: marshal_void__string_boxed.c  # keep around for debugging
 
 install:
-	install $DAEMON $(DESTDIR)/usr/bin
+	mkdir -p $(DESTDIR)/usr/bin
+	install $(DAEMON) $(DESTDIR)/usr/bin
 
 clean:
 	rm -f *.o marshal_void__string_boxed.[ch] \

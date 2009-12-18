@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <sys/file.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 extern "C" {
 #include "marshal_void__string_boxed.h"
@@ -29,9 +30,11 @@ MetricsDaemon::network_states_[MetricsDaemon::kNumberNetworkStates] = {
 #include "network_states.h"
 };
 
-void MetricsDaemon::Run(bool testing) {
+void MetricsDaemon::Run(bool run_as_daemon, bool testing) {
   Init(testing);
-  Loop();
+  if (!run_as_daemon || daemon(0, 0) == 0) {
+    Loop();
+  }
 }
 
 void MetricsDaemon::Init(bool testing) {

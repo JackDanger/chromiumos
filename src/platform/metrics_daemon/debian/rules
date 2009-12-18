@@ -33,6 +33,7 @@ install: build
 	dh_testroot
 	dh_clean -k
 	dh_installdirs
+	mkdir -p $(CURDIR)/debian/chromeos-metrics-daemon
 	$(MAKE) DESTDIR=$(CURDIR)/debian/chromeos-metrics-daemon install
 
 binary-indep:

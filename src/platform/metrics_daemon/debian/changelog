@@ -1,3 +1,4 @@
-  * Initial Release.
+chromeos-metrics-daemon (1.0) unstable; urgency=low
 
- -- The Chromium OS Authors <chromium-os-dev@googlegroups.com> Wed Dec  9 16:30:34 PST 2009
+  * Initial Release.
+ -- The Chromium OS Authors <chromium-os-dev@googlegroups.com>  Wed, 16 Dec 2009 17:43:56 -0700

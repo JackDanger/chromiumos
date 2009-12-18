@@ -17,9 +17,9 @@ class MetricsDaemon {
   }
   ~MetricsDaemon() {}
 
-  // Does all the work.  If |testing| is true, log the stats instead of sending
-  // them to Chrome.
-  void Run(bool testing);
+  // Does all the work.  If |run_as_daemon| is true, daemonize by forking.  If
+  // |testing| is true, log the stats instead of sending them to Chrome.
+  void Run(bool run_as_daemon, bool testing);
 
  private:
   // Shared with Chrome for transport.

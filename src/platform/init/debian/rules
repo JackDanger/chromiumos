@@ -47,6 +47,7 @@ install:
 	   $(CURDIR)/udev.conf               \
 	   $(CURDIR)/ui.conf                 \
 	   $(CURDIR)/wpasupplicant.conf      \
+	   $(CURDIR)/metrics_daemon.conf     \
 	   $(CURDIR)/debian/chromeos-init/etc/init.chromeos/
 
 # Build architecture-independent files here.
