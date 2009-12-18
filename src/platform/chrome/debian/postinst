@@ -25,10 +25,8 @@ set -e
 
 case "$1" in
     configure)
-	chown root:admin /opt/google/chrome/session
-	chown root:admin /opt/google/chrome/emit-login-prompt-ready
 	chmod 6755 /opt/google/chrome/session
-	chmod 6755 /opt/google/chrome/emit-login-prompt-ready
+        chmod 6755 /opt/google/chrome/emit_login_prompt_ready
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)
