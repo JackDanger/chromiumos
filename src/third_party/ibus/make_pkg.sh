@@ -39,6 +39,16 @@ touch ./ChangeLog
 chmod u+x ./debian/rules
 ./autogen.sh
 
+# Tweak the deb package version
+cat > ./debian/changelog <<EOF
+ibus (1.2.0.20090927-2ubuntu1) karmic; urgency=low
+
+  * Match the version number to the latest Karmic package.
+
+ -- Yusuke Sato <yusukes@chromium.org>  Fri, 18 Dec 2009 16:06:41 +0900
+
+EOF
+
 # Build the package
 dpkg-buildpackage -b -tc -us -uc
 mv ../*"${PKG_BASE}"*_*.deb "${OUT_DIR}"
