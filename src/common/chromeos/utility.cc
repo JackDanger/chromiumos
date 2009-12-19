@@ -6,7 +6,7 @@
 
 #include <cstring>
 
-namepsace chromeos {
+namespace chromeos {
 
 void* SecureMemset(void *v, int c, size_t n) {
   volatile unsigned char *p = static_cast<unsigned char *>(v);
