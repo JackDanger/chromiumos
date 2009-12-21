@@ -3,11 +3,12 @@
 # found in the LICENSE file.
 
 # Package list created by list_installed_packages.sh
-# Creation time: Wed Dec 16 18:25:18 UTC 2009
+# Creation time: Fri Dec 18 20:03:45 UTC 2009
 #
 # Contents of /etc/apt/sources.list:
 #   deb file:"/tmp/chromeos_setup" local_packages/
-#   deb http://us.archive.ubuntu.com/ubuntu karmic main restricted multiverse universe
+#   deb file:///trunk/repo/apt chromeos main restricted multiverse universe
+#   deb http://archive.ubuntu.com/ubuntu karmic main restricted multiverse universe
 #
 # package_name version priority section repo_filename
 acpid 1.0.6-9ubuntu8 optional admin pool/main/a/acpid/acpid_1.0.6-9ubuntu8_i386.deb
@@ -23,12 +24,10 @@ base-files 5.0.0ubuntu7 required admin pool/main/b/base-files/base-files_5.0.0ub
 base-passwd 3.5.21 required admin pool/main/b/base-passwd/base-passwd_3.5.21_i386.deb
 bash 4.0-5ubuntu2 required shells pool/main/b/bash/bash_4.0-5ubuntu2_i386.deb
 bootchart 0.90.2-3 extra universe/admin pool/universe/b/bootchart/bootchart_0.90.2-3_i386.deb
-bootchart-java 0.10~svn407-3ubuntu1 optional universe/admin pool/universe/b/bootchart-java/bootchart-java_0.10~svn407-3ubuntu1_all.deb
 bsdutils 1:2.16-1ubuntu5 required utils pool/main/u/util-linux/bsdutils_2.16-1ubuntu5_i386.deb
 busybox-initramfs 1:1.13.3-1ubuntu7 important shells pool/main/b/busybox/busybox-initramfs_1.13.3-1ubuntu7_i386.deb
 bzip2 1.0.5-3 important utils pool/main/b/bzip2/bzip2_1.0.5-3_i386.deb
 ca-certificates 20090814 important misc pool/main/c/ca-certificates/ca-certificates_20090814_all.deb
-ca-certificates-java 20090928 optional misc pool/main/c/ca-certificates-java/ca-certificates-java_20090928_all.deb
 # Skipped chromeos-acpi 0.1 local_packages//chromeos-acpi_0.1_i386.deb: local install
 # Skipped chromeos-assets 0.3 local_packages//chromeos-assets_0.3_all.deb: local install
 # Skipped chromeos-chrome 0.1 local_packages//chromeos-chrome_0.1_i386.deb: local install
@@ -39,11 +38,13 @@ ca-certificates-java 20090928 optional misc pool/main/c/ca-certificates-java/ca-
 # Skipped chromeos-libcros 0.1 local_packages//chromeos-libcros_0.1_i386.deb: local install
 # Skipped chromeos-login 0.4 local_packages//chromeos-login_0.4_all.deb: local install
 # Skipped chromeos-metrics-collection 0.1 local_packages//chromeos-metrics-collection_0.1_all.deb: local install
+# Skipped chromeos-metrics-daemon 1.0 local_packages//chromeos-metrics-daemon_1.0_i386.deb: local install
 # Skipped chromeos-minijail 0.1 local_packages//chromeos-minijail_0.1_i386.deb: local install
 # Skipped chromeos-monitor-reconfig 0.1 local_packages//chromeos-monitor-reconfig_0.1_i386.deb: local install
 # Skipped chromeos-pam-google 0.10 local_packages//chromeos-pam-google_0.10_i386.deb: local install
 # Skipped chromeos-ply-image 0.1 local_packages//chromeos-ply-image_0.1_i386.deb: local install
 # Skipped chromeos-screenlocker 1.0-1 local_packages//chromeos-screenlocker_1.0-1_i386.deb: local install
+# Skipped chromeos-theme 0.1 local_packages//chromeos-theme_0.1_i386.deb: local install
 # Skipped chromeos-wm 0.4 local_packages//chromeos-wm_0.4_i386.deb: local install
 # Skipped chromeos-wpasupplicant 0.1 local_packages//chromeos-wpasupplicant_0.1_i386.deb: local install
 console-setup 1.34ubuntu4 important utils pool/main/c/console-setup/console-setup_1.34ubuntu4_all.deb
@@ -59,7 +60,6 @@ dbus-x11 1.2.16-0ubuntu9 optional x11 pool/main/d/dbus/dbus-x11_1.2.16-0ubuntu9_
 debconf 1.5.27ubuntu2 required admin pool/main/d/debconf/debconf_1.5.27ubuntu2_all.deb
 debconf-i18n 1.5.27ubuntu2 required admin pool/main/d/debconf/debconf-i18n_1.5.27ubuntu2_all.deb
 debianutils 2.30ubuntu3 required utils pool/main/d/debianutils/debianutils_2.30ubuntu3_i386.deb
-default-jre-headless 1.6-30ubuntu5 optional interpreters pool/main/j/java-common/default-jre-headless_1.6-30ubuntu5_i386.deb
 defoma 0.11.10-0.2ubuntu1 optional admin pool/main/d/defoma/defoma_0.11.10-0.2ubuntu1_all.deb
 devicekit-disks 007-2ubuntu3 optional admin pool/main/d/devicekit-disks/devicekit-disks_007-2ubuntu3_i386.deb
 devicekit-power 011-1ubuntu1 optional admin pool/main/d/devicekit-power/devicekit-power_011-1ubuntu1_i386.deb
@@ -80,25 +80,22 @@ flashplugin-installer 10.0.32.18ubuntu1 optional multiverse/web pool/multiverse/
 fontconfig 2.6.0-1ubuntu12 optional utils pool/main/f/fontconfig/fontconfig_2.6.0-1ubuntu12_i386.deb
 fontconfig-config 2.6.0-1ubuntu12 optional libs pool/main/f/fontconfig/fontconfig-config_2.6.0-1ubuntu12_all.deb
 gcc-4.4-base 4.4.1-4ubuntu8 required libs pool/main/g/gcc-4.4/gcc-4.4-base_4.4.1-4ubuntu8_i386.deb
-gcj-4.4-base 4.4.1-5ubuntu2 optional libs pool/main/g/gcj-4.4/gcj-4.4-base_4.4.1-5ubuntu2_i386.deb
-gcj-4.4-jre 4.4.1-5ubuntu2 optional java pool/main/g/gcj-4.4/gcj-4.4-jre_4.4.1-5ubuntu2_i386.deb
-gcj-4.4-jre-headless 4.4.1-5ubuntu2 optional java pool/main/g/gcj-4.4/gcj-4.4-jre-headless_4.4.1-5ubuntu2_i386.deb
-gcj-jre 4:4.4.1-1ubuntu2 optional java pool/main/g/gcc-defaults/gcj-jre_4.4.1-1ubuntu2_i386.deb
-gcj-jre-headless 4:4.4.1-1ubuntu2 optional java pool/main/g/gcc-defaults/gcj-jre-headless_4.4.1-1ubuntu2_i386.deb
 gconf2 2.28.0-0ubuntu2 optional libs pool/main/g/gconf/gconf2_2.28.0-0ubuntu2_i386.deb
 gconf2-common 2.28.0-0ubuntu2 optional libs pool/main/g/gconf/gconf2-common_2.28.0-0ubuntu2_all.deb
 gnupg 1.4.9-4ubuntu7 important utils pool/main/g/gnupg/gnupg_1.4.9-4ubuntu7_i386.deb
 gpgv 1.4.9-4ubuntu7 important utils pool/main/g/gnupg/gpgv_1.4.9-4ubuntu7_i386.deb
+# Skipped gptpart 0.1 local_packages//gptpart_0.1_i386.deb: local install
 grep 2.5.4-4 required utils pool/main/g/grep/grep_2.5.4-4_i386.deb
 gzip 1.3.12-8ubuntu1 required utils pool/main/g/gzip/gzip_1.3.12-8ubuntu1_i386.deb
 # Skipped hal 1.0 local_packages//hal_1.0_all.deb: local install
 hdparm 9.15-1ubuntu4 standard admin pool/main/h/hdparm/hdparm_9.15-1ubuntu4_i386.deb
 hicolor-icon-theme 0.10-2 optional misc pool/main/h/hicolor-icon-theme/hicolor-icon-theme_0.10-2_all.deb
 hostname 2.95ubuntu1 required admin pool/main/h/hostname/hostname_2.95ubuntu1_i386.deb
-# Skipped ibus 1.2.0.20090927-2ubuntu1 local_packages//ibus_1.2.0.20090927-2ubuntu1_i386.deb: local install
-# Skipped ibus-anthy 1.2.0.20090813-2 local_packages//ibus-anthy_1.2.0.20090813-2_i386.deb: local install
-# Skipped ibus-chewing 1.2.0.20090818-2 local_packages//ibus-chewing_1.2.0.20090818-2_i386.deb: local install
-# Skipped ibus-gtk 1.2.0.20090927-2ubuntu1 local_packages//ibus-gtk_1.2.0.20090927-2ubuntu1_i386.deb: local install
+ibus 1.2.0.20090927-2ubuntu1 optional utils pool/main/i/ibus/ibus_1.2.0.20090927-2ubuntu1_i386.deb
+ibus-anthy 1.2.0.20090813-2 optional utils pool/main/i/ibus-anthy/ibus-anthy_1.2.0.20090813-2_i386.deb
+ibus-chewing 1.2.0.20090818-2 optional utils pool/main/i/ibus-chewing/ibus-chewing_1.2.0.20090818-2_i386.deb
+ibus-gtk 1.2.0.20090927-2ubuntu1 optional utils pool/main/i/ibus/ibus-gtk_1.2.0.20090927-2ubuntu1_i386.deb
+ibus-qt4 1.2.0.20090728-1 optional utils pool/main/i/ibus-qt/ibus-qt4_1.2.0.20090728-1_i386.deb
 ifupdown 0.6.8ubuntu21 important admin pool/main/i/ifupdown/ifupdown_0.6.8ubuntu21_i386.deb
 im-switch 1.16ubuntu1 optional x11 pool/main/i/im-switch/im-switch_1.16ubuntu1_all.deb
 initramfs-tools 0.92bubuntu53 important utils pool/main/i/initramfs-tools/initramfs-tools_0.92bubuntu53_all.deb
@@ -109,7 +106,6 @@ iptables 1.4.4-1ubuntu1 standard net pool/main/i/iptables/iptables_1.4.4-1ubuntu
 iputils-ping 3:20071127-1build1 important net pool/main/i/iputils/iputils-ping_20071127-1build1_i386.deb
 iso-codes 3.10.2-1 standard libs pool/main/i/iso-codes/iso-codes_3.10.2-1_all.deb
 iw 0.9.14-1 optional universe/net pool/universe/i/iw/iw_0.9.14-1_i386.deb
-java-common 0.30ubuntu5 optional misc pool/main/j/java-common/java-common_0.30ubuntu5_all.deb
 kbd 1.15-1ubuntu1 important utils pool/main/k/kbd/kbd_1.15-1ubuntu1_i386.deb
 klibc-utils 1.5.15-1ubuntu2 important libs pool/main/k/klibc/klibc-utils_1.5.15-1ubuntu2_i386.deb
 laptop-detect 0.13.7ubuntu1 important utils pool/main/l/laptop-detect/laptop-detect_0.13.7ubuntu1_i386.deb
@@ -141,10 +137,6 @@ libck-connector0 0.3.1-0ubuntu2 optional libs pool/main/c/consolekit/libck-conne
 libclass-accessor-perl 0.33-1 important perl pool/main/libc/libclass-accessor-perl/libclass-accessor-perl_0.33-1_all.deb
 libclutter-1.0-0 1.0.6-0ubuntu1 optional libs pool/main/c/clutter-1.0/libclutter-1.0-0_1.0.6-0ubuntu1_i386.deb
 libcomerr2 1.41.9-1ubuntu3 required libs pool/main/e/e2fsprogs/libcomerr2_1.41.9-1ubuntu3_i386.deb
-libcommons-cli-java 1.1-3ubuntu3 optional libs pool/main/libc/libcommons-cli-java/libcommons-cli-java_1.1-3ubuntu3_all.deb
-libcommons-compress-java 0~svn604876-1 optional universe/libs pool/universe/libc/libcommons-compress-java/libcommons-compress-java_0~svn604876-1_all.deb
-libcommons-lang-java 2.4-4 optional libs pool/main/libc/libcommons-lang-java/libcommons-lang-java_2.4-4_all.deb
-libcroco3 0.6.1-2 optional libs pool/main/libc/libcroco/libcroco3_0.6.1-2_i386.deb
 libcups2 1.4.1-5ubuntu2 optional libs pool/main/c/cups/libcups2_1.4.1-5ubuntu2_i386.deb
 libcurl3 7.19.5-1ubuntu2 optional libs pool/main/c/curl/libcurl3_7.19.5-1ubuntu2_i386.deb
 libcurl3-gnutls 7.19.5-1ubuntu2 important libs pool/main/c/curl/libcurl3-gnutls_7.19.5-1ubuntu2_i386.deb
@@ -170,9 +162,6 @@ libfontenc1 1:1.0.4-3 optional x11 pool/main/libf/libfontenc/libfontenc1_1.0.4-3
 libfreetype6 2.3.9-5 optional libs pool/main/f/freetype/libfreetype6_2.3.9-5_i386.deb
 libfribidi0 0.10.9-1build1 important libs pool/main/f/fribidi/libfribidi0_0.10.9-1build1_i386.deb
 libgcc1 1:4.4.1-4ubuntu8 required libs pool/main/g/gcc-4.4/libgcc1_4.4.1-4ubuntu8_i386.deb
-libgcj-common 1:4.4.1-1ubuntu2 optional libs pool/main/g/gcc-defaults/libgcj-common_4.4.1-1ubuntu2_all.deb
-libgcj10 4.4.1-5ubuntu2 optional libs pool/main/g/gcj-4.4/libgcj10_4.4.1-5ubuntu2_i386.deb
-libgcj10-awt 4.4.1-5ubuntu2 optional libs pool/main/g/gcj-4.4/libgcj10-awt_4.4.1-5ubuntu2_i386.deb
 libgconf2-4 2.28.0-0ubuntu2 optional libs pool/main/g/gconf/libgconf2-4_2.28.0-0ubuntu2_i386.deb
 libgcrypt11 1.4.4-2ubuntu2 important libs pool/main/libg/libgcrypt11/libgcrypt11_1.4.4-2ubuntu2_i386.deb
 libgdbm3 1.8.3-4 important libs pool/main/g/gdbm/libgdbm3_1.8.3-4_i386.deb
@@ -186,8 +175,6 @@ libgmp3c2 2:4.3.1+dfsg-1ubuntu3 standard libs pool/main/g/gmp/libgmp3c2_4.3.1+df
 libgnutls26 2.8.3-2 important libs pool/main/g/gnutls26/libgnutls26_2.8.3-2_i386.deb
 libgpg-error0 1.6-1ubuntu1 important libs pool/main/libg/libgpg-error/libgpg-error0_1.6-1ubuntu1_i386.deb
 libgpm2 1.20.4-3.2ubuntu1 important libs pool/main/g/gpm/libgpm2_1.20.4-3.2ubuntu1_i386.deb
-libgsf-1-114 1.14.15-1ubuntu1 optional libs pool/main/libg/libgsf/libgsf-1-114_1.14.15-1ubuntu1_i386.deb
-libgsf-1-common 1.14.15-1ubuntu1 optional libs pool/main/libg/libgsf/libgsf-1-common_1.14.15-1ubuntu1_all.deb
 libgssapi-krb5-2 1.7dfsg~beta3-1 important libs pool/main/k/krb5/libgssapi-krb5-2_1.7dfsg~beta3-1_i386.deb
 libgtk2.0-0 2.18.3-1 optional libs pool/main/g/gtk+2.0/libgtk2.0-0_2.18.3-1_i386.deb
 libgtk2.0-bin 2.18.3-1 optional misc pool/main/g/gtk+2.0/libgtk2.0-bin_2.18.3-1_all.deb
@@ -195,14 +182,13 @@ libgtk2.0-common 2.18.3-1 optional misc pool/main/g/gtk+2.0/libgtk2.0-common_2.1
 libgudev-1.0-0 1:147~-6 optional libs pool/main/u/udev/libgudev-1.0-0_147~-6_i386.deb
 libhal1 0.5.13-1ubuntu8 optional libs pool/main/h/hal/libhal1_0.5.13-1ubuntu8_i386.deb
 libhx18 2.9-3 extra libs pool/main/libh/libhx/libhx18_2.9-3_i386.deb
-# Skipped libibus1 1.2.0.20090927-2ubuntu1 local_packages//libibus1_1.2.0.20090927-2ubuntu1_i386.deb: local install
+libibus1 1.2.0.20090927-2ubuntu1 optional libs pool/main/i/ibus/libibus1_1.2.0.20090927-2ubuntu1_i386.deb
 libice6 2:1.0.5-1 optional libs pool/main/libi/libice/libice6_1.0.5-1_i386.deb
 libidl0 0.8.13-0.1 optional libs pool/main/libi/libidl/libidl0_0.8.13-0.1_i386.deb
 libidn11 1.15-1 important libs pool/main/libi/libidn/libidn11_1.15-1_i386.deb
 libio-string-perl 1.08-2 important perl pool/main/libi/libio-string-perl/libio-string-perl_1.08-2_all.deb
 libiw29 29-2ubuntu6 optional libs pool/main/w/wireless-tools/libiw29_29-2ubuntu6_i386.deb
 libjasper1 1.900.1-6 optional libs pool/main/j/jasper/libjasper1_1.900.1-6_i386.deb
-libjline-java 0.9.94-1ubuntu1 optional libs pool/main/j/jline/libjline-java_0.9.94-1ubuntu1_all.deb
 libjpeg-progs 6b-14build1 optional graphics pool/main/libj/libjpeg6b/libjpeg-progs_6b-14build1_i386.deb
 libjpeg62 6b-14build1 optional libs pool/main/libj/libjpeg6b/libjpeg62_6b-14build1_i386.deb
 libk5crypto3 1.7dfsg~beta3-1 important libs pool/main/k/krb5/libk5crypto3_1.7dfsg~beta3-1_i386.deb
@@ -258,8 +244,6 @@ libqt4-xml 4.5.3really4.5.2-0ubuntu1 optional libs pool/main/q/qt4-x11/libqt4-xm
 libqtcore4 4.5.3really4.5.2-0ubuntu1 optional libs pool/main/q/qt4-x11/libqtcore4_4.5.3really4.5.2-0ubuntu1_i386.deb
 libqtgui4 4.5.3really4.5.2-0ubuntu1 optional libs pool/main/q/qt4-x11/libqtgui4_4.5.3really4.5.2-0ubuntu1_i386.deb
 libreadline6 6.0-5 important libs pool/main/r/readline6/libreadline6_6.0-5_i386.deb
-librsvg2-2 2.26.0-1 optional libs pool/main/libr/librsvg/librsvg2-2_2.26.0-1_i386.deb
-librsvg2-common 2.26.0-1 optional libs pool/main/libr/librsvg/librsvg2-common_2.26.0-1_i386.deb
 libsamplerate0 0.1.7-2 optional libs pool/main/libs/libsamplerate/libsamplerate0_0.1.7-2_i386.deb
 libsasl2-2 2.1.23.dfsg1-1ubuntu3 important libs pool/main/c/cyrus-sasl2/libsasl2-2_2.1.23.dfsg1-1ubuntu3_i386.deb
 libsasl2-modules 2.1.23.dfsg1-1ubuntu3 important devel pool/main/c/cyrus-sasl2/libsasl2-modules_2.1.23.dfsg1-1ubuntu3_i386.deb
@@ -293,12 +277,17 @@ libvorbisenc2 1.2.0.dfsg-6 optional libs pool/main/libv/libvorbis/libvorbisenc2_
 libwrap0 7.6.q-16 optional libs pool/main/t/tcp-wrappers/libwrap0_7.6.q-16_i386.deb
 libx11-6 2:1.2.2-1ubuntu1 standard libs pool/main/libx/libx11/libx11-6_1.2.2-1ubuntu1_i386.deb
 libx11-data 2:1.2.2-1ubuntu1 standard x11 pool/main/libx/libx11/libx11-data_1.2.2-1ubuntu1_all.deb
+libx11-xcb1 2:1.2.2-1ubuntu1 optional libs pool/main/libx/libx11/libx11-xcb1_1.2.2-1ubuntu1_i386.deb
 libx86-1 1.1+ds1-4 optional libs pool/main/libx/libx86/libx86-1_1.1+ds1-4_i386.deb
 libxapian15 1.0.15-2ubuntu2 important libs pool/main/x/xapian-core/libxapian15_1.0.15-2ubuntu2_i386.deb
 libxau6 1:1.0.4-2 standard libs pool/main/libx/libxau/libxau6_1.0.4-2_i386.deb
 libxaw7 2:1.0.6-1 optional libs pool/main/libx/libxaw/libxaw7_1.0.6-1_i386.deb
+libxcb-composite0 1.4-1 optional libs pool/main/libx/libxcb/libxcb-composite0_1.4-1_i386.deb
+libxcb-randr0 1.4-1 optional libs pool/main/libx/libxcb/libxcb-randr0_1.4-1_i386.deb
 libxcb-render-util0 0.3.6-1 extra libdevel pool/main/x/xcb-util/libxcb-render-util0_0.3.6-1_i386.deb
 libxcb-render0 1.4-1 optional libs pool/main/libx/libxcb/libxcb-render0_1.4-1_i386.deb
+libxcb-shape0 1.4-1 optional libs pool/main/libx/libxcb/libxcb-shape0_1.4-1_i386.deb
+libxcb-xfixes0 1.4-1 optional libs pool/main/libx/libxcb/libxcb-xfixes0_1.4-1_i386.deb
 libxcb1 1.4-1 standard libs pool/main/libx/libxcb/libxcb1_1.4-1_i386.deb
 libxcomposite1 1:0.4.0-4 optional libs pool/main/libx/libxcomposite/libxcomposite1_0.4.0-4_i386.deb
 libxcursor1 1:1.1.9-1build1 optional libs pool/main/libx/libxcursor/libxcursor1_1.1.9-1build1_i386.deb
@@ -353,8 +342,6 @@ netcat 1.10-38 important net pool/main/n/netcat/netcat_1.10-38_all.deb
 netcat-traditional 1.10-38 important net pool/main/n/netcat/netcat-traditional_1.10-38_i386.deb
 ntp 1:4.2.4p6+dfsg-1ubuntu5 optional net pool/main/n/ntp/ntp_4.2.4p6+dfsg-1ubuntu5_i386.deb
 ntpdate 1:4.2.4p6+dfsg-1ubuntu5 important net pool/main/n/ntp/ntpdate_4.2.4p6+dfsg-1ubuntu5_i386.deb
-openjdk-6-jre-headless 6b16-1.6.1-1ubuntu3 extra interpreters pool/main/o/openjdk-6/openjdk-6-jre-headless_6b16-1.6.1-1ubuntu3_i386.deb
-openjdk-6-jre-lib 6b16-1.6.1-1ubuntu3 extra interpreters pool/main/o/openjdk-6/openjdk-6-jre-lib_6b16-1.6.1-1ubuntu3_all.deb
 openssh-client 1:5.1p1-6ubuntu2 standard net pool/main/o/openssh/openssh-client_5.1p1-6ubuntu2_i386.deb
 openssh-server 1:5.1p1-6ubuntu2 optional net pool/main/o/openssh/openssh-server_5.1p1-6ubuntu2_i386.deb
 openssl 0.9.8g-16ubuntu3 important utils pool/main/o/openssl/openssl_0.9.8g-16ubuntu3_i386.deb
@@ -375,16 +362,14 @@ python-dbus 0.83.0-1ubuntu2 optional python pool/main/d/dbus-python/python-dbus_
 python-glade2 2.16.0-0ubuntu1 optional python pool/main/p/pygtk/python-glade2_2.16.0-0ubuntu1_i386.deb
 python-gobject 2.18.0-0ubuntu2 optional python pool/main/p/pygobject/python-gobject_2.18.0-0ubuntu2_i386.deb
 python-gtk2 2.16.0-0ubuntu1 optional python pool/main/p/pygtk/python-gtk2_2.16.0-0ubuntu1_i386.deb
-# Skipped python-ibus 1.2.0.20090927-2ubuntu1 local_packages//python-ibus_1.2.0.20090927-2ubuntu1_all.deb: local install
+python-ibus 1.2.0.20090927-2ubuntu1 optional python pool/main/i/ibus/python-ibus_1.2.0.20090927-2ubuntu1_all.deb
 python-minimal 2.6.4~rc1-0ubuntu1 required python pool/main/p/python-defaults/python-minimal_2.6.4~rc1-0ubuntu1_all.deb
-python-rsvg 2.28.0-0ubuntu1 optional python pool/main/g/gnome-python-desktop/python-rsvg_2.28.0-0ubuntu1_i386.deb
 python-support 1.0.3ubuntu1 standard python pool/main/p/python-support/python-support_1.0.3ubuntu1_all.deb
 python-xdg 0.15-1.1ubuntu5 optional python pool/main/p/pyxdg/python-xdg_0.15-1.1ubuntu5_all.deb
 python2.6 2.6.4~rc2-0ubuntu1 important python pool/main/p/python2.6/python2.6_2.6.4~rc2-0ubuntu1_i386.deb
 python2.6-minimal 2.6.4~rc2-0ubuntu1 required python pool/main/p/python2.6/python2.6-minimal_2.6.4~rc2-0ubuntu1_i386.deb
 radeontool 1.5+git76606164-0ubuntu2 optional utils pool/main/r/radeontool/radeontool_1.5+git76606164-0ubuntu2_i386.deb
 readline-common 6.0-5 important utils pool/main/r/readline6/readline-common_6.0-5_all.deb
-rhino 1.7R2-1ubuntu1 optional interpreters pool/main/r/rhino/rhino_1.7R2-1ubuntu1_all.deb
 rsyslog 4.2.0-2ubuntu5 important admin pool/main/r/rsyslog/rsyslog_4.2.0-2ubuntu5_i386.deb
 sash 3.7-8 optional universe/shells pool/universe/s/sash/sash_3.7-8_i386.deb
 sed 4.2.1-1 required utils pool/main/s/sed/sed_4.2.1-1_i386.deb
@@ -405,7 +390,6 @@ ttf-dejavu-extra 2.29-2 optional x11 pool/main/t/ttf-dejavu/ttf-dejavu-extra_2.2
 ttf-droid 1.00~b112+dfsg+1-0ubuntu1 optional universe/x11 pool/universe/t/ttf-droid/ttf-droid_1.00~b112+dfsg+1-0ubuntu1_all.deb
 ttf-sil-abyssinica 1.0-4 optional x11 pool/main/t/ttf-sil-abyssinica/ttf-sil-abyssinica_1.0-4_all.deb
 tzdata 2009o-1ubuntu2 required libs pool/main/t/tzdata/tzdata_2009o-1ubuntu2_all.deb
-tzdata-java 2009o-1ubuntu2 optional libs pool/main/t/tzdata/tzdata-java_2009o-1ubuntu2_all.deb
 ubuntu-keyring 2009.08.28 important misc pool/main/u/ubuntu-keyring/ubuntu-keyring_2009.08.28_all.deb
 ubuntu-minimal 1.175 important metapackages pool/main/u/ubuntu-meta/ubuntu-minimal_1.175_i386.deb
 ucf 3.0018ubuntu1 important utils pool/main/u/ucf/ucf_3.0018ubuntu1_all.deb
@@ -432,7 +416,7 @@ xkb-data 1.6-1ubuntu5 important x11 pool/main/x/xkeyboard-config/xkb-data_1.6-1u
 xml-core 0.12 important text pool/main/x/xml-core/xml-core_0.12_all.deb
 xserver-common 2:1.6.4-2ubuntu4 optional x11 pool/main/x/xorg-server/xserver-common_1.6.4-2ubuntu4_all.deb
 xserver-xorg 1:7.4+3ubuntu7 optional x11 pool/main/x/xorg/xserver-xorg_7.4+3ubuntu7_i386.deb
-xserver-xorg-core 2:1.6.4-2ubuntu4 optional x11 pool/main/x/xorg-server/xserver-xorg-core_1.6.4-2ubuntu4_i386.deb
+# Skipped xserver-xorg-core 2:1.6.4-2ubuntu5 local_packages//xserver-xorg-core_1.6.4-2ubuntu5_i386.deb: local install
 xserver-xorg-input-all 1:7.4+3ubuntu7 optional x11 pool/main/x/xorg/xserver-xorg-input-all_7.4+3ubuntu7_i386.deb
 xserver-xorg-input-evdev 1:2.2.5-1ubuntu6 optional x11 pool/main/x/xserver-xorg-input-evdev/xserver-xorg-input-evdev_2.2.5-1ubuntu6_i386.deb
 xserver-xorg-input-kbd 1:1.3.2-3 optional x11 pool/main/x/xserver-xorg-input-keyboard/xserver-xorg-input-kbd_1.3.2-3_i386.deb
@@ -450,7 +434,7 @@ xserver-xorg-video-fbdev 1:0.4.0-4 optional x11 pool/main/x/xserver-xorg-video-f
 xserver-xorg-video-geode 2.11.6-1 optional x11 pool/main/x/xserver-xorg-video-geode/xserver-xorg-video-geode_2.11.6-1_i386.deb
 xserver-xorg-video-i128 1:1.3.2-1 optional x11 pool/main/x/xserver-xorg-video-i128/xserver-xorg-video-i128_1.3.2-1_i386.deb
 xserver-xorg-video-i740 1:1.3.0-1 optional x11 pool/main/x/xserver-xorg-video-i740/xserver-xorg-video-i740_1.3.0-1_i386.deb
-xserver-xorg-video-intel 2:2.9.0-1ubuntu2 optional x11 pool/main/x/xserver-xorg-video-intel/xserver-xorg-video-intel_2.9.0-1ubuntu2_i386.deb
+# Skipped xserver-xorg-video-intel 2:2.9.0-1ubuntu3 local_packages//xserver-xorg-video-intel_2.9.0-1ubuntu3_i386.deb: local install
 xserver-xorg-video-mach64 6.8.2-1 optional x11 pool/main/x/xserver-xorg-video-mach64/xserver-xorg-video-mach64_6.8.2-1_i386.deb
 xserver-xorg-video-mga 1:1.4.11.dfsg-1 optional x11 pool/main/x/xserver-xorg-video-mga/xserver-xorg-video-mga_1.4.11.dfsg-1_i386.deb
 xserver-xorg-video-neomagic 1:1.2.3-1 optional x11 pool/main/x/xserver-xorg-video-neomagic/xserver-xorg-video-neomagic_1.2.3-1_i386.deb

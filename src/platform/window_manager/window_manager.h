@@ -11,9 +11,9 @@
 #include <tr1/memory>
 
 extern "C" {
-#include <X11/Xlib.h>
 #include <X11/extensions/shape.h>
 #include <X11/extensions/Xrandr.h>
+#include <X11/Xlib.h>
 }
 
 #include <gtest/gtest_prod.h>  // for FRIEND_TEST() macro
@@ -124,7 +124,7 @@ class WindowManager {
   FRIEND_TEST(WindowManagerTest, RegisterExistence);
   FRIEND_TEST(WindowManagerTest, EventConsumer);
   FRIEND_TEST(WindowManagerTest, KeyEventSnooping);
-  FRIEND_TEST(WindowManagerTest, XRandR);
+  FRIEND_TEST(WindowManagerTest, RandR);
 
   // Is this one of our internally-created windows?
   bool IsInternalWindow(XWindow xid) {

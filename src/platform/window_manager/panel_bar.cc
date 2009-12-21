@@ -264,7 +264,7 @@ bool PanelBar::HandleButtonRelease(
     XWindow xid, int x, int y, int button, Time timestamp) {
   std::map<XWindow, Panel*>::iterator it = panel_input_windows_.find(xid);
   if (it != panel_input_windows_.end()) {
-    it->second->HandleInputWindowButtonRelease(xid, x, y, button);
+    it->second->HandleInputWindowButtonRelease(xid, x, y, button, timestamp);
     return true;
   }
   return false;
@@ -639,9 +639,8 @@ void PanelBar::CollapsePanel(Panel* panel) {
 void PanelBar::FocusPanel(Panel* panel, bool remove_pointer_grab) {
   CHECK(panel);
   panel->panel_win()->RemovePassiveButtonGrab();
-  if (remove_pointer_grab) {
-    wm_->xconn()->RemoveActivePointerGrab(true);  // replay_events
-  }
+  if (remove_pointer_grab)
+    wm_->xconn()->RemoveActivePointerGrab(true, CurrentTime);  // replay_events
   wm_->SetActiveWindowProperty(panel->panel_win()->xid());
   panel->panel_win()->TakeFocus(wm_->GetCurrentTimeFromServer());
   panel->StackAtTopOfLayer(StackingManager::LAYER_EXPANDED_PANEL);

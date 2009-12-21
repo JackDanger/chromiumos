@@ -152,7 +152,8 @@ TEST_F(PanelTest, Resize) {
   panel.HandleInputWindowButtonRelease(
       panel.top_left_input_xid_,
       0, 0,  // relative x, y
-      1);    // button
+      1,     // button
+      CurrentTime);
   EXPECT_EQ(None, xconn_->pointer_grab_xid());
 
   // Check that the panel's dimensions are unchanged.
@@ -169,10 +170,11 @@ TEST_F(PanelTest, Resize) {
   // Now start a second resize using the upper-left handle.  Drag a few
   // pixels up and to the left and then let go of the button.
   panel.HandleInputWindowButtonPress(
-      panel.top_left_input_xid_, 0, 0, 1, 1);
+      panel.top_left_input_xid_, 0, 0, 1, CurrentTime);
   EXPECT_EQ(panel.top_left_input_xid_, xconn_->pointer_grab_xid());
   panel.HandleInputWindowPointerMotion(panel.top_left_input_xid_, -2, -4);
-  panel.HandleInputWindowButtonRelease(panel.top_left_input_xid_, -5, -6, 1);
+  panel.HandleInputWindowButtonRelease(
+      panel.top_left_input_xid_, -5, -6, 1, CurrentTime);
   EXPECT_EQ(None, xconn_->pointer_grab_xid());
 
   // The titlebar should be offset by the drag and made a bit wider.

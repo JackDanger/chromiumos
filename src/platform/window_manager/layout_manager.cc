@@ -1084,7 +1084,7 @@ void LayoutManager::ToplevelWindow::HandleButtonPress(
   SetPreferredTransientWindowToFocus(
       GetTransientWindow(*button_win) ? button_win : NULL);
   TakeFocus(timestamp);
-  wm()->xconn()->RemoveActivePointerGrab(true);  // replay events
+  wm()->xconn()->RemoveActivePointerGrab(true, timestamp);  // replay events
 }
 
 LayoutManager::ToplevelWindow::TransientWindow*

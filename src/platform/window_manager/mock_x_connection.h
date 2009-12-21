@@ -20,7 +20,7 @@ class MockXConnection : public XConnection {
   MockXConnection();
   ~MockXConnection();
 
-  bool GetWindowGeometry(XWindow xid, int* x, int* y, int* width, int* height);
+  bool GetWindowGeometry(XWindow xid, WindowGeometry* geom_out);
   bool MapWindow(XWindow xid);
   bool UnmapWindow(XWindow xid);
   bool MoveWindow(XWindow xid, int x, int y);
@@ -41,12 +41,11 @@ class MockXConnection : public XConnection {
   bool RemovePassiveButtonGrabOnWindow(XWindow xid, int button);
   bool AddActivePointerGrabForWindow(
       XWindow xid, int event_mask, Time timestamp);
-  bool RemoveActivePointerGrab(bool replay_events);
+  bool RemoveActivePointerGrab(bool replay_events, Time timestamp);
   bool RemoveInputRegionFromWindow(XWindow xid) { return true; }
-  bool GetSizeHintsForWindow(
-      XWindow xid, XSizeHints* hints, long* supplied_hints);
+  bool GetSizeHintsForWindow(XWindow xid, SizeHints* hints_out);
   bool GetTransientHintForWindow(XWindow xid, XWindow* owner_out);
-  bool GetWindowAttributes(XWindow xid, XWindowAttributes* attr_out);
+  bool GetWindowAttributes(XWindow xid, WindowAttributes* attr_out);
   bool RedirectWindowForCompositing(XWindow xid);
   bool UnredirectWindowForCompositing(XWindow xid);
   XWindow GetCompositingOverlayWindow(XWindow root) { return overlay_; }
@@ -57,8 +56,7 @@ class MockXConnection : public XConnection {
   bool IsWindowShaped(XWindow xid);
   bool SelectShapeEventsOnWindow(XWindow xid);
   bool GetWindowBoundingRegion(XWindow xid, ByteMap* bytemap);
-  bool SelectXRandREventsOnWindow(XWindow xid);
-  bool GetAtom(const std::string& name, XAtom* atom_out);
+  bool SelectRandREventsOnWindow(XWindow xid);
   bool GetAtoms(const std::vector<std::string>& names,
                 std::vector<XAtom>* atoms_out);
   bool GetAtomName(XAtom atom, std::string* name);
@@ -96,13 +94,14 @@ class MockXConnection : public XConnection {
     int width, height;
     bool mapped;
     bool override_redirect;
+    bool input_only;
     bool redirected;
     int event_mask;
     std::map<XAtom, std::vector<int> > int_properties;
     std::map<XAtom, std::string> string_properties;
     XWindow transient_for;
     uint32 cursor;
-    XSizeHints size_hints;
+    XConnection::SizeHints size_hints;
 
     // Window's shape, if it's been shaped using the shape extension.
     // NULL otherwise.
@@ -111,7 +110,7 @@ class MockXConnection : public XConnection {
     // Have various extension events been selected using
     // Select*EventsOnWindow()?
     bool shape_events_selected;
-    bool xrandr_events_selected;
+    bool randr_events_selected;
 
     // Client messages sent to the window.
     std::vector<XClientMessageEvent> client_messages;

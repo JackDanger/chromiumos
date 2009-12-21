@@ -48,14 +48,6 @@ Window::Window(WindowManager* wm, XWindow xid)
       composited_opacity_(1.0),
       using_shadow_(false),
       shadow_opacity_(1.0),
-      min_width_hint_(-1),
-      min_height_hint_(-1),
-      max_width_hint_(-1),
-      max_height_hint_(-1),
-      base_width_hint_(-1),
-      base_height_hint_(-1),
-      width_inc_hint_(-1),
-      height_inc_hint_(-1),
       supports_wm_take_focus_(false),
       supports_wm_delete_window_(false),
       wm_state_fullscreen_(false),
@@ -68,41 +60,35 @@ Window::Window(WindowManager* wm, XWindow xid)
   wm_->xconn()->SelectShapeEventsOnWindow(xid_);
 
   // Get the window's initial state.
-  XWindowAttributes attr;
+  XConnection::WindowAttributes attr;
   if (wm_->xconn()->GetWindowAttributes(xid_, &attr)) {
     // We update 'mapped_' when we get the MapNotify event instead of doing
     // it here; things get tricky otherwise since there's a race as to
     // whether override-redirect windows are mapped or not at this point.
     override_redirect_ = attr.override_redirect;
-    client_x_ = composited_x_ = attr.x;
-    client_y_ = composited_y_ = attr.y;
-    client_width_ = attr.width;
-    client_height_ = attr.height;
+  }
+
+  XConnection::WindowGeometry geometry;
+  if (wm_->xconn()->GetWindowGeometry(xid_, &geometry)) {
+    client_x_ = composited_x_ = geometry.x;
+    client_y_ = composited_y_ = geometry.y;
+    client_width_ = geometry.width;
+    client_height_ = geometry.height;
 
     // If the window has a border, remove it -- they make things more confusing
     // (we need to include the border when telling Clutter the window's size,
     // but it's not included when telling X to resize the window, etc.).
-    // TODO: Reconsider this if there's actually a case where borders are useful
-    // to have.
-    if (attr.border_width > 0)
+    if (geometry.border_width > 0)
       wm_->xconn()->SetWindowBorderWidth(xid_, 0);
   }
 
-  if (FLAGS_wm_use_compositing) {
-    // Send the window to an offscreen pixmap.
-    // Something within clutter_x11_texture_pixmap_set_window() appears to
-    // be triggering a BadAccess error when we don't sync with the server
-    // after calling XCompositeRedirectWindow() (but we get the sync
-    // implicitly from the error-trapping in
-    // XConnection::RedirectWindowForCompositing()).
-    VLOG(1) << "Redirecting "
-            << (override_redirect_ ? "override-redirect " : "")
-            << "window " << xid_str() << " "
-            << "at (" << client_x_ << ", " << client_y_ << ") "
-            << "with dimensions " << client_width_ << "x" << client_height_
-            << " for compositing";
-    wm_->xconn()->RedirectWindowForCompositing(xid_);
-  }
+  // We don't need to redirect the window for compositing; Clutter already
+  // does it for us.
+  VLOG(1) << "Constructing object to track "
+          << (override_redirect_ ? "override-redirect " : "")
+          << "window " << xid_str() << " "
+          << "at (" << client_x_ << ", " << client_y_ << ") "
+          << "with dimensions " << client_width_ << "x" << client_height_;
 
   if (!actor_->IsUsingTexturePixmapExtension()) {
     static bool logged = false;
@@ -154,60 +140,17 @@ Window::~Window() {
 }
 
 bool Window::FetchAndApplySizeHints() {
-  // Once windows have been mapped, they should just request any desired
-  // changes themselves.
-  if (mapped_)
-    return true;
-
-  XSizeHints size_hints;
-  memset(&size_hints, 0, sizeof(size_hints));
-  long supplied_hints = 0;
-  if (!wm_->xconn()->GetSizeHintsForWindow(
-           xid_, &size_hints, &supplied_hints)) {
+  if (!wm_->xconn()->GetSizeHintsForWindow(xid_, &size_hints_))
     return false;
-  }
 
-  if (size_hints.flags & PMinSize) {
-    min_width_hint_ = size_hints.min_width;
-    min_height_hint_ = size_hints.min_height;
-  } else {
-    min_width_hint_ = -1;
-    min_height_hint_ = -1;
-  }
-  if (size_hints.flags & PMaxSize) {
-    max_width_hint_ = size_hints.max_width;
-    max_height_hint_ = size_hints.max_height;
-  } else {
-    max_width_hint_ = -1;
-    max_height_hint_ = -1;
-  }
-  if (size_hints.flags & PBaseSize) {
-    base_width_hint_ = size_hints.base_width;
-    base_height_hint_ = size_hints.base_height;
-  } else {
-    base_width_hint_ = -1;
-    base_height_hint_ = -1;
-  }
-  if (size_hints.flags & PResizeInc) {
-    width_inc_hint_ = size_hints.width_inc;
-    height_inc_hint_ = size_hints.height_inc;
-  } else {
-    width_inc_hint_ = -1;
-    height_inc_hint_ = -1;
-  }
-  VLOG(1) << "Size hints for " << xid_str() << ":"
-          << " min=" << min_width_hint_ << "x" << min_height_hint_
-          << " max=" << max_width_hint_ << "x" << max_height_hint_
-          << " base=" << base_width_hint_ << "x" << base_height_hint_
-          << " inc=" << width_inc_hint_ << "x" << height_inc_hint_;
-
-  // Ignore position, aspect ratio, etc. hints for now.
-  if (!override_redirect_ &&
-      (size_hints.flags & USSize || size_hints.flags & PSize)) {
-    VLOG(1) << "Got " << (size_hints.flags & USSize ? "user" : "program")
-            << "-specified size hints for " << xid_str() << ": "
-            << size_hints.width << "x" << size_hints.width;
-    ResizeClient(size_hints.width, size_hints.height, GRAVITY_NORTHWEST);
+  // If windows are override-redirect or have already been mapped, they
+  // should just make/request any desired changes directly.  Also ignore
+  // position, aspect ratio, etc. hints for now.
+  if (!mapped_ && !override_redirect_ &&
+      (size_hints_.width > 0 && size_hints_.height > 0)) {
+    VLOG(1) << "Got size hints for " << xid_str() << ": "
+            << size_hints_.width << "x" << size_hints_.height;
+    ResizeClient(size_hints_.width, size_hints_.height, GRAVITY_NORTHWEST);
   }
 
   return true;
@@ -347,10 +290,10 @@ void Window::FetchAndApplyShape(bool update_shadow) {
 }
 
 bool Window::FetchMapState() {
-  XWindowAttributes attr;
+  XConnection::WindowAttributes attr;
   if (!wm_->xconn()->GetWindowAttributes(xid_, &attr))
     return false;
-  return (attr.map_state != IsUnmapped);
+  return (attr.map_state != XConnection::WindowAttributes::MAP_STATE_UNMAPPED);
 }
 
 bool Window::HandleWmStateMessage(const XClientMessageEvent& event) {
@@ -465,37 +408,40 @@ void Window::GetMaxSize(int desired_width, int desired_height,
   CHECK_GT(desired_width, 0);
   CHECK_GT(desired_height, 0);
 
-  if (max_width_hint_ > 0)
-    desired_width = std::min(max_width_hint_, desired_width);
-  if (min_width_hint_ > 0)
-    desired_width = std::max(min_width_hint_, desired_width);
+  if (size_hints_.max_width > 0)
+    desired_width = std::min(size_hints_.max_width, desired_width);
+  if (size_hints_.min_width > 0)
+    desired_width = std::max(size_hints_.min_width, desired_width);
 
-  if (width_inc_hint_ > 0) {
+  if (size_hints_.width_increment > 0) {
     int base_width =
-        (base_width_hint_ > 0) ? base_width_hint_ :
-        (min_width_hint_ > 0) ? min_width_hint_ :
+        (size_hints_.base_width > 0) ? size_hints_.base_width :
+        (size_hints_.min_width > 0) ? size_hints_.min_width :
         0;
     *width_out = base_width +
-        ((desired_width - base_width) / width_inc_hint_) * width_inc_hint_;
+        ((desired_width - base_width) / size_hints_.width_increment) *
+        size_hints_.width_increment;
   } else {
     *width_out = desired_width;
   }
 
-  if (max_height_hint_ > 0)
-    desired_height = std::min(max_height_hint_, desired_height);
-  if (min_height_hint_ > 0)
-    desired_height = std::max(min_height_hint_, desired_height);
+  if (size_hints_.max_height > 0)
+    desired_height = std::min(size_hints_.max_height, desired_height);
+  if (size_hints_.min_height > 0)
+    desired_height = std::max(size_hints_.min_height, desired_height);
 
-  if (height_inc_hint_ > 0) {
+  if (size_hints_.height_increment > 0) {
     int base_height =
-        (base_height_hint_ > 0) ? base_height_hint_ :
-        (min_height_hint_ > 0) ? min_height_hint_ :
+        (size_hints_.base_height > 0) ? size_hints_.base_height :
+        (size_hints_.min_height > 0) ? size_hints_.min_height :
         0;
     *height_out = base_height +
-        ((desired_height - base_height) / height_inc_hint_) * height_inc_hint_;
+        ((desired_height - base_height) / size_hints_.height_increment) *
+        size_hints_.height_increment;
   } else {
     *height_out = desired_height;
   }
+
   VLOG(2) << "Max size for " << xid_str() << " is "
           << *width_out << "x" << *height_out
           << " (desired was " << desired_width << "x" << desired_height << ")";

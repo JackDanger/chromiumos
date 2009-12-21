@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 # Package list created by list_installed_packages.sh
-# Creation time: Wed Dec 16 18:37:14 UTC 2009
+# Creation time: Fri Dec 18 02:32:37 UTC 2009
 #
 # Contents of /etc/apt/sources.list:
 #   deb http://us.archive.ubuntu.com/ubuntu karmic main restricted multiverse universe
@@ -129,8 +129,6 @@ gzip 1.3.12-8ubuntu1 required utils pool/main/g/gzip/gzip_1.3.12-8ubuntu1_i386.d
 hicolor-icon-theme 0.10-2 optional misc pool/main/h/hicolor-icon-theme/hicolor-icon-theme_0.10-2_all.deb
 hostname 2.95ubuntu1 required admin pool/main/h/hostname/hostname_2.95ubuntu1_i386.deb
 html2text 1.3.2a-14 optional web pool/main/h/html2text/html2text_1.3.2a-14_i386.deb
-# Skipped ibus 1.2.0.20090927-1~ppa1: installed directly
-# Skipped ibus-gtk 1.2.0.20090927-1~ppa1: installed directly
 ifupdown 0.6.8ubuntu21 important admin pool/main/i/ifupdown/ifupdown_0.6.8ubuntu21_i386.deb
 im-switch 1.16ubuntu1 optional x11 pool/main/i/im-switch/im-switch_1.16ubuntu1_all.deb
 info 4.13a.dfsg.1-4ubuntu1 standard doc pool/main/t/texinfo/info_4.13a.dfsg.1-4ubuntu1_i386.deb
@@ -249,8 +247,6 @@ libgconf2-dev 2.28.0-0ubuntu2 optional libdevel pool/main/g/gconf/libgconf2-dev_
 libgcrypt11 1.4.4-2ubuntu2 important libs pool/main/libg/libgcrypt11/libgcrypt11_1.4.4-2ubuntu2_i386.deb
 libgcrypt11-dev 1.4.4-2ubuntu2 optional libdevel pool/main/libg/libgcrypt11/libgcrypt11-dev_1.4.4-2ubuntu2_i386.deb
 libgdbm3 1.8.3-4 important libs pool/main/g/gdbm/libgdbm3_1.8.3-4_i386.deb
-# Skipped libgflags-dev 1.1-1: installed directly
-# Skipped libgflags0 1.1-1: installed directly
 libgfortran3-armel-cross 4.4.2-1ubuntu1 extra devel pool/main/g/gcc-4.4-armel/libgfortran3-armel-cross_4.4.2-1ubuntu1_all.deb
 libgl1-mesa-dev 7.6.0-1ubuntu4 extra libdevel pool/main/m/mesa/libgl1-mesa-dev_7.6.0-1ubuntu4_i386.deb
 libgl1-mesa-dri 7.6.0-1ubuntu4 extra libs pool/main/m/mesa/libgl1-mesa-dri_7.6.0-1ubuntu4_i386.deb
@@ -288,8 +284,6 @@ libhtml-format-perl 2.04-2 standard perl pool/main/libh/libhtml-format-perl/libh
 libhtml-parser-perl 3.61-1 standard perl pool/main/libh/libhtml-parser-perl/libhtml-parser-perl_3.61-1_i386.deb
 libhtml-tagset-perl 3.20-2 standard perl pool/main/libh/libhtml-tagset-perl/libhtml-tagset-perl_3.20-2_all.deb
 libhtml-tree-perl 3.23-1 standard perl pool/main/libh/libhtml-tree-perl/libhtml-tree-perl_3.23-1_all.deb
-# Skipped libibus-dev 1.2.0.20090927-1~ppa1: installed directly
-# Skipped libibus1 1.2.0.20090927-1~ppa1: installed directly
 libice-dev 2:1.0.5-1 optional libdevel pool/main/libi/libice/libice-dev_1.0.5-1_i386.deb
 libice6 2:1.0.5-1 optional libs pool/main/libi/libice/libice6_1.0.5-1_i386.deb
 libidl-dev 0.8.13-0.1 optional libdevel pool/main/libi/libidl/libidl-dev_0.8.13-0.1_i386.deb
@@ -432,15 +426,25 @@ libwww-perl 5.831-1 standard perl pool/main/libw/libwww-perl/libwww-perl_5.831-1
 libx11-6 2:1.2.2-1ubuntu1 standard libs pool/main/libx/libx11/libx11-6_1.2.2-1ubuntu1_i386.deb
 libx11-data 2:1.2.2-1ubuntu1 standard x11 pool/main/libx/libx11/libx11-data_1.2.2-1ubuntu1_all.deb
 libx11-dev 2:1.2.2-1ubuntu1 optional libdevel pool/main/libx/libx11/libx11-dev_1.2.2-1ubuntu1_i386.deb
+libx11-xcb-dev 2:1.2.2-1ubuntu1 optional libdevel pool/main/libx/libx11/libx11-xcb-dev_1.2.2-1ubuntu1_i386.deb
+libx11-xcb1 2:1.2.2-1ubuntu1 optional libs pool/main/libx/libx11/libx11-xcb1_1.2.2-1ubuntu1_i386.deb
 libxapian15 1.0.15-2ubuntu2 important libs pool/main/x/xapian-core/libxapian15_1.0.15-2ubuntu2_i386.deb
 libxau-dev 1:1.0.4-2 optional libdevel pool/main/libx/libxau/libxau-dev_1.0.4-2_i386.deb
 libxau6 1:1.0.4-2 standard libs pool/main/libx/libxau/libxau6_1.0.4-2_i386.deb
 libxaw7 2:1.0.6-1 optional libs pool/main/libx/libxaw/libxaw7_1.0.6-1_i386.deb
 libxaw7-dev 2:1.0.6-1 optional libdevel pool/main/libx/libxaw/libxaw7-dev_1.0.6-1_i386.deb
+libxcb-composite0 1.4-1 optional libs pool/main/libx/libxcb/libxcb-composite0_1.4-1_i386.deb
+libxcb-composite0-dev 1.4-1 optional libdevel pool/main/libx/libxcb/libxcb-composite0-dev_1.4-1_i386.deb
+libxcb-randr0 1.4-1 optional libs pool/main/libx/libxcb/libxcb-randr0_1.4-1_i386.deb
+libxcb-randr0-dev 1.4-1 optional libdevel pool/main/libx/libxcb/libxcb-randr0-dev_1.4-1_i386.deb
 libxcb-render-util0 0.3.6-1 extra libdevel pool/main/x/xcb-util/libxcb-render-util0_0.3.6-1_i386.deb
 libxcb-render-util0-dev 0.3.6-1 extra libdevel pool/main/x/xcb-util/libxcb-render-util0-dev_0.3.6-1_i386.deb
 libxcb-render0 1.4-1 optional libs pool/main/libx/libxcb/libxcb-render0_1.4-1_i386.deb
 libxcb-render0-dev 1.4-1 optional libdevel pool/main/libx/libxcb/libxcb-render0-dev_1.4-1_i386.deb
+libxcb-shape0 1.4-1 optional libs pool/main/libx/libxcb/libxcb-shape0_1.4-1_i386.deb
+libxcb-shape0-dev 1.4-1 optional libdevel pool/main/libx/libxcb/libxcb-shape0-dev_1.4-1_i386.deb
+libxcb-xfixes0 1.4-1 optional libs pool/main/libx/libxcb/libxcb-xfixes0_1.4-1_i386.deb
+libxcb-xfixes0-dev 1.4-1 optional libdevel pool/main/libx/libxcb/libxcb-xfixes0-dev_1.4-1_i386.deb
 libxcb1 1.4-1 standard libs pool/main/libx/libxcb/libxcb1_1.4-1_i386.deb
 libxcb1-dev 1.4-1 optional libdevel pool/main/libx/libxcb/libxcb1-dev_1.4-1_i386.deb
 libxcomposite-dev 1:0.4.0-4 optional libdevel pool/main/libx/libxcomposite/libxcomposite-dev_0.4.0-4_i386.deb
@@ -560,7 +564,6 @@ python-glade2 2.16.0-0ubuntu1 optional python pool/main/p/pygtk/python-glade2_2.
 python-gobject 2.18.0-0ubuntu2 optional python pool/main/p/pygobject/python-gobject_2.18.0-0ubuntu2_i386.deb
 python-gobject-dev 2.18.0-0ubuntu2 optional python pool/main/p/pygobject/python-gobject-dev_2.18.0-0ubuntu2_all.deb
 python-gtk2 2.16.0-0ubuntu1 optional python pool/main/p/pygtk/python-gtk2_2.16.0-0ubuntu1_i386.deb
-# Skipped python-ibus 1.2.0.20090927-1~ppa1: installed directly
 python-minimal 2.6.4~rc1-0ubuntu1 required python pool/main/p/python-defaults/python-minimal_2.6.4~rc1-0ubuntu1_all.deb
 python-psycopg2 2.0.8-0ubuntu2 optional universe/python pool/universe/p/psycopg2/python-psycopg2_2.0.8-0ubuntu2_i386.deb
 python-support 1.0.3ubuntu1 standard python pool/main/p/python-support/python-support_1.0.3ubuntu1_all.deb

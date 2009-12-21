@@ -181,6 +181,13 @@ python-debian
 dpkg-cross
 python-apt
 
+# Packages needed to build chromeos-wm
+libx11-xcb-dev
+libxcb1-dev
+libxcb-composite0-dev
+libxcb-randr0-dev
+libxcb-shape0-dev
+
 # Cross-compiler packages for ARM
 libmpfr-dev-armel-cross
 gfortran-4.4-arm-linux-gnueabi

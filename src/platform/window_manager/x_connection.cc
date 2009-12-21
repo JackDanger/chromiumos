@@ -8,13 +8,16 @@
 
 namespace window_manager {
 
+using std::string;
+using std::vector;
+
 const int XConnection::kByteFormat = 8;
 const int XConnection::kLongFormat = 32;
 
 
 bool XConnection::GetIntProperty(XWindow xid, XAtom xatom, int* value) {
   CHECK(value);
-  std::vector<int> values;
+  vector<int> values;
   if (!GetIntArrayProperty(xid, xatom, &values)) {
     return false;
   }
@@ -49,9 +52,21 @@ bool XConnection::UngrabServer() {
   return false;
 }
 
+bool XConnection::GetAtom(const string& name, XAtom* atom_out) {
+  vector<string> names;
+  names.push_back(name);
+  vector<XAtom> atoms;
+  if (!GetAtoms(names, &atoms))
+    return false;
+
+  CHECK(atoms.size() == 1);
+  *atom_out = atoms[0];
+  return true;
+}
+
 bool XConnection::SetIntProperty(
     XWindow xid, XAtom xatom, XAtom type, int value) {
-  std::vector<int> values(1, value);
+  vector<int> values(1, value);
   return SetIntArrayProperty(xid, xatom, type, values);
 }
 

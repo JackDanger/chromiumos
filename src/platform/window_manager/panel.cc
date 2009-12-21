@@ -134,7 +134,8 @@ Panel::Panel(PanelBar* panel_bar,
 
 Panel::~Panel() {
   if (drag_xid_) {
-    wm()->xconn()->RemoveActivePointerGrab(false);  // replay_events=false
+    wm()->xconn()->RemoveActivePointerGrab(
+        false, CurrentTime);  // replay_events=false
     drag_xid_ = None;
   }
   wm()->xconn()->DestroyWindow(top_input_xid_);
@@ -234,7 +235,7 @@ void Panel::HandleInputWindowButtonPress(
 }
 
 void Panel::HandleInputWindowButtonRelease(
-    XWindow xid, int x, int y, int button) {
+    XWindow xid, int x, int y, int button, Time timestamp) {
   if (button != 1) {
     return;
   }
@@ -244,7 +245,8 @@ void Panel::HandleInputWindowButtonRelease(
                  << XidStr(drag_xid_) << ")";
     return;
   }
-  wm()->xconn()->RemoveActivePointerGrab(false);  // replay_events=false
+  wm()->xconn()->RemoveActivePointerGrab(
+      false, timestamp);  // replay_events=false
   resize_event_coalescer_.StorePosition(x, y);
   resize_event_coalescer_.Stop();
   drag_xid_ = None;

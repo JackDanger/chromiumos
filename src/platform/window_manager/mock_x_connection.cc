@@ -22,20 +22,22 @@ MockXConnection::MockXConnection()
       pointer_grab_xid_(None) {
   // Arbitrary large numbers unlikely to be used by other events.
   shape_event_base_ = 432432;
-  xrandr_event_base_ = 543251;
+  randr_event_base_ = 543251;
 }
 
 MockXConnection::~MockXConnection() {}
 
-bool MockXConnection::GetWindowGeometry(
-    XWindow xid, int* x, int* y, int* width, int* height) {
+bool MockXConnection::GetWindowGeometry(XWindow xid, WindowGeometry* geom_out) {
+  CHECK(geom_out);
   WindowInfo* info = GetWindowInfo(xid);
   if (!info)
     return false;
-  if (x)      *x = info->x;
-  if (y)      *y = info->y;
-  if (width)  *width = info->width;
-  if (height) *height = info->height;
+  geom_out->x = info->x;
+  geom_out->y = info->y;
+  geom_out->width = info->width;
+  geom_out->height = info->height;
+  geom_out->border_width = 0;
+  geom_out->depth = 32;
   return true;
 }
 
@@ -157,20 +159,18 @@ bool MockXConnection::AddActivePointerGrabForWindow(
   return true;
 }
 
-bool MockXConnection::RemoveActivePointerGrab(bool replay_events) {
+bool MockXConnection::RemoveActivePointerGrab(bool replay_events,
+                                              Time timestamp) {
   pointer_grab_xid_ = None;
   return true;
 }
 
-bool MockXConnection::GetSizeHintsForWindow(
-    XWindow xid, XSizeHints* hints, long* supplied_hints) {
-  CHECK(hints);
-  CHECK(supplied_hints);
+bool MockXConnection::GetSizeHintsForWindow(XWindow xid, SizeHints* hints_out) {
+  CHECK(hints_out);
   WindowInfo* info = GetWindowInfo(xid);
   if (!info)
     return false;
-  memcpy(hints, &(info->size_hints), sizeof(info->size_hints));
-  *supplied_hints = info->size_hints.flags;
+  *hints_out = info->size_hints;
   return true;
 }
 
@@ -185,17 +185,19 @@ bool MockXConnection::GetTransientHintForWindow(
 }
 
 bool MockXConnection::GetWindowAttributes(
-    XWindow xid, XWindowAttributes* attr_out) {
+    XWindow xid, WindowAttributes* attr_out) {
+  CHECK(attr_out);
   WindowInfo* info = GetWindowInfo(xid);
   if (!info)
     return false;
-  memset(attr_out, 0, sizeof(*attr_out));
-  attr_out->x = info->x;
-  attr_out->y = info->y;
-  attr_out->width = info->width;
-  attr_out->height = info->height;
-  attr_out->map_state = info->mapped ? IsViewable : IsUnmapped;
-  attr_out->override_redirect = info->override_redirect ? True : False;
+
+  attr_out->window_class = info->input_only ?
+      WindowAttributes::WINDOW_CLASS_INPUT_ONLY :
+      WindowAttributes::WINDOW_CLASS_INPUT_OUTPUT;
+  attr_out->map_state = info->mapped ?
+      WindowAttributes::MAP_STATE_VIEWABLE :
+      WindowAttributes::MAP_STATE_UNMAPPED;
+  attr_out->override_redirect = info->override_redirect;
   return true;
 }
 
@@ -230,6 +232,7 @@ XWindow MockXConnection::CreateWindow(
   info->width = width;
   info->height = height;
   info->override_redirect = override_redirect;
+  info->input_only = input_only;
   windows_[xid] = info;
   stacked_xids_->AddOnTop(xid);
   return xid;
@@ -286,25 +289,11 @@ bool MockXConnection::GetWindowBoundingRegion(XWindow xid, ByteMap* bytemap) {
   return true;
 }
 
-bool MockXConnection::SelectXRandREventsOnWindow(XWindow xid) {
+bool MockXConnection::SelectRandREventsOnWindow(XWindow xid) {
   WindowInfo* info = GetWindowInfo(xid);
   if (!info)
     return false;
-  info->xrandr_events_selected = true;
-  return true;
-}
-
-bool MockXConnection::GetAtom(const std::string& name, XAtom* atom_out) {
-  CHECK(atom_out);
-  std::map<std::string, XAtom>::const_iterator it = name_to_atom_.find(name);
-  if (it != name_to_atom_.end()) {
-    *atom_out = it->second;
-    return true;
-  }
-  *atom_out = next_atom_;
-  name_to_atom_[name] = *atom_out;
-  atom_to_name_[*atom_out] = name;
-  next_atom_++;
+  info->randr_events_selected = true;
   return true;
 }
 
@@ -312,11 +301,19 @@ bool MockXConnection::GetAtoms(
     const std::vector<std::string>& names, std::vector<XAtom>* atoms_out) {
   CHECK(atoms_out);
   atoms_out->clear();
-  for (size_t i = 0; i < names.size(); ++i) {
-    XAtom atom;
-    if (!GetAtom(names.at(i), &atom))
-      return false;
-    atoms_out->push_back(atom);
+  for (std::vector<std::string>::const_iterator name_it = names.begin();
+       name_it != names.end(); ++name_it) {
+    std::map<std::string, XAtom>::const_iterator find_it =
+        name_to_atom_.find(*name_it);
+    if (find_it != name_to_atom_.end()) {
+      atoms_out->push_back(find_it->second);
+    } else {
+      XAtom atom = next_atom_;
+      atoms_out->push_back(atom);
+      name_to_atom_[*name_it] = atom;
+      atom_to_name_[atom] = *name_it;
+      next_atom_++;
+    }
   }
   return true;
 }
@@ -452,16 +449,16 @@ MockXConnection::WindowInfo::WindowInfo(XWindow xid, XWindow parent)
       height(1),
       mapped(false),
       override_redirect(false),
+      input_only(false),
       redirected(false),
       event_mask(0),
       transient_for(None),
       cursor(0),
       shape(NULL),
       shape_events_selected(false),
-      xrandr_events_selected(false),
+      randr_events_selected(false),
       changed(false),
       all_buttons_grabbed(false) {
-  memset(&size_hints, 0, sizeof(size_hints));
 }
 
 MockXConnection::WindowInfo::~WindowInfo() {}

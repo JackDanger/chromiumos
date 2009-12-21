@@ -20,8 +20,7 @@ extern "C" {
 #include "window_manager/atom_cache.h"  // for Atom enum
 #include "window_manager/clutter_interface.h"
 #include "window_manager/wm_ipc.h"
-
-typedef ::Window XWindow;
+#include "window_manager/x_connection.h"
 
 namespace window_manager {
 
@@ -319,15 +318,8 @@ class Window {
 
   std::string title_;
 
-  // Information from the WM_NORMAL_HINTS property (-1 if not set).
-  int min_width_hint_;
-  int min_height_hint_;
-  int max_width_hint_;
-  int max_height_hint_;
-  int base_width_hint_;
-  int base_height_hint_;
-  int width_inc_hint_;
-  int height_inc_hint_;
+  // Information from the WM_NORMAL_HINTS property.
+  XConnection::SizeHints size_hints_;
 
   // Does the window have a WM_PROTOCOLS property claiming that it supports
   // WM_TAKE_FOCUS or WM_DELETE_WINDOW messages?
