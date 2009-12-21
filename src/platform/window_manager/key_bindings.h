@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef __PLATFORM_WINDOW_MANAGER_KEY_BINDINGS_H__
-#define __PLATFORM_WINDOW_MANAGER_KEY_BINDINGS_H__
+#ifndef WINDOW_MANAGER_KEY_BINDINGS_H_
+#define WINDOW_MANAGER_KEY_BINDINGS_H_
 
 // KeyBindings
 //
@@ -38,7 +38,7 @@ extern "C" {
 
 typedef ::Window XWindow;
 
-namespace chromeos {
+namespace window_manager {
 
 struct Action;
 class XConnection;
@@ -75,11 +75,12 @@ class KeyBindings {
   ~KeyBindings();
 
   // Add a new action. This will fail if the action already exists.
-  // NOTE: The KeyBindings class will take ownership of passed in callbacks.
+  // NOTE: The KeyBindings class will take ownership of passed-in
+  // callbacks, any of which may be NULL.
   bool AddAction(const std::string& action_name,
-                 Closure* begin_closure,   // [optional] On combo press
-                 Closure* repeat_closure,  // [optional] On combo auto-repeat
-                 Closure* end_closure);    // [optional] On combo release
+                 chromeos::Closure* begin_closure,   // On combo press
+                 chromeos::Closure* repeat_closure,  // On combo auto-repeat
+                 chromeos::Closure* end_closure);    // On combo release
 
   // Removes an action. Any key bindings to this action will also be removed.
   bool RemoveAction(const std::string& action_name);
@@ -113,6 +114,6 @@ class KeyBindings {
   DISALLOW_COPY_AND_ASSIGN(KeyBindings);
 };
 
-}  // namespace chromeos
+}  // namespace window_manager
 
-#endif  // __PLATFORM_WINDOW_MANAGER_KEY_BINDINGS_H__
+#endif  // WINDOW_MANAGER_KEY_BINDINGS_H_

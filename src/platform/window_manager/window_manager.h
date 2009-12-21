@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef __PLATFORM_WINDOW_MANAGER_WINDOW_MANAGER_H__
-#define __PLATFORM_WINDOW_MANAGER_WINDOW_MANAGER_H__
+#ifndef WINDOW_MANAGER_WINDOW_MANAGER_H_
+#define WINDOW_MANAGER_WINDOW_MANAGER_H_
 
 #include <map>
 #include <set>
@@ -25,7 +25,7 @@ extern "C" {
 typedef ::Atom XAtom;
 typedef ::Window XWindow;
 
-namespace chromeos {
+namespace window_manager {
 
 class EventConsumer;
 class HotkeyOverlay;
@@ -298,6 +298,6 @@ class WindowManager {
   DISALLOW_COPY_AND_ASSIGN(WindowManager);
 };
 
-}  // namespace chromeos
+}  // namespace window_manager
 
-#endif
+#endif  // WINDOW_MANAGER_WINDOW_MANAGER_H_

@@ -23,7 +23,7 @@
 DEFINE_bool(logtostderr, false,
             "Print debugging messages to stderr (suppressed otherwise)");
 
-namespace chromeos {
+namespace window_manager {
 
 class WindowManagerTest : public BasicWindowManagerTest {};
 
@@ -763,8 +763,8 @@ TEST_F(WindowManagerTest, ClientListProperties) {
   TestIntArrayProperty(root_xid, stacking_atom, 0);
 }
 
-}  // namespace chromeos
+}  // namespace window_manager
 
 int main(int argc, char **argv) {
-  return chromeos::InitAndRunTests(&argc, argv, &FLAGS_logtostderr);
+  return window_manager::InitAndRunTests(&argc, argv, &FLAGS_logtostderr);
 }

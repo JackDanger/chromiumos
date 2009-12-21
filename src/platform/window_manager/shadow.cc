@@ -12,7 +12,7 @@
 DEFINE_string(shadow_image_dir, "../assets/images",
               "Path to directory containing shadow images");
 
-namespace chromeos {
+namespace window_manager {
 
 // Static members.
 ClutterInterface::Actor* Shadow::top_texture_    = NULL;
@@ -156,4 +156,4 @@ ClutterInterface::Actor* Shadow::InitTexture(const std::string& filename) {
   return actor;
 }
 
-}  // namespace chromeos
+}  // namespace window_manager

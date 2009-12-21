@@ -8,7 +8,7 @@
 
 #include "window_manager/util.h"
 
-namespace chromeos {
+namespace window_manager {
 
 MockXConnection::MockXConnection()
     : windows_(),
@@ -614,4 +614,4 @@ void MockXConnection::InitUnmapEvent(XEvent* event, XWindow xid) {
   unmap_event->window = xid;
 }
 
-}  // namespace chromeos
+}  // namespace window_manager

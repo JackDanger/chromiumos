@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef __PLATFORM_WINDOW_MANAGER_MOCK_CHROME_H__
-#define __PLATFORM_WINDOW_MANAGER_MOCK_CHROME_H__
+#ifndef WINDOW_MANAGER_MOCK_CHROME_H_
+#define WINDOW_MANAGER_MOCK_CHROME_H_
 
 #include <map>
 #include <vector>
@@ -26,7 +26,7 @@ extern "C" {
 
 typedef ::Window XWindow;
 
-namespace chromeos {
+namespace window_manager {
 class AtomCache;
 class WmIpc;
 class XConnection;
@@ -347,7 +347,7 @@ class MockChrome {
  public:
   MockChrome();
 
-  chromeos::WmIpc* wm_ipc() { return wm_ipc_.get(); }
+  window_manager::WmIpc* wm_ipc() { return wm_ipc_.get(); }
 
   // Create a new window, ownership of which remains with the MockChrome
   // object.
@@ -375,9 +375,9 @@ class MockChrome {
   void HandleDroppedFloatingTab(Tab* tab);
 
  private:
-  scoped_ptr<chromeos::XConnection> xconn_;
-  scoped_ptr<chromeos::AtomCache> atom_cache_;
-  scoped_ptr<chromeos::WmIpc> wm_ipc_;
+  scoped_ptr<window_manager::XConnection> xconn_;
+  scoped_ptr<window_manager::AtomCache> atom_cache_;
+  scoped_ptr<window_manager::WmIpc> wm_ipc_;
 
   typedef std::map<XWindow, std::tr1::shared_ptr<ChromeWindow> > ChromeWindows;
   ChromeWindows windows_;
@@ -394,4 +394,4 @@ class MockChrome {
 
 }  // namespace mock_chrome
 
-#endif
+#endif  // WINDOW_MANAGER_MOCK_CHROME_H_

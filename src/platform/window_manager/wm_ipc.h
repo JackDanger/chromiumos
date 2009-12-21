@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef __PLATFORM_WINDOW_MANAGER_WM_IPC_H__
-#define __PLATFORM_WINDOW_MANAGER_WM_IPC_H__
+#ifndef WINDOW_MANAGER_WM_IPC_H_
+#define WINDOW_MANAGER_WM_IPC_H_
 
 #include <gdk/gdk.h>  // for GdkEventClient
 extern "C" {
@@ -19,7 +19,7 @@ extern "C" {
 typedef ::Atom XAtom;
 typedef ::Window XWindow;
 
-namespace chromeos {
+namespace window_manager {
 
 class AtomCache;    // from atom_cache.h
 class XConnection;  // from x_connection.h
@@ -237,6 +237,6 @@ class WmIpc {
   DISALLOW_COPY_AND_ASSIGN(WmIpc);
 };
 
-}  // namespace chromeos
+}  // namespace window_manager
 
-#endif
+#endif  // WINDOW_MANAGER_WM_IPC_H_

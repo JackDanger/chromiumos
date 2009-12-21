@@ -21,7 +21,7 @@
 DEFINE_bool(logtostderr, false,
             "Print debugging messages to stderr (suppressed otherwise)");
 
-namespace chromeos {
+namespace window_manager {
 
 class PanelTest : public BasicWindowManagerTest {
  protected:
@@ -249,8 +249,8 @@ TEST_F(PanelTest, Shadows) {
   EXPECT_DOUBLE_EQ(0.0, panel_win.shadow()->opacity());
 }
 
-}  // namespace chromeos
+}  // namespace window_manager
 
 int main(int argc, char **argv) {
-  return chromeos::InitAndRunTests(&argc, argv, &FLAGS_logtostderr);
+  return window_manager::InitAndRunTests(&argc, argv, &FLAGS_logtostderr);
 }

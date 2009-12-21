@@ -31,7 +31,7 @@ DEFINE_bool(lm_honor_window_size_hints, false,
             "size increment, etc.) instead of automatically making it fill the "
             "screen");
 
-namespace chromeos {
+namespace window_manager {
 
 using std::map;
 using std::vector;
@@ -39,6 +39,8 @@ using std::pair;
 using std::make_pair;
 using std::list;
 using std::tr1::shared_ptr;
+
+using chromeos::NewPermanentCallback;
 
 // Amount of padding that should be used between windows in overview mode.
 static const int kWindowPadding = 10;
@@ -1700,4 +1702,4 @@ void LayoutManager::SendDeleteRequestToActiveWindow() {
     active_toplevel_->win()->SendDeleteRequest(wm_->GetCurrentTimeFromServer());
 }
 
-}  // namespace chromeos
+}  // namespace window_manager

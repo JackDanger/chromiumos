@@ -6,7 +6,7 @@
 
 #include "base/logging.h"
 
-namespace chromeos {
+namespace window_manager {
 
 const int XConnection::kByteFormat = 8;
 const int XConnection::kLongFormat = 32;
@@ -55,4 +55,4 @@ bool XConnection::SetIntProperty(
   return SetIntArrayProperty(xid, xatom, type, values);
 }
 
-}  // namespace chromeos
+}  // namespace window_manager

@@ -2,15 +2,15 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef __PLATFORM_WINDOW_MANAGER_MOTION_EVENT_COALESCER_H__
-#define __PLATFORM_WINDOW_MANAGER_MOTION_EVENT_COALESCER_H__
+#ifndef WINDOW_MANAGER_MOTION_EVENT_COALESCER_H_
+#define WINDOW_MANAGER_MOTION_EVENT_COALESCER_H_
 
 #include <glib.h>  // for gboolean and gint
 
 #include <chromeos/callback.h>
 #include "base/scoped_ptr.h"
 
-namespace chromeos {
+namespace window_manager {
 
 // Rate-limits how quickly motion events are processed by saving them as
 // they're generated and then periodically invoking a callback (but only if
@@ -18,7 +18,7 @@ namespace chromeos {
 class MotionEventCoalescer {
  public:
   // The constructor takes ownership of 'cb'.
-  MotionEventCoalescer(Closure* cb, int timeout_ms);
+  MotionEventCoalescer(chromeos::Closure* cb, int timeout_ms);
   ~MotionEventCoalescer();
 
   int x() const { return x_; }
@@ -68,9 +68,9 @@ class MotionEventCoalescer {
   // handle.
   // TODO: When we're using a callback library that supports parameters, we
   // should just pass the position directly to the callback.
-  scoped_ptr<Closure> cb_;
+  scoped_ptr<chromeos::Closure> cb_;
 };
 
-}  // namespace chromeos
+}  // namespace window_manager
 
-#endif
+#endif  // WINDOW_MANAGER_MOTION_EVENT_COALESCER_H_

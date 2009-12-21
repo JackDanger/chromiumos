@@ -2,12 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef __PLATFORM_WINDOW_MANAGER_REAL_X_CONNECTION_H__
-#define __PLATFORM_WINDOW_MANAGER_REAL_X_CONNECTION_H__
+#ifndef WINDOW_MANAGER_REAL_X_CONNECTION_H_
+#define WINDOW_MANAGER_REAL_X_CONNECTION_H_
 
 #include "window_manager/x_connection.h"
 
-namespace chromeos {
+namespace window_manager {
 
 // This wraps an actual connection to an X server.
 class RealXConnection : public XConnection {
@@ -105,6 +105,6 @@ class RealXConnection : public XConnection {
   DISALLOW_COPY_AND_ASSIGN(RealXConnection);
 };
 
-}  // namespace chromeos
+}  // namespace window_manager
 
-#endif
+#endif  // WINDOW_MANAGER_REAL_X_CONNECTION_H_

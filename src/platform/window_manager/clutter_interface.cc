@@ -10,7 +10,7 @@
 #include "chromeos/obsolete_logging.h"
 #include "window_manager/util.h"
 
-namespace chromeos {
+namespace window_manager {
 
 const int RealClutterInterface::TexturePixmapActor::kAlphaMaskLayerIndex = 1;
 
@@ -542,4 +542,4 @@ void MockClutterInterface::TexturePixmapActor::ClearAlphaMask() {
   alpha_mask_bytes_ = NULL;
 }
 
-}
+}  // namespace window_manager

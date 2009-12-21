@@ -14,7 +14,7 @@
 
 #include "chromeos/obsolete_logging.h"
 
-namespace chromeos {
+namespace window_manager {
 
 ByteMap::ByteMap(int width, int height)
     : width_(width),
@@ -70,4 +70,4 @@ void FillTimeval(double time, struct timeval* tv) {
       static_cast<__suseconds_t>(1000000 * (time - static_cast<int>(time)));
 }
 
-}  // namespace chromeos
+}  // namespace window_manager

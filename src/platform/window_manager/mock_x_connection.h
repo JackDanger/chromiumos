@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef __PLATFORM_WINDOW_MANAGER_MOCK_X_CONNECTION_H__
-#define __PLATFORM_WINDOW_MANAGER_MOCK_X_CONNECTION_H__
+#ifndef WINDOW_MANAGER_MOCK_X_CONNECTION_H_
+#define WINDOW_MANAGER_MOCK_X_CONNECTION_H_
 
 #include <tr1/memory>
 #include <string>
@@ -12,7 +12,7 @@
 
 #include "window_manager/x_connection.h"
 
-namespace chromeos {
+namespace window_manager {
 
 // This is a fake implementation of a connection to an X server.
 class MockXConnection : public XConnection {
@@ -199,6 +199,6 @@ class MockXConnection : public XConnection {
   DISALLOW_COPY_AND_ASSIGN(MockXConnection);
 };
 
-}  // namespace chromeos
+}  // namespace window_manager
 
-#endif
+#endif  // WINDOW_MANAGER_MOCK_X_CONNECTION_H_

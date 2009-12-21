@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef __PLATFORM_WINDOW_MANAGER_SHADOW_H__
-#define __PLATFORM_WINDOW_MANAGER_SHADOW_H__
+#ifndef WINDOW_MANAGER_SHADOW_H_
+#define WINDOW_MANAGER_SHADOW_H_
 
 #include <gtest/gtest_prod.h>  // for FRIEND_TEST() macro
 
@@ -12,7 +12,7 @@
 #include "window_manager/clutter_interface.h"
 #include "window_manager/util.h"
 
-namespace chromeos {
+namespace window_manager {
 
 // This class displays a drop shadow that can be positioned under a window.
 //
@@ -102,6 +102,6 @@ class Shadow {
   DISALLOW_COPY_AND_ASSIGN(Shadow);
 };
 
-}  // namespace chromeos
+}  // namespace window_manager
 
-#endif
+#endif  // WINDOW_MANAGER_SHADOW_H_

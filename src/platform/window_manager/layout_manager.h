@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef __PLATFORM_WINDOW_MANAGER_LAYOUT_MANAGER_H__
-#define __PLATFORM_WINDOW_MANAGER_LAYOUT_MANAGER_H__
+#ifndef WINDOW_MANAGER_LAYOUT_MANAGER_H_
+#define WINDOW_MANAGER_LAYOUT_MANAGER_H_
 
 extern "C" {
 #include <X11/Xlib.h>
@@ -28,7 +28,7 @@ namespace chrome_os_pb {
 class SystemMetrics;
 }
 
-namespace chromeos {
+namespace window_manager {
 
 class MotionEventCoalescer;
 class Window;
@@ -536,6 +536,6 @@ class LayoutManager : public EventConsumer {
   DISALLOW_COPY_AND_ASSIGN(LayoutManager);
 };
 
-}  // namespace chromeos
+}  // namespace window_manager
 
-#endif
+#endif  // WINDOW_MANAGER_LAYOUT_MANAGER_H_

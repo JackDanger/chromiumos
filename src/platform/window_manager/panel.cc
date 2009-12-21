@@ -24,7 +24,9 @@ DEFINE_int32(panel_max_height, -1,
              "Maximum height for panels (0 or less means unconstrained)");
 DEFINE_bool(panel_opaque_resize, false, "Resize panels opaquely");
 
-namespace chromeos {
+namespace window_manager {
+
+using chromeos::NewPermanentCallback;
 
 // Width of titlebars for collapsed panels.  Expanded panels' titlebars are
 // resized to match the width of the panel contents.
@@ -533,4 +535,4 @@ void Panel::ConfigureInputWindows() {
   }
 }
 
-}  // namespace chromeos
+}  // namespace window_manager

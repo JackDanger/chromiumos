@@ -36,11 +36,11 @@ DEFINE_bool(logtostderr, false,
 DEFINE_string(minidump_dir, ".",
               "Directory where crash minidumps should be written");
 
-using chromeos::ClutterInterface;
-using chromeos::MockClutterInterface;
-using chromeos::RealClutterInterface;
-using chromeos::RealXConnection;
-using chromeos::WindowManager;
+using window_manager::ClutterInterface;
+using window_manager::MockClutterInterface;
+using window_manager::RealClutterInterface;
+using window_manager::RealXConnection;
+using window_manager::WindowManager;
 
 // Get the current time in the local time zone as "YYYYMMDD-HHMMSS".
 std::string GetCurrentTimeAsString() {

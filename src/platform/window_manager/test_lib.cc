@@ -15,7 +15,7 @@
 #include "window_manager/window_manager.h"
 #include "window_manager/wm_ipc.h"
 
-namespace chromeos {
+namespace window_manager {
 
 testing::AssertionResult BytesAreEqual(
     const char* expected_expr,
@@ -172,4 +172,4 @@ void BasicWindowManagerTest::TestIntArrayProperty(
   }
 }
 
-}  // namespace chromeos
+}  // namespace window_manager

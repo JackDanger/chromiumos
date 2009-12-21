@@ -16,7 +16,7 @@ extern "C" {
 #include "window_manager/util.h"
 #include "window_manager/x_connection.h"
 
-namespace chromeos {
+namespace window_manager {
 
 WmIpc::WmIpc(XConnection* xconn, AtomCache* cache)
     : xconn_(xconn),
@@ -130,4 +130,4 @@ bool WmIpc::SendMessage(XWindow xid, const Message& msg) {
   return xconn_->SendEvent(xid, &e, 0);  // empty event mask
 }
 
-}
+}  // namespace window_manager

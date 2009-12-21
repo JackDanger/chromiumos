@@ -16,7 +16,9 @@ extern "C" {
 #include "chromeos/obsolete_logging.h"
 #include "window_manager/x_connection.h"
 
-namespace chromeos {
+namespace window_manager {
+
+using chromeos::Closure;
 
 bool KeyBindings::KeyComboComparator::operator()(const KeyCombo& a,
                                                  const KeyCombo& b) const {
@@ -231,4 +233,4 @@ uint KeyBindings::KeySymToModifier(uint keysym) {
   return 0;
 }
 
-}  // namespace chromeos
+}  // namespace window_manager

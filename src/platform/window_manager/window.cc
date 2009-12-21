@@ -22,7 +22,7 @@ DEFINE_bool(window_drop_shadows, true, "Display drop shadows under windows");
 
 DECLARE_bool(wm_use_compositing);  // from window_manager.cc
 
-namespace chromeos {
+namespace window_manager {
 
 Window::Window(WindowManager* wm, XWindow xid)
     : xid_(xid),
@@ -788,4 +788,4 @@ bool Window::UpdateChromeStateProperty() {
   }
 }
 
-}  // namespace chromeos
+}  // namespace window_manager

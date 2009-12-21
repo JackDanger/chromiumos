@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef __PLATFORM_WINDOW_MANAGER_PANEL_H__
-#define __PLATFORM_WINDOW_MANAGER_PANEL_H__
+#ifndef WINDOW_MANAGER_PANEL_H_
+#define WINDOW_MANAGER_PANEL_H_
 
 extern "C" {
 #include <X11/Xlib.h>
@@ -22,7 +22,7 @@ extern "C" {
 
 typedef ::Window XWindow;
 
-namespace chromeos {
+namespace window_manager {
 
 class PanelBar;
 class WindowManager;
@@ -173,6 +173,6 @@ class Panel {
   DISALLOW_COPY_AND_ASSIGN(Panel);
 };
 
-}  // namespace chromeos
+}  // namespace window_manager
 
-#endif
+#endif  // WINDOW_MANAGER_PANEL_H_

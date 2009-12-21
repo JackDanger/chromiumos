@@ -2,6 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#ifndef WINDOW_MANAGER_TEST_LIB_H_
+#define WINDOW_MANAGER_TEST_LIB_H_
+
 #include <gtest/gtest.h>
 
 extern "C" {
@@ -14,7 +17,7 @@ extern "C" {
 typedef ::Atom XAtom;
 typedef ::Window XWindow;
 
-namespace chromeos {
+namespace window_manager {
 
 class MockXConnection;
 class MockClutterInterface;
@@ -83,4 +86,6 @@ class BasicWindowManagerTest : public ::testing::Test {
   scoped_ptr<WindowManager> wm_;
 };
 
-}  // namespace chromeos
+}  // namespace window_manager
+
+#endif  // WINDOW_MANAGER_TEST_LIB_H_

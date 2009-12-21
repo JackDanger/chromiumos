@@ -46,7 +46,10 @@ DEFINE_string(screenshot_output_dir,
 
 DEFINE_bool(wm_use_compositing, true, "Use compositing");
 
-namespace chromeos {
+namespace window_manager {
+
+using chromeos::Closure;
+using chromeos::NewPermanentCallback;
 
 const int WindowManager::kPanelBarHeight = 18;
 
@@ -1499,4 +1502,4 @@ void WindowManager::TakeScreenshot(bool use_active_window) {
   // TODO: Display the message onscreen.
 }
 
-}  // namespace chromeos
+}  // namespace window_manager

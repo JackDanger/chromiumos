@@ -12,7 +12,7 @@ using std::map;
 using std::set;
 using std::tr1::shared_ptr;
 
-namespace chromeos {
+namespace window_manager {
 
 StackingManager::StackingManager(XConnection* xconn, ClutterInterface* clutter)
     : xconn_(xconn) {
@@ -99,4 +99,4 @@ const char* StackingManager::LayerToName(Layer layer) {
   }
 }
 
-}  // namespace chromeos
+}  // namespace window_manager

@@ -35,10 +35,12 @@ DEFINE_int32(tabs_per_window, 3, "Number of tabs to add to each window");
 DEFINE_int32(window_height, 640, "Window height");
 DEFINE_int32(window_width, 920, "Window width");
 
-using chromeos::AtomCache;
-using chromeos::GetCurrentTime;
-using chromeos::RealXConnection;
-using chromeos::WmIpc;
+using chromeos::SplitStringUsing;
+
+using window_manager::AtomCache;
+using window_manager::GetCurrentTime;
+using window_manager::RealXConnection;
+using window_manager::WmIpc;
 
 namespace mock_chrome {
 
@@ -947,12 +949,12 @@ int main(int argc, char** argv) {
                        logging::APPEND_TO_OLD_LOG_FILE);
 
   std::vector<std::string> filenames;
-  chromeos::SplitStringUsing(FLAGS_tab_images, ",", &filenames);
+  SplitStringUsing(FLAGS_tab_images, ",", &filenames);
   CHECK(!filenames.empty())
       << "At least one image must be supplied using --tab_images";
 
   std::vector<std::string> titles;
-  chromeos::SplitStringUsing(FLAGS_tab_titles, ",", &titles);
+  SplitStringUsing(FLAGS_tab_titles, ",", &titles);
   CHECK_EQ(filenames.size(), titles.size())
       << "Must specify same number of tab images and titles";
 
@@ -969,12 +971,12 @@ int main(int argc, char** argv) {
   }
 
   filenames.clear();
-  chromeos::SplitStringUsing(FLAGS_panel_images, ",", &filenames);
+  SplitStringUsing(FLAGS_panel_images, ",", &filenames);
   CHECK(!filenames.empty())
       << "At least one image must be supplied using --panel_images";
 
   titles.clear();
-  chromeos::SplitStringUsing(FLAGS_panel_titles, ",", &titles);
+  SplitStringUsing(FLAGS_panel_titles, ",", &titles);
   CHECK_EQ(filenames.size(), titles.size())
       << "Must specify same number of panel images and titles";
 

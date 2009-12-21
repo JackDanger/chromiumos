@@ -18,7 +18,7 @@ extern "C" {
 
 #include "window_manager/util.h"
 
-namespace chromeos {
+namespace window_manager {
 
 using std::string;
 using std::vector;
@@ -991,4 +991,4 @@ string RealXConnection::GetErrorText(int error_code) {
   return string(str);
 }
 
-}  // namespace chromeos
+}  // namespace window_manager

@@ -11,7 +11,7 @@
 DEFINE_string(hotkey_overlay_image_dir, "../assets/images",
               "Path to directory containing hotkey overlay images");
 
-namespace chromeos {
+namespace window_manager {
 
 // Time to spend in image transitions, in milliseconds.
 // TODO: It'd be nice to do a fade here, but fading from one image to
@@ -134,4 +134,4 @@ void HotkeyOverlay::HideCurrentImage() {
   current_image_ = NULL;
 }
 
-}  // namespace chromeos
+}  // namespace window_manager

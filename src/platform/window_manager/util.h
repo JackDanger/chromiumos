@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef __PLATFORM_WINDOW_MANAGER_UTIL_H__
-#define __PLATFORM_WINDOW_MANAGER_UTIL_H__
+#ifndef WINDOW_MANAGER_UTIL_H_
+#define WINDOW_MANAGER_UTIL_H_
 
 #include <ctime>
 #include <list>
@@ -16,7 +16,7 @@
 
 typedef unsigned int uint;
 
-namespace chromeos {
+namespace window_manager {
 
 // Stacker maintains an ordering of objects (e.g. windows) in which changes
 // can be made in faster-than-linear time.
@@ -202,6 +202,6 @@ static std::string XidStr(unsigned long xid) {
   return StringPrintf("0x%lx", xid);
 }
 
-}  // namespace chromeos
+}  // namespace window_manager
 
-#endif  // __UTIL_H__
+#endif  // WINDOW_MANAGER_UTIL_H_

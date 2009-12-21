@@ -13,7 +13,9 @@
 DEFINE_bool(logtostderr, false,
             "Print debugging messages to stderr (suppressed otherwise)");
 
-namespace chromeos {
+namespace window_manager {
+
+using chromeos::SplitString;
 
 class UtilTest : public ::testing::Test {
  protected:
@@ -141,8 +143,8 @@ TEST_F(UtilTest, ByteMap) {
       width * height);
 }
 
-}  // namespace chromeos
+}  // namespace window_manager
 
 int main(int argc, char **argv) {
-  return chromeos::InitAndRunTests(&argc, argv, &FLAGS_logtostderr);
+  return window_manager::InitAndRunTests(&argc, argv, &FLAGS_logtostderr);
 }

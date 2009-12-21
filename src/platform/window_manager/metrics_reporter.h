@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef __PLATFORM_WINDOW_MANAGER_METRICS_REPORTER_H__
-#define __PLATFORM_WINDOW_MANAGER_METRICS_REPORTER_H__
+#ifndef WINDOW_MANAGER_METRICS_REPORTER_H_
+#define WINDOW_MANAGER_METRICS_REPORTER_H_
 
 #include <glib.h>
 #include <string>
@@ -12,7 +12,7 @@ namespace chrome_os_pb {
 class SystemMetrics;
 }
 
-namespace chromeos {
+namespace window_manager {
 
 class LayoutManager;
 class WmIpc;
@@ -48,6 +48,6 @@ class MetricsReporter {
   WmIpc *ipc_;  // does not take ownership.
 };
 
-}  // namespace chromeos
+}  // namespace window_manager
 
-#endif  // __PLATFORM_WINDOW_MANAGER_METRICS_REPORTER_H__
+#endif  // WINDOW_MANAGER_METRICS_REPORTER_H_

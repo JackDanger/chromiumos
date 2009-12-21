@@ -20,7 +20,9 @@
 DEFINE_bool(logtostderr, false,
             "Print debugging messages to stderr (suppressed otherwise)");
 
-namespace chromeos {
+namespace window_manager {
+
+using chromeos::NewPermanentCallback;
 
 struct TestAction {
   explicit TestAction(const std::string& name_param)
@@ -92,8 +94,8 @@ class KeyBindingTest : public ::testing::Test {
     }
   }
 
-  scoped_ptr<chromeos::XConnection> xconn_;
-  scoped_ptr<chromeos::KeyBindings> bindings_;
+  scoped_ptr<window_manager::XConnection> xconn_;
+  scoped_ptr<window_manager::KeyBindings> bindings_;
   std::vector<TestAction*> actions_;
 
   static const int kNumActions = 10;
@@ -340,8 +342,8 @@ TEST_F(KeyBindingTest, ManyActionsAndBindings) {
   }
 }
 
-}  // namespace
+}  // namespace window_manager
 
 int main(int argc, char **argv) {
-  return chromeos::InitAndRunTests(&argc, argv, &FLAGS_logtostderr);
+  return window_manager::InitAndRunTests(&argc, argv, &FLAGS_logtostderr);
 }

@@ -20,7 +20,7 @@
 DEFINE_bool(logtostderr, false,
             "Print debugging messages to stderr (suppressed otherwise)");
 
-namespace chromeos {
+namespace window_manager {
 
 class LayoutManagerTest : public BasicWindowManagerTest {
  protected:
@@ -726,8 +726,8 @@ TEST_F(LayoutManagerTest, InitialWindowStacking) {
             stage->GetStackingIndex(lower_stacking_actor));
 }
 
-}  // namespace chromeos
+}  // namespace window_manager
 
 int main(int argc, char **argv) {
-  return chromeos::InitAndRunTests(&argc, argv, &FLAGS_logtostderr);
+  return window_manager::InitAndRunTests(&argc, argv, &FLAGS_logtostderr);
 }

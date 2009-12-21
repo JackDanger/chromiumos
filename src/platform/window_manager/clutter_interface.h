@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef __PLATFORM_WINDOW_MANAGER_CLUTTER_INTERFACE_H__
-#define __PLATFORM_WINDOW_MANAGER_CLUTTER_INTERFACE_H__
+#ifndef WINDOW_MANAGER_CLUTTER_INTERFACE_H_
+#define WINDOW_MANAGER_CLUTTER_INTERFACE_H_
 
 #include <list>
 #include <map>
@@ -25,7 +25,7 @@ extern "C" {
 
 typedef ::Window XWindow;
 
-namespace chromeos {
+namespace window_manager {
 
 template<class T> class Stacker;  // from util.h
 
@@ -431,6 +431,6 @@ class MockClutterInterface : public ClutterInterface {
   DISALLOW_COPY_AND_ASSIGN(MockClutterInterface);
 };
 
-}  // namespace chromeos
+}  // namespace window_manager
 
-#endif
+#endif  // WINDOW_MANAGER_CLUTTER_INTERFACE_H_

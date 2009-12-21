@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef __PLATFORM_WINDOW_MANAGER_IMAGE_OVERLAY_H__
-#define __PLATFORM_WINDOW_MANAGER_IMAGE_OVERLAY_H__
+#ifndef WINDOW_MANAGER_HOTKEY_OVERLAY_H_
+#define WINDOW_MANAGER_HOTKEY_OVERLAY_H_
 
 #include <map>
 #include <string>
@@ -17,7 +17,7 @@ extern "C" {
 #include "base/scoped_ptr.h"
 #include "window_manager/clutter_interface.h"
 
-namespace chromeos {
+namespace window_manager {
 
 class ClutterInterface;
 class XConnection;
@@ -75,6 +75,6 @@ class HotkeyOverlay {
   DISALLOW_COPY_AND_ASSIGN(HotkeyOverlay);
 };
 
-}  // namespace chromeos
+}  // namespace window_manager
 
-#endif
+#endif  // WINDOW_MANAGER_HOTKEY_OVERLAY_H_

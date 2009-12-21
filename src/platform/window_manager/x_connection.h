@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef __PLATFORM_WINDOW_MANAGER_X_CONNECTION_H__
-#define __PLATFORM_WINDOW_MANAGER_X_CONNECTION_H__
+#ifndef WINDOW_MANAGER_X_CONNECTION_H_
+#define WINDOW_MANAGER_X_CONNECTION_H_
 
 #include <map>
 #include <string>
@@ -17,7 +17,7 @@ extern "C" {
 #include "base/basictypes.h"
 #include "base/scoped_ptr.h"
 
-namespace chromeos {
+namespace window_manager {
 
 typedef ::Atom XAtom;
 typedef ::Window XWindow;
@@ -277,6 +277,6 @@ class XConnection {
   DISALLOW_COPY_AND_ASSIGN(XConnection);
 };
 
-};  // namespace chromeos
+}  // namespace window_manager
 
-#endif
+#endif  // WINDOW_MANAGER_X_CONNECTION_H_

@@ -10,7 +10,7 @@
 #include "window_manager/util.h"
 #include "window_manager/x_connection.h"
 
-namespace chromeos {
+namespace window_manager {
 
 // A value from the Atom enum and the actual name that should be used to
 // look up its ID on the X server.
@@ -103,4 +103,4 @@ const std::string& AtomCache::GetName(XAtom xatom) {
   return xatom_to_string_.insert(make_pair(xatom, name)).first->second;
 }
 
-};
+}  // namespace window_manager

@@ -22,7 +22,9 @@ DEFINE_string(panel_bar_image, "../assets/images/panel_bar_bg.png",
 DEFINE_string(panel_anchor_image, "../assets/images/panel_anchor.png",
               "Image to use for anchors on the panel bar");
 
-namespace chromeos {
+namespace window_manager {
+
+using chromeos::NewPermanentCallback;
 
 // Amount of padding to place between titlebars in the panel bar.
 static const int kBarPadding = 1;
@@ -936,4 +938,4 @@ void PanelBar::SetVisibility(bool visible) {
   wm_->HandlePanelBarVisibilityChange(visible);
 }
 
-}  // namespace chromeos
+}  // namespace window_manager

@@ -14,7 +14,7 @@
 DEFINE_bool(logtostderr, false,
             "Print debugging messages to stderr (suppressed otherwise)");
 
-namespace chromeos {
+namespace window_manager {
 
 class ShadowTest : public ::testing::Test {
  protected:
@@ -34,8 +34,8 @@ TEST_F(ShadowTest, Basic) {
   // TODO: Check that the individual images are positioned correctly.
 }
 
-}  // namespace chromeos
+}  // namespace window_manager
 
 int main(int argc, char **argv) {
-  return chromeos::InitAndRunTests(&argc, argv, &FLAGS_logtostderr);
+  return window_manager::InitAndRunTests(&argc, argv, &FLAGS_logtostderr);
 }

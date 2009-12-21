@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef __PLATFORM_WINDOW_MANAGER_ATOM_CACHE_H__
-#define __PLATFORM_WINDOW_MANAGER_ATOM_CACHE_H__
+#ifndef WINDOW_MANAGER_ATOM_CACHE_H_
+#define WINDOW_MANAGER_ATOM_CACHE_H_
 
 #include <map>
 #include <string>
@@ -14,7 +14,7 @@ extern "C" {
 
 #include "base/basictypes.h"
 
-namespace chromeos {
+namespace window_manager {
 
 class XConnection;  // from x_connection.h
 
@@ -93,6 +93,6 @@ class AtomCache {
   DISALLOW_COPY_AND_ASSIGN(AtomCache);
 };
 
-}  // namespace chromeos
+}  // namespace window_manager
 
-#endif
+#endif  // WINDOW_MANAGER_ATOM_CACHE_H_

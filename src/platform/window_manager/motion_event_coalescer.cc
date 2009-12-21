@@ -6,7 +6,9 @@
 
 #include "chromeos/obsolete_logging.h"
 
-namespace chromeos {
+namespace window_manager {
+
+using chromeos::Closure;
 
 MotionEventCoalescer::MotionEventCoalescer(Closure* cb, int timeout_ms)
     : timer_id_(0),
@@ -72,4 +74,4 @@ gboolean MotionEventCoalescer::HandleTimer() {
   return TRUE;
 }
 
-}  // namespace chromeos
+}  // namespace window_manager

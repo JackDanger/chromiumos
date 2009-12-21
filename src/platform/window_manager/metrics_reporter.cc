@@ -10,7 +10,7 @@
 #include "window_manager/system_metrics.pb.h"
 #include "window_manager/window.h"
 
-namespace chromeos {
+namespace window_manager {
 
 // This is the path to a file that's created by boot scripts, which contains
 // the boot time drawn from bootchart.
@@ -73,4 +73,4 @@ bool MetricsReporter::GatherBootTime(const std::string& filename,
   return true;
 }
 
-}  // namespace chromeos
+}  // namespace window_manager

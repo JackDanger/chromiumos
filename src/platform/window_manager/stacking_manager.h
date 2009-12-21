@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef __PLATFORM_WINDOW_MANAGER_STACKING_MANAGER_H__
-#define __PLATFORM_WINDOW_MANAGER_STACKING_MANAGER_H__
+#ifndef WINDOW_MANAGER_STACKING_MANAGER_H_
+#define WINDOW_MANAGER_STACKING_MANAGER_H_
 
 #include <map>
 #include <set>
@@ -19,7 +19,7 @@ extern "C" {
 
 typedef ::Window XWindow;
 
-namespace chromeos {
+namespace window_manager {
 
 class Window;
 class XConnection;
@@ -117,6 +117,6 @@ class StackingManager {
   std::set<XWindow> xids_;
 };
 
-}  // namespace chromeos
+}  // namespace window_manager
 
-#endif
+#endif  // WINDOW_MANAGER_STACKING_MANAGER_H_
