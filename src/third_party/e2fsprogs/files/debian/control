@@ -8,7 +8,7 @@ Homepage: http://e2fsprogs.sourceforge.net
 
 Package: e4fsprogs-git
 Version: 1.41.9-1chromeos1
-Architecture: i386
+Architecture: any
 Maintainer: The Chromium OS Authors <chromium-os-dev@googlegroups.com>
 Installed-Size: 768
 Depends: libc6 (>= 2.7)
