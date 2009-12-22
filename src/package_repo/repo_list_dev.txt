@@ -55,6 +55,7 @@ crash 4.0-8.9-1ubuntu1 optional utils pool/main/c/crash/crash_4.0-8.9-1ubuntu1_i
 curl 7.19.5-1ubuntu2 optional web pool/main/c/curl/curl_7.19.5-1ubuntu2_i386.deb
 cvs 1:1.12.13-12ubuntu1 optional devel pool/main/c/cvs/cvs_1.12.13-12ubuntu1_i386.deb
 dash 0.5.5.1-2ubuntu3 required shells pool/main/d/dash/dash_0.5.5.1-2ubuntu3_i386.deb
+dbs 0.45 optional devel pool/main/d/dbs/dbs_0.45_all.deb
 dbus 1.2.16-0ubuntu9 optional devel pool/main/d/dbus/dbus_1.2.16-0ubuntu9_i386.deb
 dbus-x11 1.2.16-0ubuntu9 optional x11 pool/main/d/dbus/dbus-x11_1.2.16-0ubuntu9_i386.deb
 dctrl-tools 2.13.1 optional utils pool/main/d/dctrl-tools/dctrl-tools_2.13.1_i386.deb
