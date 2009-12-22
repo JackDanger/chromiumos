@@ -58,6 +58,12 @@ fi
 trap 'rm -f "$PID_FILE"; log Memento AutoUpdate terminating; exit $?' \
     INT TERM EXIT
 
+if [ x$1 = "x-f" ]; then
+  log "Forced update requested"
+  ForceUpdate="yes"
+  shift
+fi
+
 log Memento AutoUpdate starting
 
 # Get local version
@@ -84,7 +90,11 @@ then
   fi
 
   # check w/ omaha to see if there's an update
-  OMAHA_CHECK_OUTPUT=$(`dirname "$0"`/ping_omaha.sh $APP_VERSION)
+  if [ "$ForceUpdate" = "yes" ]; then
+    OMAHA_CHECK_OUTPUT=$(`dirname "$0"`/ping_omaha.sh "ForcedUpdate")
+  else
+    OMAHA_CHECK_OUTPUT=$(`dirname "$0"`/ping_omaha.sh $APP_VERSION)
+  fi
   IMG_URL=$(echo "$OMAHA_CHECK_OUTPUT" | grep '^URL=' | cut -d = -f 2-)
   CHECKSUM=$(echo "$OMAHA_CHECK_OUTPUT" | grep '^HASH=' | cut -d = -f 2-)
 else
@@ -224,7 +234,8 @@ then
   exit 1
 else
   # See if it's newer than us
-  if version_number_greater_than "$APP_VERSION" "$NEW_VERSION"
+  if [ "$ForceUpdate" != "yes" ] &&
+    version_number_greater_than "$APP_VERSION" "$NEW_VERSION"
   then
     log "Can't upgrade to older version: " "$NEW_VERSION"
     umount "$MOUNTPOINT"
