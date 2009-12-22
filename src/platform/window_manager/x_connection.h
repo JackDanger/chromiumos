@@ -31,19 +31,36 @@ class XConnection {
  public:
   XConnection()
       : shape_event_base_(0),
-        xrandr_event_base_(0),
+        randr_event_base_(0),
         server_grabbed_(false) {
   }
   virtual ~XConnection() {}
 
   // Get the base event ID for extension events.
   int shape_event_base() const { return shape_event_base_; }
-  int xrandr_event_base() const { return xrandr_event_base_; }
+  int randr_event_base() const { return randr_event_base_; }
 
-  // Get the position and dimensions of a window.
-  // Unwanted parameters can be NULL.
-  virtual bool GetWindowGeometry(
-      XWindow xid, int* x, int* y, int* width, int* height) = 0;
+  // Data returned by GetWindowGeometry().
+  struct WindowGeometry {
+    WindowGeometry()
+        : x(0),
+          y(0),
+          width(1),
+          height(1),
+          border_width(0),
+          depth(0) {
+    }
+
+    int x;
+    int y;
+    int width;
+    int height;
+    int border_width;
+    int depth;
+  };
+
+  // Get a window's geometry.
+  virtual bool GetWindowGeometry(XWindow xid, WindowGeometry* geom_out) = 0;
 
   // Map or unmap a window.
   virtual bool MapWindow(XWindow xid) = 0;
@@ -107,21 +124,76 @@ class XConnection {
   // Replay the pointer events that occurred during the current synchronous
   // active pointer grab (sending them to the original window instead of
   // just to the grabbing client) and remove the active grab.
-  virtual bool RemoveActivePointerGrab(bool replay_events) = 0;
+  virtual bool RemoveActivePointerGrab(bool replay_events, Time timestamp) = 0;
 
   // Remove the input region from a window, so that events fall through it.
   virtual bool RemoveInputRegionFromWindow(XWindow xid) = 0;
 
+  // Data returned by GetSizeHintsForWindow().
+  struct SizeHints {
+    SizeHints() {
+      Reset();
+    }
+
+    // Reset all of the hints to -1.
+    void Reset() {
+      width = -1;
+      height = -1;
+      min_width = -1;
+      min_height = -1;
+      max_width = -1;
+      max_height = -1;
+      base_width = -1;
+      base_height = -1;
+      width_increment = -1;
+      height_increment = -1;
+    }
+
+    // Hints are set to -1 if not defined.
+    int width;
+    int height;
+    int min_width;
+    int min_height;
+    int max_width;
+    int max_height;
+    int base_width;
+    int base_height;
+    int width_increment;
+    int height_increment;
+  };
+
   // Get the size hints for a window.
-  virtual bool GetSizeHintsForWindow(
-      XWindow xid, XSizeHints* hints_out, long* supplied_hints_out) = 0;
+  virtual bool GetSizeHintsForWindow(XWindow xid, SizeHints* hints_out) = 0;
 
   // Get the transient-for hint for a window.
   virtual bool GetTransientHintForWindow(XWindow xid, XWindow* owner_out) = 0;
 
+  // Data returned by GetWindowAttributes().
+  struct WindowAttributes {
+    WindowAttributes()
+        : window_class(WINDOW_CLASS_INPUT_OUTPUT),
+          map_state(MAP_STATE_UNMAPPED),
+          override_redirect(false) {
+    }
+
+    enum WindowClass {
+      WINDOW_CLASS_INPUT_OUTPUT = 0,
+      WINDOW_CLASS_INPUT_ONLY,
+    };
+    WindowClass window_class;
+
+    enum MapState {
+      MAP_STATE_UNMAPPED = 0,
+      MAP_STATE_UNVIEWABLE,
+      MAP_STATE_VIEWABLE,
+    };
+    MapState map_state;
+
+    bool override_redirect;
+  };
+
   // Get a window's attributes.
-  virtual bool GetWindowAttributes(
-      XWindow xid, XWindowAttributes* attr_out) = 0;
+  virtual bool GetWindowAttributes(XWindow xid, WindowAttributes* attr_out) = 0;
 
   // Redirect the window to an offscreen pixmap so it can be composited.
   virtual bool RedirectWindowForCompositing(XWindow xid) = 0;
@@ -161,11 +233,11 @@ class XConnection {
   // Get the rectangles defining a window's bounding region.
   virtual bool GetWindowBoundingRegion(XWindow xid, ByteMap* bytemap) = 0;
 
-  // Select XRandR events on a window.
-  virtual bool SelectXRandREventsOnWindow(XWindow xid) = 0;
+  // Select RandR events on a window.
+  virtual bool SelectRandREventsOnWindow(XWindow xid) = 0;
 
   // Look up the X ID for a single atom, creating it if necessary.
-  virtual bool GetAtom(const std::string& name, XAtom* atom_out) = 0;
+  bool GetAtom(const std::string& name, XAtom* atom_out);
 
   // Look up all of the atoms in 'names' in the X server, creating them if
   // necessary, and return the corresponding atom X IDs.
@@ -266,7 +338,7 @@ class XConnection {
   // Base IDs for extension events.  Implementations should initialize
   // these in their constructors.
   int shape_event_base_;
-  int xrandr_event_base_;
+  int randr_event_base_;
 
  private:
   virtual bool GrabServerImpl() = 0;

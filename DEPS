@@ -65,6 +65,9 @@ deps = {
     _third_party_base + "gtest/files":
         "http://googletest.googlecode.com/svn/trunk@209",
 
+    # gtk+2.0
+    _third_party_base + "gtk+2.0": "/gtkplus2pt0.git",
+
     # hostap
     _third_party_base + "wpa_supplicant/hostap.git": "/hostap.git",
 

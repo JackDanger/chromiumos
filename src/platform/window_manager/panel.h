@@ -74,7 +74,8 @@ class Panel {
   // Handle events occurring in on one of our input windows.
   void HandleInputWindowButtonPress(
       XWindow xid, int x, int y, int button, Time timestamp);
-  void HandleInputWindowButtonRelease(XWindow xid, int x, int y, int button);
+  void HandleInputWindowButtonRelease(
+      XWindow xid, int x, int y, int button, Time timestamp);
   void HandleInputWindowPointerMotion(XWindow xid, int x, int y);
 
   // Expand or collapse the panel, notifying the client app of the change.

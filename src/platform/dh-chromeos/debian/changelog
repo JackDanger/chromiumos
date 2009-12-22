@@ -1,0 +1,5 @@
+dh-chromeos (0.1) unstable; urgency=low
+
+  * Initial release.
+
+ -- The Chromium OS Authors <chromium-os-dev@googlegroups.com>  Tue, 03 Nov 2009 06:54:54 -0800

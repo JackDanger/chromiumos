@@ -5,6 +5,10 @@
 #ifndef WINDOW_MANAGER_REAL_X_CONNECTION_H_
 #define WINDOW_MANAGER_REAL_X_CONNECTION_H_
 
+extern "C" {
+#include <xcb/xcb.h>
+}
+
 #include "window_manager/x_connection.h"
 
 namespace window_manager {
@@ -13,9 +17,9 @@ namespace window_manager {
 class RealXConnection : public XConnection {
  public:
   explicit RealXConnection(Display* display);
+  virtual ~RealXConnection();
 
-  bool GetWindowGeometry(
-      XWindow xid, int* x, int* y, int* width, int* height);
+  bool GetWindowGeometry(XWindow xid, WindowGeometry* geom_out);
   bool MapWindow(XWindow xid);
   bool UnmapWindow(XWindow xid);
   bool MoveWindow(XWindow xid, int x, int y);
@@ -32,12 +36,11 @@ class RealXConnection : public XConnection {
   bool RemovePassiveButtonGrabOnWindow(XWindow xid, int button);
   bool AddActivePointerGrabForWindow(
       XWindow xid, int event_mask, Time timestamp);
-  bool RemoveActivePointerGrab(bool replay_events);
+  bool RemoveActivePointerGrab(bool replay_events, Time timestamp);
   bool RemoveInputRegionFromWindow(XWindow xid);
-  bool GetSizeHintsForWindow(
-      XWindow xid, XSizeHints* hints, long* supplied_hints);
+  bool GetSizeHintsForWindow(XWindow xid, SizeHints* hints_out);
   bool GetTransientHintForWindow(XWindow xid, XWindow* owner_out);
-  bool GetWindowAttributes(XWindow xid, XWindowAttributes* attr_out);
+  bool GetWindowAttributes(XWindow xid, WindowAttributes* attr_out);
   bool RedirectWindowForCompositing(XWindow xid);
   bool UnredirectWindowForCompositing(XWindow xid);
   XWindow GetCompositingOverlayWindow(XWindow root);
@@ -48,8 +51,7 @@ class RealXConnection : public XConnection {
   bool IsWindowShaped(XWindow xid);
   bool SelectShapeEventsOnWindow(XWindow xid);
   bool GetWindowBoundingRegion(XWindow xid, ByteMap* bytemap);
-  bool SelectXRandREventsOnWindow(XWindow xid);
-  bool GetAtom(const std::string& name, XAtom* atom_out);
+  bool SelectRandREventsOnWindow(XWindow xid);
   bool GetAtoms(const std::vector<std::string>& names,
                 std::vector<XAtom>* atoms_out);
   bool GetAtomName(XAtom atom, std::string* name);
@@ -77,6 +79,28 @@ class RealXConnection : public XConnection {
   bool GrabServerImpl();
   bool UngrabServerImpl();
 
+  // Ask the server for information about an extension.  Out params may be
+  // NULL.  Returns false if the extension isn't present.
+  bool QueryExtensionInternal(const std::string& name,
+                              int* first_event_out,
+                              int* first_error_out);
+
+  // Read a property set on a window.  Returns false on error or if the
+  // property isn't set.  'format_out' and 'type_out' may be NULL.
+  bool GetPropertyInternal(XWindow xid,
+                           XAtom xatom,
+                           std::string* value_out,
+                           int* format_out,
+                           XAtom* type_out);
+
+  // Get a window's parent and children.  Out params may be NULL.
+  bool QueryTreeInternal(XWindow xid,
+                         XWindow* parent_out,
+                         std::vector<XWindow>* children_out);
+
+  // Get the font cursor with the given ID, loading it if necessary.
+  xcb_cursor_t GetCursorInternal(uint32 shape);
+
   // Install a custom error handler so we don't crash if we receive an
   // error from the X server.  Calls to TrapErrors() cannot be nested.
   void TrapErrors();
@@ -92,8 +116,17 @@ class RealXConnection : public XConnection {
   // Get a string describing an error code.
   std::string GetErrorText(int error_code);
 
+  // Check for an error caused by the XCB request using the passed-in
+  // cookie.  If found, logs a warning of the form "Got XCB error while
+  // [format]", with additional arguments printf-ed into 'format', and
+  // returns false.
+  bool CheckForXcbError(xcb_void_cookie_t cookie, const char* format, ...);
+
   // The actual connection to the X server.
   Display* display_;
+
+  // XCB's representation of the connection to the X server.
+  xcb_connection_t* xcb_conn_;
 
   // The root window.
   XWindow root_;
@@ -101,6 +134,9 @@ class RealXConnection : public XConnection {
   // ID for the UTF8_STRING atom (we look this up ourselves so as to avoid
   // a circular dependency with AtomCache).
   XAtom utf8_string_atom_;
+
+  // Map from cursor shapes to their XIDs.
+  std::map<uint32, xcb_cursor_t> cursors_;
 
   DISALLOW_COPY_AND_ASSIGN(RealXConnection);
 };

@@ -1,3 +1,10 @@
+e4fsprogs-git (1.41.9-1chromeos2) UNRELEASED; urgency=low
+
+  * "Architecture: i386" forbids cross-compilation to ARM. Let's not do
+    that.
+
+ -- Colin Watson <cjwatson@canonical.com>  Sat, 28 Nov 2009 11:26:06 +0000
+
 e4fsprogs-git (1.41.9-1chromeos1) unstable; urgency=low
 
   * Includes all changes in git to

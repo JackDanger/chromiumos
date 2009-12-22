@@ -335,9 +335,9 @@ TEST_F(WindowManagerTest, Reparent) {
   MockXConnection::InitCreateWindowEvent(&event, *info);
   EXPECT_TRUE(wm_->HandleEvent(&event));
 
-  // WindowManager should redirect the window for compositing when it's
-  // first created.
-  EXPECT_TRUE(info->redirected);
+  // Clutter should redirect the window for us, so pretend like that's
+  // happened here.
+  info->redirected = true;
 
   XReparentEvent* reparent_event = &(event.xreparent);
   memset(reparent_event, 0, sizeof(*reparent_event));
@@ -597,7 +597,7 @@ TEST_F(WindowManagerTest, ConfigureRequestResize) {
   EXPECT_EQ(new_height, info->height);
 }
 
-TEST_F(WindowManagerTest, XRandR) {
+TEST_F(WindowManagerTest, RandR) {
   // Look up EWMH atoms relating to the screen size.
   XAtom geometry_atom = None;
   ASSERT_TRUE(xconn_->GetAtom("_NET_DESKTOP_GEOMETRY", &geometry_atom));
@@ -608,7 +608,7 @@ TEST_F(WindowManagerTest, XRandR) {
   // root window.
   XWindow root_xid = xconn_->GetRootWindow();
   MockXConnection::WindowInfo* root_info = xconn_->GetWindowInfoOrDie(root_xid);
-  EXPECT_TRUE(root_info->xrandr_events_selected);
+  EXPECT_TRUE(root_info->randr_events_selected);
 
   // EWMH size properties should also be set correctly.
   TestIntArrayProperty(root_xid, geometry_atom, 2,
@@ -630,13 +630,13 @@ TEST_F(WindowManagerTest, XRandR) {
 
   // Send the WM an event saying that the screen has been resized.
   XEvent event;
-  XRRScreenChangeNotifyEvent* xrandr_event =
+  XRRScreenChangeNotifyEvent* randr_event =
       reinterpret_cast<XRRScreenChangeNotifyEvent*>(&event);
-  xrandr_event->type = xconn_->xrandr_event_base() + RRScreenChangeNotify;
-  xrandr_event->window = root_xid;
-  xrandr_event->root = root_xid;
-  xrandr_event->width = new_width;
-  xrandr_event->height = new_height;
+  randr_event->type = xconn_->randr_event_base() + RRScreenChangeNotify;
+  randr_event->window = root_xid;
+  randr_event->root = root_xid;
+  randr_event->width = new_width;
+  randr_event->height = new_height;
   EXPECT_TRUE(wm_->HandleEvent(&event));
 
   EXPECT_EQ(new_width, wm_->width());

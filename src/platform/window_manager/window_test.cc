@@ -152,11 +152,10 @@ TEST_F(WindowTest, GetMaxSize) {
   info->size_hints.min_height = 300;
   info->size_hints.max_width = 800;
   info->size_hints.max_height = 600;
-  info->size_hints.width_inc = 10;
-  info->size_hints.height_inc = 5;
+  info->size_hints.width_increment = 10;
+  info->size_hints.height_increment = 5;
   info->size_hints.base_width = 40;
   info->size_hints.base_width = 30;
-  info->size_hints.flags = PMinSize | PMaxSize | PResizeInc | PBaseSize;
 
   Window win(wm_.get(), xid);
   ASSERT_TRUE(win.FetchAndApplySizeHints());

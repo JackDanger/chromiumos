@@ -177,8 +177,11 @@ WindowManager::~WindowManager() {
 
 bool WindowManager::Init() {
   root_ = xconn_->GetRootWindow();
-  xconn_->SelectXRandREventsOnWindow(root_);
-  CHECK(xconn_->GetWindowGeometry(root_, NULL, NULL, &width_, &height_));
+  xconn_->SelectRandREventsOnWindow(root_);
+  XConnection::WindowGeometry root_geometry;
+  CHECK(xconn_->GetWindowGeometry(root_, &root_geometry));
+  width_ = root_geometry.width;
+  height_ = root_geometry.height;
 
   // Create the atom cache first; RegisterExistence() needs it.
   atom_cache_.reset(new AtomCache(xconn_));
@@ -190,10 +193,7 @@ bool WindowManager::Init() {
   SetEwmhSizeProperties();
 
   // Set root window's cursor to left pointer.
-  if (0 != access("/tmp/use_ugly_x_cursor", F_OK)) {
-    // If we get here, the file doesn't exist.
-    xconn_->SetWindowCursor(root_, XC_left_ptr);
-  }
+  xconn_->SetWindowCursor(root_, XC_left_ptr);
 
   stage_ = clutter_->GetDefaultStage();
   stage_xid_ = stage_->GetStageXWindow();
@@ -398,7 +398,7 @@ bool WindowManager::HandleEvent(XEvent* event) {
       if (event->type == xconn_->shape_event_base() + ShapeNotify) {
         return HandleShapeNotify(*(reinterpret_cast<XShapeEvent*>(event)));
       } else if (event->type ==
-                 xconn_->xrandr_event_base() + RRScreenChangeNotify) {
+                 xconn_->randr_event_base() + RRScreenChangeNotify) {
         return HandleRRScreenChangeNotify(
                    *(reinterpret_cast<XRRScreenChangeNotifyEvent*>(event)));
       }
@@ -685,8 +685,10 @@ Window* WindowManager::TrackWindow(XWindow xid) {
   // We don't care about InputOnly windows either.
   // TODO: Don't call GetWindowAttributes() so many times; we call in it
   // Window's c'tor as well.
-  XWindowAttributes attr;
-  if (xconn_->GetWindowAttributes(xid, &attr) && attr.c_class == InputOnly)
+  XConnection::WindowAttributes attr;
+  if (xconn_->GetWindowAttributes(xid, &attr) &&
+      attr.window_class ==
+        XConnection::WindowAttributes::WINDOW_CLASS_INPUT_ONLY)
     return NULL;
 
   VLOG(1) << "Managing window " << XidStr(xid);
@@ -1071,7 +1073,7 @@ bool WindowManager::HandleCreateNotify(const XCreateWindowEvent& e) {
   // But, we can't currently grab the server here for the same reason
   // described above the call to ManageExistingWindows() in Init().
 
-  XWindowAttributes attr;
+  XConnection::WindowAttributes attr;
   if (!xconn_->GetWindowAttributes(e.window, &attr)) {
     LOG(WARNING) << "Window " << XidStr(e.window)
                  << " went away while we were handling its CreateNotify event";
@@ -1408,8 +1410,8 @@ void WindowManager::ToggleClientWindowDebugging() {
 
   for (std::vector<XWindow>::iterator it = xids.begin();
        it != xids.end(); ++it) {
-    int x = 0, y = 0, width = 0, height = 0;
-    if (!xconn_->GetWindowGeometry(*it, &x, &y, &width, &height))
+    XConnection::WindowGeometry geometry;
+    if (!xconn_->GetWindowGeometry(*it, &geometry))
       continue;
 
     ClutterInterface::ContainerActor* group = clutter_->CreateGroup();
@@ -1417,17 +1419,17 @@ void WindowManager::ToggleClientWindowDebugging() {
     stacking_manager_->StackActorAtTopOfLayer(
         group, StackingManager::LAYER_DEBUGGING);
     group->SetName("debug group");
-    group->Move(x, y, 0);
-    group->SetSize(width, height);
+    group->Move(geometry.x, geometry.y, 0);
+    group->SetSize(geometry.width, geometry.height);
     group->SetVisibility(true);
-    group->SetClip(0, 0, width, height);
+    group->SetClip(0, 0, geometry.width, geometry.height);
 
     ClutterInterface::Actor* rect =
         clutter_->CreateRectangle(kBgColor, kFgColor, 1);
     group->AddActor(rect);
     rect->SetName("debug box");
     rect->Move(0, 0, 0);
-    rect->SetSize(width, height);
+    rect->SetSize(geometry.width, geometry.height);
     rect->SetOpacity(0, 0);
     rect->SetOpacity(0.5, kDebugFadeMs);
     rect->SetVisibility(true);

@@ -1,0 +1,17 @@
+# Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Source: dh-chromeos
+Section: devel
+Priority: optional
+Maintainer: The Chromium OS Authors <chromium-os-dev@googlegroups.com>
+Build-Depends: debhelper (>= 7.0.0), perl
+Standards-Version: 3.8.3
+
+Package: dh-chromeos
+Architecture: all
+Depends: debhelper (>= 7.3.0), ${misc:Depends}, ${perl:Depends}
+Description: Debhelper addon for Chrome OS
+ This debhelper addon automates various specialised tasks needed to build
+ packages that form part of Chrome OS.

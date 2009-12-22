@@ -56,6 +56,7 @@ dctrl-tools
 debhelper
 devscripts
 dh-kpatches
+dpatch
 dpkg-dev
 fakeroot
 genext2fs
@@ -176,10 +177,25 @@ libnl-dev
 # Packages needed to build chromeos-minijail
 libcap-dev
 
+# Packages needed to build libxcb
+check
+python-xcbgen
+xcb-proto
+
 # Needed for chromiumos-build
 python-debian
 dpkg-cross
 python-apt
+
+# Packages needed to build chromeos-wm
+libx11-xcb-dev
+libxcb1-dev
+libxcb-composite0-dev
+libxcb-randr0-dev
+libxcb-shape0-dev
+
+# Packages needed to build slang2
+dbs
 
 # Cross-compiler packages for ARM
 libmpfr-dev-armel-cross

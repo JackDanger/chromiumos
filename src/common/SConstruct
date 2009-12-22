@@ -11,9 +11,12 @@ SOURCES=['chromeos/dbus/dbus.cc',
 
 env = Environment(
     CPPPATH=[ '.', '../third_party/chrome/files' ],
-    CCFLAGS=['-m32', '-fno-exceptions'],
-    LINKFLAGS=['-m32' ]
+    CCFLAGS=['-fno-exceptions', '-fPIC'],
 )
+for key in Split('CC CXX AR RANLIB LD NM CFLAGS CCFLAGS'):
+  value = os.environ.get(key)
+  if value != None:
+    env[key] = value
 
 # glib and dbug environment
 env.ParseConfig('pkg-config --cflags --libs dbus-1 glib-2.0 dbus-glib-1')
@@ -32,6 +35,10 @@ env_test.Append(
     LIBS = ['gtest', 'chromeos', 'base', 'rt'],
     LIBPATH = ['.', '../third_party/chrome'],
   )
+for key in Split('CC CXX AR RANLIB LD NM CFLAGS CCFLAGS'):
+  value = os.environ.get(key)
+  if value != None:
+    env_test[key] = value
 
 unittest_sources =['chromeos/glib/object_unittest.cc']
 unittest_main = ['testrunner.cc']

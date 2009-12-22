@@ -8,6 +8,8 @@ import os
 
 env = Environment()
 
+# Keep debian/install up to date with appropriate headers, or else figure
+# out how to get scons to handle header installation as well.
 sources = env.Split("""
                     files/base/third_party/dmg_fp/dtoa.cc
                     files/base/third_party/dmg_fp/g_fmt.cc
