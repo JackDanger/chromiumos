@@ -1,0 +1,21 @@
+libbase.a usr/lib
+# Keep this up to date with SConstruct.
+files/base/third_party/icu/icu_utf.h usr/include/base/third_party/icu
+files/base/third_party/nspr/prtime.h usr/include/base/third_party/nspr
+files/base/at_exit.h usr/include/base
+files/base/atomicops_internals_x86_gcc.h usr/include/base
+files/base/base_switches.h usr/include/base
+files/base/command_line.h usr/include/base
+files/base/debug_util.h usr/include/base
+files/base/dynamic_annotations.h usr/include/base
+files/base/file_path.h usr/include/base
+files/base/file_util.h usr/include/base
+files/base/logging.h usr/include/base
+files/base/safe_strerror_posix.h usr/include/base
+files/base/setproctitle_linux.h usr/include/base
+files/base/string16.h usr/include/base
+files/base/string_piece.h usr/include/base
+files/base/string_util.h usr/include/base
+files/base/time.h usr/include/base
+files/base/utf_string_conversion_utils.h usr/include/base
+files/base/utf_string_conversions.h usr/include/base
