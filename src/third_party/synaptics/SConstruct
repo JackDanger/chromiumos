@@ -2,11 +2,16 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import os
+
 SOURCES=['synclient.c']
 
 env = Environment(
-    CCFLAGS=['-m32', '-fno-exceptions'],
-    LINKFLAGS=['-m32' ],
+    CCFLAGS=['-fno-exceptions', '-fPIC'],
 )
+for key in Split('CC CXX AR RANLIB LD NM CFLAGS CCFLAGS'):
+  value = os.environ.get(key)
+  if value != None:
+    env[key] = value
 
 env.StaticLibrary('synaptics', SOURCES)
