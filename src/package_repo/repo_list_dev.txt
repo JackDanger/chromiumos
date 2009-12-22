@@ -37,6 +37,7 @@ ca-certificates 20090814 important misc pool/main/c/ca-certificates/ca-certifica
 cabextract 1.2-3 optional universe/utils pool/universe/c/cabextract/cabextract_1.2-3_i386.deb
 ccache 2.4-17 optional devel pool/main/c/ccache/ccache_2.4-17_i386.deb
 cdbs 0.4.59ubuntu4 optional devel pool/main/c/cdbs/cdbs_0.4.59ubuntu4_all.deb
+check 0.9.6-2 optional devel pool/main/c/check/check_0.9.6-2_i386.deb
 # Skipped chromiumos-build 0.4: installed directly
 cmake 2.6.4-1ubuntu2 optional devel pool/main/c/cmake/cmake_2.6.4-1ubuntu2_i386.deb
 cmake-data 2.6.4-1ubuntu2 optional devel pool/main/c/cmake/cmake-data_2.6.4-1ubuntu2_all.deb
@@ -78,6 +79,7 @@ docbook-to-man 1:2.0.0-27 optional text pool/main/d/docbook-to-man/docbook-to-ma
 docbook-xml 4.5-6 optional text pool/main/d/docbook-xml/docbook-xml_4.5-6_all.deb
 docbook-xsl 1.75.1+dfsg-1 optional text pool/main/d/docbook-xsl/docbook-xsl_1.75.1+dfsg-1_all.deb
 docbook-xsl-doc-html 1.75.1-1 optional doc pool/main/d/docbook-xsl-doc/docbook-xsl-doc-html_1.75.1-1_all.deb
+dpatch 2.0.31 optional devel pool/main/d/dpatch/dpatch_2.0.31_all.deb
 dpkg 1.15.4ubuntu2 required admin pool/main/d/dpkg/dpkg_1.15.4ubuntu2_i386.deb
 dpkg-cross 2.5.2ubuntu1 extra universe/utils pool/universe/d/dpkg-cross/dpkg-cross_2.5.2ubuntu1_all.deb
 dpkg-dev 1.15.4ubuntu2 optional utils pool/main/d/dpkg/dpkg-dev_1.15.4ubuntu2_all.deb
@@ -568,6 +570,7 @@ python-minimal 2.6.4~rc1-0ubuntu1 required python pool/main/p/python-defaults/py
 python-psycopg2 2.0.8-0ubuntu2 optional universe/python pool/universe/p/psycopg2/python-psycopg2_2.0.8-0ubuntu2_i386.deb
 python-support 1.0.3ubuntu1 standard python pool/main/p/python-support/python-support_1.0.3ubuntu1_all.deb
 python-webpy 1:0.32+dak1-1 optional universe/python pool/universe/w/webpy/python-webpy_0.32+dak1-1_all.deb
+python-xcbgen 1.5-1 optional python pool/main/x/xcb-proto/python-xcbgen_1.5-1_all.deb
 python-xdg 0.15-1.1ubuntu5 optional python pool/main/p/pyxdg/python-xdg_0.15-1.1ubuntu5_all.deb
 python2.6 2.6.4~rc2-0ubuntu1 important python pool/main/p/python2.6/python2.6_2.6.4~rc2-0ubuntu1_i386.deb
 python2.6-dev 2.6.4~rc2-0ubuntu1 optional python pool/main/p/python2.6/python2.6-dev_2.6.4~rc2-0ubuntu1_i386.deb
@@ -645,6 +648,7 @@ x11proto-xf86dri-dev 2.0.4-1 optional x11 pool/main/x/x11proto-xf86dri/x11proto-
 x11proto-xf86vidmode-dev 2.2.2-5ubuntu1 optional x11 pool/main/x/x11proto-xf86vidmode/x11proto-xf86vidmode-dev_2.2.2-5ubuntu1_all.deb
 x11proto-xinerama-dev 1.1.2-5ubuntu1 optional x11 pool/main/x/x11proto-xinerama/x11proto-xinerama-dev_1.1.2-5ubuntu1_all.deb
 xauth 1:1.0.3-2 standard x11 pool/main/x/xauth/xauth_1.0.3-2_i386.deb
+xcb-proto 1.5-1 optional libdevel pool/main/x/xcb-proto/xcb-proto_1.5-1_all.deb
 xfonts-encodings 1:1.0.2-3 optional x11 pool/main/x/xfonts-encodings/xfonts-encodings_1.0.2-3_all.deb
 xfonts-utils 1:7.4+1ubuntu1 optional x11 pool/main/x/xfonts-utils/xfonts-utils_7.4+1ubuntu1_i386.deb
 xkb-data 1.6-1ubuntu5 important x11 pool/main/x/xkeyboard-config/xkb-data_1.6-1ubuntu5_all.deb
