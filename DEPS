@@ -53,6 +53,9 @@ deps = {
     # IBus input method for Japanese
     _third_party_base + "ibus-anthy/files": "/ibus-anthy.git",
 
+    # IBus input method for Korean
+    _third_party_base + "ibus-hangul/files": "/ibus-hangul.git",
+
     # IBus input method for many languages (e.g. Thai)
     _third_party_base + "ibus-m17n/files": "/ibus-m17n.git",
 

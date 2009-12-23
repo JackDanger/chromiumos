@@ -100,10 +100,9 @@ linux-firmware
 ibus
 ibus-anthy
 ibus-chewing
+ibus-hangul
 ibus-m17n
 ibus-gtk
-libibus1
-python-ibus
 
 # For partitioning (GPT format)
 gptpart

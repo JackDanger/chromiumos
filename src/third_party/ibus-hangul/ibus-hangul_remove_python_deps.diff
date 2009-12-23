@@ -1,0 +1,14 @@
+--- ibus-hangul-1.2.0.20090617.orig/debian/rules	2009-12-21 15:10:04.000000000 +0900
++++ ibus-hangul-1.2.0.20090617/debian/rules	2009-12-21 14:43:01.805337831 +0900
+@@ -29,6 +29,11 @@
+ 	dh_prep
+ 	dh_installdirs
+ 	$(MAKE) DESTDIR=$(CURDIR)/debian/ibus-hangul install
++# Remove Python modules.
++# TODO(yusukes): Reimplement these modules in C++.
++	rm -rf $(CURDIR)/debian/ibus-hangul/usr/share/python-support
++	rm -rf $(CURDIR)/debian/ibus-hangul/usr/share/ibus-hangul/setup
++	rm -f $(CURDIR)/debian/ibus-hangul/usr/lib/ibus-hangul/ibus-setup-hangul
+ 
+ binary-indep: install
+ 
