@@ -128,4 +128,7 @@ deps = {
     # tzdata
     _third_party_base + "tzdata": "/tzdata.git",
 
+    # xf86-video-msm from codeaurora.org
+    _third_party_base + "xf86-video-msm": "/xf86-video-msm.git",
+
 }

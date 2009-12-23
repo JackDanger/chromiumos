@@ -41,6 +41,8 @@
 /src/third_party/gtk+2.0/
 /src/third_party/ibus-anthy/files/
 /src/third_party/ibus-chewing/files/
+/src/third_party/ibus-hangul/files/
+/src/third_party/ibus-m17n/files/
 /src/third_party/ibus/files/
 /src/third_party/kernel/files/
 /src/third_party/openssh/
@@ -54,6 +56,7 @@
 /src/third_party/tzdata/
 /src/third_party/wpa_supplicant/build/
 /src/third_party/wpa_supplicant/hostap.git/
+/src/third_party/xf86-video-msm/
 /src/third_party/xscreensaver/xscreensaver-5.08/
 /tools/chromiumos-build/
 
