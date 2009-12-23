@@ -53,6 +53,12 @@ deps = {
     # IBus input method for Japanese
     _third_party_base + "ibus-anthy/files": "/ibus-anthy.git",
 
+    # IBus input method for Korean
+    _third_party_base + "ibus-hangul/files": "/ibus-hangul.git",
+
+    # IBus input method for many languages (e.g. Thai)
+    _third_party_base + "ibus-m17n/files": "/ibus-m17n.git",
+
     # gflags 1.1
     _third_party_base + "gflags/files":
         "http://google-gflags.googlecode.com/svn/trunk@31",
@@ -65,8 +71,8 @@ deps = {
     _third_party_base + "gtest/files":
         "http://googletest.googlecode.com/svn/trunk@209",
 
-    # gtk+2.0
-    _third_party_base + "gtk+2.0": "/gtkplus2pt0.git",
+    # gtk+2.0 - branch at 2.18.3, need to fix our clone somehow.
+    _third_party_base + "gtk+2.0": "/gtkplus2.0.git",
 
     # hostap
     _third_party_base + "wpa_supplicant/hostap.git": "/hostap.git",
@@ -103,4 +109,26 @@ deps = {
 
     # gpt
     _third_party_base + "gpt": "/gpt.git",
+
+    # cairo - branch at 1.8.8, need to fix our clone somehow.
+    _third_party_base + "cairo": "/cairo.git",
+    
+    # gconf - branch at 2.28.0, need to fix our clone somehow.
+    _third_party_base + "gconf": "/gconf.git",
+    
+    # curl
+    _third_party_base + "curl": "/curl.git",
+
+    # openssh
+    _third_party_base + "openssh": "/openssh.git",
+
+    # openssl
+    _third_party_base + "openssl": "/openssl.git",
+
+    # tzdata
+    _third_party_base + "tzdata": "/tzdata.git",
+
+    # xf86-video-msm from codeaurora.org
+    _third_party_base + "xf86-video-msm": "/xf86-video-msm.git",
+
 }

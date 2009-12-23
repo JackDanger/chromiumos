@@ -208,6 +208,7 @@ libcurl3 7.19.5-1ubuntu2 optional libs pool/main/c/curl/libcurl3_7.19.5-1ubuntu2
 libcurl3-gnutls 7.19.5-1ubuntu2 important libs pool/main/c/curl/libcurl3-gnutls_7.19.5-1ubuntu2_i386.deb
 libcurl4-openssl-dev 7.19.5-1ubuntu2 optional libdevel pool/main/c/curl/libcurl4-openssl-dev_7.19.5-1ubuntu2_i386.deb
 libcwidget3 0.5.12-4ubuntu4 important libs pool/main/c/cwidget/libcwidget3_0.5.12-4ubuntu4_i386.deb
+libdatrie-dev 0.2.2-1 optional libdevel pool/main/libd/libdatrie/libdatrie-dev_0.2.2-1_i386.deb
 libdatrie1 0.2.2-1 optional libs pool/main/libd/libdatrie/libdatrie1_0.2.2-1_i386.deb
 libdb4.7 4.7.25-7ubuntu2 required libs pool/main/d/db/libdb4.7_4.7.25-7ubuntu2_i386.deb
 libdbus-1-3 1.2.16-0ubuntu9 required libs pool/main/d/dbus/libdbus-1-3_1.2.16-0ubuntu9_i386.deb
@@ -249,6 +250,7 @@ libgconf2-4 2.28.0-0ubuntu2 optional libs pool/main/g/gconf/libgconf2-4_2.28.0-0
 libgconf2-dev 2.28.0-0ubuntu2 optional libdevel pool/main/g/gconf/libgconf2-dev_2.28.0-0ubuntu2_i386.deb
 libgcrypt11 1.4.4-2ubuntu2 important libs pool/main/libg/libgcrypt11/libgcrypt11_1.4.4-2ubuntu2_i386.deb
 libgcrypt11-dev 1.4.4-2ubuntu2 optional libdevel pool/main/libg/libgcrypt11/libgcrypt11-dev_1.4.4-2ubuntu2_i386.deb
+libgd2-noxpm 2.0.36~rc1~dfsg-3ubuntu1 extra libs pool/main/libg/libgd2/libgd2-noxpm_2.0.36~rc1~dfsg-3ubuntu1_i386.deb
 libgdbm3 1.8.3-4 important libs pool/main/g/gdbm/libgdbm3_1.8.3-4_i386.deb
 libgfortran3-armel-cross 4.4.2-1ubuntu1 extra devel pool/main/g/gcc-4.4-armel/libgfortran3-armel-cross_4.4.2-1ubuntu1_all.deb
 libgl1-mesa-dev 7.6.0-1ubuntu4 extra libdevel pool/main/m/mesa/libgl1-mesa-dev_7.6.0-1ubuntu4_i386.deb
@@ -316,6 +318,8 @@ liblocale-gettext-perl 1.05-4build1 required perl pool/main/libl/liblocale-gette
 liblockfile1 1.08-3 important libs pool/main/libl/liblockfile/liblockfile1_1.08-3_i386.deb
 libltdl-dev 2.2.6a-4 optional libdevel pool/main/libt/libtool/libltdl-dev_2.2.6a-4_i386.deb
 libltdl7 2.2.6a-4 optional libs pool/main/libt/libtool/libltdl7_2.2.6a-4_i386.deb
+libm17n-0 1.5.4-1ubuntu1 optional libs pool/main/m/m17n-lib/libm17n-0_1.5.4-1ubuntu1_i386.deb
+libm17n-dev 1.5.4-1ubuntu1 optional libdevel pool/main/m/m17n-lib/libm17n-dev_1.5.4-1ubuntu1_i386.deb
 libmagic1 5.03-1ubuntu1 important libs pool/main/f/file/libmagic1_5.03-1ubuntu1_i386.deb
 libmail-sendmail-perl 0.79.16-1 optional perl pool/main/libm/libmail-sendmail-perl/libmail-sendmail-perl_0.79.16-1_all.deb
 libmailtools-perl 2.04-1 standard perl pool/main/libm/libmailtools-perl/libmailtools-perl_2.04-1_all.deb
@@ -336,6 +340,7 @@ libnss3-dev 3.12.3.1-0ubuntu2 optional libdevel pool/main/n/nss/libnss3-dev_3.12
 libobjc2-armel-cross 1:4.4.2-1ubuntu1 extra devel pool/main/g/gcc-4.4-armel/libobjc2-armel-cross_4.4.2-1ubuntu1_all.deb
 liborbit2 1:2.14.17-0.1 optional libs pool/main/o/orbit2/liborbit2_2.14.17-0.1_i386.deb
 liborbit2-dev 1:2.14.17-0.1 optional libdevel pool/main/o/orbit2/liborbit2-dev_2.14.17-0.1_i386.deb
+libotf0 0.9.9-1 optional libs pool/main/libo/libotf/libotf0_0.9.9-1_i386.deb
 libpam-ck-connector 0.3.1-0ubuntu2 optional admin pool/main/c/consolekit/libpam-ck-connector_0.3.1-0ubuntu2_i386.deb
 libpam-modules 1.1.0-2ubuntu1 required admin pool/main/p/pam/libpam-modules_1.1.0-2ubuntu1_i386.deb
 libpam-runtime 1.1.0-2ubuntu1 required admin pool/main/p/pam/libpam-runtime_1.1.0-2ubuntu1_all.deb
@@ -414,6 +419,7 @@ libtext-charwidth-perl 0.04-5build1 required perl pool/main/libt/libtext-charwid
 libtext-iconv-perl 1.7-1build1 required perl pool/main/libt/libtext-iconv-perl/libtext-iconv-perl_1.7-1build1_i386.deb
 libtext-wrapi18n-perl 0.06-7 required perl pool/main/libt/libtext-wrapi18n-perl/libtext-wrapi18n-perl_0.06-7_all.deb
 libthai-data 0.1.12-1 optional libs pool/main/libt/libthai/libthai-data_0.1.12-1_all.deb
+libthai-dev 0.1.12-1 optional devel pool/main/libt/libthai/libthai-dev_0.1.12-1_i386.deb
 libthai0 0.1.12-1 optional libs pool/main/libt/libthai/libthai0_0.1.12-1_i386.deb
 libtie-ixhash-perl 1.21-2 optional perl pool/main/libt/libtie-ixhash-perl/libtie-ixhash-perl_1.21-2_all.deb
 libtiff4 3.8.2-13 optional libs pool/main/t/tiff/libtiff4_3.8.2-13_i386.deb
@@ -516,6 +522,8 @@ lsb-base 4.0-0ubuntu5 required misc pool/main/l/lsb/lsb-base_4.0-0ubuntu5_all.de
 lsb-release 4.0-0ubuntu5 important misc pool/main/l/lsb/lsb-release_4.0-0ubuntu5_all.deb
 lsof 4.81.dfsg.1-1 standard utils pool/main/l/lsof/lsof_4.81.dfsg.1-1_i386.deb
 lzma 4.43-14ubuntu1 required utils pool/main/l/lzma/lzma_4.43-14ubuntu1_i386.deb
+m17n-contrib 1.1.9-1 optional text pool/main/m/m17n-contrib/m17n-contrib_1.1.9-1_all.deb
+m17n-db 1.5.4-1 optional text pool/main/m/m17n-db/m17n-db_1.5.4-1_all.deb
 m4 1.4.13-2 optional interpreters pool/main/m/m4/m4_1.4.13-2_i386.deb
 make 3.81-6 important devel pool/main/m/make-dfsg/make_3.81-6_i386.deb
 makedev 2.3.1-88 required admin pool/main/m/makedev/makedev_2.3.1-88_all.deb

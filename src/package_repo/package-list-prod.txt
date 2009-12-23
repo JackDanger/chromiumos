@@ -9,14 +9,15 @@
 # PKGS=`cat $PACKAGE_LIST_FILE | grep -v ' *#' | grep -v '^ *$' | tr '\n' ' '`
 # change "' '" to "','" for a comma separated list
 
-# xserver
-xserver-xorg
-
 # TODO: Something broke in the dependencies so we need to manually
 # ensure that we have some X input packages
 xserver-xorg-input-kbd
 xserver-xorg-input-mouse
 xserver-xorg-input-synaptics
+xserver-xorg-video-intel
+
+# xserver
+xserver-xorg
 
 # Newer packages of chromium-browser don't seem to have libgconf2 as
 # part of their depends, but chrome won't run without.
@@ -29,14 +30,12 @@ libgl1-mesa-dri
 # along in development.
 openssh-server
 
+# TODO: Remove. For now, install xterm until things are further along.
+xterm
+
 # TODO: For Karmic, we might need to add squashfs-tools until they get
 # get updated.
 #squashfs-tools
-
-# Attempt to get nvidia drivers working
-# TODO: This currently does not work, so uncomment with caution.
-#nvidia-glx-180
-#nvidia-180-modaliases
 
 # Fonts
 ttf-dejavu
@@ -52,6 +51,9 @@ devicekit-power
 # for mounting
 devicekit-disks
 policykit-1
+
+# for shutdown to cleanly unmount the stateful partition
+lsof
 
 # For sound (needed specifically for volume adjustment)
 alsa-utils
@@ -98,9 +100,9 @@ linux-firmware
 ibus
 ibus-anthy
 ibus-chewing
+ibus-hangul
+ibus-m17n
 ibus-gtk
-libibus1
-python-ibus
 
 # For partitioning (GPT format)
 gptpart
