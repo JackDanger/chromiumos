@@ -56,6 +56,10 @@ const int WindowManager::kPanelBarHeight = 18;
 // Time to spend fading the hotkey overlay in or out, in milliseconds.
 static const int kHotkeyOverlayAnimMs = 100;
 
+// Interval with which we query the keyboard state from the X server to
+// update the hotkey overlay (when it's being shown).
+static const int kHotkeyOverlayPollMs = 100;
+
 static const char* XEventTypeToName(int type) {
   switch (type) {
     CHROMEOS_CASE_RETURN_LABEL(ButtonPress);
@@ -165,7 +169,7 @@ WindowManager::WindowManager(XConnection* xconn, ClutterInterface* clutter)
       mapped_xids_(new Stacker<XWindow>),
       stacked_xids_(new Stacker<XWindow>),
       active_window_xid_(None),
-      snooping_key_events_(false),
+      query_keyboard_state_timer_(0),
       showing_hotkey_overlay_(false) {
   CHECK(xconn_);
   CHECK(clutter_);
@@ -299,7 +303,7 @@ bool WindowManager::Init() {
                                 width_, kPanelBarHeight));
   event_consumers_.insert(panel_bar_.get());
 
-  hotkey_overlay_.reset(new HotkeyOverlay(clutter_));
+  hotkey_overlay_.reset(new HotkeyOverlay(xconn_, clutter_));
   stage_->AddActor(hotkey_overlay_->group());
   stacking_manager_->StackActorAtTopOfLayer(
       hotkey_overlay_->group(), StackingManager::LAYER_HOTKEY_OVERLAY);
@@ -379,13 +383,12 @@ bool WindowManager::HandleEvent(XEvent* event) {
       return HandleKeyRelease(event->xkey);
     case LeaveNotify:
       return HandleLeaveNotify(event->xcrossing);
-    case MappingNotify:
-      XRefreshKeyboardMapping(&(event->xmapping));
-      return true;
     case MapNotify:
       return HandleMapNotify(event->xmap);
     case MapRequest:
       return HandleMapRequest(event->xmaprequest);
+    case MappingNotify:
+      return HandleMappingNotify(event->xmapping);
     case MotionNotify:
       return HandleMotionNotify(event->xmotion);
     case PropertyNotify:
@@ -778,45 +781,6 @@ bool WindowManager::UpdateClientListStackingProperty() {
   }
 }
 
-void WindowManager::SetKeyEventSnooping(bool snoop) {
-  if (snooping_key_events_ == snoop)
-    return;
-
-  snooping_key_events_ = snoop;
-  CHECK(xconn_->GrabServer());
-  SelectKeyEventsOnTree(root_, snooping_key_events_);
-  CHECK(xconn_->UngrabServer());
-}
-
-void WindowManager::SelectKeyEventsOnTree(XWindow root, bool snoop) {
-  std::queue<XWindow> windows;
-  windows.push(root);
-  while (!windows.empty()) {
-    XWindow window = windows.front();
-    windows.pop();
-
-    std::vector<XWindow> children;
-    if (xconn_->GetChildWindows(window, &children)) {
-      for (std::vector<XWindow>::const_iterator child = children.begin();
-           child != children.end(); ++child) {
-        windows.push(*child);
-      }
-    }
-
-    // Make sure that we don't remove SubstructureNotifyMask from the
-    // actual root window; it was already selected (and needs to be so
-    // that we'll learn about new toplevel client windows).
-    int event_mask = KeyPressMask|KeyReleaseMask;
-    if (window != root_)
-      event_mask |= SubstructureNotifyMask;
-
-    if (snooping_key_events_)
-      xconn_->SelectInputOnWindow(window, event_mask, true);
-    else
-      xconn_->DeselectInputOnWindow(window, event_mask);
-  }
-}
-
 bool WindowManager::HandleButtonPress(const XButtonEvent& e) {
   VLOG(1) << "Handling button press in window " << XidStr(e.window)
           << " at relative (" << e.x << ", " << e.y << "), absolute ("
@@ -885,10 +849,8 @@ bool WindowManager::HandleConfigureNotify(const XConfigureEvent& e) {
   // notifications of the form "X is on top of Y", so we need to know where
   // Y is even if we're not managing it so that we can stack X correctly.
   if (!stacked_xids_->Contains(e.window)) {
-    // If this isn't an immediate child of the root window (e.g. it's a
-    // child of an immediate child and we're hearing about it because we're
-    // snooping key events and selected SubstructureNotify on the immediate
-    // child), ignore the ConfigureNotify.
+    // If this isn't an immediate child of the root window, ignore the
+    // ConfigureNotify.
     return false;
   }
 
@@ -1047,17 +1009,9 @@ bool WindowManager::HandleCreateNotify(const XCreateWindowEvent& e) {
           << " window " << XidStr(e.window) << " at (" << e.x << ", " << e.y
           << ") with size " << e.width << "x" << e.height;
 
-  if (snooping_key_events_) {
-    VLOG(1) << "Selecting key events on " << XidStr(e.window);
-    CHECK(xconn_->GrabServer());
-    SelectKeyEventsOnTree(e.window, true);
-    CHECK(xconn_->UngrabServer());
-  }
-
   // Don't bother doing anything else for windows which aren't direct
   // children of the root window.
-  XWindow parent = None;
-  if (!xconn_->GetParentWindow(e.window, &parent) || parent != root_)
+  if (e.parent != root_)
     return false;
 
   // CreateWindow stacks the new window on top of its siblings.
@@ -1156,27 +1110,19 @@ bool WindowManager::HandleFocusChange(const XFocusChangeEvent& e) {
 
 bool WindowManager::HandleKeyPress(const XKeyEvent& e) {
   KeySym keysym = xconn_->GetKeySymFromKeyCode(e.keycode);
-
-  if (snooping_key_events_)
-    hotkey_overlay_->HandleKeyPress(keysym);
   if (key_bindings_.get()) {
     if (key_bindings_->HandleKeyPress(keysym, e.state))
       return true;
   }
-
   return false;
 }
 
 bool WindowManager::HandleKeyRelease(const XKeyEvent& e) {
   KeySym keysym = xconn_->GetKeySymFromKeyCode(e.keycode);
-
-  if (snooping_key_events_)
-    hotkey_overlay_->HandleKeyRelease(keysym);
   if (key_bindings_.get()) {
     if (key_bindings_->HandleKeyRelease(keysym, e.state))
       return true;
   }
-
   return false;
 }
 
@@ -1231,6 +1177,13 @@ bool WindowManager::HandleMapRequest(const XMapRequestEvent& e) {
   LOG(WARNING) << "Not mapping window " << win->xid_str() << " with type "
                << win->type();
   return false;
+}
+
+bool WindowManager::HandleMappingNotify(const XMappingEvent& e) {
+  XRefreshKeyboardMapping(const_cast<XMappingEvent*>(&e));
+  hotkey_overlay_->RefreshKeyMappings();
+  // TODO: Also update key bindings.
+  return true;
 }
 
 bool WindowManager::HandleMotionNotify(const XMotionEvent& e) {
@@ -1457,14 +1410,18 @@ void WindowManager::ToggleHotkeyOverlay() {
   ClutterInterface::Actor* group = hotkey_overlay_->group();
   showing_hotkey_overlay_ = !showing_hotkey_overlay_;
   if (showing_hotkey_overlay_) {
-    hotkey_overlay_->Reset();
+    QueryKeyboardState();
     group->SetOpacity(0, 0);
     group->SetVisibility(true);
     group->SetOpacity(1, kHotkeyOverlayAnimMs);
-    SetKeyEventSnooping(true);
+    DCHECK(query_keyboard_state_timer_ == 0);
+    query_keyboard_state_timer_ =
+        g_timeout_add(kHotkeyOverlayPollMs, QueryKeyboardStateThunk, this);
   } else {
     group->SetOpacity(0, kHotkeyOverlayAnimMs);
-    SetKeyEventSnooping(false);
+    DCHECK(query_keyboard_state_timer_ != 0);
+    g_source_remove(query_keyboard_state_timer_);
+    query_keyboard_state_timer_ = 0;
   }
 }
 
@@ -1502,6 +1459,12 @@ void WindowManager::TakeScreenshot(bool use_active_window) {
   }
 
   // TODO: Display the message onscreen.
+}
+
+void WindowManager::QueryKeyboardState() {
+  std::vector<uint8_t> keycodes;
+  xconn_->QueryKeyboardState(&keycodes);
+  hotkey_overlay_->HandleKeyboardState(keycodes);
 }
 
 }  // namespace window_manager

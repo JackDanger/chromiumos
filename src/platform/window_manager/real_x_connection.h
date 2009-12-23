@@ -67,13 +67,13 @@ class RealXConnection : public XConnection {
   bool SetSelectionOwner(XAtom atom, XWindow xid, Time timestamp);
   bool SetWindowCursor(XWindow xid, uint32 shape);
   bool GetChildWindows(XWindow xid, std::vector<XWindow>* children_out);
-  bool GetParentWindow(XWindow xid, XWindow* parent);
   KeySym GetKeySymFromKeyCode(uint32 keycode);
   uint32 GetKeyCodeFromKeySym(KeySym keysym);
   std::string GetStringFromKeySym(KeySym keysym);
   bool GrabKey(KeyCode keycode, uint32 modifiers);
   bool UngrabKey(KeyCode keycode, uint32 modifiers);
   bool SetDetectableKeyboardAutoRepeat(bool detectable);
+  bool QueryKeyboardState(std::vector<uint8_t>* keycodes_out);
 
  private:
   bool GrabServerImpl();
@@ -92,11 +92,6 @@ class RealXConnection : public XConnection {
                            std::string* value_out,
                            int* format_out,
                            XAtom* type_out);
-
-  // Get a window's parent and children.  Out params may be NULL.
-  bool QueryTreeInternal(XWindow xid,
-                         XWindow* parent_out,
-                         std::vector<XWindow>* children_out);
 
   // Get the font cursor with the given ID, loading it if necessary.
   xcb_cursor_t GetCursorInternal(uint32 shape);

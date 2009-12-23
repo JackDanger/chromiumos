@@ -123,7 +123,6 @@ class WindowManager {
   FRIEND_TEST(WindowTest, TransientFor);  // uses TrackWindow()
   FRIEND_TEST(WindowManagerTest, RegisterExistence);
   FRIEND_TEST(WindowManagerTest, EventConsumer);
-  FRIEND_TEST(WindowManagerTest, KeyEventSnooping);
   FRIEND_TEST(WindowManagerTest, RandR);
 
   // Is this one of our internally-created windows?
@@ -182,18 +181,6 @@ class WindowManager {
   bool UpdateClientListProperty();
   bool UpdateClientListStackingProperty();
 
-  // Start or stop listening to all key events on client windows.
-  // This is useful for doing things in response to typing without actually
-  // using grabs.
-  void SetKeyEventSnooping(bool snoop);
-
-  // Select or deselect key press/release and substructure notify events on
-  // 'root' and all subwindows beneath it in the tree.  (The only
-  // exception is that we don't touch the selected-ness of substructure
-  // notify events on the actual root window, i.e. 'root_'.)  The X server
-  // should be grabbed when this method is called.
-  void SelectKeyEventsOnTree(XWindow root, bool snoop);
-
   // Handlers for various X events.
   bool HandleButtonPress(const XButtonEvent& e);
   bool HandleButtonRelease(const XButtonEvent& e);
@@ -209,6 +196,7 @@ class WindowManager {
   bool HandleLeaveNotify(const XLeaveWindowEvent& e);
   bool HandleMapNotify(const XMapEvent& e);
   bool HandleMapRequest(const XMapRequestEvent& e);
+  bool HandleMappingNotify(const XMappingEvent& e);
   bool HandleMotionNotify(const XMotionEvent& e);
   bool HandlePropertyNotify(const XPropertyEvent& e);
   bool HandleReparentNotify(const XReparentEvent& e);
@@ -230,6 +218,15 @@ class WindowManager {
   // pixmap.  Otherwise, the composited image from the root window will be
   // captured.
   void TakeScreenshot(bool use_active_window);
+
+  // Helper method called repeatedly by a GLib timeout while the hotkey
+  // overlay is being displayed to query the current keyboard state from
+  // the X server and pass it to the overlay.
+  static gboolean QueryKeyboardStateThunk(gpointer data) {
+    reinterpret_cast<WindowManager*>(data)->QueryKeyboardState();
+    return TRUE;  // keep the timeout alive
+  }
+  void QueryKeyboardState();
 
   XConnection* xconn_;         // not owned
   ClutterInterface* clutter_;  // not owned
@@ -286,8 +283,8 @@ class WindowManager {
   scoped_ptr<MetricsReporter> metrics_reporter_;
   scoped_ptr<PanelBar> panel_bar_;
 
-  // Are we currently listening to all key events on client windows?
-  bool snooping_key_events_;
+  // GLib source ID for the timer that calls QueryKeyboardStateThunk().
+  guint query_keyboard_state_timer_;
 
   // Is the hotkey overlay currently being shown?
   bool showing_hotkey_overlay_;
