@@ -33,6 +33,9 @@ openssh-server
 # TODO: Remove. For now, install xterm until things are further along.
 xterm
 
+# TODO: Remove. For now, install bootchart until things are futher.
+bootchart
+
 # TODO: For Karmic, we might need to add squashfs-tools until they get
 # get updated.
 #squashfs-tools
