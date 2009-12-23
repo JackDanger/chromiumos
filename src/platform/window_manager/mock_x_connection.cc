@@ -431,15 +431,6 @@ bool MockXConnection::GetChildWindows(XWindow xid,
   return true;
 }
 
-bool MockXConnection::GetParentWindow(XWindow xid, XWindow* parent) {
-  CHECK(parent);
-  WindowInfo* info = GetWindowInfo(xid);
-  if (!info)
-    return false;
-  *parent = info->parent;
-  return true;
-}
-
 MockXConnection::WindowInfo::WindowInfo(XWindow xid, XWindow parent)
     : xid(xid),
       parent(parent),
@@ -542,6 +533,7 @@ void MockXConnection::InitCreateWindowEvent(XEvent* event,
   XCreateWindowEvent* create_event = &(event->xcreatewindow);
   memset(create_event, 0, sizeof(*create_event));
   create_event->type = CreateNotify;
+  create_event->parent = info.parent;
   create_event->window = info.xid;
   create_event->x = info.x;
   create_event->y = info.y;

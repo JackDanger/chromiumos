@@ -74,7 +74,6 @@ class MockXConnection : public XConnection {
   bool SetSelectionOwner(XAtom atom, XWindow xid, Time timestamp);
   bool SetWindowCursor(XWindow xid, uint32 shape);
   bool GetChildWindows(XWindow xid, std::vector<XWindow>* children_out);
-  bool GetParentWindow(XWindow xid, XWindow* parent);
   // Treat keycodes and keysyms as equivalent for key_bindings_test.
   KeySym GetKeySymFromKeyCode(uint32 keycode) { return keycode; }
   uint32 GetKeyCodeFromKeySym(KeySym keysym) { return keysym; }
@@ -82,6 +81,7 @@ class MockXConnection : public XConnection {
   bool GrabKey(KeyCode keycode, uint32 modifiers) { return true; }
   bool UngrabKey(KeyCode keycode, uint32 modifiers) { return true; }
   bool SetDetectableKeyboardAutoRepeat(bool detectable) { return true; }
+  bool QueryKeyboardState(std::vector<uint8_t>* keycodes_out) { return true; }
 
   // Testing-specific code.
   struct WindowInfo {

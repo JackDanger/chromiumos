@@ -160,6 +160,7 @@ test_env.Program('stacking_manager_test', 'stacking_manager_test.cc')
 test_env.Program('util_test', 'util_test.cc')
 test_env.Program('window_manager_test', 'window_manager_test.cc')
 test_env.Program('window_test', 'window_test.cc')
+test_env.Program('x_connection_test', 'x_connection_test.cc')
 
 mock_chrome_env = wm_env.Clone()
 mock_chrome_env.ParseConfig('pkg-config --cflags --libs gtkmm-2.4')

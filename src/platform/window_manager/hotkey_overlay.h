@@ -8,6 +8,7 @@
 #include <map>
 #include <string>
 #include <tr1/memory>
+#include <vector>
 
 extern "C" {
 #include <X11/Xlib.h>
@@ -28,19 +29,17 @@ class XConnection;
 // directly.
 class HotkeyOverlay {
  public:
-  HotkeyOverlay(ClutterInterface* clutter);
+  HotkeyOverlay(XConnection* xconn, ClutterInterface* clutter);
   ~HotkeyOverlay();
 
   ClutterInterface::Actor* group() { return group_.get(); }
 
-  // Handle keys being pressed and released.
-  void HandleKeyPress(KeySym keysym);
-  void HandleKeyRelease(KeySym keysym);
+  // Called when key mappings change to update internal state.
+  void RefreshKeyMappings();
 
-  // Reset key state and switch to the base image.
-  // Useful to call when the overlay is first being shown and we don't know
-  // whether some keys may already be held down.
-  void Reset();
+  // Update the overlay in response to XConnection::QueryKeyboardState()'s
+  // output.
+  void HandleKeyboardState(const std::vector<uint8_t>& keycodes);
 
  private:
   // Helper method to choose the correct image based on the current key
@@ -53,6 +52,8 @@ class HotkeyOverlay {
   // Hide the current image.
   void HideCurrentImage();
 
+  XConnection* xconn_;  // not owned
+
   ClutterInterface* clutter_;  // not owned
 
   scoped_ptr<ClutterInterface::ContainerActor> group_;
@@ -63,6 +64,14 @@ class HotkeyOverlay {
   // The currently-shown image, or NULL if no image is currently shown.
   // Points at a value in 'images_'.
   ClutterInterface::Actor* current_image_;
+
+  // X11 keycodes corresponding to various keysyms.
+  KeyCode left_ctrl_keycode_;
+  KeyCode right_ctrl_keycode_;
+  KeyCode left_alt_keycode_;
+  KeyCode right_alt_keycode_;
+  KeyCode left_shift_keycode_;
+  KeyCode right_shift_keycode_;
 
   // The state of various keys.
   bool left_ctrl_pressed_;

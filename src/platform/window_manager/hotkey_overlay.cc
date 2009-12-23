@@ -7,6 +7,7 @@
 #include <gflags/gflags.h>
 
 #include "window_manager/clutter_interface.h"
+#include "window_manager/x_connection.h"
 
 DEFINE_string(hotkey_overlay_image_dir, "../assets/images",
               "Path to directory containing hotkey overlay images");
@@ -19,10 +20,17 @@ namespace window_manager {
 // currently working.
 static const int kAnimMs = 0;
 
-HotkeyOverlay::HotkeyOverlay(ClutterInterface* clutter)
-    : clutter_(clutter),
+HotkeyOverlay::HotkeyOverlay(XConnection* xconn, ClutterInterface* clutter)
+    : xconn_(xconn),
+      clutter_(clutter),
       group_(clutter_->CreateGroup()),
       current_image_(NULL),
+      left_ctrl_keycode_(0),
+      right_ctrl_keycode_(0),
+      left_alt_keycode_(0),
+      right_alt_keycode_(0),
+      left_shift_keycode_(0),
+      right_shift_keycode_(0),
       left_ctrl_pressed_(false),
       right_ctrl_pressed_(false),
       left_alt_pressed_(false),
@@ -30,46 +38,46 @@ HotkeyOverlay::HotkeyOverlay(ClutterInterface* clutter)
       left_shift_pressed_(false),
       right_shift_pressed_(false) {
   group_->SetName("hotkey overlay group");
+  RefreshKeyMappings();
 }
 
 HotkeyOverlay::~HotkeyOverlay() {
   clutter_ = NULL;
 }
 
-void HotkeyOverlay::HandleKeyPress(KeySym keysym) {
-  switch (keysym) {
-    case XK_Control_L: left_ctrl_pressed_ = true; break;
-    case XK_Control_R: right_ctrl_pressed_ = true; break;
-    case XK_Alt_L: left_alt_pressed_ = true; break;
-    case XK_Alt_R: right_alt_pressed_ = true; break;
-    case XK_Shift_L: left_shift_pressed_ = true; break;
-    case XK_Shift_R: right_shift_pressed_ = true; break;
-    default: return;
-  }
-  UpdateImage();
+void HotkeyOverlay::RefreshKeyMappings() {
+  left_ctrl_keycode_ = xconn_->GetKeyCodeFromKeySym(XK_Control_L);
+  right_ctrl_keycode_ = xconn_->GetKeyCodeFromKeySym(XK_Control_R);
+  left_alt_keycode_ = xconn_->GetKeyCodeFromKeySym(XK_Alt_L);
+  right_alt_keycode_ = xconn_->GetKeyCodeFromKeySym(XK_Alt_R);
+  left_shift_keycode_ = xconn_->GetKeyCodeFromKeySym(XK_Shift_L);
+  right_shift_keycode_ = xconn_->GetKeyCodeFromKeySym(XK_Shift_R);
 }
 
-void HotkeyOverlay::HandleKeyRelease(KeySym keysym) {
-  switch (keysym) {
-    case XK_Control_L: left_ctrl_pressed_ = false; break;
-    case XK_Control_R: right_ctrl_pressed_ = false; break;
-    case XK_Alt_L: left_alt_pressed_ = false; break;
-    case XK_Alt_R: right_alt_pressed_ = false; break;
-    case XK_Shift_L: left_shift_pressed_ = false; break;
-    case XK_Shift_R: right_shift_pressed_ = false; break;
-    default: return;
+// Helper function for HandleKeyboardState().  Looks up a keycode's new
+// state in a bit vector and updates the corresponding data member in the
+// overlay and returns true if it changed.
+static bool UpdateState(
+    const std::vector<uint8_t>& states, KeyCode keycode, bool* old_pressed) {
+  bool pressed = XConnection::GetKeyCodeState(states, keycode);
+  if (pressed != *old_pressed) {
+    *old_pressed = pressed;
+    return true;
+  } else {
+    return false;
   }
-  UpdateImage();
 }
 
-void HotkeyOverlay::Reset() {
-  left_ctrl_pressed_ = false;
-  right_ctrl_pressed_ = false;
-  left_alt_pressed_ = false;
-  right_alt_pressed_ = false;
-  left_shift_pressed_ = false;
-  right_shift_pressed_ = false;
-  UpdateImage();
+void HotkeyOverlay::HandleKeyboardState(const std::vector<uint8_t>& states) {
+  bool changed = false;
+  changed |= UpdateState(states, left_ctrl_keycode_, &left_ctrl_pressed_);
+  changed |= UpdateState(states, right_ctrl_keycode_, &right_ctrl_pressed_);
+  changed |= UpdateState(states, left_alt_keycode_, &left_alt_pressed_);
+  changed |= UpdateState(states, right_alt_keycode_, &right_alt_pressed_);
+  changed |= UpdateState(states, left_shift_keycode_, &left_shift_pressed_);
+  changed |= UpdateState(states, right_shift_keycode_, &right_shift_pressed_);
+  if (changed || !current_image_)
+    UpdateImage();
 }
 
 void HotkeyOverlay::UpdateImage() {

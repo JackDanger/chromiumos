@@ -4,8 +4,6 @@
 
 #include "window_manager/x_connection.h"
 
-#include "base/logging.h"
-
 namespace window_manager {
 
 using std::string;

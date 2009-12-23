@@ -15,6 +15,7 @@ extern "C" {
 }
 
 #include "base/basictypes.h"
+#include "base/logging.h"
 #include "base/scoped_ptr.h"
 
 namespace window_manager {
@@ -292,9 +293,6 @@ class XConnection {
   virtual bool GetChildWindows(
       XWindow xid, std::vector<XWindow>* children_out) = 0;
 
-  // Get a window's parent.
-  virtual bool GetParentWindow(XWindow xid, XWindow* parent) = 0;
-
   // Convert between keysyms and keycodes.
   // Keycodes fit inside of unsigned 8-bit values, but some of the testing
   // code relies on keycodes and keysyms being interchangeable, so we use
@@ -328,6 +326,18 @@ class XConnection {
   // *not* clear up the issue. On my gHardy desktop it does work.
   // Why!!!!!!???
   virtual bool SetDetectableKeyboardAutoRepeat(bool detectable) = 0;
+
+  // Get the pressed-vs.-not-pressed state of all keys.  'keycodes_out' is
+  // a 256-bit vector representing the logical state of the keyboard (read:
+  // keycodes, not keysyms), with bits set to 1 for depressed keys.
+  virtual bool QueryKeyboardState(std::vector<uint8_t>* keycodes_out) = 0;
+
+  // Helper method to check the state of a given key in
+  // QueryKeyboardState()'s output.  Returns true if the key is depressed.
+  inline static bool GetKeyCodeState(const std::vector<uint8_t>& states,
+                                     KeyCode keycode) {
+    return (states[keycode / 8] & (0x1 << (keycode % 8)));
+  }
 
   // Value that should be used in event and property 'format' fields for
   // byte and long arguments.

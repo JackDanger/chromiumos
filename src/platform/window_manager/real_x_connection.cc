@@ -751,12 +751,22 @@ bool RealXConnection::SetWindowCursor(XWindow xid, uint32 shape) {
 bool RealXConnection::GetChildWindows(XWindow xid,
                                       vector<XWindow>* children_out) {
   CHECK(children_out);
-  return QueryTreeInternal(xid, NULL, children_out);
-}
+  xcb_query_tree_cookie_t cookie = xcb_query_tree(xcb_conn_, xid);
+  xcb_generic_error_t* error = NULL;
+  scoped_ptr_malloc<xcb_query_tree_reply_t> reply(
+      xcb_query_tree_reply(xcb_conn_, cookie, &error));
+  scoped_ptr_malloc<xcb_generic_error_t> scoped_error(error);
+  if (error) {
+    LOG(WARNING) << "Got X error while querying tree for " << XidStr(xid);
+    return false;
+  }
 
-bool RealXConnection::GetParentWindow(XWindow xid, XWindow* parent) {
-  CHECK(parent);
-  return QueryTreeInternal(xid, parent, NULL);
+  children_out->clear();
+  xcb_window_t* children = xcb_query_tree_children(reply.get());
+  int num_children = xcb_query_tree_children_length(reply.get());
+  for (int i = 0; i < num_children; ++i)
+    children_out->push_back(children[i]);
+  return true;
 }
 
 KeySym RealXConnection::GetKeySymFromKeyCode(uint32 keycode) {
@@ -796,6 +806,22 @@ bool RealXConnection::SetDetectableKeyboardAutoRepeat(bool detectable) {
   XkbSetDetectableAutoRepeat(
       display_, detectable ? True : False, &supported);
   return (supported == True ? true : false);
+}
+
+bool RealXConnection::QueryKeyboardState(vector<uint8_t>* keycodes_out) {
+  CHECK(keycodes_out);
+  xcb_query_keymap_cookie_t cookie = xcb_query_keymap(xcb_conn_);
+  xcb_generic_error_t* error = NULL;
+  scoped_ptr_malloc<xcb_query_keymap_reply_t> reply(
+      xcb_query_keymap_reply(xcb_conn_, cookie, &error));
+  scoped_ptr_malloc<xcb_generic_error_t> scoped_error(error);
+  if (error) {
+    LOG(WARNING) << "Querying keyboard state failed";
+    return false;
+  }
+  keycodes_out->resize(arraysize(reply->keys));
+  memcpy(keycodes_out->data(), reply->keys, arraysize(reply->keys));
+  return true;
 }
 
 bool RealXConnection::GrabServerImpl() {
@@ -876,31 +902,6 @@ bool RealXConnection::GetPropertyInternal(XWindow xid,
   if (type_out)
     *type_out = reply->type;
 
-  return true;
-}
-
-bool RealXConnection::QueryTreeInternal(XWindow xid,
-                                        XWindow* parent_out,
-                                        vector<XWindow>* children_out) {
-  xcb_query_tree_cookie_t cookie = xcb_query_tree(xcb_conn_, xid);
-  xcb_generic_error_t* error = NULL;
-  scoped_ptr_malloc<xcb_query_tree_reply_t> reply(
-      xcb_query_tree_reply(xcb_conn_, cookie, &error));
-  scoped_ptr_malloc<xcb_generic_error_t> scoped_error(error);
-  if (error) {
-    LOG(WARNING) << "Got X error while querying tree for " << XidStr(xid);
-    return false;
-  }
-
-  if (parent_out)
-    *parent_out = reply->parent;
-  if (children_out) {
-    children_out->clear();
-    xcb_window_t* children = xcb_query_tree_children(reply.get());
-    int num_children = xcb_query_tree_children_length(reply.get());
-    for (int i = 0; i < num_children; ++i)
-      children_out->push_back(children[i]);
-  }
   return true;
 }
 
