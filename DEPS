@@ -103,4 +103,23 @@ deps = {
 
     # gpt
     _third_party_base + "gpt": "/gpt.git",
+
+    # cairo - branch at 1.8.8, need to fix our clone somehow.
+    _third_party_base + "cairo": "/cairo.git",
+    
+    # gconf - branch at 2.28.0, need to fix our clone somehow.
+    _third_party_base + "gconf": "/gconf.git",
+    
+    # curl
+    _third_party_base + "curl": "/curl.git",
+
+    # openssh
+    _third_party_base + "openssh": "/openssh.git",
+
+    # openssl
+    _third_party_base + "openssl": "/openssl.git",
+
+    # tzdata
+    _third_party_base + "tzdata": "/tzdata.git",
+
 }
