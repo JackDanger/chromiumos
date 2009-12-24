@@ -138,17 +138,26 @@ TEST_F(PanelTest, Resize) {
   Panel panel(panel_bar_, &panel_win, &titlebar_win, 0);
   panel.SetState(true);
 
-  // The panel should grab the pointer when it gets a button press on one
-  // of its resize windows.
+  // Check that one of the panel's resize handles has an asynchronous grab
+  // installed on the first mouse button.
+  MockXConnection::WindowInfo* handle_info =
+      xconn_->GetWindowInfoOrDie(panel.top_left_input_xid_);
+  EXPECT_TRUE(handle_info->button_is_grabbed(1));
+  EXPECT_EQ(ButtonPressMask|ButtonReleaseMask|PointerMotionMask,
+            handle_info->button_grabs[1].event_mask);
+  EXPECT_FALSE(handle_info->button_grabs[1].synchronous);
+
+  // Pretend like the top left handle was clicked and a pointer grab was
+  // automatically installed.
+  xconn_->set_pointer_grab_xid(panel.top_left_input_xid_);
   panel.HandleInputWindowButtonPress(
       panel.top_left_input_xid_,
       0, 0,  // relative x, y
       1,     // button
       1);    // timestamp
-  EXPECT_EQ(panel.top_left_input_xid_, xconn_->pointer_grab_xid());
 
-  // Release the button immediately and check that the grab has been
-  // removed.
+  // Release the button immediately and check that the pointer grab has
+  // been removed.
   panel.HandleInputWindowButtonRelease(
       panel.top_left_input_xid_,
       0, 0,  // relative x, y
@@ -169,6 +178,7 @@ TEST_F(PanelTest, Resize) {
 
   // Now start a second resize using the upper-left handle.  Drag a few
   // pixels up and to the left and then let go of the button.
+  xconn_->set_pointer_grab_xid(panel.top_left_input_xid_);
   panel.HandleInputWindowButtonPress(
       panel.top_left_input_xid_, 0, 0, 1, CurrentTime);
   EXPECT_EQ(panel.top_left_input_xid_, xconn_->pointer_grab_xid());

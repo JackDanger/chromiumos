@@ -395,7 +395,7 @@ bool Window::SendDeleteRequest(Time timestamp) {
 bool Window::AddPassiveButtonGrab() {
   VLOG(2) << "Adding passive button grab for " << xid_str();
   return wm_->xconn()->AddPassiveButtonGrabOnWindow(
-      xid_, AnyButton, ButtonPressMask);
+      xid_, AnyButton, ButtonPressMask, true);  // synchronous=true
 }
 
 bool Window::RemovePassiveButtonGrab() {

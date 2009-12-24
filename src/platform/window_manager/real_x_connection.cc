@@ -211,12 +211,14 @@ bool RealXConnection::DeselectInputOnWindow(XWindow xid, int event_mask) {
 }
 
 bool RealXConnection::AddPassiveButtonGrabOnWindow(
-    XWindow xid, int button, int event_mask) {
+    XWindow xid, int button, int event_mask, bool synchronous) {
   xcb_grab_button(xcb_conn_,
                   0,                    // owner_events
                   xid,
                   event_mask,
-                  XCB_GRAB_MODE_SYNC,   // pointer mode
+                  synchronous ?         // pointer mode
+                    XCB_GRAB_MODE_SYNC :
+                    XCB_GRAB_MODE_ASYNC,
                   XCB_GRAB_MODE_ASYNC,  // keyboard_mode
                   XCB_NONE,             // confine_to
                   XCB_NONE,             // cursor
@@ -263,7 +265,10 @@ bool RealXConnection::AddActivePointerGrabForWindow(XWindow xid,
 
 bool RealXConnection::RemoveActivePointerGrab(bool replay_events,
                                               Time timestamp) {
-  xcb_ungrab_pointer(xcb_conn_, timestamp);
+  if (replay_events)
+    xcb_allow_events(xcb_conn_, XCB_ALLOW_REPLAY_POINTER, timestamp);
+  else
+    xcb_ungrab_pointer(xcb_conn_, timestamp);
   return true;
 }
 

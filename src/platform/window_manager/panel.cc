@@ -85,6 +85,24 @@ Panel::Panel(PanelBar* panel_bar,
   // app is probably doing it itself.)
   panel_win_->AddPassiveButtonGrab();
 
+  // Install passive button grabs on all the resize handles, using
+  // asynchronous mode so that we'll continue to receive mouse events while
+  // the pointer grab is in effect.  (Note that these button grabs are
+  // necessary to avoid a race condition: if we explicitly request an
+  // active grab when seeing a button press, the button might already be
+  // released by the time that the grab is installed.)
+  int event_mask = ButtonPressMask|ButtonReleaseMask|PointerMotionMask;
+  wm()->xconn()->AddPassiveButtonGrabOnWindow(
+      top_input_xid_, 1, event_mask, false);
+  wm()->xconn()->AddPassiveButtonGrabOnWindow(
+      top_left_input_xid_, 1, event_mask, false);
+  wm()->xconn()->AddPassiveButtonGrabOnWindow(
+      top_right_input_xid_, 1, event_mask, false);
+  wm()->xconn()->AddPassiveButtonGrabOnWindow(
+      left_input_xid_, 1, event_mask, false);
+  wm()->xconn()->AddPassiveButtonGrabOnWindow(
+      right_input_xid_, 1, event_mask, false);
+
   // Constrain the size of the panel if we've been requested to do so.
   int panel_width = (FLAGS_panel_max_width > 0) ?
       std::min(panel_win_->client_width(), FLAGS_panel_max_width) :
@@ -203,11 +221,6 @@ void Panel::HandleInputWindowButtonPress(
     return;
   DCHECK(drag_xid_ == None);
 
-  if (!wm()->xconn()->AddActivePointerGrabForWindow(
-          xid, ButtonReleaseMask|PointerMotionMask, timestamp)) {
-    return;
-  }
-
   drag_xid_ = xid;
   drag_start_x_ = x;
   drag_start_y_ = y;
@@ -236,9 +249,8 @@ void Panel::HandleInputWindowButtonPress(
 
 void Panel::HandleInputWindowButtonRelease(
     XWindow xid, int x, int y, int button, Time timestamp) {
-  if (button != 1) {
+  if (button != 1)
     return;
-  }
   if (xid != drag_xid_) {
     LOG(WARNING) << "Ignoring button release for unexpected input window "
                  << XidStr(xid) << " (currently in drag initiated by "

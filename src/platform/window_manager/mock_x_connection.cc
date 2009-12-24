@@ -109,12 +109,12 @@ bool MockXConnection::StackWindow(XWindow xid, XWindow other, bool above) {
 }
 
 bool MockXConnection::AddPassiveButtonGrabOnWindow(
-    XWindow xid, int button, int event_mask) {
+    XWindow xid, int button, int event_mask, bool synchronous) {
   WindowInfo* info = GetWindowInfo(xid);
   if (!info)
     return false;
-  if (button == AnyButton)
-    info->all_buttons_grabbed = true;
+  info->button_grabs[button] =
+      WindowInfo::ButtonGrabInfo(event_mask, synchronous);
   return true;
 }
 
@@ -140,8 +140,7 @@ bool MockXConnection::RemovePassiveButtonGrabOnWindow(XWindow xid, int button) {
   WindowInfo* info = GetWindowInfo(xid);
   if (!info)
     return false;
-  if (button == AnyButton)
-    info->all_buttons_grabbed = false;
+  info->button_grabs.erase(button);
   return true;
 }
 
@@ -448,8 +447,7 @@ MockXConnection::WindowInfo::WindowInfo(XWindow xid, XWindow parent)
       shape(NULL),
       shape_events_selected(false),
       randr_events_selected(false),
-      changed(false),
-      all_buttons_grabbed(false) {
+      changed(false) {
 }
 
 MockXConnection::WindowInfo::~WindowInfo() {}

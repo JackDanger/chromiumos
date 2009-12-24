@@ -131,13 +131,13 @@ TEST_F(LayoutManagerTest, Focus) {
   ASSERT_TRUE(lm_->active_toplevel_ != NULL);
   EXPECT_EQ(xid, lm_->active_toplevel_->win()->xid());
   EXPECT_EQ(None, GetActiveWindowProperty());
-  EXPECT_TRUE(info->all_buttons_grabbed);
+  EXPECT_TRUE(info->button_is_grabbed(AnyButton));
 
   // We shouldn't actually update _NET_ACTIVE_WINDOW and remove the passive
   // button grab until we get the FocusIn event.
   SendFocusEvents(xconn_->GetRootWindow(), xid);
   EXPECT_EQ(xid, GetActiveWindowProperty());
-  EXPECT_FALSE(info->all_buttons_grabbed);
+  EXPECT_FALSE(info->button_is_grabbed(AnyButton));
 
   // Now create a second window.
   XWindow xid2 = CreateSimpleWindow();
@@ -156,14 +156,14 @@ TEST_F(LayoutManagerTest, Focus) {
   EXPECT_EQ(xid2, xconn_->focused_xid());
   ASSERT_TRUE(lm_->active_toplevel_ != NULL);
   EXPECT_EQ(xid2, lm_->active_toplevel_->win()->xid());
-  EXPECT_FALSE(info->all_buttons_grabbed);
-  EXPECT_TRUE(info2->all_buttons_grabbed);
+  EXPECT_FALSE(info->button_is_grabbed(AnyButton));
+  EXPECT_TRUE(info2->button_is_grabbed(AnyButton));
 
   // Now send the appropriate FocusOut and FocusIn events.
   SendFocusEvents(xid, xid2);
   EXPECT_EQ(xid2, GetActiveWindowProperty());
-  EXPECT_TRUE(info->all_buttons_grabbed);
-  EXPECT_FALSE(info2->all_buttons_grabbed);
+  EXPECT_TRUE(info->button_is_grabbed(AnyButton));
+  EXPECT_FALSE(info2->button_is_grabbed(AnyButton));
 
   // Now send a _NET_ACTIVE_WINDOW message asking the window manager to
   // focus the first window.
@@ -183,8 +183,8 @@ TEST_F(LayoutManagerTest, Focus) {
   // Send the appropriate FocusOut and FocusIn events.
   SendFocusEvents(xid2, xid);
   EXPECT_EQ(xid, GetActiveWindowProperty());
-  EXPECT_FALSE(info->all_buttons_grabbed);
-  EXPECT_TRUE(info2->all_buttons_grabbed);
+  EXPECT_FALSE(info->button_is_grabbed(AnyButton));
+  EXPECT_TRUE(info2->button_is_grabbed(AnyButton));
 
   // Unmap the first window and check that the second window gets focused.
   MockXConnection::InitUnmapEvent(&event, xid);
@@ -195,7 +195,7 @@ TEST_F(LayoutManagerTest, Focus) {
 
   SendFocusEvents(None, xid2);
   EXPECT_EQ(xid2, GetActiveWindowProperty());
-  EXPECT_FALSE(info2->all_buttons_grabbed);
+  EXPECT_FALSE(info2->button_is_grabbed(AnyButton));
 }
 
 TEST_F(LayoutManagerTest, ConfigureTransient) {
@@ -279,7 +279,7 @@ TEST_F(LayoutManagerTest, FocusTransient) {
   SendInitialEventsForWindow(xid);
   EXPECT_EQ(xid, xconn_->focused_xid());
   SendFocusEvents(xconn_->GetRootWindow(), xid);
-  EXPECT_FALSE(info->all_buttons_grabbed);
+  EXPECT_FALSE(info->button_is_grabbed(AnyButton));
   EXPECT_EQ(xid, GetActiveWindowProperty());
   EXPECT_TRUE(wm_->GetWindow(xid)->focused());
 
@@ -299,8 +299,8 @@ TEST_F(LayoutManagerTest, FocusTransient) {
   // Send FocusOut and FocusIn events and check that we add a passive
   // button grab on the owner window and remove the grab on the transient.
   SendFocusEvents(xid, transient_xid);
-  EXPECT_TRUE(info->all_buttons_grabbed);
-  EXPECT_FALSE(transient_info->all_buttons_grabbed);
+  EXPECT_TRUE(info->button_is_grabbed(AnyButton));
+  EXPECT_FALSE(transient_info->button_is_grabbed(AnyButton));
   EXPECT_FALSE(wm_->GetWindow(xid)->focused());
   EXPECT_TRUE(wm_->GetWindow(transient_xid)->focused());
 
@@ -321,8 +321,8 @@ TEST_F(LayoutManagerTest, FocusTransient) {
   // After the FocusOut and FocusIn events come through, the button grabs
   // should be updated again.
   SendFocusEvents(transient_xid, xid);
-  EXPECT_FALSE(info->all_buttons_grabbed);
-  EXPECT_TRUE(transient_info->all_buttons_grabbed);
+  EXPECT_FALSE(info->button_is_grabbed(AnyButton));
+  EXPECT_TRUE(transient_info->button_is_grabbed(AnyButton));
   EXPECT_EQ(xid, GetActiveWindowProperty());
   EXPECT_TRUE(wm_->GetWindow(xid)->focused());
   EXPECT_FALSE(wm_->GetWindow(transient_xid)->focused());
@@ -617,7 +617,7 @@ TEST_F(LayoutManagerTest, OverviewFocus) {
   EXPECT_EQ(xid, xconn_->focused_xid());
   SendFocusEvents(xconn_->GetRootWindow(), xid);
   EXPECT_EQ(xid, GetActiveWindowProperty());
-  EXPECT_FALSE(info->all_buttons_grabbed);
+  EXPECT_FALSE(info->button_is_grabbed(AnyButton));
 
   // Now create and map a second window.
   XWindow xid2 = CreateSimpleWindow();
@@ -629,8 +629,8 @@ TEST_F(LayoutManagerTest, OverviewFocus) {
   EXPECT_EQ(xid2, xconn_->focused_xid());
   SendFocusEvents(xid, xid2);
   EXPECT_EQ(xid2, GetActiveWindowProperty());
-  EXPECT_TRUE(info->all_buttons_grabbed);
-  EXPECT_FALSE(info2->all_buttons_grabbed);
+  EXPECT_TRUE(info->button_is_grabbed(AnyButton));
+  EXPECT_FALSE(info2->button_is_grabbed(AnyButton));
 
   // Now switch to overview mode.  Neither window should have the focus,
   // both should have button grabs, and the active window property should
@@ -647,8 +647,8 @@ TEST_F(LayoutManagerTest, OverviewFocus) {
       &event, xid2, NotifyWhileGrabbed, NotifyPointer);
   EXPECT_FALSE(wm_->HandleEvent(&event));
   EXPECT_EQ(None, GetActiveWindowProperty());
-  EXPECT_TRUE(info->all_buttons_grabbed);
-  EXPECT_TRUE(info2->all_buttons_grabbed);
+  EXPECT_TRUE(info->button_is_grabbed(AnyButton));
+  EXPECT_TRUE(info2->button_is_grabbed(AnyButton));
 
   // Click on the first window's input window.
   XWindow input_xid = lm_->GetInputXidForWindow(*(wm_->GetWindow(xid)));
@@ -662,8 +662,8 @@ TEST_F(LayoutManagerTest, OverviewFocus) {
   EXPECT_EQ(xid, xconn_->focused_xid());
   SendFocusEvents(xid2, xid);
   EXPECT_EQ(xid, GetActiveWindowProperty());
-  EXPECT_FALSE(info->all_buttons_grabbed);
-  EXPECT_TRUE(info2->all_buttons_grabbed);
+  EXPECT_FALSE(info->button_is_grabbed(AnyButton));
+  EXPECT_TRUE(info2->button_is_grabbed(AnyButton));
 }
 
 // Test that already-existing windows get stacked correctly.
