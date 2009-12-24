@@ -63,7 +63,7 @@ TEST_F(PanelBarTest, Basic) {
   // The toplevel window should retain the focus and a button grab should
   // be installed on the titlebar window.
   EXPECT_EQ(toplevel_xid, xconn_->focused_xid());
-  EXPECT_TRUE(panel_info->all_buttons_grabbed);
+  EXPECT_TRUE(panel_info->button_is_grabbed(AnyButton));
 
   // The titlebar should keep its initial height but be stretched to the
   // panel's width.  The panel's initial width and height should be
@@ -114,7 +114,7 @@ TEST_F(PanelBarTest, Basic) {
   EXPECT_TRUE(wm_->HandleEvent(&event));
   EXPECT_EQ(None, xconn_->pointer_grab_xid());
   EXPECT_EQ(panel_xid, xconn_->focused_xid());
-  EXPECT_FALSE(panel_info->all_buttons_grabbed);
+  EXPECT_FALSE(panel_info->button_is_grabbed(AnyButton));
 
   // Send FocusOut and FocusIn events and check that the active window hint
   // is updated to contain the panel window.

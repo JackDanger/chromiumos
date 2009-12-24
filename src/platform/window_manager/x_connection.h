@@ -110,9 +110,9 @@ class XConnection {
   bool UngrabServer();
 
   // Install a passive button grab on a window.  When the specified button
-  // is pressed, a synchronous active pointer grab will begin.
+  // is pressed, an active pointer grab will begin.
   virtual bool AddPassiveButtonGrabOnWindow(
-      XWindow xid, int button, int event_mask) = 0;
+      XWindow xid, int button, int event_mask, bool synchronous) = 0;
 
   // Uninstall a passive button grab.
   virtual bool RemovePassiveButtonGrabOnWindow(XWindow xid, int button) = 0;

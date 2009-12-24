@@ -253,7 +253,7 @@ static void print_properties(struct udev_device *device, const char *prefix)
 				g_str_equal(name, "IFINDEX") == TRUE ||
 				g_str_equal(name, "DEVNAME") == TRUE ||
 				g_str_equal(name, "DEVPATH") == TRUE)
-			connman_debug("%s%s = %s", prefix, name, value);
+			connman_debug(DBG_UDEV, "%s%s = %s", prefix, name, value);
 
 		entry = udev_list_entry_get_next(entry);
 	}
@@ -264,7 +264,7 @@ static void print_device(struct udev_device *device, const char *action)
 	const char *subsystem, *sysname, *driver, *devtype = NULL;
 	struct udev_device *parent;
 
-	connman_debug("=== %s ===", action);
+	connman_debug(DBG_UDEV, "=== %s ===", action);
 	print_properties(device, "");
 
 	parent = udev_device_get_parent(device);
@@ -319,7 +319,8 @@ static void enumerate_devices(struct udev *context)
 		if (device != NULL) {
 			const char *subsystem;
 
-			print_device(device, "coldplug");
+			if (__connman_debug_enabled(DBG_UDEV) == TRUE)
+				print_device(device, "coldplug");
 
 			subsystem = udev_device_get_subsystem(device);
 
@@ -356,7 +357,8 @@ static gboolean udev_event(GIOChannel *channel,
 	if (action == NULL)
 		goto done;
 
-	print_device(device, action);
+	if (__connman_debug_enabled(DBG_UDEV) == TRUE)
+		print_device(device, action);
 
 	if (g_str_equal(action, "add") == TRUE) {
 		if (g_str_equal(subsystem, "net") == TRUE)

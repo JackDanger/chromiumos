@@ -37,7 +37,8 @@ class MockXConnection : public XConnection {
   bool SetWindowBorderWidth(XWindow xid, int width) { return true; }
   bool SelectInputOnWindow(XWindow xid, int event_mask, bool preserve_existing);
   bool DeselectInputOnWindow(XWindow xid, int event_mask);
-  bool AddPassiveButtonGrabOnWindow(XWindow xid, int button, int event_mask);
+  bool AddPassiveButtonGrabOnWindow(
+      XWindow xid, int button, int event_mask, bool synchronous);
   bool RemovePassiveButtonGrabOnWindow(XWindow xid, int button);
   bool AddActivePointerGrabForWindow(
       XWindow xid, int event_mask, Time timestamp);
@@ -88,6 +89,22 @@ class MockXConnection : public XConnection {
     WindowInfo(XWindow xid, XWindow parent);
     ~WindowInfo();
 
+    // Information about a button grab installed on this window.
+    struct ButtonGrabInfo {
+      ButtonGrabInfo() : event_mask(0), synchronous(false) {}
+      ButtonGrabInfo(int event_mask, bool synchronous)
+          : event_mask(event_mask),
+            synchronous(synchronous) {
+      }
+      int event_mask;
+      bool synchronous;
+    };
+
+    // Convenience method to check whether a particular button is grabbed.
+    bool button_is_grabbed(int button) {
+      return button_grabs.find(button) != button_grabs.end();
+    }
+
     XWindow xid;
     XWindow parent;
     int x, y;
@@ -120,8 +137,9 @@ class MockXConnection : public XConnection {
     // windows.
     bool changed;
 
-    // Have all of the mouse buttons been passively grabbed?
-    bool all_buttons_grabbed;
+    // Information about button grabs installed on this window, keyed by
+    // button.
+    std::map<int, ButtonGrabInfo> button_grabs;
 
    private:
     DISALLOW_COPY_AND_ASSIGN(WindowInfo);

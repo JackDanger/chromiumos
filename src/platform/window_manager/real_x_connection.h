@@ -32,7 +32,8 @@ class RealXConnection : public XConnection {
   bool SetWindowBorderWidth(XWindow xid, int width);
   bool SelectInputOnWindow(XWindow xid, int event_mask, bool preserve_existing);
   bool DeselectInputOnWindow(XWindow xid, int event_mask);
-  bool AddPassiveButtonGrabOnWindow(XWindow xid, int button, int event_mask);
+  bool AddPassiveButtonGrabOnWindow(
+      XWindow xid, int button, int event_mask, bool synchronous);
   bool RemovePassiveButtonGrabOnWindow(XWindow xid, int button);
   bool AddActivePointerGrabForWindow(
       XWindow xid, int event_mask, Time timestamp);
