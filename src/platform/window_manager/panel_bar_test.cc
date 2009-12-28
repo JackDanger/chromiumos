@@ -60,10 +60,24 @@ TEST_F(PanelBarTest, Basic) {
       xconn_->GetWindowInfoOrDie(panel_xid);
   SendInitialEventsForWindow(panel_xid);
 
-  // The toplevel window should retain the focus and a button grab should
-  // be installed on the titlebar window.
+  // The panel's content window should take the focus, and no button grab
+  // should be installed yet.
+  EXPECT_EQ(panel_xid, xconn_->focused_xid());
+  SendFocusEvents(toplevel_xid, panel_xid);
+  EXPECT_EQ(panel_xid, GetActiveWindowProperty());
+
+  // Click on the toplevel window to give it the focus again.  A button
+  // grab should be installed on the panel's content window.
+  xconn_->set_pointer_grab_xid(toplevel_xid);
+  XEvent event;
+  MockXConnection::InitButtonPressEvent(
+      &event, toplevel_xid, 0, 0, 1);  // x, y, button
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  EXPECT_EQ(None, xconn_->pointer_grab_xid());
   EXPECT_EQ(toplevel_xid, xconn_->focused_xid());
+  SendFocusEvents(panel_xid, toplevel_xid);
   EXPECT_TRUE(panel_info->button_is_grabbed(AnyButton));
+  EXPECT_EQ(toplevel_xid, GetActiveWindowProperty());
 
   // The titlebar should keep its initial height but be stretched to the
   // panel's width.  The panel's initial width and height should be
@@ -108,7 +122,6 @@ TEST_F(PanelBarTest, Basic) {
   // After a button press on the panel window, its active and passive grabs
   // should be removed and it should be focused.
   xconn_->set_pointer_grab_xid(panel_xid);
-  XEvent event;
   MockXConnection::InitButtonPressEvent(
       &event, panel_xid, 0, 0, 1);  // x, y, button
   EXPECT_TRUE(wm_->HandleEvent(&event));
@@ -129,6 +142,12 @@ TEST_F(PanelBarTest, Basic) {
   Window* toplevel_win2 = wm_->GetWindow(toplevel_xid2);
   ASSERT_TRUE(toplevel_win2 != NULL);
 
+  // Check that the new toplevel window takes the focus (note that this is
+  // testing LayoutManager code).
+  EXPECT_EQ(toplevel_xid2, xconn_->focused_xid());
+  SendFocusEvents(panel_xid, toplevel_xid2);
+  EXPECT_EQ(toplevel_xid2, GetActiveWindowProperty());
+
   // The panel's and titlebar's client and composited windows should be
   // stacked above those of the new toplevel window.
   EXPECT_LT(xconn_->stacked_xids().GetIndex(titlebar_xid),
@@ -139,6 +158,17 @@ TEST_F(PanelBarTest, Basic) {
             stage->GetStackingIndex(toplevel_win2->actor()));
   EXPECT_LT(stage->GetStackingIndex(panel_win->actor()),
             stage->GetStackingIndex(toplevel_win2->actor()));
+
+  // Create a second, collapsed panel.
+  XWindow collapsed_titlebar_xid = CreateTitlebarWindow(200, 20);
+  SendInitialEventsForWindow(collapsed_titlebar_xid);
+  XWindow collapsed_panel_xid =
+      CreatePanelWindow(200, 400, collapsed_titlebar_xid, false);
+  SendInitialEventsForWindow(collapsed_panel_xid);
+
+  // The collapsed panel shouldn't have taken the focus.
+  EXPECT_EQ(toplevel_xid2, xconn_->focused_xid());
+  EXPECT_EQ(toplevel_xid2, GetActiveWindowProperty());
 }
 
 // Test that we expand and focus panels in response to _NET_ACTIVE_WINDOW

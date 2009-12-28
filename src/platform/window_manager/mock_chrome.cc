@@ -612,7 +612,7 @@ bool ChromeWindow::on_motion_notify_event(GdkEventMotion* event) {
 
 bool ChromeWindow::on_key_press_event(GdkEventKey* event) {
   if (strcmp(event->string, "p") == 0) {
-    chrome_->CreatePanel(FLAGS_new_panel_image, "New Panel");
+    chrome_->CreatePanel(FLAGS_new_panel_image, "New Panel", true);
   } else if (strcmp(event->string, "w") == 0) {
     chrome_->CreateWindow(width_, height_);
   } else if (strcmp(event->string, "f") == 0) {
@@ -808,7 +808,8 @@ bool PanelTitlebar::on_motion_notify_event(GdkEventMotion* event) {
 
 Panel::Panel(MockChrome* chrome,
              const std::string& image_filename,
-             const std::string& title)
+             const std::string& title,
+             bool expanded)
     : chrome_(chrome),
       titlebar_(new PanelTitlebar(this)),
       image_(Gdk::Pixbuf::create_from_file(image_filename)),
@@ -821,7 +822,7 @@ Panel::Panel(MockChrome* chrome,
   xid_ = GDK_WINDOW_XWINDOW(Glib::unwrap(get_window()));
   std::vector<int> type_params;
   type_params.push_back(titlebar_->xid());
-  type_params.push_back(0);  // initially collapsed
+  type_params.push_back(expanded);
   CHECK(chrome_->wm_ipc()->SetWindowType(
             xid_, WmIpc::WINDOW_TYPE_CHROME_PANEL, &type_params));
   add_events(Gdk::BUTTON_PRESS_MASK);
@@ -896,8 +897,10 @@ void MockChrome::CloseWindow(ChromeWindow* win) {
 }
 
 Panel* MockChrome::CreatePanel(const std::string& image_filename,
-                               const std::string& title) {
-  std::tr1::shared_ptr<Panel> panel(new Panel(this, image_filename, title));
+                               const std::string& title,
+                               bool expanded) {
+  std::tr1::shared_ptr<Panel> panel(
+      new Panel(this, image_filename, title, expanded));
   CHECK(panels_.insert(std::make_pair(panel->xid(), panel)).second);
   return panel.get();
 }
@@ -982,7 +985,8 @@ int main(int argc, char** argv) {
 
   for (int i = 0; i < FLAGS_num_panels; ++i) {
     mock_chrome.CreatePanel(filenames[i % filenames.size()],
-                            titles[i % titles.size()]);
+                            titles[i % titles.size()],
+                            false);  // expanded=false
   }
 
   Gtk::Main::run();

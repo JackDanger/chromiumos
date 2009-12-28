@@ -730,7 +730,7 @@ void LayoutManager::Resize(int width, int height) {
 
   switch (mode_) {
     case MODE_ACTIVE:
-      ArrangeToplevelWindowsForActiveMode();
+      ArrangeToplevelWindowsForActiveMode(false);  // update_focus=false
       break;
     case MODE_OVERVIEW:
       ArrangeToplevelWindowsForOverviewMode();
@@ -787,7 +787,7 @@ LayoutManager::ToplevelWindow::~ToplevelWindow() {
 }
 
 void LayoutManager::ToplevelWindow::ArrangeForActiveMode(
-    bool window_is_active) {
+    bool window_is_active, bool update_focus) {
   const int layout_x = layout_manager_->x();
   const int layout_y = layout_manager_->y();
   const int layout_width = layout_manager_->width();
@@ -841,10 +841,8 @@ void LayoutManager::ToplevelWindow::ArrangeForActiveMode(
     win_->MoveComposited(win_x, win_y, kWindowAnimMs);
     win_->ScaleComposited(1.0, 1.0, kWindowAnimMs);
     win_->SetCompositedOpacity(1.0, kWindowAnimMs);
-    // TODO: This can end up stealing the focus from a panel, for instance
-    // -- we should really only be doing this if we had the focus
-    // initially.
-    TakeFocus(wm()->GetCurrentTimeFromServer());
+    if (update_focus)
+      TakeFocus(wm()->GetCurrentTimeFromServer());
     state_ = STATE_ACTIVE_MODE_ONSCREEN;
   } else {
     if (state_ == STATE_ACTIVE_MODE_OUT_TO_LEFT) {
@@ -1246,7 +1244,7 @@ void LayoutManager::SetActiveToplevelWindow(
     active_toplevel_->set_state(state_for_old_win);
   toplevel->set_state(state_for_new_win);
   active_toplevel_ = toplevel;
-  ArrangeToplevelWindowsForActiveMode();
+  ArrangeToplevelWindowsForActiveMode(true);  // update_focus=true
 }
 
 void LayoutManager::SwitchToActiveMode(bool activate_magnified_win) {
@@ -1314,7 +1312,7 @@ void LayoutManager::SetMode(Mode mode) {
       if (!active_toplevel_ && !toplevels_.empty())
         active_toplevel_ = toplevels_[0].get();
       SetMagnifiedToplevelWindow(NULL);
-      ArrangeToplevelWindowsForActiveMode();
+      ArrangeToplevelWindowsForActiveMode(true);  // update_focus=true
       break;
     }
     case MODE_OVERVIEW: {
@@ -1345,7 +1343,7 @@ void LayoutManager::SetMode(Mode mode) {
   }
 }
 
-void LayoutManager::ArrangeToplevelWindowsForActiveMode() {
+void LayoutManager::ArrangeToplevelWindowsForActiveMode(bool update_focus) {
   VLOG(1) << "Arranging windows for active mode";
   if (toplevels_.empty())
     return;
@@ -1354,7 +1352,7 @@ void LayoutManager::ArrangeToplevelWindowsForActiveMode() {
 
   for (ToplevelWindows::iterator it = toplevels_.begin();
        it != toplevels_.end(); ++it) {
-    (*it)->ArrangeForActiveMode(it->get() == active_toplevel_);
+    (*it)->ArrangeForActiveMode(it->get() == active_toplevel_, update_focus);
   }
 }
 

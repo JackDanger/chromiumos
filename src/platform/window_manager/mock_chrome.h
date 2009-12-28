@@ -316,7 +316,8 @@ class Panel : public Gtk::Window {
  public:
   Panel(MockChrome* chrome,
         const std::string& image_filename,
-        const std::string& title);
+        const std::string& title,
+        bool expanded);
 
   XWindow xid() const { return xid_; }
   MockChrome* chrome() { return chrome_; }
@@ -359,7 +360,8 @@ class MockChrome {
   // Create a new panel, ownership of which remains with the MockChrome
   // object.
   Panel* CreatePanel(const std::string& image_filename,
-                     const std::string &title);
+                     const std::string &title,
+                     bool expanded);
 
   // Close a panel.
   void ClosePanel(Panel* panel);

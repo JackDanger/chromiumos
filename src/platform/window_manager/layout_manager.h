@@ -206,8 +206,9 @@ class LayoutManager : public EventConsumer {
     // Arrange the window for active mode.  This involves either moving the
     // client window on- or offscreen (depending on 'window_is_active'),
     // animating the composited window according to 'state_', and possibly
-    // focusing the window or one of its transients.
-    void ArrangeForActiveMode(bool window_is_active);
+    // focusing the window or one of its transients.  If 'update_focus' is
+    // true, the window will take the focus if it's active.
+    void ArrangeForActiveMode(bool window_is_active, bool update_focus);
 
     // Arrange the window for overview mode.  This involves animating its
     // composited position and scale as specified by 'overview_*' and
@@ -422,7 +423,7 @@ class LayoutManager : public EventConsumer {
   void SetMode(Mode mode);
 
   // Arrange all windows for various modes.
-  void ArrangeToplevelWindowsForActiveMode();
+  void ArrangeToplevelWindowsForActiveMode(bool update_focus);
   void ArrangeToplevelWindowsForOverviewMode();
 
   // Calculate the position and scaling of all windows for overview mode

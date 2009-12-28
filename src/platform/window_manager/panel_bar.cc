@@ -129,7 +129,9 @@ void PanelBar::HandleWindowMap(Window* win) {
       // updated.
       bool expanded = win->type_params().size() >= 2 ?
           win->type_params().at(1) : false;
-      AddPanel(win, titlebar, expanded);
+      Panel* panel = CreatePanel(win, titlebar, expanded);
+      if (expanded)
+        FocusPanel(panel, false);  // remove_pointer_grab=false
       break;
     }
     default:
@@ -544,7 +546,7 @@ void PanelBar::DoInitialSetupForWindow(Window* win) {
   win->MoveClientOffscreen();
 }
 
-void PanelBar::AddPanel(
+Panel* PanelBar::CreatePanel(
     Window* panel_win, Window* titlebar_win, bool expanded) {
   CHECK(panel_win);
   CHECK(titlebar_win);
@@ -575,6 +577,8 @@ void PanelBar::AddPanel(
     collapsed_panels_.push_back(panel);
     ExpandPanel(panel.get(), false);  // create_anchor
   }
+
+  return panel.get();
 }
 
 void PanelBar::ExpandPanel(Panel* panel, bool create_anchor) {

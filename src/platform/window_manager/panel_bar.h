@@ -128,8 +128,9 @@ class PanelBar : public EventConsumer {
   // This includes stacking them and moving them offscreen.
   void DoInitialSetupForWindow(Window* win);
 
-  // Add a panel to the bar.
-  void AddPanel(Window* panel_win, Window* titlebar_win, bool expanded);
+  // Create a panel given mapped content and titlebar windows and add it to
+  // the panel bar.
+  Panel* CreatePanel(Window* panel_win, Window* titlebar_win, bool expanded);
 
   // Expand a panel.  We move it from 'collapsed_panels_' to
   // 'expanded_panels_' and reposition the other expanded panels to not
