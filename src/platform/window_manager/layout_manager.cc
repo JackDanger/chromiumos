@@ -1161,7 +1161,7 @@ void LayoutManager::ToplevelWindow::RestackTransientWindowOnTop(
     return;
 
   DCHECK(stacked_transients_->Contains(transient));
-  DCHECK_GT(stacked_transients_->items().size(), 1);
+  DCHECK_GT(stacked_transients_->items().size(), 1U);
   TransientWindow* transient_to_stack_above =
       stacked_transients_->items().front();
   stacked_transients_->Remove(transient);

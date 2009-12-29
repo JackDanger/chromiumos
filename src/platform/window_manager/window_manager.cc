@@ -826,11 +826,11 @@ bool WindowManager::HandleClientMessage(const XClientMessageEvent& e) {
       if ((*it)->HandleClientMessage(e))
         return true;
     }
-    if (e.message_type == GetXAtom(ATOM_MANAGER) &&
+    if (static_cast<XAtom>(e.message_type) == GetXAtom(ATOM_MANAGER) &&
         e.format == 32 &&
-        (e.data.l[1] == GetXAtom(ATOM_WM_S0) ||
-         e.data.l[1] == GetXAtom(ATOM_NET_WM_CM_S0))) {
-      if (e.data.l[2] != wm_xid_) {
+        (static_cast<XAtom>(e.data.l[1]) == GetXAtom(ATOM_WM_S0) ||
+         static_cast<XAtom>(e.data.l[1]) == GetXAtom(ATOM_NET_WM_CM_S0))) {
+      if (static_cast<XWindow>(e.data.l[2]) != wm_xid_) {
         LOG(WARNING) << "Ignoring client message saying that window "
                      << XidStr(e.data.l[2]) << " got the "
                      << GetXAtomName(e.data.l[1]) << " manager selection";
