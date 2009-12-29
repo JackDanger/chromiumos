@@ -108,7 +108,7 @@ bool MockXConnection::StackWindow(XWindow xid, XWindow other, bool above) {
   return true;
 }
 
-bool MockXConnection::AddPassiveButtonGrabOnWindow(
+bool MockXConnection::AddButtonGrabOnWindow(
     XWindow xid, int button, int event_mask, bool synchronous) {
   WindowInfo* info = GetWindowInfo(xid);
   if (!info)
@@ -136,7 +136,7 @@ bool MockXConnection::DeselectInputOnWindow(XWindow xid, int event_mask) {
   return true;
 }
 
-bool MockXConnection::RemovePassiveButtonGrabOnWindow(XWindow xid, int button) {
+bool MockXConnection::RemoveButtonGrabOnWindow(XWindow xid, int button) {
   WindowInfo* info = GetWindowInfo(xid);
   if (!info)
     return false;
@@ -144,7 +144,7 @@ bool MockXConnection::RemovePassiveButtonGrabOnWindow(XWindow xid, int button) {
   return true;
 }
 
-bool MockXConnection::AddActivePointerGrabForWindow(
+bool MockXConnection::AddPointerGrabForWindow(
     XWindow xid, int event_mask, Time timestamp) {
   WindowInfo* info = GetWindowInfo(xid);
   if (!info)
@@ -158,8 +158,7 @@ bool MockXConnection::AddActivePointerGrabForWindow(
   return true;
 }
 
-bool MockXConnection::RemoveActivePointerGrab(bool replay_events,
-                                              Time timestamp) {
+bool MockXConnection::RemovePointerGrab(bool replay_events, Time timestamp) {
   pointer_grab_xid_ = None;
   return true;
 }

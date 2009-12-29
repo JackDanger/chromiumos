@@ -392,15 +392,15 @@ bool Window::SendDeleteRequest(Time timestamp) {
   return wm_->xconn()->SendEvent(xid_, &event, 0);
 }
 
-bool Window::AddPassiveButtonGrab() {
-  VLOG(2) << "Adding passive button grab for " << xid_str();
-  return wm_->xconn()->AddPassiveButtonGrabOnWindow(
+bool Window::AddButtonGrab() {
+  VLOG(2) << "Adding button grab for " << xid_str();
+  return wm_->xconn()->AddButtonGrabOnWindow(
       xid_, AnyButton, ButtonPressMask, true);  // synchronous=true
 }
 
-bool Window::RemovePassiveButtonGrab() {
-  VLOG(2) << "Removing passive button grab for " << xid_str();
-  return wm_->xconn()->RemovePassiveButtonGrabOnWindow(xid_, AnyButton);
+bool Window::RemoveButtonGrab() {
+  VLOG(2) << "Removing button grab for " << xid_str();
+  return wm_->xconn()->RemoveButtonGrabOnWindow(xid_, AnyButton);
 }
 
 void Window::GetMaxSize(int desired_width, int desired_height,

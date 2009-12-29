@@ -774,12 +774,12 @@ LayoutManager::ToplevelWindow::ToplevelWindow(Window* win,
   win->MoveClientOffscreen();
   win->ShowComposited();
   // Make sure that we hear about button presses on this window.
-  win->AddPassiveButtonGrab();
+  win->AddButtonGrab();
 }
 
 LayoutManager::ToplevelWindow::~ToplevelWindow() {
   wm()->xconn()->DestroyWindow(input_xid_);
-  win_->RemovePassiveButtonGrab();
+  win_->RemoveButtonGrab();
   win_ = NULL;
   layout_manager_ = NULL;
   input_xid_ = None;
@@ -1013,7 +1013,7 @@ void LayoutManager::ToplevelWindow::AddTransientWindow(Window* transient_win) {
       transient_to_stack_above ? transient_to_stack_above->win : win_);
 
   transient_win->ShowComposited();
-  transient_win->AddPassiveButtonGrab();
+  transient_win->AddButtonGrab();
 }
 
 void LayoutManager::ToplevelWindow::RemoveTransientWindow(
@@ -1027,7 +1027,7 @@ void LayoutManager::ToplevelWindow::RemoveTransientWindow(
   }
   stacked_transients_->Remove(transient);
   CHECK(transients_.erase(transient_win->xid()) == 1);
-  transient_win->RemovePassiveButtonGrab();
+  transient_win->RemoveButtonGrab();
 
   if (transient_to_focus_ == transient) {
     transient_to_focus_ = NULL;
@@ -1067,13 +1067,13 @@ void LayoutManager::ToplevelWindow::HandleFocusChange(
   if (focus_in) {
     VLOG(1) << "Got focus-in for " << focus_win->xid_str()
             << "; removing passive button grab";
-    focus_win->RemovePassiveButtonGrab();
+    focus_win->RemoveButtonGrab();
   } else {
     // Listen for button presses on this window so we'll know when it
     // should be focused again.
     VLOG(1) << "Got focus-out for " << focus_win->xid_str()
             << "; re-adding passive button grab";
-    focus_win->AddPassiveButtonGrab();
+    focus_win->AddButtonGrab();
   }
 }
 
@@ -1082,7 +1082,7 @@ void LayoutManager::ToplevelWindow::HandleButtonPress(
   SetPreferredTransientWindowToFocus(
       GetTransientWindow(*button_win) ? button_win : NULL);
   TakeFocus(timestamp);
-  wm()->xconn()->RemoveActivePointerGrab(true, timestamp);  // replay events
+  wm()->xconn()->RemovePointerGrab(true, timestamp);  // replay events
 }
 
 LayoutManager::ToplevelWindow::TransientWindow*

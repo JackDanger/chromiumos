@@ -210,7 +210,7 @@ bool RealXConnection::DeselectInputOnWindow(XWindow xid, int event_mask) {
   return true;
 }
 
-bool RealXConnection::AddPassiveButtonGrabOnWindow(
+bool RealXConnection::AddButtonGrabOnWindow(
     XWindow xid, int button, int event_mask, bool synchronous) {
   xcb_grab_button(xcb_conn_,
                   0,                    // owner_events
@@ -227,14 +227,14 @@ bool RealXConnection::AddPassiveButtonGrabOnWindow(
   return true;
 }
 
-bool RealXConnection::RemovePassiveButtonGrabOnWindow(XWindow xid, int button) {
+bool RealXConnection::RemoveButtonGrabOnWindow(XWindow xid, int button) {
   xcb_ungrab_button(xcb_conn_, button, xid, XCB_NONE);
   return true;
 }
 
-bool RealXConnection::AddActivePointerGrabForWindow(XWindow xid,
-                                                    int event_mask,
-                                                    Time timestamp) {
+bool RealXConnection::AddPointerGrabForWindow(XWindow xid,
+                                              int event_mask,
+                                              Time timestamp) {
   xcb_grab_pointer_cookie_t cookie =
       xcb_grab_pointer(xcb_conn_,
                        0,                    // owner_events
@@ -250,21 +250,19 @@ bool RealXConnection::AddActivePointerGrabForWindow(XWindow xid,
       xcb_grab_pointer_reply(xcb_conn_, cookie, &error));
   scoped_ptr_malloc<xcb_generic_error_t> scoped_error(error);
   if (error) {
-    LOG(WARNING) << "Active pointer grab for window " << XidStr(xid)
-                 << " failed";
+    LOG(WARNING) << "Pointer grab for window " << XidStr(xid) << " failed";
     return false;
   }
 
   if (reply->status != XCB_GRAB_STATUS_SUCCESS) {
-    LOG(WARNING) << "Active pointer grab for window " << XidStr(xid)
+    LOG(WARNING) << "Pointer grab for window " << XidStr(xid)
                  << " returned status " << reply->status;
     return false;
   }
   return true;
 }
 
-bool RealXConnection::RemoveActivePointerGrab(bool replay_events,
-                                              Time timestamp) {
+bool RealXConnection::RemovePointerGrab(bool replay_events, Time timestamp) {
   if (replay_events)
     xcb_allow_events(xcb_conn_, XCB_ALLOW_REPLAY_POINTER, timestamp);
   else

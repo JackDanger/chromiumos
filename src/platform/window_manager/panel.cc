@@ -83,7 +83,7 @@ Panel::Panel(PanelBar* panel_bar,
   // clicked and can focus it.  (We can't just listen on ButtonPressMask,
   // since only one client is allowed to do so for a given window and the
   // app is probably doing it itself.)
-  panel_win_->AddPassiveButtonGrab();
+  panel_win_->AddButtonGrab();
 
   // Install passive button grabs on all the resize handles, using
   // asynchronous mode so that we'll continue to receive mouse events while
@@ -92,16 +92,13 @@ Panel::Panel(PanelBar* panel_bar,
   // active grab when seeing a button press, the button might already be
   // released by the time that the grab is installed.)
   int event_mask = ButtonPressMask|ButtonReleaseMask|PointerMotionMask;
-  wm()->xconn()->AddPassiveButtonGrabOnWindow(
-      top_input_xid_, 1, event_mask, false);
-  wm()->xconn()->AddPassiveButtonGrabOnWindow(
+  wm()->xconn()->AddButtonGrabOnWindow(top_input_xid_, 1, event_mask, false);
+  wm()->xconn()->AddButtonGrabOnWindow(
       top_left_input_xid_, 1, event_mask, false);
-  wm()->xconn()->AddPassiveButtonGrabOnWindow(
+  wm()->xconn()->AddButtonGrabOnWindow(
       top_right_input_xid_, 1, event_mask, false);
-  wm()->xconn()->AddPassiveButtonGrabOnWindow(
-      left_input_xid_, 1, event_mask, false);
-  wm()->xconn()->AddPassiveButtonGrabOnWindow(
-      right_input_xid_, 1, event_mask, false);
+  wm()->xconn()->AddButtonGrabOnWindow(left_input_xid_, 1, event_mask, false);
+  wm()->xconn()->AddButtonGrabOnWindow(right_input_xid_, 1, event_mask, false);
 
   // Constrain the size of the panel if we've been requested to do so.
   int panel_width = (FLAGS_panel_max_width > 0) ?
@@ -152,7 +149,7 @@ Panel::Panel(PanelBar* panel_bar,
 
 Panel::~Panel() {
   if (drag_xid_) {
-    wm()->xconn()->RemoveActivePointerGrab(
+    wm()->xconn()->RemovePointerGrab(
         false, CurrentTime);  // replay_events=false
     drag_xid_ = None;
   }
@@ -161,7 +158,7 @@ Panel::~Panel() {
   wm()->xconn()->DestroyWindow(top_right_input_xid_);
   wm()->xconn()->DestroyWindow(left_input_xid_);
   wm()->xconn()->DestroyWindow(right_input_xid_);
-  panel_win_->RemovePassiveButtonGrab();
+  panel_win_->RemoveButtonGrab();
   panel_bar_ = NULL;
   panel_win_ = NULL;
   titlebar_win_ = NULL;
@@ -257,8 +254,8 @@ void Panel::HandleInputWindowButtonRelease(
                  << XidStr(drag_xid_) << ")";
     return;
   }
-  wm()->xconn()->RemoveActivePointerGrab(
-      false, timestamp);  // replay_events=false
+  // GrabButton-initiated asynchronous pointer grabs are automatically removed
+  // by the X server on button release.
   resize_event_coalescer_.StorePosition(x, y);
   resize_event_coalescer_.Stop();
   drag_xid_ = None;

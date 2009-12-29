@@ -405,9 +405,9 @@ bool PanelBar::HandleFocusChange(XWindow xid, bool focus_in) {
   }
 
   if (!focus_in) {
-    VLOG(1) << "Panel " << panel->xid_str() << " lost focus; adding passive "
+    VLOG(1) << "Panel " << panel->xid_str() << " lost focus; adding "
             << "button grab";
-    panel->panel_win()->AddPassiveButtonGrab();
+    panel->panel_win()->AddButtonGrab();
   }
   return true;
 }
@@ -642,9 +642,9 @@ void PanelBar::CollapsePanel(Panel* panel) {
 
 void PanelBar::FocusPanel(Panel* panel, bool remove_pointer_grab) {
   CHECK(panel);
-  panel->panel_win()->RemovePassiveButtonGrab();
+  panel->panel_win()->RemoveButtonGrab();
   if (remove_pointer_grab)
-    wm_->xconn()->RemoveActivePointerGrab(true, CurrentTime);  // replay_events
+    wm_->xconn()->RemovePointerGrab(true, CurrentTime);  // replay_events
   wm_->SetActiveWindowProperty(panel->panel_win()->xid());
   panel->panel_win()->TakeFocus(wm_->GetCurrentTimeFromServer());
   panel->StackAtTopOfLayer(StackingManager::LAYER_EXPANDED_PANEL);

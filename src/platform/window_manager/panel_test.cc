@@ -156,14 +156,13 @@ TEST_F(PanelTest, Resize) {
       1,     // button
       1);    // timestamp
 
-  // Release the button immediately and check that the pointer grab has
-  // been removed.
+  // Release the button immediately.
+  xconn_->set_pointer_grab_xid(None);
   panel.HandleInputWindowButtonRelease(
       panel.top_left_input_xid_,
       0, 0,  // relative x, y
       1,     // button
       CurrentTime);
-  EXPECT_EQ(None, xconn_->pointer_grab_xid());
 
   // Check that the panel's dimensions are unchanged.
   EXPECT_EQ(orig_width, titlebar_info->width);
@@ -183,9 +182,9 @@ TEST_F(PanelTest, Resize) {
       panel.top_left_input_xid_, 0, 0, 1, CurrentTime);
   EXPECT_EQ(panel.top_left_input_xid_, xconn_->pointer_grab_xid());
   panel.HandleInputWindowPointerMotion(panel.top_left_input_xid_, -2, -4);
+  xconn_->set_pointer_grab_xid(None);
   panel.HandleInputWindowButtonRelease(
       panel.top_left_input_xid_, -5, -6, 1, CurrentTime);
-  EXPECT_EQ(None, xconn_->pointer_grab_xid());
 
   // The titlebar should be offset by the drag and made a bit wider.
   EXPECT_EQ(initial_x - 5, titlebar_info->x);

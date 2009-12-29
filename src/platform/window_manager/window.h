@@ -150,10 +150,14 @@ class Window {
   bool SendDeleteRequest(Time timestamp);
 
   // Add or remove passive a passive grab on button presses within this
-  // window.  When any button is pressed, an active pointer grab will be
-  // installed.
-  bool AddPassiveButtonGrab();
-  bool RemovePassiveButtonGrab();
+  // window.  When any button is pressed, a _synchronous_ active pointer
+  // grab will be installed.  Note that this means that no pointer events
+  // will be received until the pointer grab is manually removed using
+  // XConnection::RemovePointerGrab() -- this can be used to ensure that
+  // the client receives the initial click on its window when implementing
+  // click-to-focus behavior.
+  bool AddButtonGrab();
+  bool RemoveButtonGrab();
 
   // Get the largest possible size for this window smaller than or equal to
   // the passed-in desired dimensions (while respecting any sizing hints it

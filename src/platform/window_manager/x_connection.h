@@ -110,22 +110,32 @@ class XConnection {
   bool UngrabServer();
 
   // Install a passive button grab on a window.  When the specified button
-  // is pressed, an active pointer grab will begin.
-  virtual bool AddPassiveButtonGrabOnWindow(
+  // is pressed, an active pointer grab will be installed.  Only events
+  // matched by 'event_mask' will be reported.  If 'synchronous' is false,
+  // when all of the buttons are released, the pointer grab will be
+  // automatically removed.  If 'synchronous' is true, no further pointer
+  // events will be reported until the the pointer grab is manually removed
+  // using RemovePointerGrab() -- this is useful in conjunction with
+  // RemovePointerGrab()'s 'replay_events' parameter to send initial clicks
+  // to client apps when implementing click-to-focus behavior.
+  virtual bool AddButtonGrabOnWindow(
       XWindow xid, int button, int event_mask, bool synchronous) = 0;
 
   // Uninstall a passive button grab.
-  virtual bool RemovePassiveButtonGrabOnWindow(XWindow xid, int button) = 0;
+  virtual bool RemoveButtonGrabOnWindow(XWindow xid, int button) = 0;
 
-  // Actively grab the pointer.  Returns false if an error occurs or if the
-  // grab fails (e.g. because it's already grabbed by another client).
-  virtual bool AddActivePointerGrabForWindow(
+  // Grab the pointer asynchronously, such that all subsequent events
+  // matching 'event_mask' will be reported to the calling client.  Returns
+  // false if an error occurs or if the grab fails (e.g. because it's
+  // already grabbed by another client).
+  virtual bool AddPointerGrabForWindow(
       XWindow xid, int event_mask, Time timestamp) = 0;
 
-  // Replay the pointer events that occurred during the current synchronous
-  // active pointer grab (sending them to the original window instead of
-  // just to the grabbing client) and remove the active grab.
-  virtual bool RemoveActivePointerGrab(bool replay_events, Time timestamp) = 0;
+  // Remove a pointer grab, possibly also replaying the pointer events that
+  // occurred during it if it was synchronous and 'replay_events' is true
+  // (sending them to the original window instead of just to the grabbing
+  // client).
+  virtual bool RemovePointerGrab(bool replay_events, Time timestamp) = 0;
 
   // Remove the input region from a window, so that events fall through it.
   virtual bool RemoveInputRegionFromWindow(XWindow xid) = 0;
