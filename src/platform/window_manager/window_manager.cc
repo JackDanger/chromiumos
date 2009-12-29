@@ -133,21 +133,12 @@ static GdkFilterReturn FilterEvent(GdkXEvent* xevent,
       GDK_FILTER_CONTINUE;
 }
 
-// Utility method to invoke a passed in closure and return false to indicate
-// that the queued callback should be moved from the gdk run loop.
-static gboolean callback_runner_once(gpointer data) {
-  Closure* const closure = static_cast<Closure *>(data);
-  CHECK(closure) << "Null closure passed to callback_runner_once.";
-  closure->Run();
-  return FALSE;
-}
-
-// Callback for a gtk timer that will attempt to send metrics to
-// chrome once every timer interval.  We don't really care if a given
+// Callback for a GTK timer that will attempt to send metrics to
+// Chrome once every timer interval.  We don't really care if a given
 // attempt fails, as we'll just keep aggregating metrics and try again
 // next time.
 // Returns true, as returning false causes the timer to destroy itself.
-static gboolean attempt_metrics_report(gpointer data) {
+static gboolean AttemptMetricsReport(gpointer data) {
   MetricsReporter *reporter = reinterpret_cast<MetricsReporter*>(data);
   reporter->AttemptReport();
   return true;
@@ -348,7 +339,7 @@ bool WindowManager::Init() {
   // timer precision.  We don't really care about timer precision, so
   // that's fine.
   g_timeout_add_seconds(MetricsReporter::kMetricsReportingIntervalInSeconds,
-                        attempt_metrics_report,
+                        AttemptMetricsReport,
                         metrics_reporter_.get());
 
   return true;
@@ -1038,7 +1029,7 @@ bool WindowManager::HandleCreateNotify(const XCreateWindowEvent& e) {
   // intercept this window's structure events, but we still need to
   // composite the window, so we'll create a Window object for it
   // regardless.
-  Window* win = TrackWindow(e.window);
+  TrackWindow(e.window);
 
   return true;
 }

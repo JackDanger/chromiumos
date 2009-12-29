@@ -144,10 +144,15 @@ class XConnection {
       min_height = -1;
       max_width = -1;
       max_height = -1;
-      base_width = -1;
-      base_height = -1;
       width_increment = -1;
       height_increment = -1;
+      min_aspect_x = -1;
+      min_aspect_y = -1;
+      max_aspect_x = -1;
+      max_aspect_y = -1;
+      base_width = -1;
+      base_height = -1;
+      win_gravity = -1;
     }
 
     // Hints are set to -1 if not defined.
@@ -157,10 +162,15 @@ class XConnection {
     int min_height;
     int max_width;
     int max_height;
-    int base_width;
-    int base_height;
     int width_increment;
     int height_increment;
+    int min_aspect_x;
+    int min_aspect_y;
+    int max_aspect_x;
+    int max_aspect_y;
+    int base_width;
+    int base_height;
+    int win_gravity;
   };
 
   // Get the size hints for a window.

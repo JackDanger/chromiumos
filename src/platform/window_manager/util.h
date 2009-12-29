@@ -192,15 +192,11 @@ V FindWithDefault(const std::map<K, V>& the_map, const K& key, const V& def) {
 // Get the number of seconds since the epoch.
 double GetCurrentTime();
 
-
 // Fill 'tv' with the time from 'time'.
 void FillTimeval(double time, struct timeval* tv);
 
-
 // Helper method to convert an XID into a hex string.
-static std::string XidStr(unsigned long xid) {
-  return StringPrintf("0x%lx", xid);
-}
+std::string XidStr(unsigned long xid);
 
 }  // namespace window_manager
 

@@ -356,8 +356,6 @@ TEST_F(WindowManagerTest, Reparent) {
 // of a keyboard grab or ungrab, but honor other ones.
 TEST_F(WindowManagerTest, IgnoreGrabFocusEvents) {
   XWindow xid = CreateSimpleWindow();
-  MockXConnection::WindowInfo* info = xconn_->GetWindowInfoOrDie(xid);
-
   SendInitialEventsForWindow(xid);
 
   Window* win = wm_->GetWindow(xid);
@@ -606,7 +604,6 @@ TEST_F(WindowManagerTest, ClientListProperties) {
 
   // Create and map a second regular window.
   XWindow xid2 = CreateSimpleWindow();
-  MockXConnection::WindowInfo* info2 = xconn_->GetWindowInfoOrDie(xid2);
   SendInitialEventsForWindow(xid2);
 
   // The second window should appear after the first in _NET_CLIENT_LIST,

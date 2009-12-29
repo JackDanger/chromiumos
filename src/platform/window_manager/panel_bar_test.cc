@@ -36,8 +36,6 @@ class PanelBarTest : public BasicWindowManagerTest {
 TEST_F(PanelBarTest, Basic) {
   // First, create a toplevel window.
   XWindow toplevel_xid = CreateSimpleWindow();
-  MockXConnection::WindowInfo* toplevel_info =
-      xconn_->GetWindowInfoOrDie(toplevel_xid);
   SendInitialEventsForWindow(toplevel_xid);
 
   // It should be initially focused.
@@ -136,8 +134,6 @@ TEST_F(PanelBarTest, Basic) {
 
   // Create a second toplevel window.
   XWindow toplevel_xid2 = CreateSimpleWindow();
-  MockXConnection::WindowInfo* toplevel_info2 =
-      xconn_->GetWindowInfoOrDie(toplevel_xid2);
   SendInitialEventsForWindow(toplevel_xid2);
   Window* toplevel_win2 = wm_->GetWindow(toplevel_xid2);
   ASSERT_TRUE(toplevel_win2 != NULL);

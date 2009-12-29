@@ -51,7 +51,7 @@ for key in Split('CC CXX AR RANLIB LD NM CFLAGS CCFLAGS'):
   if value != None:
     base_env[key] = value
 if not base_env.get('CCFLAGS'):
-  base_env['CCFLAGS'] = '-I.. -Wall -O3'
+  base_env['CCFLAGS'] = '-I.. -Wall -Werror -O3'
 base_env['LINKFLAGS'] = '-lgflags -lprotobuf'
 
 # Fix up the pkg-config path if it is present in the environment.
