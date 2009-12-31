@@ -143,7 +143,7 @@ TEST_F(PanelTest, Resize) {
   MockXConnection::WindowInfo* handle_info =
       xconn_->GetWindowInfoOrDie(panel.top_left_input_xid_);
   EXPECT_TRUE(handle_info->button_is_grabbed(1));
-  EXPECT_EQ(ButtonPressMask|ButtonReleaseMask|PointerMotionMask,
+  EXPECT_EQ(ButtonPressMask | ButtonReleaseMask | PointerMotionMask,
             handle_info->button_grabs[1].event_mask);
   EXPECT_FALSE(handle_info->button_grabs[1].synchronous);
 

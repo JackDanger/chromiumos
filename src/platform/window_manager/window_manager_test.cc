@@ -42,8 +42,11 @@ class TestEventConsumer : public EventConsumer {
 
   void HandleWindowMap(Window* win) { num_mapped_windows_++; }
   void HandleWindowUnmap(Window* win) { num_unmapped_windows_++; }
-  bool HandleButtonPress(
-      XWindow xid, int x, int y, int button, Time timestamp) {
+  bool HandleButtonPress(XWindow xid,
+                         int x, int y,
+                         int x_root, int y_root,
+                         int button,
+                         Time timestamp) {
     num_button_presses_++;
     return true;
   }
@@ -262,7 +265,8 @@ TEST_F(WindowManagerTest, OverrideRedirectMapping) {
 
 TEST_F(WindowManagerTest, InputWindows) {
   // Check that CreateInputWindow() creates windows as requested.
-  XWindow xid = wm_->CreateInputWindow(100, 200, 300, 400);
+  int event_mask = ButtonPressMask | ButtonReleaseMask;
+  XWindow xid = wm_->CreateInputWindow(100, 200, 300, 400, event_mask);
   MockXConnection::WindowInfo* info = xconn_->GetWindowInfo(xid);
   ASSERT_TRUE(info != NULL);
   EXPECT_EQ(100, info->x);
@@ -271,6 +275,7 @@ TEST_F(WindowManagerTest, InputWindows) {
   EXPECT_EQ(400, info->height);
   EXPECT_EQ(true, info->mapped);
   EXPECT_EQ(true, info->override_redirect);
+  EXPECT_EQ(event_mask, info->event_mask);
 
   // Move and resize the window.
   EXPECT_TRUE(wm_->ConfigureInputWindow(xid, 500, 600, 700, 800));
@@ -562,6 +567,14 @@ TEST_F(WindowManagerTest, RandR) {
   TestIntArrayProperty(root_xid, workarea_atom, 4,
                        0, 0, new_width,
                        new_height - WindowManager::kPanelBarHeight);
+
+  // The background window should be resized too.
+  MockXConnection::WindowInfo* background_info =
+      xconn_->GetWindowInfoOrDie(wm_->background_xid());
+  EXPECT_EQ(0, background_info->x);
+  EXPECT_EQ(0, background_info->y);
+  EXPECT_EQ(new_width, background_info->width);
+  EXPECT_EQ(new_height, background_info->height);
 }
 
 // Test that the _NET_CLIENT_LIST and _NET_CLIENT_LIST_STACKING properties

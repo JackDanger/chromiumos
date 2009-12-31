@@ -217,8 +217,11 @@ bool PanelBar::HandleWindowConfigureRequest(
   return true;
 }
 
-bool PanelBar::HandleButtonPress(
-    XWindow xid, int x, int y, int button, Time timestamp) {
+bool PanelBar::HandleButtonPress(XWindow xid,
+                                 int x, int y,
+                                 int x_root, int y_root,
+                                 int button,
+                                 Time timestamp) {
   // If the press was in the anchor window, destroy the anchor and
   // collapse the corresponding panel.
   if (xid == anchor_input_win_) {
@@ -262,8 +265,11 @@ bool PanelBar::HandleButtonPress(
   return false;
 }
 
-bool PanelBar::HandleButtonRelease(
-    XWindow xid, int x, int y, int button, Time timestamp) {
+bool PanelBar::HandleButtonRelease(XWindow xid,
+                                   int x, int y,
+                                   int x_root, int y_root,
+                                   int button,
+                                   Time timestamp) {
   std::map<XWindow, Panel*>::iterator it = panel_input_windows_.find(xid);
   if (it != panel_input_windows_.end()) {
     it->second->HandleInputWindowButtonRelease(xid, x, y, button, timestamp);
@@ -872,7 +878,8 @@ void PanelBar::CreateAnchor(Panel* panel) {
     wm_->xconn()->DestroyWindow(anchor_input_win_);
   }
   anchor_input_win_ = wm_->CreateInputWindow(
-      panel->cur_titlebar_left(), y_, panel->titlebar_width(), height_);
+      panel->cur_titlebar_left(), y_, panel->titlebar_width(), height_,
+      ButtonPressMask | LeaveWindowMask);
   anchor_panel_ = panel;
 
   anchor_actor_->Move(

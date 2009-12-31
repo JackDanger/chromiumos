@@ -240,6 +240,11 @@ class Window {
                             ClutterInterface::Actor* shadow_actor,
                             bool stack_above_shadow_actor);
 
+  // Return this window's bottom-most actor (either the window's shadow's
+  // group, or its actor itself if there's no shadow).  This is useful for
+  // stacking another actor underneath this window.
+  ClutterInterface::Actor* GetBottomActor();
+
  private:
   // Hide or show the window's shadow if necessary.
   void UpdateShadowIfNecessary();

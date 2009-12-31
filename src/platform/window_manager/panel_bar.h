@@ -68,9 +68,16 @@ class PanelBar : public EventConsumer {
       Window* win, int req_x, int req_y, int req_width, int req_height);
 
   // Handle events for windows.
-  bool HandleButtonPress(XWindow xid, int x, int y, int button, Time timestamp);
-  bool HandleButtonRelease(
-      XWindow xid, int x, int y, int button, Time timestamp);
+  bool HandleButtonPress(XWindow xid,
+                         int x, int y,
+                         int x_root, int y_root,
+                         int button,
+                         Time timestamp);
+  bool HandleButtonRelease(XWindow xid,
+                           int x, int y,
+                           int x_root, int y_root,
+                           int button,
+                           Time timestamp);
   bool HandlePointerLeave(XWindow xid, Time timestamp);
   bool HandlePointerMotion(XWindow xid, int x, int y, Time timestamp);
 

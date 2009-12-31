@@ -156,6 +156,7 @@ WindowManager::WindowManager(XConnection* xconn, ClutterInterface* clutter)
       background_(NULL),
       stage_xid_(None),
       overlay_xid_(None),
+      background_xid_(None),
       stacking_manager_(NULL),
       mapped_xids_(new Stacker<XWindow>),
       stacked_xids_(new Stacker<XWindow>),
@@ -167,7 +168,10 @@ WindowManager::WindowManager(XConnection* xconn, ClutterInterface* clutter)
 }
 
 WindowManager::~WindowManager() {
-  xconn_->DestroyWindow(wm_xid_);
+  if (wm_xid_)
+    xconn_->DestroyWindow(wm_xid_);
+  if (background_xid_)
+    xconn_->DestroyWindow(background_xid_);
 }
 
 bool WindowManager::Init() {
@@ -221,6 +225,10 @@ bool WindowManager::Init() {
     CHECK(xconn_->RemoveInputRegionFromWindow(overlay_xid_));
     CHECK(xconn_->RemoveInputRegionFromWindow(stage_xid_));
   }
+
+  background_xid_ = CreateInputWindow(0, 0, width_, height_, 0);  // no events
+  stacking_manager_->StackXidAtTopOfLayer(
+      background_xid_, StackingManager::LAYER_BACKGROUND);
 
   // Set up keybindings.
   key_bindings_.reset(new KeyBindings(xconn_));
@@ -328,7 +336,8 @@ bool WindowManager::Init() {
   // window that was already handled by ManageExistingWindows().
   CHECK(xconn_->SelectInputOnWindow(
             root_,
-            SubstructureRedirectMask|StructureNotifyMask|SubstructureNotifyMask,
+            SubstructureRedirectMask | StructureNotifyMask |
+              SubstructureNotifyMask,
             true));  // preserve GDK's existing event mask
   ManageExistingWindows();
 
@@ -401,14 +410,14 @@ bool WindowManager::HandleEvent(XEvent* event) {
 }
 
 XWindow WindowManager::CreateInputWindow(
-    int x, int y, int width, int height) {
+    int x, int y, int width, int height, int event_mask) {
   XWindow xid = xconn_->CreateWindow(
       root_,  // parent
       x, y,
       width, height,
       true,   // override redirect
       true,   // input only
-      ButtonPressMask|EnterWindowMask|LeaveWindowMask);
+      event_mask);
   CHECK_NE(xid, None);
 
   if (FLAGS_wm_use_compositing) {
@@ -780,8 +789,10 @@ bool WindowManager::HandleButtonPress(const XButtonEvent& e) {
   // in, so we don't need to offer the event to all of them here?
   for (std::set<EventConsumer*>::iterator it = event_consumers_.begin();
        it != event_consumers_.end(); ++it) {
-    if ((*it)->HandleButtonPress(e.window, e.x, e.y, e.button, e.time))
+    if ((*it)->HandleButtonPress(
+            e.window, e.x, e.y, e.x_root, e.y_root, e.button, e.time)) {
       return true;
+    }
   }
   return false;
 }
@@ -792,8 +803,10 @@ bool WindowManager::HandleButtonRelease(const XButtonEvent& e) {
           << e.x_root << ", " << e.y_root << ") with button " << e.button;
   for (std::set<EventConsumer*>::iterator it = event_consumers_.begin();
        it != event_consumers_.end(); ++it) {
-    if ((*it)->HandleButtonRelease(e.window, e.x, e.y, e.button, e.time))
+    if ((*it)->HandleButtonRelease(
+            e.window, e.x, e.y, e.x_root, e.y_root, e.button, e.time)) {
       return true;
+    }
   }
   return false;
 }
@@ -1287,6 +1300,7 @@ bool WindowManager::HandleRRScreenChangeNotify(
   panel_bar_->MoveAndResize(
       0, height_ - kPanelBarHeight, width_, kPanelBarHeight);
   hotkey_overlay_->group()->Move(width_ / 2, height_ / 2, 0);
+  xconn_->ResizeWindow(background_xid_, width_, height_);
 
   SetEwmhSizeProperties();
 

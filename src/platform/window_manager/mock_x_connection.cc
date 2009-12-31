@@ -231,6 +231,7 @@ XWindow MockXConnection::CreateWindow(
   info->height = height;
   info->override_redirect = override_redirect;
   info->input_only = input_only;
+  info->event_mask = event_mask;
   windows_[xid] = info;
   stacked_xids_->AddOnTop(xid);
   return xid;

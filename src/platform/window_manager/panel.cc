@@ -61,11 +61,13 @@ Panel::Panel(PanelBar* panel_bar,
       resize_event_coalescer_(
           NewPermanentCallback(this, &Panel::ApplyResize),
           kResizeUpdateMs),
-      top_input_xid_(wm()->CreateInputWindow(-1, -1, 1, 1)),
-      top_left_input_xid_(wm()->CreateInputWindow(-1, -1, 1, 1)),
-      top_right_input_xid_(wm()->CreateInputWindow(-1, -1, 1, 1)),
-      left_input_xid_(wm()->CreateInputWindow(-1, -1, 1, 1)),
-      right_input_xid_(wm()->CreateInputWindow(-1, -1, 1, 1)),
+      // We don't need to select events on any of the drag borders; we'll
+      // just install button grabs later.
+      top_input_xid_(wm()->CreateInputWindow(-1, -1, 1, 1, 0)),
+      top_left_input_xid_(wm()->CreateInputWindow(-1, -1, 1, 1, 0)),
+      top_right_input_xid_(wm()->CreateInputWindow(-1, -1, 1, 1, 0)),
+      left_input_xid_(wm()->CreateInputWindow(-1, -1, 1, 1, 0)),
+      right_input_xid_(wm()->CreateInputWindow(-1, -1, 1, 1, 0)),
       snapped_right_(initial_right),
       is_expanded_(false),
       drag_xid_(0),
@@ -91,7 +93,7 @@ Panel::Panel(PanelBar* panel_bar,
   // necessary to avoid a race condition: if we explicitly request an
   // active grab when seeing a button press, the button might already be
   // released by the time that the grab is installed.)
-  int event_mask = ButtonPressMask|ButtonReleaseMask|PointerMotionMask;
+  int event_mask = ButtonPressMask | ButtonReleaseMask | PointerMotionMask;
   wm()->xconn()->AddButtonGrabOnWindow(top_input_xid_, 1, event_mask, false);
   wm()->xconn()->AddButtonGrabOnWindow(
       top_left_input_xid_, 1, event_mask, false);
