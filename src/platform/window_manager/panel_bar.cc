@@ -85,7 +85,7 @@ PanelBar::~PanelBar() {
 bool PanelBar::HandleWindowMapRequest(Window* win) {
   saw_map_request_ = true;
 
-  if (win->type() != WmIpc::WINDOW_TYPE_CHROME_PANEL &&
+  if (win->type() != WmIpc::WINDOW_TYPE_CHROME_PANEL_CONTENT &&
       win->type() != WmIpc::WINDOW_TYPE_CHROME_PANEL_TITLEBAR)
     return false;
 
@@ -97,7 +97,7 @@ bool PanelBar::HandleWindowMapRequest(Window* win) {
 void PanelBar::HandleWindowMap(Window* win) {
   CHECK(win);
 
-  if (win->type() != WmIpc::WINDOW_TYPE_CHROME_PANEL &&
+  if (win->type() != WmIpc::WINDOW_TYPE_CHROME_PANEL_CONTENT &&
       win->type() != WmIpc::WINDOW_TYPE_CHROME_PANEL_TITLEBAR)
     return;
 
@@ -109,9 +109,10 @@ void PanelBar::HandleWindowMap(Window* win) {
   switch (win->type()) {
     case WmIpc::WINDOW_TYPE_CHROME_PANEL_TITLEBAR:
       // Don't do anything with panel titlebars when they're first
-      // mapped; we'll handle them after we see the corresponding panel.
+      // mapped; we'll handle them after we see the corresponding content
+      // window.
       break;
-    case WmIpc::WINDOW_TYPE_CHROME_PANEL: {
+    case WmIpc::WINDOW_TYPE_CHROME_PANEL_CONTENT: {
       if (win->type_params().empty()) {
         LOG(WARNING) << "Panel " << win->xid_str() << " is missing type "
                      << "parameter for titlebar window";
@@ -167,9 +168,9 @@ void PanelBar::HandleWindowUnmap(Window* win) {
     desired_panel_to_focus_ = NULL;
   }
 
-  // If this was a focused panel window, then we need to give the focus
+  // If this was a focused content window, then we need to give the focus
   // away to someone else.
-  if (panel->panel_win()->focused()) {
+  if (panel->content_win()->focused()) {
     // Try to find another expanded panel to focus.
     Panel* panel_to_focus = GetNearestExpandedPanel(panel);
     if (panel_to_focus) {
@@ -245,13 +246,13 @@ bool PanelBar::HandleButtonPress(XWindow xid,
     return true;
   }
 
-  // Otherwise, check if this was in a panel window whose button presses
+  // Otherwise, check if this was in a content window whose button presses
   // we've grabbed.  If so, give the focus to the panel.
   Window* win = wm_->GetWindow(xid);
   if (win) {
     Panel* panel = GetPanelByWindow(*win);
     if (panel) {
-      if (win == panel->panel_win()) {
+      if (win == panel->content_win()) {
         VLOG(1) << "Got button press in panel " << panel->xid_str()
                 << "; giving it the focus";
         // Get rid of the passive button grab, and then ungrab the pointer
@@ -413,7 +414,7 @@ bool PanelBar::HandleFocusChange(XWindow xid, bool focus_in) {
   if (!focus_in) {
     VLOG(1) << "Panel " << panel->xid_str() << " lost focus; adding "
             << "button grab";
-    panel->panel_win()->AddButtonGrab();
+    panel->content_win()->AddButtonGrab();
   }
   return true;
 }
@@ -452,7 +453,7 @@ void PanelBar::StorePanelPosition(Window* win, int x, int y) {
 
   dragged_panel_event_coalescer_.StorePosition(x, y);
 
-  if (!dragged_panel_ || dragged_panel_->panel_win() != win) {
+  if (!dragged_panel_ || dragged_panel_->content_win() != win) {
     Panel* panel = GetPanelByWindow(*win);
     if (!panel) {
       LOG(WARNING) << "Unable to store position for unknown panel "
@@ -468,7 +469,7 @@ void PanelBar::HandlePanelDragComplete(Window* win) {
   VLOG(2) << "Got notification that panel drag is complete for "
           << win->xid_str();
 
-  if (!dragged_panel_ || dragged_panel_->panel_win() != win) {
+  if (!dragged_panel_ || dragged_panel_->content_win() != win) {
     return;
   }
 
@@ -503,7 +504,7 @@ void PanelBar::MoveDraggedPanel() {
 
   // For collapsed panels, we first find the position of the dragged panel.
   Panels::iterator dragged_it = FindPanelInVectorByWindow(
-      collapsed_panels_, *(dragged_panel_->panel_win()));
+      collapsed_panels_, *(dragged_panel_->content_win()));
   CHECK(dragged_it != collapsed_panels_.end());
 
   // Next, check if the center of the panel has moved over another panel.
@@ -553,19 +554,19 @@ void PanelBar::DoInitialSetupForWindow(Window* win) {
 }
 
 Panel* PanelBar::CreatePanel(
-    Window* panel_win, Window* titlebar_win, bool expanded) {
-  CHECK(panel_win);
+    Window* content_win, Window* titlebar_win, bool expanded) {
+  CHECK(content_win);
   CHECK(titlebar_win);
 
   VLOG(1) << "Adding " << (expanded ? "expanded" : "collapsed")
-          << " panel with panel window " << panel_win->xid_str()
+          << " panel with content window " << content_win->xid_str()
           << " and titlebar window " << titlebar_win->xid_str();
 
   const int right = expanded ?
       x_ + width_ - kBarPadding :
       x_ + width_ - collapsed_panel_width_ - kBarPadding;
   std::tr1::shared_ptr<Panel> panel(
-      new Panel(this, panel_win, titlebar_win, right));
+      new Panel(this, content_win, titlebar_win, right));
 
   std::vector<XWindow> input_windows;
   panel->GetInputWindows(&input_windows);
@@ -596,7 +597,7 @@ void PanelBar::ExpandPanel(Panel* panel, bool create_anchor) {
   }
 
   Panels::iterator it =
-      FindPanelInVectorByWindow(collapsed_panels_, *(panel->panel_win()));
+      FindPanelInVectorByWindow(collapsed_panels_, *(panel->content_win()));
   CHECK(it != collapsed_panels_.end());
   std::tr1::shared_ptr<Panel> ref = *it;
 
@@ -623,7 +624,7 @@ void PanelBar::CollapsePanel(Panel* panel) {
 
   // Move the panel from 'expanded_panels_' to 'collapsed_panels_'.
   Panels::iterator it =
-      FindPanelInVectorByWindow(expanded_panels_, *(panel->panel_win()));
+      FindPanelInVectorByWindow(expanded_panels_, *(panel->content_win()));
   CHECK(it != expanded_panels_.end());
   std::tr1::shared_ptr<Panel> ref = *it;
 
@@ -637,7 +638,7 @@ void PanelBar::CollapsePanel(Panel* panel) {
   PackCollapsedPanels();
 
   // Give up the focus if this panel had it.
-  if (panel->panel_win()->focused()) {
+  if (panel->content_win()->focused()) {
     desired_panel_to_focus_ = panel_to_focus;
     if (!TakeFocus()) {
       wm_->SetActiveWindowProperty(None);
@@ -648,11 +649,11 @@ void PanelBar::CollapsePanel(Panel* panel) {
 
 void PanelBar::FocusPanel(Panel* panel, bool remove_pointer_grab) {
   CHECK(panel);
-  panel->panel_win()->RemoveButtonGrab();
+  panel->content_win()->RemoveButtonGrab();
   if (remove_pointer_grab)
     wm_->xconn()->RemovePointerGrab(true, CurrentTime);  // replay_events
-  wm_->SetActiveWindowProperty(panel->panel_win()->xid());
-  panel->panel_win()->TakeFocus(wm_->GetCurrentTimeFromServer());
+  wm_->SetActiveWindowProperty(panel->content_win()->xid());
+  panel->content_win()->TakeFocus(wm_->GetCurrentTimeFromServer());
   panel->StackAtTopOfLayer(StackingManager::LAYER_EXPANDED_PANEL);
   desired_panel_to_focus_ = panel;
 }
@@ -674,7 +675,7 @@ Panel* PanelBar::GetPanelByWindow(const Window& win) {
 PanelBar::Panels::iterator PanelBar::FindPanelInVectorByWindow(
     Panels& panels, const Window& win) {
   for (Panels::iterator it = panels.begin(); it != panels.end(); ++it) {
-    if ((*it)->titlebar_win() == &win || (*it)->panel_win() == &win) {
+    if ((*it)->titlebar_win() == &win || (*it)->content_win() == &win) {
       return it;
     }
   }
@@ -683,7 +684,7 @@ PanelBar::Panels::iterator PanelBar::FindPanelInVectorByWindow(
 
 int PanelBar::GetPanelIndex(Panels& panels, const Panel& panel) {
   Panels::iterator it =
-      FindPanelInVectorByWindow(panels, *(panel.const_panel_win()));
+      FindPanelInVectorByWindow(panels, *(panel.const_content_win()));
   if (it == panels.end()) {
     return -1;
   }
@@ -740,10 +741,10 @@ void PanelBar::RepositionExpandedPanels(Panel* fixed_panel) {
   CHECK_LT(fixed_index, static_cast<int>(expanded_panels_.size()));
 
   // Next, check if the panel has moved to the other side of another panel.
-  const int center_x = fixed_panel->cur_panel_center();
+  const int center_x = fixed_panel->cur_content_center();
   for (size_t i = 0; i < expanded_panels_.size(); ++i) {
     Panel* panel = expanded_panels_[i].get();
-    if (center_x <= panel->cur_panel_center() ||
+    if (center_x <= panel->cur_content_center() ||
         i == expanded_panels_.size() - 1) {
       if (panel != fixed_panel) {
         // If it has, then we reorder the panels.
@@ -768,19 +769,19 @@ void PanelBar::RepositionExpandedPanels(Panel* fixed_panel) {
       fixed_index = i;
       break;
     }
-    total_width += panel->panel_width();
+    total_width += panel->content_width();
   }
   CHECK_NE(fixed_index, -1);
   int new_fixed_index = fixed_index;
 
   // Move panels over to the right of the fixed panel until all of the ones
   // on the left will fit.
-  int avail_width = std::max(fixed_panel->cur_panel_left() - kBarPadding - x_,
+  int avail_width = std::max(fixed_panel->cur_content_left() - kBarPadding - x_,
                              0);
   while (total_width > avail_width) {
     new_fixed_index--;
     CHECK(new_fixed_index >= 0);
-    total_width -= expanded_panels_[new_fixed_index]->panel_width();
+    total_width -= expanded_panels_[new_fixed_index]->content_width();
   }
 
   // Reorder the fixed panel if its index changed.
@@ -797,7 +798,7 @@ void PanelBar::RepositionExpandedPanels(Panel* fixed_panel) {
   total_width = 0;
   for (Panels::iterator it = expanded_panels_.begin() + fixed_index + 1;
        it != expanded_panels_.end(); ++it) {
-    total_width += (*it)->panel_width();
+    total_width += (*it)->content_width();
   }
 
   avail_width = std::max(x_ + width_ - (fixed_panel->cur_right() + kBarPadding),
@@ -805,7 +806,7 @@ void PanelBar::RepositionExpandedPanels(Panel* fixed_panel) {
   while (total_width > avail_width) {
     new_fixed_index++;
     CHECK_LT(new_fixed_index, static_cast<int>(expanded_panels_.size()));
-    total_width -= expanded_panels_[new_fixed_index]->panel_width();
+    total_width -= expanded_panels_[new_fixed_index]->content_width();
   }
 
   // Do the reordering again.
@@ -818,7 +819,8 @@ void PanelBar::RepositionExpandedPanels(Panel* fixed_panel) {
   }
 
   // Finally, push panels to the left and the right so they don't overlap.
-  int boundary = expanded_panels_[fixed_index]->cur_panel_left() - kBarPadding;
+  int boundary =
+      expanded_panels_[fixed_index]->cur_content_left() - kBarPadding;
   for (Panels::reverse_iterator it =
          // Start at the panel to the left of 'new_fixed_index'.
          expanded_panels_.rbegin() +
@@ -827,22 +829,22 @@ void PanelBar::RepositionExpandedPanels(Panel* fixed_panel) {
     Panel* panel = it->get();
     if (panel->cur_right() > boundary) {
       panel->Move(boundary, kAnimMs);
-    } else if (panel->cur_panel_left() < x_) {
-      panel->Move(std::min(boundary, x_ + panel->panel_width() + kBarPadding),
+    } else if (panel->cur_content_left() < x_) {
+      panel->Move(std::min(boundary, x_ + panel->content_width() + kBarPadding),
                   kAnimMs);
     }
-    boundary = panel->cur_panel_left() - kBarPadding;
+    boundary = panel->cur_content_left() - kBarPadding;
   }
 
   boundary = expanded_panels_[fixed_index]->cur_right() + kBarPadding;
   for (Panels::iterator it = expanded_panels_.begin() + new_fixed_index + 1;
        it != expanded_panels_.end(); ++it) {
     Panel* panel = it->get();
-    if (panel->cur_panel_left() < boundary) {
-      panel->Move(boundary + panel->panel_width(), kAnimMs);
+    if (panel->cur_content_left() < boundary) {
+      panel->Move(boundary + panel->content_width(), kAnimMs);
     } else if (panel->cur_right() > x_ + width_) {
       panel->Move(
-          std::max(boundary + panel->panel_width(), width_ - kBarPadding),
+          std::max(boundary + panel->content_width(), width_ - kBarPadding),
                    kAnimMs);
     }
     boundary = panel->cur_right() + kBarPadding;
@@ -864,7 +866,7 @@ void PanelBar::InsertExpandedPanel(std::tr1::shared_ptr<Panel> new_panel) {
   size_t index = 0;
   for (; index < expanded_panels_.size(); ++index) {
     Panel* panel = expanded_panels_[index].get();
-    if (new_panel->cur_panel_left() < panel->cur_panel_left()) {
+    if (new_panel->cur_content_left() < panel->cur_content_left()) {
       break;
     }
   }
@@ -914,12 +916,12 @@ Panel* PanelBar::GetNearestExpandedPanel(Panel* panel) {
     }
 
     int distance = kint32max;
-    if ((*it)->cur_right() <= panel->cur_panel_left()) {
-      distance = panel->cur_panel_left() - (*it)->cur_right();
-    } else if ((*it)->cur_panel_left() >= panel->cur_right()) {
-      distance = (*it)->cur_panel_left() - panel->cur_right();
+    if ((*it)->cur_right() <= panel->cur_content_left()) {
+      distance = panel->cur_content_left() - (*it)->cur_right();
+    } else if ((*it)->cur_content_left() >= panel->cur_right()) {
+      distance = (*it)->cur_content_left() - panel->cur_right();
     } else {
-      distance = abs((*it)->cur_panel_center() - panel->cur_panel_center());
+      distance = abs((*it)->cur_content_center() - panel->cur_content_center());
     }
 
     if (distance < best_distance) {

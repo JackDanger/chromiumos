@@ -27,44 +27,45 @@ namespace window_manager {
 class PanelBar;
 class WindowManager;
 
-// A single panel.  Each panel consists of both a panel window (the panel's
-// contents) and a titlebar window (a small window drawn in the bar when
-// the panel is collapsed or at the top of the panel when it's expanded).
-// 'initial_right' is the initial position of the right edge of the panel.
+// A single panel.  Each panel consists of both a content window (the
+// panel's contents) and a titlebar window (a small window drawn in the bar
+// when the panel is collapsed or at the top of the panel when it's
+// expanded).  'initial_right' is the initial position of the right edge of
+// the panel.
 class Panel {
  public:
   Panel(PanelBar* panel_bar,
-        Window* panel_win,
+        Window* content_win,
         Window* titlebar_win,
         int initial_right);
   ~Panel();
 
-  const Window* const_panel_win() const { return panel_win_; }
-  Window* panel_win() { return panel_win_; }
+  const Window* const_content_win() const { return content_win_; }
+  Window* content_win() { return content_win_; }
   Window* titlebar_win() { return titlebar_win_; }
   int snapped_right() const { return snapped_right_; }
   void set_snapped_right(int x) { snapped_right_ = x; }
   bool is_expanded() const { return is_expanded_; }
 
-  // Get the X ID of the panel window.  This is handy for logging.
-  const std::string& xid_str() const { return panel_win_->xid_str(); }
+  // Get the X ID of the content window.  This is handy for logging.
+  const std::string& xid_str() const { return content_win_->xid_str(); }
 
   // The current position of one pixel beyond the right edge of the panel.
   int cur_right() const;
 
-  // The current left edge of the panel or titlebar window (that is, its
+  // The current left edge of the content or titlebar window (that is, its
   // composited position).
-  int cur_panel_left() const;
+  int cur_content_left() const;
   int cur_titlebar_left() const;
-  int cur_panel_center() const;
+  int cur_content_center() const;
 
-  // The snapped left edge of the panel or titlebar window (see
+  // The snapped left edge of the content or titlebar window (see
   // 'snapped_right_' for details).
-  int snapped_panel_left() const;
+  int snapped_content_left() const;
   int snapped_titlebar_left() const;
 
-  // Width of the panel or titlebar windows.
-  int panel_width() const;
+  // Width of the content or titlebar windows.
+  int content_width() const;
   int titlebar_width() const;
 
   // Fill the passed-in vector with all of the panel's input windows (in an
@@ -82,7 +83,7 @@ class Panel {
   void SetState(bool is_expanded);
 
   // Move the panel.  Positions are given in terms of panels' right
-  // edges (since panel and titlebar windows share a common right edge).
+  // edges (since content and titlebar windows share a common right edge).
   // TODO: This is weird; 'right' is actually one pixel beyond the panel's
   // right edge.
   void Move(int right, int anim_ms);
@@ -106,7 +107,7 @@ class Panel {
               Window::Gravity gravity,
               bool configure_input_windows);
 
-  // Update the panel window's _CHROME_STATE property to reflect the
+  // Update the content window's _CHROME_STATE property to reflect the
   // current expanded/collapsed state.
   bool UpdateChromeStateProperty();
 
@@ -121,7 +122,7 @@ class Panel {
   void ConfigureInputWindows();
 
   PanelBar* panel_bar_;   // not owned
-  Window* panel_win_;     // not owned
+  Window* content_win_;   // not owned
   Window* titlebar_win_;  // not owned
 
   // Translucent resize box used when opaque resizing is disabled.

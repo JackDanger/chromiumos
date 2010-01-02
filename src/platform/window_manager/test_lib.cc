@@ -85,21 +85,22 @@ XWindow BasicWindowManagerTest::CreateSimpleWindow() {
   return CreateToplevelWindow(0, 0, 640, 480);
 }
 
-XWindow BasicWindowManagerTest::CreateTitlebarWindow(int width, int height) {
+XWindow BasicWindowManagerTest::CreatePanelTitlebarWindow(
+    int width, int height) {
   XWindow xid = CreateToplevelWindow(0, 0, width, height);
   wm_->wm_ipc()->SetWindowType(
       xid, WmIpc::WINDOW_TYPE_CHROME_PANEL_TITLEBAR, NULL);
   return xid;
 }
 
-XWindow BasicWindowManagerTest::CreatePanelWindow(
+XWindow BasicWindowManagerTest::CreatePanelContentWindow(
     int width, int height, XWindow titlebar_xid, bool expanded) {
   XWindow xid = CreateToplevelWindow(0, 0, width, height);
   std::vector<int> params;
   params.push_back(titlebar_xid);
   params.push_back(expanded ? 1 : 0);
   wm_->wm_ipc()->SetWindowType(
-      xid, WmIpc::WINDOW_TYPE_CHROME_PANEL, &params);
+      xid, WmIpc::WINDOW_TYPE_CHROME_PANEL_CONTENT, &params);
   return xid;
 }
 

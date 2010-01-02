@@ -824,7 +824,7 @@ Panel::Panel(MockChrome* chrome,
   type_params.push_back(titlebar_->xid());
   type_params.push_back(expanded);
   CHECK(chrome_->wm_ipc()->SetWindowType(
-            xid_, WmIpc::WINDOW_TYPE_CHROME_PANEL, &type_params));
+            xid_, WmIpc::WINDOW_TYPE_CHROME_PANEL_CONTENT, &type_params));
   add_events(Gdk::BUTTON_PRESS_MASK);
   show_all();
 }

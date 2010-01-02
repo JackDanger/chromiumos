@@ -49,18 +49,18 @@ class PanelBar : public EventConsumer {
     return xid == anchor_input_win_ || panel_input_windows_.count(xid);
   }
 
-  // Handle a window's map request.  If it's a panel or titlebar, we move
-  // it offscreen, restack it, and map it.
+  // Handle a window's map request.  If it's panel content or titlebar
+  // window, we move it offscreen, restack it, and map it.
   bool HandleWindowMapRequest(Window* win);
 
-  // Handle the addition of a window.  When a panel window is mapped, its
+  // Handle the addition of a window.  When a content window is mapped, its
   // titlebar (which must've previously been mapped) is looked up and a new
-  // Panel object is created.  Does nothing when passed non-panel windows.
+  // Panel object is created.  Does nothing when passed non-content windows.
   void HandleWindowMap(Window* win);
 
   // Handle the removal of a window by deleting its panel.  The window can
-  // be either the panel window itself or its titlebar.  Does nothing when
-  // passed windows not in the bar.
+  // be either the content window itself or its titlebar.  Does nothing
+  // when passed non-panel windows.
   void HandleWindowUnmap(Window* win);
 
   // Handle a request from a client window to get moved or resized.
@@ -137,7 +137,7 @@ class PanelBar : public EventConsumer {
 
   // Create a panel given mapped content and titlebar windows and add it to
   // the panel bar.
-  Panel* CreatePanel(Window* panel_win, Window* titlebar_win, bool expanded);
+  Panel* CreatePanel(Window* content_win, Window* titlebar_win, bool expanded);
 
   // Expand a panel.  We move it from 'collapsed_panels_' to
   // 'expanded_panels_' and reposition the other expanded panels to not
@@ -149,18 +149,18 @@ class PanelBar : public EventConsumer {
   // 'collapsed_panels_' and pack all of the collapsed panels to the right.
   void CollapsePanel(Panel* panel);
 
-  // Focus the passed-in panel's panel window.  Also removes its passive
+  // Focus the passed-in panel's content window.  Also removes its passive
   // button grab and updates 'desired_panel_to_focus_'.  If
   // 'remove_pointer_grab' is true, removes the active pointer grab and
   // replays any grabbed events (this is used when the panel is being
   // focused in response to a grabbed click).
   void FocusPanel(Panel* panel, bool remove_pointer_grab);
 
-  // Get the panel with the passed-in panel or titlebar window.
+  // Get the panel with the passed-in content or titlebar window.
   // Returns NULL for unknown windows.
   Panel* GetPanelByWindow(const Window& win);
 
-  // Get an iterator to the panel containing 'win' (either a panel or
+  // Get an iterator to the panel containing 'win' (either a content or
   // titlebar window) from the passed-in vector.  Returns panels.end() if
   // the panel isn't present.
   static Panels::iterator FindPanelInVectorByWindow(

@@ -29,13 +29,13 @@ namespace window_manager {
 using chromeos::NewPermanentCallback;
 
 // Width of titlebars for collapsed panels.  Expanded panels' titlebars are
-// resized to match the width of the panel contents.
+// resized to match the width of the content window.
 static const int kCollapsedTitlebarWidth = 200;
 
 // Amount of time to take for animations.
 static const int kAnimMs = 150;
 
-// Minimum dimensions to which a panel's contents can be resized.
+// Minimum dimensions to which a panel content window can be resized.
 static const int kPanelMinWidth = 20;
 static const int kPanelMinHeight = 20;
 
@@ -51,11 +51,11 @@ const int Panel::kResizeBorderWidth = 5;
 const int Panel::kResizeCornerSize = 25;
 
 Panel::Panel(PanelBar* panel_bar,
-             Window* panel_win,
+             Window* content_win,
              Window* titlebar_win,
              int initial_right)
     : panel_bar_(panel_bar),
-      panel_win_(panel_win),
+      content_win_(content_win),
       titlebar_win_(titlebar_win),
       resize_actor_(NULL),
       resize_event_coalescer_(
@@ -78,14 +78,14 @@ Panel::Panel(PanelBar* panel_bar,
       drag_last_width_(1),
       drag_last_height_(1) {
   CHECK(panel_bar_);
-  CHECK(panel_win_);
+  CHECK(content_win_);
   CHECK(titlebar_win_);
 
   // We need to grab button presses on the panel so we'll know when it gets
   // clicked and can focus it.  (We can't just listen on ButtonPressMask,
   // since only one client is allowed to do so for a given window and the
   // app is probably doing it itself.)
-  panel_win_->AddButtonGrab();
+  content_win_->AddButtonGrab();
 
   // Install passive button grabs on all the resize handles, using
   // asynchronous mode so that we'll continue to receive mouse events while
@@ -103,16 +103,16 @@ Panel::Panel(PanelBar* panel_bar,
   wm()->xconn()->AddButtonGrabOnWindow(right_input_xid_, 1, event_mask, false);
 
   // Constrain the size of the panel if we've been requested to do so.
-  int panel_width = (FLAGS_panel_max_width > 0) ?
-      std::min(panel_win_->client_width(), FLAGS_panel_max_width) :
-      panel_win_->client_width();
-  int panel_height = (FLAGS_panel_max_height > 0) ?
-      std::min(panel_win_->client_height(), FLAGS_panel_max_height) :
-      panel_win_->client_height();
-  if (panel_width != panel_win_->client_width() ||
-      panel_height != panel_win_->client_height()) {
-    panel_win_->ResizeClient(
-        panel_width, panel_height, Window::GRAVITY_NORTHWEST);
+  int content_width = (FLAGS_panel_max_width > 0) ?
+      std::min(content_win_->client_width(), FLAGS_panel_max_width) :
+      content_win_->client_width();
+  int content_height = (FLAGS_panel_max_height > 0) ?
+      std::min(content_win_->client_height(), FLAGS_panel_max_height) :
+      content_win_->client_height();
+  if (content_width != content_win_->client_width() ||
+      content_height != content_win_->client_height()) {
+    content_win_->ResizeClient(
+        content_width, content_height, Window::GRAVITY_NORTHWEST);
   }
 
   titlebar_win_->ResizeClient(
@@ -130,13 +130,13 @@ Panel::Panel(PanelBar* panel_bar,
   titlebar_win_->MoveComposited(snapped_titlebar_left(), titlebar_y, kAnimMs);
   titlebar_win_->MoveClientToComposited();
 
-  panel_win_->ScaleComposited(1.0, 1.0, 0);
-  panel_win_->SetCompositedOpacity(1.0, 0);
-  panel_win_->MoveComposited(
-      snapped_panel_left(), panel_bar_->y() + panel_bar_->height(), 0);
-  panel_win_->SetShadowOpacity(0, 0);
-  panel_win_->MoveClientToComposited();
-  panel_win_->ShowComposited();
+  content_win_->ScaleComposited(1.0, 1.0, 0);
+  content_win_->SetCompositedOpacity(1.0, 0);
+  content_win_->MoveComposited(
+      snapped_content_left(), panel_bar_->y() + panel_bar_->height(), 0);
+  content_win_->SetShadowOpacity(0, 0);
+  content_win_->MoveClientToComposited();
+  content_win_->ShowComposited();
 
   wm()->xconn()->SetWindowCursor(top_input_xid_, XC_top_side);
   wm()->xconn()->SetWindowCursor(top_left_input_xid_, XC_top_left_corner);
@@ -160,9 +160,9 @@ Panel::~Panel() {
   wm()->xconn()->DestroyWindow(top_right_input_xid_);
   wm()->xconn()->DestroyWindow(left_input_xid_);
   wm()->xconn()->DestroyWindow(right_input_xid_);
-  panel_win_->RemoveButtonGrab();
+  content_win_->RemoveButtonGrab();
   panel_bar_ = NULL;
-  panel_win_ = NULL;
+  content_win_ = NULL;
   titlebar_win_ = NULL;
   top_input_xid_ = None;
   top_left_input_xid_ = None;
@@ -172,31 +172,31 @@ Panel::~Panel() {
 }
 
 int Panel::cur_right() const {
-  return cur_panel_left() + panel_width();
+  return cur_content_left() + content_width();
 }
 
-int Panel::cur_panel_left() const {
-  return panel_win_->composited_x();
+int Panel::cur_content_left() const {
+  return content_win_->composited_x();
 }
 
 int Panel::cur_titlebar_left() const {
   return titlebar_win_->composited_x();
 }
 
-int Panel::cur_panel_center() const {
-  return cur_panel_left() + 0.5 * panel_width();
+int Panel::cur_content_center() const {
+  return cur_content_left() + 0.5 * content_width();
 }
 
-int Panel::snapped_panel_left() const {
-  return snapped_right_ - panel_width();
+int Panel::snapped_content_left() const {
+  return snapped_right_ - content_width();
 }
 
 int Panel::snapped_titlebar_left() const {
   return snapped_right_ - titlebar_width();
 }
 
-int Panel::panel_width() const {
-  return panel_win_->client_width();
+int Panel::content_width() const {
+  return content_win_->client_width();
 }
 
 int Panel::titlebar_width() const {
@@ -223,8 +223,8 @@ void Panel::HandleInputWindowButtonPress(
   drag_xid_ = xid;
   drag_start_x_ = x;
   drag_start_y_ = y;
-  drag_orig_width_ = drag_last_width_ = panel_width();
-  drag_orig_height_ = drag_last_height_ = panel_win_->client_height();
+  drag_orig_width_ = drag_last_width_ = content_width();
+  drag_orig_height_ = drag_last_height_ = content_win_->client_height();
   resize_event_coalescer_.Start();
 
   if (!FLAGS_panel_opaque_resize) {
@@ -236,8 +236,8 @@ void Panel::HandleInputWindowButtonPress(
     resize_actor_->Move(
         titlebar_win_->client_x(), titlebar_win_->client_y(), 0);
     resize_actor_->SetSize(
-        panel_width(),
-        panel_win_->client_height() + titlebar_win_->client_height());
+        content_width(),
+        content_win_->client_height() + titlebar_win_->client_height());
     resize_actor_->SetOpacity(0, 0);
     resize_actor_->SetOpacity(kResizeBoxOpacity, kAnimMs);
     wm()->stacking_manager()->StackActorAtTopOfLayer(
@@ -339,36 +339,36 @@ void Panel::SetState(bool is_expanded) {
     StackAtTopOfLayer(StackingManager::LAYER_EXPANDED_PANEL);
 
     // Animate the panel sliding up.
-    panel_win_->MoveComposited(
-        cur_panel_left(),
-        panel_bar_->y() - panel_win_->client_height(),
+    content_win_->MoveComposited(
+        cur_content_left(),
+        panel_bar_->y() - content_win_->client_height(),
         kAnimMs);
-    panel_win_->SetShadowOpacity(1.0, kAnimMs);
-    panel_win_->MoveClientToComposited();
+    content_win_->SetShadowOpacity(1.0, kAnimMs);
+    content_win_->MoveClientToComposited();
 
     // Move the titlebar right above the panel.  We left-justify it with
-    // the panel before animating it to match the panel's width so it won't
-    // end up sticking out to the right after the resize.
-    titlebar_win_->MoveCompositedX(cur_panel_left(), 0);
+    // the content before animating it to match the content's width so it
+    // won't end up sticking out to the right after the resize.
+    titlebar_win_->MoveCompositedX(cur_content_left(), 0);
     titlebar_win_->ResizeClient(
-        panel_win_->client_width(), titlebar_win_->client_height(),
+        content_win_->client_width(), titlebar_win_->client_height(),
         Window::GRAVITY_NORTHWEST);
     titlebar_win_->MoveComposited(
-        cur_panel_left(),
+        cur_content_left(),
         panel_bar_->y() -
-          panel_win_->client_height() - titlebar_win_->client_height(),
+          content_win_->client_height() - titlebar_win_->client_height(),
         kAnimMs);
     titlebar_win_->MoveClientToComposited();
   } else {
     StackAtTopOfLayer(StackingManager::LAYER_COLLAPSED_PANEL);
 
-    panel_win_->MoveComposited(
-        cur_panel_left(),
+    content_win_->MoveComposited(
+        cur_content_left(),
         panel_bar_->y() + panel_bar_->height(),
         kAnimMs);
     // Hide the shadow so it's not peeking up at the bottom of the screen.
-    panel_win_->SetShadowOpacity(0, kAnimMs);
-    panel_win_->MoveClientToComposited();
+    content_win_->SetShadowOpacity(0, kAnimMs);
+    content_win_->MoveClientToComposited();
 
     // Resize and right-justify the titlebar before animating it.
     titlebar_win_->ResizeClient(
@@ -392,35 +392,35 @@ void Panel::SetState(bool is_expanded) {
 
 void Panel::Move(int right, int anim_ms) {
   // TODO: If the user is dragging the panel, we should probably only move
-  // the X windows (titlebar, panel, and input) when the drag is complete.
+  // the X windows (titlebar, content, and input) when the drag is complete.
   titlebar_win_->MoveComposited(
       right - titlebar_width(),
       titlebar_win_->composited_y(),
       anim_ms);
   titlebar_win_->MoveClientToComposited();
 
-  panel_win_->MoveComposited(
-      right - panel_width(),
-      panel_win_->composited_y(),
+  content_win_->MoveComposited(
+      right - content_width(),
+      content_win_->composited_y(),
       anim_ms);
-  panel_win_->MoveClientToComposited();
+  content_win_->MoveClientToComposited();
 
   ConfigureInputWindows();
 }
 
 void Panel::HandlePanelBarMove() {
   if (is_expanded_) {
-    panel_win_->MoveCompositedY(
-        panel_bar_->y() - panel_win_->client_height(), 0);
-    panel_win_->MoveClientToComposited();
+    content_win_->MoveCompositedY(
+        panel_bar_->y() - content_win_->client_height(), 0);
+    content_win_->MoveClientToComposited();
     titlebar_win_->MoveCompositedY(
         panel_bar_->y() -
-          panel_win_->client_height() - titlebar_win_->client_height(),
+          content_win_->client_height() - titlebar_win_->client_height(),
         0);
     titlebar_win_->MoveClientToComposited();
   } else {
-    panel_win_->MoveCompositedY(panel_bar_->y() + panel_bar_->height(), 0);
-    panel_win_->MoveClientToComposited();
+    content_win_->MoveCompositedY(panel_bar_->y() + panel_bar_->height(), 0);
+    content_win_->MoveClientToComposited();
     titlebar_win_->MoveCompositedY(
         panel_bar_->y() + panel_bar_->height() - titlebar_win_->client_height(),
         0);
@@ -429,10 +429,10 @@ void Panel::HandlePanelBarMove() {
 }
 
 void Panel::StackAtTopOfLayer(StackingManager::Layer layer) {
-  // Put the titlebar and panel in the same layer, but stack the titlebar
-  // higher (the stacking between the two is arbitrary but needs to stay
-  // in sync with ConfigureInputWindows()).
-  wm()->stacking_manager()->StackWindowAtTopOfLayer(panel_win_, layer);
+  // Put the titlebar and content in the same layer, but stack the titlebar
+  // higher (the stacking between the two is arbitrary but needs to stay in
+  // sync with ConfigureInputWindows()).
+  wm()->stacking_manager()->StackWindowAtTopOfLayer(content_win_, layer);
   wm()->stacking_manager()->StackWindowAtTopOfLayer(titlebar_win_, layer);
 
   /// Ensure that the resize windows are stacked correctly.
@@ -449,16 +449,16 @@ void Panel::Resize(int width, int height,
   CHECK_GT(width, 0);
   CHECK_GT(height, 0);
 
-  bool changing_height = (height != panel_win_->client_height());
+  bool changing_height = (height != content_win_->client_height());
 
-  panel_win_->ResizeClient(width, height, gravity);
+  content_win_->ResizeClient(width, height, gravity);
   titlebar_win_->ResizeClient(width, titlebar_win_->client_height(), gravity);
 
   // TODO: This is broken if we start resizing scaled windows.
   // Is this a concern?
   if (changing_height) {
     titlebar_win_->MoveCompositedY(
-        panel_win_->composited_y() - titlebar_win_->client_height(), 0);
+        content_win_->composited_y() - titlebar_win_->client_height(), 0);
     titlebar_win_->MoveClientToComposited();
   }
 
@@ -471,41 +471,42 @@ bool Panel::UpdateChromeStateProperty() {
   XAtom atom = wm()->GetXAtom(ATOM_CHROME_STATE_COLLAPSED_PANEL);
   std::vector<std::pair<XAtom, bool> > states;
   states.push_back(std::make_pair(atom, is_expanded_ ? false : true));
-  return panel_win_->ChangeChromeState(states);
+  return content_win_->ChangeChromeState(states);
 }
 
 bool Panel::NotifyChromeAboutState() {
   WmIpc::Message msg(WmIpc::Message::CHROME_NOTIFY_PANEL_STATE);
   msg.set_param(0, is_expanded_);
-  return wm()->wm_ipc()->SendMessage(panel_win_->xid(), msg);
+  return wm()->wm_ipc()->SendMessage(content_win_->xid(), msg);
 }
 
 void Panel::ConfigureInputWindows() {
   if (is_expanded_) {
-    if (panel_width() + 2 * (kResizeBorderWidth - kResizeCornerSize) <= 0) {
+    if (content_width() + 2 * (kResizeBorderWidth - kResizeCornerSize) <= 0) {
       wm()->xconn()->ConfigureWindowOffscreen(top_input_xid_);
     } else {
       // Stack all of the input windows directly below the panel window
       // (which is stacked beneath the titlebar) -- we don't want the
       // corner windows to occlude the titlebar.
-      wm()->xconn()->StackWindow(top_input_xid_, panel_win_->xid(), false);
+      wm()->xconn()->StackWindow(top_input_xid_, content_win_->xid(), false);
       wm()->xconn()->ConfigureWindow(
           top_input_xid_,
-          cur_panel_left() - kResizeBorderWidth + kResizeCornerSize,
+          cur_content_left() - kResizeBorderWidth + kResizeCornerSize,
           titlebar_win_->client_y() - kResizeBorderWidth,
-          panel_width() + 2 * (kResizeBorderWidth - kResizeCornerSize),
+          content_width() + 2 * (kResizeBorderWidth - kResizeCornerSize),
           kResizeBorderWidth);
     }
 
-    wm()->xconn()->StackWindow(top_left_input_xid_, panel_win_->xid(), false);
+    wm()->xconn()->StackWindow(top_left_input_xid_, content_win_->xid(), false);
     wm()->xconn()->ConfigureWindow(
         top_left_input_xid_,
-        cur_panel_left() - kResizeBorderWidth,
+        cur_content_left() - kResizeBorderWidth,
         titlebar_win_->client_y() - kResizeBorderWidth,
         kResizeCornerSize,
         kResizeCornerSize);
 
-    wm()->xconn()->StackWindow(top_right_input_xid_, panel_win_->xid(), false);
+    wm()->xconn()->StackWindow(
+        top_right_input_xid_, content_win_->xid(), false);
     wm()->xconn()->ConfigureWindow(
         top_right_input_xid_,
         cur_right() + kResizeBorderWidth - kResizeCornerSize,
@@ -514,7 +515,7 @@ void Panel::ConfigureInputWindows() {
         kResizeCornerSize);
 
     int total_height =
-        titlebar_win_->client_height() + panel_win_->client_height();
+        titlebar_win_->client_height() + content_win_->client_height();
     int resize_edge_height =
         total_height + kResizeBorderWidth - kResizeCornerSize;
 
@@ -522,15 +523,15 @@ void Panel::ConfigureInputWindows() {
       wm()->xconn()->ConfigureWindowOffscreen(left_input_xid_);
       wm()->xconn()->ConfigureWindowOffscreen(right_input_xid_);
     } else {
-      wm()->xconn()->StackWindow(left_input_xid_, panel_win_->xid(), false);
+      wm()->xconn()->StackWindow(left_input_xid_, content_win_->xid(), false);
       wm()->xconn()->ConfigureWindow(
           left_input_xid_,
-          cur_panel_left() - kResizeBorderWidth,
+          cur_content_left() - kResizeBorderWidth,
           titlebar_win_->client_y() - kResizeBorderWidth + kResizeCornerSize,
           kResizeBorderWidth,
           resize_edge_height);
 
-      wm()->xconn()->StackWindow(right_input_xid_, panel_win_->xid(), false);
+      wm()->xconn()->StackWindow(right_input_xid_, content_win_->xid(), false);
       wm()->xconn()->ConfigureWindow(
           right_input_xid_,
           cur_right(),
