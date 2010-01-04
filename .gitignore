@@ -10,9 +10,10 @@
 *.lo
 *.o
 *.pyc
-*.sconsign.dblite
 *.so
 *~
+.sconsign.dblite
+.*.swp
 
 # Executables
 /src/common/unittests
