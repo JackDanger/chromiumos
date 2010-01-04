@@ -182,7 +182,7 @@ TEST_F(PanelBarTest, ActiveWindowMessage) {
   ASSERT_TRUE(content_win != NULL);
   Panel* panel = panel_bar_->GetPanelByWindow(*content_win);
   ASSERT_TRUE(panel != NULL);
-  EXPECT_FALSE(panel->is_expanded());
+  EXPECT_FALSE(panel_bar_->GetPanelInfoOrDie(panel)->is_expanded);
   EXPECT_NE(content_xid, xconn_->focused_xid());
 
   // After sending a _NET_ACTIVE_WINDOW message asking the window manager
@@ -198,7 +198,7 @@ TEST_F(PanelBarTest, ActiveWindowMessage) {
       None,       // currently-active window
       None);
   EXPECT_TRUE(wm_->HandleEvent(&event));
-  EXPECT_TRUE(panel->is_expanded());
+  EXPECT_TRUE(panel_bar_->GetPanelInfoOrDie(panel)->is_expanded);
   EXPECT_EQ(content_xid, xconn_->focused_xid());
   EXPECT_EQ(content_xid, GetActiveWindowProperty());
 }

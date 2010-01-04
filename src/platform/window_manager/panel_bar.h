@@ -114,14 +114,21 @@ class PanelBar : public EventConsumer {
  private:
   FRIEND_TEST(PanelBarTest, ActiveWindowMessage);
 
-  // Returns true if 'center_x' falls within the bounds of a panel's
-  // titlebar.
-  class PanelTitlebarContainsPoint {
-   public:
-    PanelTitlebarContainsPoint(int center_x) : center_x_(center_x) {}
-    bool operator()(std::tr1::shared_ptr<Panel>& p);
-   private:
-    int center_x_;
+  // PanelBar-specific information about a panel.
+  struct PanelInfo {
+    PanelInfo()
+        : is_expanded(false),
+          snapped_right(0) {
+    }
+
+    // Is the panel currently expanded?
+    bool is_expanded;
+
+    // X position of the right edge of where the titlebar wants to be when
+    // collapsed.  For collapsed panels that are being dragged, this may be
+    // different from the actual composited position -- we only snap the
+    // panels to this position when the drag is complete.
+    int snapped_right;
   };
 
   // Save some typing.
@@ -130,6 +137,9 @@ class PanelBar : public EventConsumer {
   int num_panels() const {
     return expanded_panels_.size() + collapsed_panels_.size();
   }
+
+  // Get the PanelInfo object for a panel, crashing if it's not present.
+  PanelInfo* GetPanelInfoOrDie(Panel* panel);
 
   // Do some initial setup for windows that we're going to manage.
   // This includes stacking them and moving them offscreen.
@@ -148,6 +158,14 @@ class PanelBar : public EventConsumer {
   // Collapse a panel.  We move it from 'expanded_panels_' to
   // 'collapsed_panels_' and pack all of the collapsed panels to the right.
   void CollapsePanel(Panel* panel);
+
+  // Configure a panel that's being collapsed.  This includes stacking it,
+  // resizing its titlebar, moving it to its final position, making it
+  // non-resizable, notifying Chrome, updating its PanelInfo object, etc.
+  // The caller is still responsible for getting the panel into
+  // 'collapsed_panels_'.  Helper method used by both CollapsePanel() and
+  // CreatePanel().
+  void ConfigureCollapsedPanel(Panel* panel);
 
   // Focus the passed-in panel's content window.  Also removes its passive
   // button grab and updates 'desired_panel_to_focus_'.  If
@@ -209,6 +227,9 @@ class PanelBar : public EventConsumer {
   // when no panels are present.
   void SetVisibility(bool visible);
 
+  // Move the passed-in expanded panel onscreen if it isn't already.
+  void MoveExpandedPanelOnscreen(Panel* panel, int anim_ms);
+
   WindowManager* wm_;  // not owned
 
   // Position and size of the bar.
@@ -223,6 +244,10 @@ class PanelBar : public EventConsumer {
   // Collapsed and expanded panels.
   Panels collapsed_panels_;
   Panels expanded_panels_;
+
+  // Information about panels in 'collapsed_panels_' and 'expanded_panels_'
+  // that doesn't belong in the Panel class itself.
+  std::map<Panel*, std::tr1::shared_ptr<PanelInfo> > panel_infos_;
 
   // Actor drawn for the bar's background.
   scoped_ptr<ClutterInterface::Actor> bar_actor_;
