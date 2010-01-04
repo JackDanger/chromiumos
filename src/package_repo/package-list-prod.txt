@@ -109,3 +109,6 @@ ibus-gtk
 
 # For partitioning (GPT format)
 gptpart
+
+# For collecting metrics
+time

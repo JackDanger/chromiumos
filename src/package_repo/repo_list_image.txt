@@ -388,6 +388,7 @@ tar 1.22-1 required utils pool/main/t/tar/tar_1.22-1_i386.deb
 tasksel 2.73ubuntu23 important admin pool/main/t/tasksel/tasksel_2.73ubuntu23_all.deb
 tasksel-data 2.73ubuntu23 important admin pool/main/t/tasksel/tasksel-data_2.73ubuntu23_all.deb
 tcpd 7.6.q-16 optional net pool/main/t/tcp-wrappers/tcpd_7.6.q-16_i386.deb
+time 1.7-23 standard utils pool/main/t/time/time_1.7-23_i386.deb
 tsconf 1.0-7 optional embedded pool/main/t/tslib/tsconf_1.0-7_all.deb
 ttf-dejavu 2.29-2 optional x11 pool/main/t/ttf-dejavu/ttf-dejavu_2.29-2_all.deb
 ttf-dejavu-core 2.29-2 optional x11 pool/main/t/ttf-dejavu/ttf-dejavu-core_2.29-2_all.deb
