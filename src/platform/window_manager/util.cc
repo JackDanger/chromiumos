@@ -62,12 +62,15 @@ double GetCurrentTime() {
   return tv.tv_sec + (tv.tv_usec / 1000000.0);
 }
 
-
 void FillTimeval(double time, struct timeval* tv) {
   CHECK(tv);
   tv->tv_sec = static_cast<__time_t>(time);
   tv->tv_usec =
       static_cast<__suseconds_t>(1000000 * (time - static_cast<int>(time)));
+}
+
+std::string XidStr(unsigned long xid) {
+  return StringPrintf("0x%lx", xid);
 }
 
 }  // namespace window_manager

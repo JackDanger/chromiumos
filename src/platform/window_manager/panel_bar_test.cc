@@ -36,8 +36,6 @@ class PanelBarTest : public BasicWindowManagerTest {
 TEST_F(PanelBarTest, Basic) {
   // First, create a toplevel window.
   XWindow toplevel_xid = CreateSimpleWindow();
-  MockXConnection::WindowInfo* toplevel_info =
-      xconn_->GetWindowInfoOrDie(toplevel_xid);
   SendInitialEventsForWindow(toplevel_xid);
 
   // It should be initially focused.
@@ -45,118 +43,147 @@ TEST_F(PanelBarTest, Basic) {
   SendFocusEvents(xconn_->GetRootWindow(), toplevel_xid);
   EXPECT_EQ(toplevel_xid, GetActiveWindowProperty());
 
-  // Now create a panel titlebar, and then the actual panel window.
+  // Now create a panel titlebar, and then the content window.
   const int initial_titlebar_height = 16;
-  XWindow titlebar_xid = CreateTitlebarWindow(100, initial_titlebar_height);
+  XWindow titlebar_xid =
+      CreatePanelTitlebarWindow(100, initial_titlebar_height);
   MockXConnection::WindowInfo* titlebar_info =
       xconn_->GetWindowInfoOrDie(titlebar_xid);
   SendInitialEventsForWindow(titlebar_xid);
 
-  const int initial_panel_width = 250;
-  const int initial_panel_height = 400;
-  XWindow panel_xid = CreatePanelWindow(
-      initial_panel_width, initial_panel_height, titlebar_xid, true);
-  MockXConnection::WindowInfo* panel_info =
-      xconn_->GetWindowInfoOrDie(panel_xid);
-  SendInitialEventsForWindow(panel_xid);
+  const int initial_content_width = 250;
+  const int initial_content_height = 400;
+  XWindow content_xid = CreatePanelContentWindow(
+      initial_content_width, initial_content_height, titlebar_xid, true);
+  MockXConnection::WindowInfo* content_info =
+      xconn_->GetWindowInfoOrDie(content_xid);
+  SendInitialEventsForWindow(content_xid);
 
-  // The toplevel window should retain the focus and a button grab should
-  // be installed on the titlebar window.
+  // The panel's content window should take the focus, and no button grab
+  // should be installed yet.
+  EXPECT_EQ(content_xid, xconn_->focused_xid());
+  SendFocusEvents(toplevel_xid, content_xid);
+  EXPECT_EQ(content_xid, GetActiveWindowProperty());
+
+  // Click on the toplevel window to give it the focus again.  A button
+  // grab should be installed on the panel's content window.
+  xconn_->set_pointer_grab_xid(toplevel_xid);
+  XEvent event;
+  MockXConnection::InitButtonPressEvent(
+      &event, toplevel_xid, 0, 0, 1);  // x, y, button
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  EXPECT_EQ(None, xconn_->pointer_grab_xid());
   EXPECT_EQ(toplevel_xid, xconn_->focused_xid());
-  EXPECT_TRUE(panel_info->button_is_grabbed(AnyButton));
+  SendFocusEvents(content_xid, toplevel_xid);
+  EXPECT_TRUE(content_info->button_is_grabbed(AnyButton));
+  EXPECT_EQ(toplevel_xid, GetActiveWindowProperty());
 
   // The titlebar should keep its initial height but be stretched to the
-  // panel's width.  The panel's initial width and height should be
+  // panel's width.  The content window's initial width and height should be
   // preserved.
-  EXPECT_EQ(initial_panel_width, titlebar_info->width);
+  EXPECT_EQ(initial_content_width, titlebar_info->width);
   EXPECT_EQ(initial_titlebar_height, titlebar_info->height);
-  EXPECT_EQ(initial_panel_width, panel_info->width);
-  EXPECT_EQ(initial_panel_height, panel_info->height);
+  EXPECT_EQ(initial_content_width, content_info->width);
+  EXPECT_EQ(initial_content_height, content_info->height);
 
-  // The titlebar and panel client windows should be stacked above the
+  // The titlebar and content client windows should be stacked above the
   // toplevel window's client window.
   EXPECT_LT(xconn_->stacked_xids().GetIndex(titlebar_xid),
             xconn_->stacked_xids().GetIndex(toplevel_xid));
-  EXPECT_LT(xconn_->stacked_xids().GetIndex(panel_xid),
+  EXPECT_LT(xconn_->stacked_xids().GetIndex(content_xid),
             xconn_->stacked_xids().GetIndex(toplevel_xid));
 
   Window* toplevel_win = wm_->GetWindow(toplevel_xid);
   ASSERT_TRUE(toplevel_win != NULL);
   Window* titlebar_win = wm_->GetWindow(titlebar_xid);
   ASSERT_TRUE(titlebar_win != NULL);
-  Window* panel_win = wm_->GetWindow(panel_xid);
-  ASSERT_TRUE(panel_win != NULL);
+  Window* content_win = wm_->GetWindow(content_xid);
+  ASSERT_TRUE(content_win != NULL);
 
-  // The titlebar and panel actors and their shadows should all be stacked
+  // The titlebar and content actors and their shadows should all be stacked
   // on top of the toplevel window's actor.
   MockClutterInterface::StageActor* stage = clutter_->GetDefaultStage();
   EXPECT_LT(stage->GetStackingIndex(titlebar_win->actor()),
             stage->GetStackingIndex(toplevel_win->actor()));
   EXPECT_LT(stage->GetStackingIndex(titlebar_win->shadow()->group()),
             stage->GetStackingIndex(toplevel_win->actor()));
-  EXPECT_LT(stage->GetStackingIndex(panel_win->actor()),
+  EXPECT_LT(stage->GetStackingIndex(content_win->actor()),
             stage->GetStackingIndex(toplevel_win->actor()));
-  EXPECT_LT(stage->GetStackingIndex(panel_win->shadow()->group()),
+  EXPECT_LT(stage->GetStackingIndex(content_win->shadow()->group()),
             stage->GetStackingIndex(toplevel_win->actor()));
 
-  // The titlebar and panel windows shouldn't cast shadows on each other.
-  EXPECT_LT(stage->GetStackingIndex(panel_win->actor()),
+  // The titlebar and content windows shouldn't cast shadows on each other.
+  EXPECT_LT(stage->GetStackingIndex(content_win->actor()),
             stage->GetStackingIndex(titlebar_win->shadow()->group()));
   EXPECT_LT(stage->GetStackingIndex(titlebar_win->actor()),
-            stage->GetStackingIndex(panel_win->shadow()->group()));
+            stage->GetStackingIndex(content_win->shadow()->group()));
 
-  // After a button press on the panel window, its active and passive grabs
+  // After a button press on the content window, its active and passive grabs
   // should be removed and it should be focused.
-  xconn_->set_pointer_grab_xid(panel_xid);
-  XEvent event;
+  xconn_->set_pointer_grab_xid(content_xid);
   MockXConnection::InitButtonPressEvent(
-      &event, panel_xid, 0, 0, 1);  // x, y, button
+      &event, content_xid, 0, 0, 1);  // x, y, button
   EXPECT_TRUE(wm_->HandleEvent(&event));
   EXPECT_EQ(None, xconn_->pointer_grab_xid());
-  EXPECT_EQ(panel_xid, xconn_->focused_xid());
-  EXPECT_FALSE(panel_info->button_is_grabbed(AnyButton));
+  EXPECT_EQ(content_xid, xconn_->focused_xid());
+  EXPECT_FALSE(content_info->button_is_grabbed(AnyButton));
 
   // Send FocusOut and FocusIn events and check that the active window hint
-  // is updated to contain the panel window.
-  SendFocusEvents(toplevel_xid, panel_xid);
-  EXPECT_EQ(panel_xid, GetActiveWindowProperty());
+  // is updated to contain the content window.
+  SendFocusEvents(toplevel_xid, content_xid);
+  EXPECT_EQ(content_xid, GetActiveWindowProperty());
 
   // Create a second toplevel window.
   XWindow toplevel_xid2 = CreateSimpleWindow();
-  MockXConnection::WindowInfo* toplevel_info2 =
-      xconn_->GetWindowInfoOrDie(toplevel_xid2);
   SendInitialEventsForWindow(toplevel_xid2);
   Window* toplevel_win2 = wm_->GetWindow(toplevel_xid2);
   ASSERT_TRUE(toplevel_win2 != NULL);
+
+  // Check that the new toplevel window takes the focus (note that this is
+  // testing LayoutManager code).
+  EXPECT_EQ(toplevel_xid2, xconn_->focused_xid());
+  SendFocusEvents(content_xid, toplevel_xid2);
+  EXPECT_EQ(toplevel_xid2, GetActiveWindowProperty());
 
   // The panel's and titlebar's client and composited windows should be
   // stacked above those of the new toplevel window.
   EXPECT_LT(xconn_->stacked_xids().GetIndex(titlebar_xid),
             xconn_->stacked_xids().GetIndex(toplevel_xid2));
-  EXPECT_LT(xconn_->stacked_xids().GetIndex(panel_xid),
+  EXPECT_LT(xconn_->stacked_xids().GetIndex(content_xid),
             xconn_->stacked_xids().GetIndex(toplevel_xid2));
   EXPECT_LT(stage->GetStackingIndex(titlebar_win->actor()),
             stage->GetStackingIndex(toplevel_win2->actor()));
-  EXPECT_LT(stage->GetStackingIndex(panel_win->actor()),
+  EXPECT_LT(stage->GetStackingIndex(content_win->actor()),
             stage->GetStackingIndex(toplevel_win2->actor()));
+
+  // Create a second, collapsed panel.
+  XWindow collapsed_titlebar_xid = CreatePanelTitlebarWindow(200, 20);
+  SendInitialEventsForWindow(collapsed_titlebar_xid);
+  XWindow collapsed_content_xid =
+      CreatePanelContentWindow(200, 400, collapsed_titlebar_xid, false);
+  SendInitialEventsForWindow(collapsed_content_xid);
+
+  // The collapsed panel shouldn't have taken the focus.
+  EXPECT_EQ(toplevel_xid2, xconn_->focused_xid());
+  EXPECT_EQ(toplevel_xid2, GetActiveWindowProperty());
 }
 
 // Test that we expand and focus panels in response to _NET_ACTIVE_WINDOW
 // client messages.
 TEST_F(PanelBarTest, ActiveWindowMessage) {
   // Create a collapsed panel.
-  XWindow titlebar_xid = CreateTitlebarWindow(200, 20);
+  XWindow titlebar_xid = CreatePanelTitlebarWindow(200, 20);
   SendInitialEventsForWindow(titlebar_xid);
-  XWindow panel_xid = CreatePanelWindow(200, 400, titlebar_xid, false);
-  SendInitialEventsForWindow(panel_xid);
+  XWindow content_xid = CreatePanelContentWindow(200, 400, titlebar_xid, false);
+  SendInitialEventsForWindow(content_xid);
 
   // Make sure that it starts out collapsed.
-  Window* panel_win = wm_->GetWindow(panel_xid);
-  ASSERT_TRUE(panel_win != NULL);
-  Panel* panel = panel_bar_->GetPanelByWindow(*panel_win);
+  Window* content_win = wm_->GetWindow(content_xid);
+  ASSERT_TRUE(content_win != NULL);
+  Panel* panel = panel_bar_->GetPanelByWindow(*content_win);
   ASSERT_TRUE(panel != NULL);
-  EXPECT_FALSE(panel->is_expanded());
-  EXPECT_NE(panel_xid, xconn_->focused_xid());
+  EXPECT_FALSE(panel_bar_->GetPanelInfoOrDie(panel)->is_expanded);
+  EXPECT_NE(content_xid, xconn_->focused_xid());
 
   // After sending a _NET_ACTIVE_WINDOW message asking the window manager
   // to focus the panel, it should be expanded and get the focus, and the
@@ -164,16 +191,16 @@ TEST_F(PanelBarTest, ActiveWindowMessage) {
   XEvent event;
   MockXConnection::InitClientMessageEvent(
       &event,
-      panel_xid,  // window to focus
+      content_xid,  // window to focus
       wm_->GetXAtom(ATOM_NET_ACTIVE_WINDOW),
       1,          // source indication: client app
       CurrentTime,
       None,       // currently-active window
       None);
   EXPECT_TRUE(wm_->HandleEvent(&event));
-  EXPECT_TRUE(panel->is_expanded());
-  EXPECT_EQ(panel_xid, xconn_->focused_xid());
-  EXPECT_EQ(panel_xid, GetActiveWindowProperty());
+  EXPECT_TRUE(panel_bar_->GetPanelInfoOrDie(panel)->is_expanded);
+  EXPECT_EQ(content_xid, xconn_->focused_xid());
+  EXPECT_EQ(content_xid, GetActiveWindowProperty());
 }
 
 }  // namespace window_manager

@@ -49,6 +49,7 @@ class WindowManager {
   StackingManager* stacking_manager() { return stacking_manager_.get(); }
 
   XWindow root() const { return root_; }
+  XWindow background_xid() const { return background_xid_; }
 
   ClutterInterface::StageActor* stage() { return stage_; }
   ClutterInterface::Actor* background() { return background_.get(); }
@@ -70,7 +71,8 @@ class WindowManager {
   bool HandleEvent(XEvent* event);
 
   // Create a new X window for receiving input.
-  XWindow CreateInputWindow(int x, int y, int width, int height);
+  XWindow CreateInputWindow(
+      int x, int y, int width, int height, int event_mask);
 
   // Move and resize the passed-in window.
   // TODO: This isn't limited to input windows.
@@ -248,6 +250,13 @@ class WindowManager {
 
   // XComposite overlay window.
   XWindow overlay_xid_;
+
+  // Input window at the layer of the background image.  This exists solely
+  // for the purpose of installing button grabs -- we can't install them on
+  // the root window itself since they'd get activated by clicks in any of
+  // the root's subwindows (this is apparently just how button grabs work
+  // -- see the list of conditions in the XGrabButton() man page).
+  XWindow background_xid_;
 
   scoped_ptr<StackingManager> stacking_manager_;
 

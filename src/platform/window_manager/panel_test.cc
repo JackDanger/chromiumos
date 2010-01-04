@@ -34,44 +34,44 @@ class PanelTest : public BasicWindowManagerTest {
 };
 
 TEST_F(PanelTest, InputWindows) {
-  XWindow titlebar_xid = CreateTitlebarWindow(200, 20);
+  XWindow titlebar_xid = CreatePanelTitlebarWindow(200, 20);
   Window titlebar_win(wm_.get(), titlebar_xid);
   MockXConnection::WindowInfo* titlebar_info =
       xconn_->GetWindowInfoOrDie(titlebar_xid);
 
-  XWindow panel_xid = CreatePanelWindow(200, 400, titlebar_xid, true);
-  Window panel_win(wm_.get(), panel_xid);
-  MockXConnection::WindowInfo* panel_info =
-      xconn_->GetWindowInfoOrDie(panel_xid);
+  XWindow content_xid = CreatePanelContentWindow(200, 400, titlebar_xid, true);
+  Window content_win(wm_.get(), content_xid);
+  MockXConnection::WindowInfo* content_info =
+      xconn_->GetWindowInfoOrDie(content_xid);
 
-  // Create a panel and expand it.
-  Panel panel(panel_bar_, &panel_win, &titlebar_win, 0);
-  panel.SetState(true);
+  // Create a panel.
+  Panel panel(wm_.get(), &content_win, &titlebar_win, 0, 0);
+  panel.SetResizable(true);
 
   // Restack the panel and check that its titlebar is stacked above the
-  // panel contents, and that the contents are above all of the input
+  // content window, and that the content window is above all of the input
   // windows used for resizing.
   panel.StackAtTopOfLayer(StackingManager::LAYER_EXPANDED_PANEL);
   EXPECT_LT(xconn_->stacked_xids().GetIndex(titlebar_xid),
-            xconn_->stacked_xids().GetIndex(panel_xid));
-  EXPECT_LT(xconn_->stacked_xids().GetIndex(panel_xid),
+            xconn_->stacked_xids().GetIndex(content_xid));
+  EXPECT_LT(xconn_->stacked_xids().GetIndex(content_xid),
             xconn_->stacked_xids().GetIndex(panel.top_input_xid_));
-  EXPECT_LT(xconn_->stacked_xids().GetIndex(panel_xid),
+  EXPECT_LT(xconn_->stacked_xids().GetIndex(content_xid),
             xconn_->stacked_xids().GetIndex(panel.top_left_input_xid_));
-  EXPECT_LT(xconn_->stacked_xids().GetIndex(panel_xid),
+  EXPECT_LT(xconn_->stacked_xids().GetIndex(content_xid),
             xconn_->stacked_xids().GetIndex(panel.top_right_input_xid_));
-  EXPECT_LT(xconn_->stacked_xids().GetIndex(panel_xid),
+  EXPECT_LT(xconn_->stacked_xids().GetIndex(content_xid),
             xconn_->stacked_xids().GetIndex(panel.left_input_xid_));
-  EXPECT_LT(xconn_->stacked_xids().GetIndex(panel_xid),
+  EXPECT_LT(xconn_->stacked_xids().GetIndex(content_xid),
             xconn_->stacked_xids().GetIndex(panel.right_input_xid_));
 
   // Now move the panel to a new location and check that all of the input
   // windows are moved correctly around it.
-  panel.Move(panel_bar_->x() + panel_bar_->width() - 35, 0);
+  panel.MoveX(panel_bar_->x() + panel_bar_->width() - 35, true, 0);
 
   MockXConnection::WindowInfo* top_info =
       xconn_->GetWindowInfoOrDie(panel.top_input_xid_);
-  EXPECT_EQ(panel_info->x - Panel::kResizeBorderWidth +
+  EXPECT_EQ(content_info->x - Panel::kResizeBorderWidth +
               Panel::kResizeCornerSize,
             top_info->x);
   EXPECT_EQ(titlebar_info->y - Panel::kResizeBorderWidth, top_info->y);
@@ -98,23 +98,23 @@ TEST_F(PanelTest, InputWindows) {
 
   MockXConnection::WindowInfo* left_info =
       xconn_->GetWindowInfoOrDie(panel.left_input_xid_);
-  EXPECT_EQ(panel_info->x - Panel::kResizeBorderWidth, left_info->x);
+  EXPECT_EQ(content_info->x - Panel::kResizeBorderWidth, left_info->x);
   EXPECT_EQ(titlebar_info->y - Panel::kResizeBorderWidth +
               Panel::kResizeCornerSize,
             left_info->y);
   EXPECT_EQ(Panel::kResizeBorderWidth, left_info->width);
-  EXPECT_EQ(panel_info->height + titlebar_info->height +
+  EXPECT_EQ(content_info->height + titlebar_info->height +
               Panel::kResizeBorderWidth - Panel::kResizeCornerSize,
             left_info->height);
 
   MockXConnection::WindowInfo* right_info =
       xconn_->GetWindowInfoOrDie(panel.right_input_xid_);
-  EXPECT_EQ(panel_info->x + panel_info->width, right_info->x);
+  EXPECT_EQ(content_info->x + content_info->width, right_info->x);
   EXPECT_EQ(titlebar_info->y - Panel::kResizeBorderWidth +
               Panel::kResizeCornerSize,
             right_info->y);
   EXPECT_EQ(Panel::kResizeBorderWidth, right_info->width);
-  EXPECT_EQ(panel_info->height + titlebar_info->height +
+  EXPECT_EQ(content_info->height + titlebar_info->height +
               Panel::kResizeBorderWidth - Panel::kResizeCornerSize,
             right_info->height);
 }
@@ -122,28 +122,29 @@ TEST_F(PanelTest, InputWindows) {
 TEST_F(PanelTest, Resize) {
   int orig_width = 200;
   int orig_titlebar_height = 20;
-  XWindow titlebar_xid = CreateTitlebarWindow(orig_width, orig_titlebar_height);
+  XWindow titlebar_xid =
+      CreatePanelTitlebarWindow(orig_width, orig_titlebar_height);
   Window titlebar_win(wm_.get(), titlebar_xid);
   MockXConnection::WindowInfo* titlebar_info =
       xconn_->GetWindowInfoOrDie(titlebar_xid);
 
-  int orig_panel_height = 400;
-  XWindow panel_xid =
-      CreatePanelWindow(orig_width, orig_panel_height, titlebar_xid, true);
-  Window panel_win(wm_.get(), panel_xid);
-  MockXConnection::WindowInfo* panel_info =
-      xconn_->GetWindowInfoOrDie(panel_xid);
+  int orig_content_height = 400;
+  XWindow content_xid = CreatePanelContentWindow(
+      orig_width, orig_content_height, titlebar_xid, true);
+  Window content_win(wm_.get(), content_xid);
+  MockXConnection::WindowInfo* content_info =
+      xconn_->GetWindowInfoOrDie(content_xid);
 
-  // Create a panel and expand it.
-  Panel panel(panel_bar_, &panel_win, &titlebar_win, 0);
-  panel.SetState(true);
+  // Create a panel.
+  Panel panel(wm_.get(), &content_win, &titlebar_win, 0, 0);
+  panel.SetResizable(true);
 
   // Check that one of the panel's resize handles has an asynchronous grab
   // installed on the first mouse button.
   MockXConnection::WindowInfo* handle_info =
       xconn_->GetWindowInfoOrDie(panel.top_left_input_xid_);
   EXPECT_TRUE(handle_info->button_is_grabbed(1));
-  EXPECT_EQ(ButtonPressMask|ButtonReleaseMask|PointerMotionMask,
+  EXPECT_EQ(ButtonPressMask | ButtonReleaseMask | PointerMotionMask,
             handle_info->button_grabs[1].event_mask);
   EXPECT_FALSE(handle_info->button_grabs[1].synchronous);
 
@@ -156,25 +157,24 @@ TEST_F(PanelTest, Resize) {
       1,     // button
       1);    // timestamp
 
-  // Release the button immediately and check that the pointer grab has
-  // been removed.
+  // Release the button immediately.
+  xconn_->set_pointer_grab_xid(None);
   panel.HandleInputWindowButtonRelease(
       panel.top_left_input_xid_,
       0, 0,  // relative x, y
       1,     // button
       CurrentTime);
-  EXPECT_EQ(None, xconn_->pointer_grab_xid());
 
   // Check that the panel's dimensions are unchanged.
   EXPECT_EQ(orig_width, titlebar_info->width);
   EXPECT_EQ(orig_titlebar_height, titlebar_info->height);
-  EXPECT_EQ(orig_width, panel_info->width);
-  EXPECT_EQ(orig_panel_height, panel_info->height);
+  EXPECT_EQ(orig_width, content_info->width);
+  EXPECT_EQ(orig_content_height, content_info->height);
 
   int initial_x = titlebar_info->x;
-  EXPECT_EQ(initial_x, panel_info->x);
+  EXPECT_EQ(initial_x, content_info->x);
   int initial_titlebar_y = titlebar_info->y;
-  EXPECT_EQ(initial_titlebar_y + titlebar_info->height, panel_info->y);
+  EXPECT_EQ(initial_titlebar_y + titlebar_info->height, content_info->y);
 
   // Now start a second resize using the upper-left handle.  Drag a few
   // pixels up and to the left and then let go of the button.
@@ -183,9 +183,9 @@ TEST_F(PanelTest, Resize) {
       panel.top_left_input_xid_, 0, 0, 1, CurrentTime);
   EXPECT_EQ(panel.top_left_input_xid_, xconn_->pointer_grab_xid());
   panel.HandleInputWindowPointerMotion(panel.top_left_input_xid_, -2, -4);
+  xconn_->set_pointer_grab_xid(None);
   panel.HandleInputWindowButtonRelease(
       panel.top_left_input_xid_, -5, -6, 1, CurrentTime);
-  EXPECT_EQ(None, xconn_->pointer_grab_xid());
 
   // The titlebar should be offset by the drag and made a bit wider.
   EXPECT_EQ(initial_x - 5, titlebar_info->x);
@@ -195,10 +195,10 @@ TEST_F(PanelTest, Resize) {
 
   // The panel should move along with its titlebar, and it should get wider
   // and taller by the amount of the drag.
-  EXPECT_EQ(initial_x - 5, panel_info->x);
-  EXPECT_EQ(titlebar_info->y + titlebar_info->height, panel_info->y);
-  EXPECT_EQ(orig_width + 5, panel_info->width);
-  EXPECT_EQ(orig_panel_height + 6, panel_info->height);
+  EXPECT_EQ(initial_x - 5, content_info->x);
+  EXPECT_EQ(titlebar_info->y + titlebar_info->height, content_info->y);
+  EXPECT_EQ(orig_width + 5, content_info->width);
+  EXPECT_EQ(orig_content_height + 6, content_info->height);
 }
 
 // Test that the _CHROME_STATE property is updated correctly to reflect the
@@ -208,57 +208,51 @@ TEST_F(PanelTest, ChromeState) {
   const XAtom collapsed_atom = wm_->GetXAtom(ATOM_CHROME_STATE_COLLAPSED_PANEL);
 
   // Create a panel.
-  XWindow titlebar_xid = CreateTitlebarWindow(200, 20);
+  XWindow titlebar_xid = CreatePanelTitlebarWindow(200, 20);
   Window titlebar_win(wm_.get(), titlebar_xid);
-  XWindow panel_xid = CreatePanelWindow(200, 400, titlebar_xid, false);
-  Window panel_win(wm_.get(), panel_xid);
-  Panel panel(panel_bar_, &panel_win, &titlebar_win, 0);
+  XWindow content_xid = CreatePanelContentWindow(200, 400, titlebar_xid, false);
+  Window content_win(wm_.get(), content_xid);
+  Panel panel(wm_.get(), &content_win, &titlebar_win, 0, 0);
 
   // The panel's content window should have have a collapsed state in
   // _CHROME_STATE initially.
+  panel.NotifyChromeAboutState(false);
   std::vector<int> values;
-  ASSERT_TRUE(xconn_->GetIntArrayProperty(panel_xid, state_atom, &values));
+  ASSERT_TRUE(xconn_->GetIntArrayProperty(content_xid, state_atom, &values));
   ASSERT_EQ(1, values.size());
   EXPECT_EQ(collapsed_atom, values[0]);
 
-  // After we tell the panel to expand itself, it should remove the
-  // collapsed atom (and additionally, the entire property).
-  panel.SetState(true);
-  EXPECT_FALSE(xconn_->GetIntArrayProperty(panel_xid, state_atom, &values));
+  // After we tell the panel to notify Chrome that it's been expanded, it
+  // should remove the collapsed atom (and additionally, the entire
+  // property).
+  panel.NotifyChromeAboutState(true);
+  EXPECT_FALSE(xconn_->GetIntArrayProperty(content_xid, state_atom, &values));
 }
 
-// Test that we hide content windows' shadows when panels are collapsed;
-// they can show up across the bottom of the screen otherwise.
+// Test that we're able to hide content windows' shadows (we do this when
+// panels are collapsed so they won't show up across the bottom of the
+// screen).
 TEST_F(PanelTest, Shadows) {
   // Create a panel.
-  XWindow titlebar_xid = CreateTitlebarWindow(200, 20);
+  XWindow titlebar_xid = CreatePanelTitlebarWindow(200, 20);
   Window titlebar_win(wm_.get(), titlebar_xid);
-  XWindow panel_xid = CreatePanelWindow(200, 400, titlebar_xid, false);
-  Window panel_win(wm_.get(), panel_xid);
-  Panel panel(panel_bar_, &panel_win, &titlebar_win, 0);
+  XWindow content_xid = CreatePanelContentWindow(200, 400, titlebar_xid, false);
+  Window content_win(wm_.get(), content_xid);
+  Panel panel(wm_.get(), &content_win, &titlebar_win, 0, 0);
 
-  // The titlebar's shadow should be fully visible initially, but the
-  // content window's shadow shouldn't.
+  // Both the titlebar and content windows' shadows should be visible
+  // initially.
   EXPECT_TRUE(titlebar_win.shadow()->is_shown());
-  EXPECT_TRUE(panel_win.shadow()->is_shown());
+  EXPECT_TRUE(content_win.shadow()->is_shown());
   EXPECT_DOUBLE_EQ(1.0, titlebar_win.shadow()->opacity());
-  EXPECT_DOUBLE_EQ(0.0, panel_win.shadow()->opacity());
+  EXPECT_DOUBLE_EQ(1.0, content_win.shadow()->opacity());
 
-  // After we tell the panel to expand itself, the content window's
-  // shadow's visibility should be at 1.
-  panel.SetState(true);
+  // Now tell the panel to hide the content shadow.
+  panel.SetContentShadowOpacity(0, 0);
   EXPECT_TRUE(titlebar_win.shadow()->is_shown());
-  EXPECT_TRUE(panel_win.shadow()->is_shown());
+  EXPECT_TRUE(content_win.shadow()->is_shown());
   EXPECT_DOUBLE_EQ(1.0, titlebar_win.shadow()->opacity());
-  EXPECT_DOUBLE_EQ(1.0, panel_win.shadow()->opacity());
-
-  // The content window's shadow should disappear again if we collapse the
-  // panel.
-  panel.SetState(false);
-  EXPECT_TRUE(titlebar_win.shadow()->is_shown());
-  EXPECT_TRUE(panel_win.shadow()->is_shown());
-  EXPECT_DOUBLE_EQ(1.0, titlebar_win.shadow()->opacity());
-  EXPECT_DOUBLE_EQ(0.0, panel_win.shadow()->opacity());
+  EXPECT_DOUBLE_EQ(0.0, content_win.shadow()->opacity());
 }
 
 }  // namespace window_manager

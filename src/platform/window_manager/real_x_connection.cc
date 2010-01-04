@@ -210,7 +210,7 @@ bool RealXConnection::DeselectInputOnWindow(XWindow xid, int event_mask) {
   return true;
 }
 
-bool RealXConnection::AddPassiveButtonGrabOnWindow(
+bool RealXConnection::AddButtonGrabOnWindow(
     XWindow xid, int button, int event_mask, bool synchronous) {
   xcb_grab_button(xcb_conn_,
                   0,                    // owner_events
@@ -227,14 +227,14 @@ bool RealXConnection::AddPassiveButtonGrabOnWindow(
   return true;
 }
 
-bool RealXConnection::RemovePassiveButtonGrabOnWindow(XWindow xid, int button) {
+bool RealXConnection::RemoveButtonGrabOnWindow(XWindow xid, int button) {
   xcb_ungrab_button(xcb_conn_, button, xid, XCB_NONE);
   return true;
 }
 
-bool RealXConnection::AddActivePointerGrabForWindow(XWindow xid,
-                                                    int event_mask,
-                                                    Time timestamp) {
+bool RealXConnection::AddPointerGrabForWindow(XWindow xid,
+                                              int event_mask,
+                                              Time timestamp) {
   xcb_grab_pointer_cookie_t cookie =
       xcb_grab_pointer(xcb_conn_,
                        0,                    // owner_events
@@ -250,21 +250,19 @@ bool RealXConnection::AddActivePointerGrabForWindow(XWindow xid,
       xcb_grab_pointer_reply(xcb_conn_, cookie, &error));
   scoped_ptr_malloc<xcb_generic_error_t> scoped_error(error);
   if (error) {
-    LOG(WARNING) << "Active pointer grab for window " << XidStr(xid)
-                 << " failed";
+    LOG(WARNING) << "Pointer grab for window " << XidStr(xid) << " failed";
     return false;
   }
 
   if (reply->status != XCB_GRAB_STATUS_SUCCESS) {
-    LOG(WARNING) << "Active pointer grab for window " << XidStr(xid)
+    LOG(WARNING) << "Pointer grab for window " << XidStr(xid)
                  << " returned status " << reply->status;
     return false;
   }
   return true;
 }
 
-bool RealXConnection::RemoveActivePointerGrab(bool replay_events,
-                                              Time timestamp) {
+bool RealXConnection::RemovePointerGrab(bool replay_events, Time timestamp) {
   if (replay_events)
     xcb_allow_events(xcb_conn_, XCB_ALLOW_REPLAY_POINTER, timestamp);
   else
@@ -327,38 +325,48 @@ bool RealXConnection::GetSizeHintsForWindow(XWindow xid, SizeHints* hints_out) {
   }
 
   // Flag values from ICCCM 2.0:
-  static const int kUSPositionFlag  = 1;    // User-specified x, y
-  static const int kUSSizeFlag      = 2;    // User-specified width, height
-  static const int kPPositionFlag   = 4;    // Program-specified position
-  static const int kPSizeFlag       = 8;    // Program-specified size
-  static const int kPMinSizeFlag    = 16;   // Program-specified minimum size
-  static const int kPMaxSizeFlag    = 32;   // Program-specified maximum size
-  static const int kPResizeIncFlag  = 64;   // Program-specified resize inc
-  static const int kPAspectFlag     = 128;  // Program-specified aspect ratios
-  static const int kPBaseSizeFlag   = 256;  // Program-specified base size
-  static const int kPWinGravityFlag = 512;  // Program-specified window gravity
-
+  enum Flags {
+    FLAG_US_POSITION   = 1,    // User-specified position
+    FLAG_US_SIZE       = 2,    // User-specified width, height
+    FLAG_P_POSITION    = 4,    // Program-specified position
+    FLAG_P_SIZE        = 8,    // Program-specified size
+    FLAG_P_MIN_SIZE    = 16,   // Program-specified minimum size
+    FLAG_P_MAX_SIZE    = 32,   // Program-specified maximum size
+    FLAG_P_RESIZE_INC  = 64,   // Program-specified resize inc
+    FLAG_P_ASPECT_FLAG = 128,  // Program-specified aspect ratios
+    FLAG_P_BASE_SIZE   = 256,  // Program-specified base size
+    FLAG_P_WIN_GRAVITY = 512,  // Program-specified window gravity
+  };
   uint32_t flags = values[0];
 
-  if ((flags & kUSSizeFlag) || (flags & kPSizeFlag)) {
+  if ((flags & FLAG_US_SIZE) || (flags & FLAG_P_SIZE)) {
     hints_out->width = values[3];
     hints_out->height = values[4];
   }
-  if (flags & kPMinSizeFlag) {
+  if (flags & FLAG_P_MIN_SIZE) {
     hints_out->min_width = values[5];
     hints_out->min_height = values[6];
   }
-  if (flags & kPMaxSizeFlag) {
+  if (flags & FLAG_P_MAX_SIZE) {
     hints_out->max_width = values[7];
     hints_out->max_height = values[8];
   }
-  if (flags & kPResizeIncFlag) {
+  if (flags & FLAG_P_RESIZE_INC) {
     hints_out->width_increment = values[9];
     hints_out->height_increment = values[10];
   }
-  if ((flags & kPBaseSizeFlag) && values.size() >= 17) {
+  if (flags & FLAG_P_ASPECT_FLAG) {
+    hints_out->min_aspect_x = values[11];
+    hints_out->min_aspect_y = values[12];
+    hints_out->max_aspect_x = values[13];
+    hints_out->max_aspect_y = values[14];
+  }
+  if ((flags & FLAG_P_BASE_SIZE) && values.size() >= 17) {
     hints_out->base_width = values[15];
     hints_out->base_height = values[16];
+  }
+  if ((flags & FLAG_P_WIN_GRAVITY) && values.size() >= 18) {
+    hints_out->win_gravity = values[17];
   }
 
   return true;

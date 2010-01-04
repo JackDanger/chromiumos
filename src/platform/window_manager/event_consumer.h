@@ -58,14 +58,20 @@ class EventConsumer {
     return false;
   }
 
-  // Handle a button press or release on a window.  The position is
+  // Handle a button press or release on a window.  The first position is
   // relative to the upper-left corner of the window.
-  virtual bool HandleButtonPress(
-      XWindow xid, int x, int y, int button, Time timestamp) {
+  virtual bool HandleButtonPress(XWindow xid,
+                                 int x, int y,
+                                 int x_root, int y_root,
+                                 int button,
+                                 Time timestamp) {
     return false;
   }
-  virtual bool HandleButtonRelease(
-      XWindow xid, int x, int y, int button, Time timestamp) {
+  virtual bool HandleButtonRelease(XWindow xid,
+                                   int x, int y,
+                                   int x_root, int y_root,
+                                   int button,
+                                   Time timestamp) {
     return false;
   }
 

@@ -131,4 +131,7 @@ deps = {
     # xf86-video-msm from codeaurora.org
     _third_party_base + "xf86-video-msm": "/xf86-video-msm.git",
 
+    # pango (i18n text rendering)
+    _third_party_base + "pango": "/pango.git",
+
 }

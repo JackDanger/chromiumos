@@ -57,9 +57,9 @@ class BasicWindowManagerTest : public ::testing::Test {
   // Creates a toplevel client window with an arbitrary size.
   XWindow CreateSimpleWindow();
 
-  // Create a panel titlebar or panel content window.
-  XWindow CreateTitlebarWindow(int width, int height);
-  XWindow CreatePanelWindow(
+  // Create a panel titlebar or content window.
+  XWindow CreatePanelTitlebarWindow(int width, int height);
+  XWindow CreatePanelContentWindow(
       int width, int height, XWindow titlebar_xid, bool expanded);
 
   // Make the window manager handle a CreateNotify event and, if the window

@@ -18,6 +18,7 @@ extern "C" {
 
 #include "base/basictypes.h"
 #include "base/scoped_ptr.h"
+#include "window_manager/clutter_interface.h"
 #include "window_manager/event_consumer.h"
 #include "window_manager/key_bindings.h"
 #include "window_manager/wm_ipc.h"  // for WmIpc::Message
@@ -80,6 +81,7 @@ class LayoutManager : public EventConsumer {
   int y() const { return y_; }
   int width() const { return width_; }
   int height() const { return height_; }
+  int overview_panning_offset() const { return overview_panning_offset_; }
 
   // Returns a pointer to the struct in which LayoutManager tracks
   // relevant user metrics.
@@ -108,9 +110,19 @@ class LayoutManager : public EventConsumer {
       Window* win, int req_x, int req_y, int req_width, int req_height);
 
   // Handle events received by windows.
-  bool HandleButtonPress(XWindow xid, int x, int y, int button, Time timestamp);
+  bool HandleButtonPress(XWindow xid,
+                         int x, int y,
+                         int x_root, int y_root,
+                         int button,
+                         Time timestamp);
+  bool HandleButtonRelease(XWindow xid,
+                           int x, int y,
+                           int x_root, int y_root,
+                           int button,
+                           Time timestamp);
   bool HandlePointerEnter(XWindow xid, Time timestamp);
   bool HandlePointerLeave(XWindow xid, Time timestamp);
+  bool HandlePointerMotion(XWindow xid, int x, int y, Time timestamp);
   bool HandleFocusChange(XWindow xid, bool focus_in);
 
   // Handle messages from client apps.
@@ -187,10 +199,15 @@ class LayoutManager : public EventConsumer {
     int overview_width() const { return overview_width_; }
     int overview_height() const { return overview_height_; }
     int overview_scale() const { return overview_scale_; }
-    int overview_center_x() const {
-      return overview_x_ + 0.5 * overview_width_;
+
+    // Get the absolute X-position of the window's center.
+    int GetAbsoluteOverviewCenterX() const {
+      return layout_manager_->x() + overview_x_ + 0.5 * overview_width_;
     }
-    int overview_offscreen_y() const {
+
+    // Get the absolute Y-position to place a window directly below the
+    // layout manager's region.
+    int GetAbsoluteOverviewOffscreenY() const {
       return layout_manager_->y() + layout_manager_->height();
     }
 
@@ -203,18 +220,32 @@ class LayoutManager : public EventConsumer {
              y < overview_y_ + overview_height_;
     }
 
-    // Arrange the window for active mode.  This involves either moving the
-    // client window on- or offscreen (depending on 'window_is_active'),
-    // animating the composited window according to 'state_', and possibly
-    // focusing the window or one of its transients.
-    void ArrangeForActiveMode(bool window_is_active);
+    // Get the absolute position of the window for overview mode.
+    int GetAbsoluteOverviewX() const;
+    int GetAbsoluteOverviewY() const;
 
-    // Arrange the window for overview mode.  This involves animating its
+    // Configure the window for active mode.  This involves either moving
+    // the client window on- or offscreen (depending on
+    // 'window_is_active'), animating the composited window according to
+    // 'state_', and possibly focusing the window or one of its transients.
+    // 'to_left_of_active' describes whether the window is to the left of
+    // the active window or not.  If 'update_focus' is true, the window
+    // will take the focus if it's active.
+    void ConfigureForActiveMode(bool window_is_active,
+                                bool to_left_of_active,
+                                bool update_focus);
+
+    // Configure the window for overview mode.  This involves animating its
     // composited position and scale as specified by 'overview_*' and
     // 'state_', moving its client window offscreen (so it won't receive
-    // mouse events), and moving its input window onscreen.
-    void ArrangeForOverviewMode(bool window_is_magnified,
-                                bool dim_if_unmagnified);
+    // mouse events), and moving its input window onscreen.  If
+    // 'incremental' is true, this is assumed to be an incremental change
+    // being done in response to e.g. a mouse drag, so we will skip doing
+    // things like animating changes and restacking windows.
+    void ConfigureForOverviewMode(bool window_is_magnified,
+                                  bool dim_if_unmagnified,
+                                  ToplevelWindow* toplevel_to_stack_under,
+                                  bool incremental);
 
     // Set 'overview_x_' and 'overview_y_' to the passed-in values.
     void UpdateOverviewPosition(int x, int y) {
@@ -318,6 +349,10 @@ class LayoutManager : public EventConsumer {
     // windows.
     void RestackTransientWindowOnTop(TransientWindow* transient);
 
+    // Static texture actor that we clone for each actor to draw a gradient
+    // over windows when they're inactive.
+    static ClutterInterface::Actor* static_gradient_texture_;
+
     // Window object for the toplevel client window.
     Window* win_;  // not owned
 
@@ -332,13 +367,16 @@ class LayoutManager : public EventConsumer {
     State state_;
 
     // Position, dimensions, and scale that should be used for drawing the
-    // window in overview mode.  These are absolute, rather than relative
-    // to the layout manager's origin.
+    // window in overview mode.  The X and Y coordinates are relative to
+    // the layout manager's origin.
     int overview_x_;
     int overview_y_;
     int overview_width_;
     int overview_height_;
     double overview_scale_;
+
+    // Cloned copy of 'static_gradient_texture_'.
+    scoped_ptr<ClutterInterface::Actor> gradient_actor_;
 
     // Transient windows belonging to this toplevel window, keyed by XID.
     std::map<XWindow, std::tr1::shared_ptr<TransientWindow> > transients_;
@@ -360,7 +398,7 @@ class LayoutManager : public EventConsumer {
   // NULL if the input window doesn't belong to us.
   ToplevelWindow* GetToplevelWindowByInputXid(XWindow xid);
 
-  // Get the 0-based index of the passed-in toplevel within 'windows_'.
+  // Get the 0-based index of the passed-in toplevel within 'toplevels_'.
   // Returns -1 if it isn't present.
   int GetIndexForToplevelWindow(const ToplevelWindow& toplevel) const;
 
@@ -421,13 +459,24 @@ class LayoutManager : public EventConsumer {
   // Switch the current mode.
   void SetMode(Mode mode);
 
-  // Arrange all windows for various modes.
-  void ArrangeToplevelWindowsForActiveMode();
-  void ArrangeToplevelWindowsForOverviewMode();
+  // Calculate toplevel windows' positions and move them there.
+  void LayoutToplevelWindowsForActiveMode(bool update_focus);
+  // 'magnified_x' is passed to CalculatePositionsForOverviewMode().
+  void LayoutToplevelWindowsForOverviewMode(int magnified_x);
 
   // Calculate the position and scaling of all windows for overview mode
-  // and record it in 'windows_'.
-  void CalculateOverview();
+  // and record it in 'toplevels_'.  If 'magnified_x' (given relative to
+  // the layout manager's origin) is non-negative,
+  // 'overview_panning_offset_' is set such that the magnified window is as
+  // close to centered as possible while still being positioned underneath
+  // 'magnified_x'.  This is useful for ensuring that the magnified window
+  // remains underneath the pointer.
+  void CalculatePositionsForOverviewMode(int magnified_x);
+
+  // Configure all toplevel windows for overview mode based on their
+  // previously-calculated positions.  'incremental' is passed to
+  // ToplevelWindow::ConfigureForOverviewMode().
+  void ConfigureWindowsForOverviewMode(bool incremental);
 
   // Get the toplevel window whose image in overview mode covers the
   // passed-in position, or NULL if no such window exists.
@@ -469,6 +518,14 @@ class LayoutManager : public EventConsumer {
 
   // Ask the active window to delete itself.
   void SendDeleteRequestToActiveWindow();
+
+  // Pan across the windows horizontally in overview mode.
+  // 'offset' is applied relative to the current panning offset.
+  void PanOverviewMode(int offset);
+
+  // Update the panning in overview mode based on mouse motion stored in
+  // 'overview_background_event_coalescer_'.  Invoked by a timer.
+  void UpdateOverviewPanningForMotion();
 
   WindowManager* wm_;  // not owned
 
@@ -517,9 +574,22 @@ class LayoutManager : public EventConsumer {
   // overview mode, and may be NULL.
   Window* create_browser_window_;
 
+  // Amount that toplevel windows' positions should be offset to the left
+  // for overview mode.  Used to implement panning.
+  int overview_panning_offset_;
+
   // We save the requested positions for the floating tab here so we can
   // apply them periodically in MoveFloatingTab().
   scoped_ptr<MotionEventCoalescer> floating_tab_event_coalescer_;
+
+  // Mouse pointer motion gets stored here during a drag on the background
+  // window in overview mode so that it can be applied periodically in
+  // UpdateOverviewPanningForMotion().
+  scoped_ptr<MotionEventCoalescer> overview_background_event_coalescer_;
+
+  // X component of the pointer's previous position during a drag on the
+  // background window.
+  int overview_drag_last_x_;
 
   Metrics metrics_;
 

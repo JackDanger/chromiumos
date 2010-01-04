@@ -56,7 +56,7 @@ Window::Window(WindowManager* wm, XWindow xid)
       wm_state_modal_(false) {
   // Listen for focus, property, and shape changes on this window.
   wm_->xconn()->SelectInputOnWindow(
-      xid_, FocusChangeMask|PropertyChangeMask, true);
+      xid_, FocusChangeMask | PropertyChangeMask, true);
   wm_->xconn()->SelectShapeEventsOnWindow(xid_);
 
   // Get the window's initial state.
@@ -392,15 +392,15 @@ bool Window::SendDeleteRequest(Time timestamp) {
   return wm_->xconn()->SendEvent(xid_, &event, 0);
 }
 
-bool Window::AddPassiveButtonGrab() {
-  VLOG(2) << "Adding passive button grab for " << xid_str();
-  return wm_->xconn()->AddPassiveButtonGrabOnWindow(
+bool Window::AddButtonGrab() {
+  VLOG(2) << "Adding button grab for " << xid_str();
+  return wm_->xconn()->AddButtonGrabOnWindow(
       xid_, AnyButton, ButtonPressMask, true);  // synchronous=true
 }
 
-bool Window::RemovePassiveButtonGrab() {
-  VLOG(2) << "Removing passive button grab for " << xid_str();
-  return wm_->xconn()->RemovePassiveButtonGrabOnWindow(xid_, AnyButton);
+bool Window::RemoveButtonGrab() {
+  VLOG(2) << "Removing button grab for " << xid_str();
+  return wm_->xconn()->RemoveButtonGrabOnWindow(xid_, AnyButton);
 }
 
 void Window::GetMaxSize(int desired_width, int desired_height,
@@ -652,6 +652,10 @@ void Window::StackCompositedBelow(ClutterInterface::Actor* actor,
       shadow_->group()->Raise(shadow_actor);
     }
   }
+}
+
+ClutterInterface::Actor* Window::GetBottomActor() {
+  return (shadow_.get() ? shadow_->group() : actor_.get());
 }
 
 void Window::UpdateShadowIfNecessary() {

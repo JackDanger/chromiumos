@@ -24,48 +24,49 @@ typedef ::Window XWindow;
 
 namespace window_manager {
 
-class PanelBar;
 class WindowManager;
 
-// A single panel.  Each panel consists of both a panel window (the panel's
-// contents) and a titlebar window (a small window drawn in the bar when
-// the panel is collapsed or at the top of the panel when it's expanded).
-// 'initial_right' is the initial position of the right edge of the panel.
+// A panel, representing a pop-up window.  Each panel consists of a content
+// window (the panel's contents) and a titlebar window (a small window
+// drawn in the bar when the panel is collapsed or at the top of the panel
+// when it's expanded).  The right edges of the titlebar and content
+// windows are aligned.
 class Panel {
  public:
-  Panel(PanelBar* panel_bar,
-        Window* panel_win,
+  // 'initial_right' is one pixel to the right of the initial position of
+  // the right edge of the panel, and 'initial_y' is the initial position
+  // of the top of the titlebar.  For example, to place the left column of
+  // a 10-pixel-wide panel at X-coordinate 0 and the right column at 9,
+  // pass 10 for 'initial_right'.
+  Panel(WindowManager* wm,
+        Window* content_win,
         Window* titlebar_win,
-        int initial_right);
+        int initial_right,
+        int initial_y);
   ~Panel();
 
-  const Window* const_panel_win() const { return panel_win_; }
-  Window* panel_win() { return panel_win_; }
+  const Window* const_content_win() const { return content_win_; }
+  Window* content_win() { return content_win_; }
   Window* titlebar_win() { return titlebar_win_; }
-  int snapped_right() const { return snapped_right_; }
-  void set_snapped_right(int x) { snapped_right_ = x; }
-  bool is_expanded() const { return is_expanded_; }
 
-  // Get the X ID of the panel window.  This is handy for logging.
-  const std::string& xid_str() const { return panel_win_->xid_str(); }
+  // Get the X ID of the content window.  This is handy for logging.
+  const std::string& xid_str() const { return content_win_->xid_str(); }
 
   // The current position of one pixel beyond the right edge of the panel.
-  int cur_right() const;
+  int right() const { return content_x() + content_width(); }
 
-  // The current left edge of the panel or titlebar window (that is, its
+  // The current left edge of the content or titlebar window (that is, its
   // composited position).
-  int cur_panel_left() const;
-  int cur_titlebar_left() const;
-  int cur_panel_center() const;
+  int content_x() const { return content_win_->composited_x(); }
+  int titlebar_x() const { return titlebar_win_->composited_x(); }
+  int content_center() const { return content_x() + 0.5 * content_width(); }
 
-  // The snapped left edge of the panel or titlebar window (see
-  // 'snapped_right_' for details).
-  int snapped_panel_left() const;
-  int snapped_titlebar_left() const;
+  int content_width() const { return content_win_->client_width(); }
+  int titlebar_width() const { return titlebar_win_->client_width(); }
 
-  // Width of the panel or titlebar windows.
-  int panel_width() const;
-  int titlebar_width() const;
+  int content_height() const { return content_win_->client_height(); }
+  int titlebar_height() const { return titlebar_win_->client_height(); }
+  int total_height() const { return content_height() + titlebar_height(); }
 
   // Fill the passed-in vector with all of the panel's input windows (in an
   // arbitrary order).
@@ -78,50 +79,49 @@ class Panel {
       XWindow xid, int x, int y, int button, Time timestamp);
   void HandleInputWindowPointerMotion(XWindow xid, int x, int y);
 
-  // Expand or collapse the panel, notifying the client app of the change.
-  void SetState(bool is_expanded);
+  // Move the panel.  'right' is given in terms of one pixel beyond
+  // the panel's right edge (since content and titlebar windows share a
+  // common right edge), while 'y' is the top of the titlebar window.
+  void MoveX(int right, bool move_client_windows, int anim_ms);
+  void MoveY(int y, bool move_client_windows, int anim_ms);
 
-  // Move the panel.  Positions are given in terms of panels' right
-  // edges (since panel and titlebar windows share a common right edge).
-  // TODO: This is weird; 'right' is actually one pixel beyond the panel's
-  // right edge.
-  void Move(int right, int anim_ms);
+  // Set the titlebar window's width (while keeping it right-aligned with
+  // the content window).
+  void SetTitlebarWidth(int width);
 
-  // Handle the panel bar being moved.  This just updates our Y value; the
-  // panel bar is responsible for moving all of the panels left or right as
-  // needed.
-  void HandlePanelBarMove();
+  // Set the opacity of the content window's drop shadow.
+  void SetContentShadowOpacity(double opacity, int anim_ms);
+
+  // Set whether the panel should be resizable by dragging its borders.
+  void SetResizable(bool resizable);
 
   // Stack the panel's client and composited windows at the top of the
-  // passed-in layer.
+  // passed-in layer.  Input windows are included.
   void StackAtTopOfLayer(StackingManager::Layer layer);
+
+  // Notify Chrome about the panel's current visibility state and update
+  // the content window's _CHROME_STATE property.
+  bool NotifyChromeAboutState(bool expanded);
 
  private:
   FRIEND_TEST(PanelTest, InputWindows);  // uses '*_input_xid_'
   FRIEND_TEST(PanelTest, Resize);        // uses '*_input_xid_'
 
-  WindowManager* wm();
+  // Resize the content window to the passed-in dimensions.  The titlebar
+  // window is moved above the content window if necessary and resized to
+  // match the content window's width.  Note that the panel's input windows
+  // aren't configured; use ConfigureInputWindows() to do that.
+  void Resize(int width, int height, Window::Gravity gravity);
 
-  void Resize(int width, int height,
-              Window::Gravity gravity,
-              bool configure_input_windows);
-
-  // Update the panel window's _CHROME_STATE property to reflect the
-  // current expanded/collapsed state.
-  bool UpdateChromeStateProperty();
-
-  // Notify Chrome about the panel's current visibility state.
-  bool NotifyChromeAboutState();
+  // Move and resize the input windows appropriately for the panel's
+  // current configuration.
+  void ConfigureInputWindows();
 
   // Called periodically by 'resize_event_coalescer_'.
   void ApplyResize();
 
-  // Position, resize, and stack the input windows appropriately for the
-  // panel's current configuration.
-  void ConfigureInputWindows();
-
-  PanelBar* panel_bar_;   // not owned
-  Window* panel_win_;     // not owned
+  WindowManager* wm_;     // not owned
+  Window* content_win_;   // not owned
   Window* titlebar_win_;  // not owned
 
   // Translucent resize box used when opaque resizing is disabled.
@@ -153,21 +153,27 @@ class Panel {
   XWindow left_input_xid_;
   XWindow right_input_xid_;
 
-  // X position of the right edge of where the titlebar wants to be when
-  // collapsed.  For collapsed panels that are being dragged, this may be
-  // different from the actual composited position -- we only snap the
-  // panels to this position when the drag is complete.
-  int snapped_right_;
+  // Should we configure handles around the panel that can be dragged to
+  // resize it?
+  bool resizable_;
 
-  // Is the panel expanded or collapsed?
-  bool is_expanded_;
-
+  // XID of the input window currently being dragged to resize the panel,
+  // or None if no drag is in progress.
   XWindow drag_xid_;
+
+  // Gravity holding a corner in place as the panel is being resized (e.g.
+  // GRAVITY_SOUTHEAST if 'top_left_input_xid_' is being dragged).
   Window::Gravity drag_gravity_;
+
+  // Pointer coordinates where the resize drag started.
   int drag_start_x_;
   int drag_start_y_;
+
+  // Initial content window size at the start of the resize.
   int drag_orig_width_;
   int drag_orig_height_;
+
+  // Most-recent content window size during a resize.
   int drag_last_width_;
   int drag_last_height_;
 

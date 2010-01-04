@@ -31,6 +31,13 @@ DEFINE_bool(lm_honor_window_size_hints, false,
             "size increment, etc.) instead of automatically making it fill the "
             "screen");
 
+DEFINE_bool(lm_new_overview_mode, false, "Use the new overview mode");
+
+DEFINE_string(lm_overview_gradient_image,
+              "../assets/images/window_overview_gradient.png",
+              "Image to use for gradients on inactive windows in "
+              "overview mode");
+
 namespace window_manager {
 
 using std::map;
@@ -44,6 +51,17 @@ using chromeos::NewPermanentCallback;
 
 // Amount of padding that should be used between windows in overview mode.
 static const int kWindowPadding = 10;
+
+// What's the maximum fraction of the manager's total size that a window
+// should be scaled to in overview mode?
+static const double kOverviewWindowMaxSizeRatio = 0.5;
+
+// What fraction of the manager's total width should each window use for
+// peeking out underneath the window on top of it in overview mode?
+static const double kOverviewExposedWindowRatio = 0.1;
+
+// Animation speed for windows in new overview mode.
+static const int kOverviewAnimMs = 100;
 
 // Padding between the create browser window and the bottom of the screen.
 static const int kCreateBrowserWindowVerticalPadding = 10;
@@ -62,6 +80,10 @@ static const int kWindowAnimMs = 200;
 // Duration between position redraws while a tab is being dragged.
 static const int kFloatingTabUpdateMs = 50;
 
+// Duration between panning updates while a drag is occurring on the
+// background window in overview mode.
+static const int kOverviewDragUpdateMs = 50;
+
 // Maximum fraction of the total height that magnified windows can take up
 // in overview mode.
 static const double kOverviewHeightFraction = 0.3;
@@ -69,6 +91,9 @@ static const double kOverviewHeightFraction = 0.3;
 // When animating a window zooming out while switching windows, what size
 // should it scale to?
 static const double kWindowFadeSizeFraction = 0.5;
+
+ClutterInterface::Actor*
+    LayoutManager::ToplevelWindow::static_gradient_texture_ = NULL;
 
 LayoutManager::LayoutManager
     (WindowManager* wm, int x, int y, int width, int height)
@@ -85,12 +110,25 @@ LayoutManager::LayoutManager
       toplevel_under_floating_tab_(NULL),
       tab_summary_(NULL),
       create_browser_window_(NULL),
+      overview_panning_offset_(0),
       floating_tab_event_coalescer_(
           new MotionEventCoalescer(
               NewPermanentCallback(this, &LayoutManager::MoveFloatingTab),
               kFloatingTabUpdateMs)),
+      overview_background_event_coalescer_(
+          new MotionEventCoalescer(
+              NewPermanentCallback(
+                  this, &LayoutManager::UpdateOverviewPanningForMotion),
+              kOverviewDragUpdateMs)),
+      overview_drag_last_x_(-1),
       saw_map_request_(false) {
   Resize(width, height);
+
+  if (FLAGS_lm_new_overview_mode) {
+    int event_mask = ButtonPressMask | ButtonReleaseMask | PointerMotionMask;
+    wm_->xconn()->AddButtonGrabOnWindow(
+        wm_->background_xid(), 1, event_mask, false);
+  }
 
   KeyBindings* kb = wm_->key_bindings();
   kb->AddAction(
@@ -152,11 +190,22 @@ LayoutManager::LayoutManager
       NewPermanentCallback(
           this, &LayoutManager::SendDeleteRequestToActiveWindow),
       NULL, NULL);
+  kb->AddAction(
+      "pan-overview-mode-left",
+      NewPermanentCallback(this, &LayoutManager::PanOverviewMode, -50),
+      NULL, NULL);
+  kb->AddAction(
+      "pan-overview-mode-right",
+      NewPermanentCallback(this, &LayoutManager::PanOverviewMode, 50),
+      NULL, NULL);
 
   SetMode(MODE_ACTIVE);
 }
 
 LayoutManager::~LayoutManager() {
+  if (FLAGS_lm_new_overview_mode)
+    wm_->xconn()->RemoveButtonGrabOnWindow(wm_->background_xid(), 1);
+
   KeyBindings* kb = wm_->key_bindings();
   kb->RemoveAction("switch-to-overview-mode");
   kb->RemoveAction("switch-to-active-mode");
@@ -166,6 +215,8 @@ LayoutManager::~LayoutManager() {
   kb->RemoveAction("cycle-magnification-backward");
   kb->RemoveAction("switch-to-active-mode-for-magnified");
   kb->RemoveAction("delete-active-window");
+  kb->RemoveAction("pan-overview-mode-left");
+  kb->RemoveAction("pan-overview-mode-right");
 
   toplevels_.clear();
   magnified_toplevel_ = NULL;
@@ -273,7 +324,7 @@ void LayoutManager::HandleWindowMap(Window* win) {
           create_browser_window_, StackingManager::LAYER_TOPLEVEL_WINDOW);
       if (mode_ == MODE_OVERVIEW) {
         create_browser_window_->ShowComposited();
-        ArrangeToplevelWindowsForOverviewMode();
+        LayoutToplevelWindowsForOverviewMode(-1);
       }
       break;
     }
@@ -326,7 +377,7 @@ void LayoutManager::HandleWindowMap(Window* win) {
         case MODE_OVERVIEW:
           // In overview mode, just put new windows on the right.
           toplevels_.push_back(toplevel);
-          ArrangeToplevelWindowsForOverviewMode();
+          LayoutToplevelWindowsForOverviewMode(-1);
           break;
       }
       break;
@@ -353,7 +404,7 @@ void LayoutManager::HandleWindowUnmap(Window* win) {
   if (create_browser_window_ == win) {
     create_browser_window_ = NULL;
     if (mode_ == MODE_OVERVIEW)
-      ArrangeToplevelWindowsForOverviewMode();
+      LayoutToplevelWindowsForOverviewMode(-1);
   }
 
   ToplevelWindow* toplevel_owner = GetToplevelWindowOwningTransientWindow(*win);
@@ -380,7 +431,7 @@ void LayoutManager::HandleWindowUnmap(Window* win) {
     toplevels_.erase(toplevels_.begin() + index);
 
     if (mode_ == MODE_OVERVIEW) {
-      ArrangeToplevelWindowsForOverviewMode();
+      LayoutToplevelWindowsForOverviewMode(-1);
     } else if (mode_ == MODE_ACTIVE) {
       // If there's no active window now, then this was probably active
       // previously.  Choose a new active window if possible; relinquish
@@ -430,16 +481,28 @@ bool LayoutManager::HandleWindowConfigureRequest(
   return false;
 }
 
-bool LayoutManager::HandleButtonPress(
-    XWindow xid, int x, int y, int button, Time timestamp) {
-  // If the press was received by one of our input windows, we should
-  // switch to active mode, activating the corresponding client window.
+bool LayoutManager::HandleButtonPress(XWindow xid,
+                                      int x, int y,
+                                      int x_root, int y_root,
+                                      int button,
+                                      Time timestamp) {
   ToplevelWindow* toplevel = GetToplevelWindowByInputXid(xid);
   if (toplevel) {
     if (button == 1) {
-      active_toplevel_ = toplevel;
-      SetMode(MODE_ACTIVE);
+      if (FLAGS_lm_new_overview_mode && toplevel != magnified_toplevel_) {
+        SetMagnifiedToplevelWindow(toplevel);
+        LayoutToplevelWindowsForOverviewMode(std::max(x_root - x_, 0));
+      } else {
+        active_toplevel_ = toplevel;
+        SetMode(MODE_ACTIVE);
+      }
     }
+    return true;
+  }
+
+  if (xid == wm_->background_xid() && button == 1) {
+    overview_drag_last_x_ = x;
+    overview_background_event_coalescer_->Start();
     return true;
   }
 
@@ -458,15 +521,34 @@ bool LayoutManager::HandleButtonPress(
   return true;
 }
 
+bool LayoutManager::HandleButtonRelease(XWindow xid,
+                                        int x, int y,
+                                        int x_root, int y_root,
+                                        int button,
+                                        Time timestamp) {
+  if (xid != wm_->background_xid() || button != 1)
+    return false;
+
+  // The X server automatically removes our asynchronous pointer grab when
+  // the mouse buttons are released.
+  overview_background_event_coalescer_->Stop();
+
+  // We need to do one last configure to update the input windows'
+  // positions, which we didn't bother doing while panning.
+  ConfigureWindowsForOverviewMode(false);
+
+  return true;
+}
+
 bool LayoutManager::HandlePointerEnter(XWindow xid, Time timestamp) {
   ToplevelWindow* toplevel = GetToplevelWindowByInputXid(xid);
   if (!toplevel)
     return false;
   if (mode_ != MODE_OVERVIEW)
     return true;
-  if (toplevel != magnified_toplevel_) {
+  if (!FLAGS_lm_new_overview_mode && toplevel != magnified_toplevel_) {
     SetMagnifiedToplevelWindow(toplevel);
-    ArrangeToplevelWindowsForOverviewMode();
+    LayoutToplevelWindowsForOverviewMode(-1);
     SendTabSummaryMessage(toplevel, true);
   }
   return true;
@@ -498,6 +580,15 @@ bool LayoutManager::HandleFocusChange(XWindow xid, bool focus_in) {
   if (focus_in)
     wm_->SetActiveWindowProperty(win->xid());
 
+  return true;
+}
+
+bool LayoutManager::HandlePointerMotion(
+    XWindow xid, int x, int y, Time timestamp) {
+  if (xid != wm_->background_xid())
+    return false;
+
+  overview_background_event_coalescer_->StorePosition(x, y);
   return true;
 }
 
@@ -549,7 +640,8 @@ bool LayoutManager::HandleChromeMessage(const WmIpc::Message& msg) {
       }
 
       SetMagnifiedToplevelWindow(toplevel);
-      SendTabSummaryMessage(toplevel, true);
+      if (!FLAGS_lm_new_overview_mode)
+        SendTabSummaryMessage(toplevel, true);
       break;
     }
     default:
@@ -679,7 +771,7 @@ void LayoutManager::MoveFloatingTab() {
       }
       toplevel_under_floating_tab_ = toplevel;
       SetMagnifiedToplevelWindow(toplevel);
-      ArrangeToplevelWindowsForOverviewMode();
+      LayoutToplevelWindowsForOverviewMode(-1);
       SendTabSummaryMessage(toplevel, true);
     }
 
@@ -730,10 +822,10 @@ void LayoutManager::Resize(int width, int height) {
 
   switch (mode_) {
     case MODE_ACTIVE:
-      ArrangeToplevelWindowsForActiveMode();
+      LayoutToplevelWindowsForActiveMode(false);  // update_focus=false
       break;
     case MODE_OVERVIEW:
-      ArrangeToplevelWindowsForOverviewMode();
+      LayoutToplevelWindowsForOverviewMode(-1);
       break;
     default:
       DCHECK(false) << "Unhandled mode " << mode_ << " during resize";
@@ -745,7 +837,10 @@ LayoutManager::ToplevelWindow::ToplevelWindow(Window* win,
                                               LayoutManager* layout_manager)
     : win_(win),
       layout_manager_(layout_manager),
-      input_xid_(wm()->CreateInputWindow(-1, -1, 1, 1)),
+      input_xid_(
+          wm()->CreateInputWindow(
+              -1, -1, 1, 1,
+              ButtonPressMask | EnterWindowMask | LeaveWindowMask)),
       state_(STATE_NEW),
       overview_x_(0),
       overview_y_(0),
@@ -754,6 +849,13 @@ LayoutManager::ToplevelWindow::ToplevelWindow(Window* win,
       overview_scale_(1.0),
       stacked_transients_(new Stacker<TransientWindow*>),
       transient_to_focus_(NULL) {
+  if (FLAGS_lm_new_overview_mode && !static_gradient_texture_) {
+    static_gradient_texture_ = wm()->clutter()->CreateImage(
+        FLAGS_lm_overview_gradient_image);
+    static_gradient_texture_->SetVisibility(false);
+    wm()->stage()->AddActor(static_gradient_texture_);
+  }
+
   int width = layout_manager_->width();
   int height = layout_manager_->height();
   if (FLAGS_lm_honor_window_size_hints)
@@ -772,22 +874,44 @@ LayoutManager::ToplevelWindow::ToplevelWindow(Window* win,
   win->ChangeWmState(wm_state);
 
   win->MoveClientOffscreen();
+  win->SetCompositedOpacity(0, 0);
   win->ShowComposited();
   // Make sure that we hear about button presses on this window.
-  win->AddPassiveButtonGrab();
+  win->AddButtonGrab();
+
+  if (FLAGS_lm_new_overview_mode) {
+    gradient_actor_.reset(
+        wm()->clutter()->CloneActor(static_gradient_texture_));
+    gradient_actor_->SetOpacity(0, 0);
+    gradient_actor_->SetVisibility(true);
+    wm()->stage()->AddActor(gradient_actor_.get());
+  }
 }
 
 LayoutManager::ToplevelWindow::~ToplevelWindow() {
   wm()->xconn()->DestroyWindow(input_xid_);
-  win_->RemovePassiveButtonGrab();
+  win_->RemoveButtonGrab();
   win_ = NULL;
   layout_manager_ = NULL;
   input_xid_ = None;
   transient_to_focus_ = NULL;
 }
 
-void LayoutManager::ToplevelWindow::ArrangeForActiveMode(
-    bool window_is_active) {
+int LayoutManager::ToplevelWindow::GetAbsoluteOverviewX() const {
+  int offset = FLAGS_lm_new_overview_mode ?
+      layout_manager_->overview_panning_offset() :
+      0;
+  return layout_manager_->x() - offset + overview_x_;
+}
+
+int LayoutManager::ToplevelWindow::GetAbsoluteOverviewY() const {
+  return layout_manager_->y() + overview_y_;
+}
+
+void LayoutManager::ToplevelWindow::ConfigureForActiveMode(
+    bool window_is_active,
+    bool to_left_of_active,
+    bool update_focus) {
   const int layout_x = layout_manager_->x();
   const int layout_y = layout_manager_->y();
   const int layout_width = layout_manager_->width();
@@ -801,7 +925,8 @@ void LayoutManager::ToplevelWindow::ArrangeForActiveMode(
   // tracking animation state for windows.
   if (window_is_active) {
     // Center window horizontally.
-    const int win_x = std::max(0, (layout_width - win_->client_width())) / 2;
+    const int win_x =
+        layout_x + std::max(0, (layout_width - win_->client_width())) / 2;
     if (state_ == STATE_NEW ||
         state_ == STATE_ACTIVE_MODE_OFFSCREEN ||
         state_ == STATE_ACTIVE_MODE_IN_FROM_RIGHT ||
@@ -829,7 +954,7 @@ void LayoutManager::ToplevelWindow::ArrangeForActiveMode(
       } else {
         // Animate new or offscreen windows as moving up from the bottom
         // of the layout area.
-        win_->MoveComposited(win_x, overview_offscreen_y(), 0);
+        win_->MoveComposited(win_x, GetAbsoluteOverviewOffscreenY(), 0);
         win_->ScaleComposited(1.0, 1.0, 0);
       }
     }
@@ -841,10 +966,10 @@ void LayoutManager::ToplevelWindow::ArrangeForActiveMode(
     win_->MoveComposited(win_x, win_y, kWindowAnimMs);
     win_->ScaleComposited(1.0, 1.0, kWindowAnimMs);
     win_->SetCompositedOpacity(1.0, kWindowAnimMs);
-    // TODO: This can end up stealing the focus from a panel, for instance
-    // -- we should really only be doing this if we had the focus
-    // initially.
-    TakeFocus(wm()->GetCurrentTimeFromServer());
+    if (FLAGS_lm_new_overview_mode)
+      gradient_actor_->SetOpacity(0, 0);
+    if (update_focus)
+      TakeFocus(wm()->GetCurrentTimeFromServer());
     state_ = STATE_ACTIVE_MODE_ONSCREEN;
   } else {
     if (state_ == STATE_ACTIVE_MODE_OUT_TO_LEFT) {
@@ -863,9 +988,19 @@ void LayoutManager::ToplevelWindow::ArrangeForActiveMode(
     } else if (state_ == STATE_ACTIVE_MODE_OFFSCREEN) {
       // No need to move it; it was already moved offscreen.
     } else {
-      // Slide the window down offscreen and scale it down to its
-      // overview size.
-      win_->MoveComposited(overview_x_, overview_offscreen_y(), kWindowAnimMs);
+      if (FLAGS_lm_new_overview_mode) {
+        int x = to_left_of_active ?
+                layout_x - overview_width_ :
+                layout_x + layout_width;
+        win_->MoveComposited(x, GetAbsoluteOverviewY(), kWindowAnimMs);
+        gradient_actor_->Move(x, GetAbsoluteOverviewY(), kWindowAnimMs);
+      } else {
+        // Slide the window down offscreen and scale it down to its
+        // overview size.
+        win_->MoveComposited(GetAbsoluteOverviewX(),
+                             GetAbsoluteOverviewOffscreenY(),
+                             kWindowAnimMs);
+      }
       win_->ScaleComposited(overview_scale_, overview_scale_, kWindowAnimMs);
       win_->SetCompositedOpacity(0.5, kWindowAnimMs);
     }
@@ -883,31 +1018,82 @@ void LayoutManager::ToplevelWindow::ArrangeForActiveMode(
   wm()->xconn()->ConfigureWindowOffscreen(input_xid_);
 }
 
-void LayoutManager::ToplevelWindow::ArrangeForOverviewMode(
-    bool window_is_magnified, bool dim_if_unmagnified) {
-  if (state_ == STATE_NEW || state_ == STATE_ACTIVE_MODE_OFFSCREEN) {
-    win_->MoveComposited(overview_x_, overview_offscreen_y(), 0);
-    win_->ScaleComposited(overview_scale_, overview_scale_, 0);
-    win_->SetCompositedOpacity(0.5, 0);
-    MoveAndScaleAllTransientWindows(0);
+void LayoutManager::ToplevelWindow::ConfigureForOverviewMode(
+    bool window_is_magnified,
+    bool dim_if_unmagnified,
+    ToplevelWindow* toplevel_to_stack_under,
+    bool incremental) {
+  if (FLAGS_lm_new_overview_mode) {
+    if (!incremental) {
+      if (toplevel_to_stack_under) {
+        win_->StackCompositedBelow(
+            toplevel_to_stack_under->win()->GetBottomActor(), NULL, false);
+        win_->StackClientBelow(toplevel_to_stack_under->win()->xid());
+        wm()->xconn()->StackWindow(
+            input_xid_, toplevel_to_stack_under->input_xid(), false);
+      } else {
+        wm()->stacking_manager()->StackWindowAtTopOfLayer(
+            win_, StackingManager::LAYER_TOPLEVEL_WINDOW);
+        wm()->stacking_manager()->StackXidAtTopOfLayer(
+            input_xid_, StackingManager::LAYER_TOPLEVEL_WINDOW);
+      }
+
+      win_->ScaleComposited(overview_scale_, overview_scale_, kOverviewAnimMs);
+      win_->SetCompositedOpacity(1.0, kOverviewAnimMs);
+      win_->MoveClientOffscreen();
+      wm()->ConfigureInputWindow(input_xid_,
+                                 GetAbsoluteOverviewX(), GetAbsoluteOverviewY(),
+                                 overview_width_, overview_height_);
+      ApplyStackingForAllTransientWindows();
+
+      gradient_actor_->Raise(
+          !stacked_transients_->items().empty() ?
+            stacked_transients_->items().front()->win->actor() :
+            win_->actor());
+      gradient_actor_->SetOpacity(window_is_magnified ? 0 : 1, kOverviewAnimMs);
+
+      state_ = window_is_magnified ?
+          STATE_OVERVIEW_MODE_MAGNIFIED :
+          STATE_OVERVIEW_MODE_NORMAL;
+    }
+
+    win_->MoveComposited(GetAbsoluteOverviewX(), GetAbsoluteOverviewY(),
+                         incremental ? 0 : kOverviewAnimMs);
+    MoveAndScaleAllTransientWindows(incremental ? 0 : kOverviewAnimMs);
+    gradient_actor_->Move(GetAbsoluteOverviewX(), GetAbsoluteOverviewY(),
+                          incremental ? 0 : kOverviewAnimMs);
+    gradient_actor_->Scale(
+        overview_scale_ * win_->client_width() / gradient_actor_->GetWidth(),
+        overview_scale_ * win_->client_height() / gradient_actor_->GetHeight(),
+        incremental ? 0 : kOverviewAnimMs);
+  } else {
+    if (state_ == STATE_NEW || state_ == STATE_ACTIVE_MODE_OFFSCREEN) {
+      win_->MoveComposited(GetAbsoluteOverviewX(),
+                           GetAbsoluteOverviewOffscreenY(),
+                           0);
+      win_->ScaleComposited(overview_scale_, overview_scale_, 0);
+      win_->SetCompositedOpacity(0.5, 0);
+      MoveAndScaleAllTransientWindows(0);
+    }
+    win_->MoveComposited(GetAbsoluteOverviewX(), GetAbsoluteOverviewY(),
+                         kOverviewAnimMs);
+    win_->ScaleComposited(overview_scale_, overview_scale_, kOverviewAnimMs);
+    win_->MoveClientOffscreen();
+    wm()->ConfigureInputWindow(input_xid_,
+                               GetAbsoluteOverviewX(), GetAbsoluteOverviewY(),
+                               overview_width_, overview_height_);
+    if (!window_is_magnified && dim_if_unmagnified)
+      win_->SetCompositedOpacity(0.75, kOverviewAnimMs);
+    else
+      win_->SetCompositedOpacity(1.0, kOverviewAnimMs);
+
+    ApplyStackingForAllTransientWindows();
+    MoveAndScaleAllTransientWindows(kOverviewAnimMs);
+
+    state_ = window_is_magnified ?
+        STATE_OVERVIEW_MODE_MAGNIFIED :
+        STATE_OVERVIEW_MODE_NORMAL;
   }
-  win_->MoveComposited(overview_x_, overview_y_, kWindowAnimMs);
-  win_->ScaleComposited(overview_scale_, overview_scale_, kWindowAnimMs);
-  win_->MoveClientOffscreen();
-  wm()->ConfigureInputWindow(input_xid_,
-                             overview_x_, overview_y_,
-                             overview_width_, overview_height_);
-  if (!window_is_magnified && dim_if_unmagnified)
-    win_->SetCompositedOpacity(0.75, kWindowAnimMs);
-  else
-    win_->SetCompositedOpacity(1.0, kWindowAnimMs);
-
-  ApplyStackingForAllTransientWindows();
-  MoveAndScaleAllTransientWindows(kWindowAnimMs);
-
-  state_ = window_is_magnified ?
-      STATE_OVERVIEW_MODE_MAGNIFIED :
-      STATE_OVERVIEW_MODE_NORMAL;
 }
 
 void LayoutManager::ToplevelWindow::UpdateOverviewScaling(int max_width,
@@ -1015,7 +1201,7 @@ void LayoutManager::ToplevelWindow::AddTransientWindow(Window* transient_win) {
       transient_to_stack_above ? transient_to_stack_above->win : win_);
 
   transient_win->ShowComposited();
-  transient_win->AddPassiveButtonGrab();
+  transient_win->AddButtonGrab();
 }
 
 void LayoutManager::ToplevelWindow::RemoveTransientWindow(
@@ -1029,7 +1215,7 @@ void LayoutManager::ToplevelWindow::RemoveTransientWindow(
   }
   stacked_transients_->Remove(transient);
   CHECK(transients_.erase(transient_win->xid()) == 1);
-  transient_win->RemovePassiveButtonGrab();
+  transient_win->RemoveButtonGrab();
 
   if (transient_to_focus_ == transient) {
     transient_to_focus_ = NULL;
@@ -1069,13 +1255,13 @@ void LayoutManager::ToplevelWindow::HandleFocusChange(
   if (focus_in) {
     VLOG(1) << "Got focus-in for " << focus_win->xid_str()
             << "; removing passive button grab";
-    focus_win->RemovePassiveButtonGrab();
+    focus_win->RemoveButtonGrab();
   } else {
     // Listen for button presses on this window so we'll know when it
     // should be focused again.
     VLOG(1) << "Got focus-out for " << focus_win->xid_str()
             << "; re-adding passive button grab";
-    focus_win->AddPassiveButtonGrab();
+    focus_win->AddButtonGrab();
   }
 }
 
@@ -1084,7 +1270,7 @@ void LayoutManager::ToplevelWindow::HandleButtonPress(
   SetPreferredTransientWindowToFocus(
       GetTransientWindow(*button_win) ? button_win : NULL);
   TakeFocus(timestamp);
-  wm()->xconn()->RemoveActivePointerGrab(true, timestamp);  // replay events
+  wm()->xconn()->RemovePointerGrab(true, timestamp);  // replay events
 }
 
 LayoutManager::ToplevelWindow::TransientWindow*
@@ -1163,7 +1349,7 @@ void LayoutManager::ToplevelWindow::RestackTransientWindowOnTop(
     return;
 
   DCHECK(stacked_transients_->Contains(transient));
-  DCHECK_GT(stacked_transients_->items().size(), 1);
+  DCHECK_GT(stacked_transients_->items().size(), 1U);
   TransientWindow* transient_to_stack_above =
       stacked_transients_->items().front();
   stacked_transients_->Remove(transient);
@@ -1246,7 +1432,7 @@ void LayoutManager::SetActiveToplevelWindow(
     active_toplevel_->set_state(state_for_old_win);
   toplevel->set_state(state_for_new_win);
   active_toplevel_ = toplevel;
-  ArrangeToplevelWindowsForActiveMode();
+  LayoutToplevelWindowsForActiveMode(true);  // update_focus=true
 }
 
 void LayoutManager::SwitchToActiveMode(bool activate_magnified_win) {
@@ -1285,8 +1471,9 @@ void LayoutManager::MagnifyToplevelWindowByIndex(int index) {
     return;
 
   SetMagnifiedToplevelWindow(toplevels_[index].get());
-  ArrangeToplevelWindowsForOverviewMode();
-  SendTabSummaryMessage(magnified_toplevel_, true);
+  LayoutToplevelWindowsForOverviewMode(0.5 * width_);
+  if (!FLAGS_lm_new_overview_mode)
+    SendTabSummaryMessage(magnified_toplevel_, true);
 }
 
 void LayoutManager::Metrics::Populate(chrome_os_pb::SystemMetrics *metrics_pb) {
@@ -1309,18 +1496,24 @@ void LayoutManager::SetMode(Mode mode) {
         create_browser_window_->HideComposited();
         create_browser_window_->MoveClientOffscreen();
       }
-      if (!active_toplevel_ && magnified_toplevel_)
+      if ((FLAGS_lm_new_overview_mode || !active_toplevel_) &&
+          magnified_toplevel_) {
         active_toplevel_ = magnified_toplevel_;
+      }
       if (!active_toplevel_ && !toplevels_.empty())
         active_toplevel_ = toplevels_[0].get();
-      SetMagnifiedToplevelWindow(NULL);
-      ArrangeToplevelWindowsForActiveMode();
+      if (!FLAGS_lm_new_overview_mode)
+        SetMagnifiedToplevelWindow(NULL);
+      LayoutToplevelWindowsForActiveMode(true);  // update_focus=true
       break;
     }
     case MODE_OVERVIEW: {
       if (create_browser_window_)
         create_browser_window_->ShowComposited();
-      SetMagnifiedToplevelWindow(NULL);
+      if (FLAGS_lm_new_overview_mode)
+        SetMagnifiedToplevelWindow(active_toplevel_);
+      else
+        SetMagnifiedToplevelWindow(NULL);
       // Leave 'active_toplevel_' alone, so we can activate the same window
       // if we return to active mode on an Escape keypress.
 
@@ -1331,7 +1524,7 @@ void LayoutManager::SetMode(Mode mode) {
         wm_->SetActiveWindowProperty(None);
         wm_->TakeFocus();
       }
-      ArrangeToplevelWindowsForOverviewMode();
+      LayoutToplevelWindowsForOverviewMode(0.5 * width_);
       break;
     }
   }
@@ -1345,29 +1538,155 @@ void LayoutManager::SetMode(Mode mode) {
   }
 }
 
-void LayoutManager::ArrangeToplevelWindowsForActiveMode() {
-  VLOG(1) << "Arranging windows for active mode";
+void LayoutManager::LayoutToplevelWindowsForActiveMode(bool update_focus) {
+  VLOG(1) << "Laying out windows for active mode";
   if (toplevels_.empty())
     return;
   if (!active_toplevel_)
     active_toplevel_ = toplevels_[0].get();
 
+  bool saw_active = false;
   for (ToplevelWindows::iterator it = toplevels_.begin();
        it != toplevels_.end(); ++it) {
-    (*it)->ArrangeForActiveMode(it->get() == active_toplevel_);
+    bool is_active = it->get() == active_toplevel_;
+    (*it)->ConfigureForActiveMode(is_active, !saw_active, update_focus);
+    if (is_active)
+      saw_active = true;
   }
 }
 
-void LayoutManager::ArrangeToplevelWindowsForOverviewMode() {
-  VLOG(1) << "Arranging windows for overview mode";
-  CalculateOverview();
-  for (ToplevelWindows::iterator it = toplevels_.begin();
-       it != toplevels_.end(); ++it) {
-    (*it)->ArrangeForOverviewMode(
-        (it->get() == magnified_toplevel_),  // window_is_magnified
-        (magnified_toplevel_ != NULL));      // dim_if_unmagnified
+void LayoutManager::LayoutToplevelWindowsForOverviewMode(
+    int magnified_x) {
+  VLOG(1) << "Laying out windows for overview mode";
+  CalculatePositionsForOverviewMode(magnified_x);
+  ConfigureWindowsForOverviewMode(false);
+}
+
+void LayoutManager::CalculatePositionsForOverviewMode(int magnified_x) {
+  if (toplevels_.empty())
+    return;
+
+  if (FLAGS_lm_new_overview_mode) {
+    const int width_limit =
+        std::min(static_cast<double>(width_) / sqrt(toplevels_.size()),
+                 kOverviewWindowMaxSizeRatio * width_);
+    const int height_limit =
+        std::min(static_cast<double>(height_) / sqrt(toplevels_.size()),
+                 kOverviewWindowMaxSizeRatio * height_);
+    int running_width = kWindowPadding;
+
+    for (int i = 0; static_cast<size_t>(i) < toplevels_.size(); ++i) {
+      ToplevelWindow* toplevel = toplevels_[i].get();
+      bool is_magnified = (toplevel == magnified_toplevel_);
+
+      toplevel->UpdateOverviewScaling(width_limit, height_limit);
+      toplevel->UpdateOverviewPosition(
+          running_width, 0.5 * (height_ - toplevel->overview_height()));
+      running_width += is_magnified ?
+          toplevel->overview_width() :
+          (kOverviewExposedWindowRatio * width_ *
+            (width_limit / (kOverviewWindowMaxSizeRatio * width_)));
+      if (is_magnified && magnified_x >= 0) {
+        // If the window will be under 'magnified_x' when centered, just
+        // center it.  Otherwise, move it as close to centered as possible
+        // while still being under 'magnified_x'.
+        if (0.5 * (width_ - toplevel->overview_width()) < magnified_x &&
+            0.5 * (width_ + toplevel->overview_width()) >= magnified_x) {
+          overview_panning_offset_ =
+              toplevel->overview_x() +
+              0.5 * toplevel->overview_width() -
+              0.5 * width_;
+        } else if (0.5 * (width_ - toplevel->overview_width()) > magnified_x) {
+          overview_panning_offset_ = toplevel->overview_x() - magnified_x + 1;
+        } else {
+          overview_panning_offset_ = toplevel->overview_x() - magnified_x +
+                                     toplevel->overview_width() - 1;
+        }
+      }
+    }
+  } else {
+    // First, figure out how much space the magnified window (if any) will
+    // take up.
+    if (magnified_toplevel_) {
+      magnified_toplevel_->UpdateOverviewScaling(
+          width_,  // TODO: Cap this if we end up with wide windows.
+          overview_height_);
+    }
+
+    // Now, figure out the maximum size that we want each unmagnified window
+    // to be able to take.
+    int num_unmag_windows = toplevels_.size();
+    int total_unmag_width = width_ - (toplevels_.size() + 1) * kWindowPadding;
+
+    if (create_browser_window_) {
+      total_unmag_width -=
+          (create_browser_window_->client_width() + kWindowPadding);
+    }
+    if (magnified_toplevel_) {
+      total_unmag_width -= magnified_toplevel_->overview_width();
+      num_unmag_windows -= 1;
+    }
+
+    const int max_unmag_width =
+        num_unmag_windows ?
+        (total_unmag_width / num_unmag_windows) :
+        0;
+    const int max_unmag_height = kMaxWindowHeightRatio * overview_height_;
+
+    // Figure out the actual scaling for each window.
+    for (int i = 0; static_cast<size_t>(i) < toplevels_.size(); ++i) {
+      ToplevelWindow* toplevel = toplevels_[i].get();
+      // We already computed the dimensions for the magnified window.
+      if (toplevel != magnified_toplevel_)
+        toplevel->UpdateOverviewScaling(max_unmag_width, max_unmag_height);
+    }
+
+    // Divide up the remaining space among all of the windows, including
+    // padding around the outer windows.
+    int total_window_width = 0;
+    for (int i = 0; static_cast<size_t>(i) < toplevels_.size(); ++i)
+      total_window_width += toplevels_[i]->overview_width();
+    if (create_browser_window_)
+      total_window_width += create_browser_window_->client_width();
+    int total_padding = width_ - total_window_width;
+    if (total_padding < 0) {
+      LOG(WARNING) << "Summed width of scaled windows (" << total_window_width
+                   << ") exceeds width of overview area (" << width_ << ")";
+      total_padding = 0;
+    }
+    const double padding = create_browser_window_
+        ? total_padding / static_cast<double>(toplevels_.size() + 2) :
+          total_padding / static_cast<double>(toplevels_.size() + 1);
+
+    // Finally, go through and calculate the final position for each window.
+    double running_width = 0;
+    for (int i = 0; static_cast<size_t>(i) < toplevels_.size(); ++i) {
+      ToplevelWindow* toplevel = toplevels_[i].get();
+      int overview_x = round(running_width + padding);
+      int overview_y = height_ - toplevel->overview_height();
+      toplevel->UpdateOverviewPosition(overview_x, overview_y);
+      running_width += padding + toplevel->overview_width();
+    }
   }
-  if (create_browser_window_) {
+}
+
+void LayoutManager::ConfigureWindowsForOverviewMode(bool incremental) {
+  ToplevelWindow* toplevel_to_right = NULL;
+  // We iterate through the windows in descending stacking order
+  // (right-to-left).  Otherwise, we'd get spurious pointer enter events as
+  // a result of stacking a window underneath the pointer immediately
+  // before we stack the window to its right directly on top of it.
+  for (ToplevelWindows::reverse_iterator it = toplevels_.rbegin();
+       it != toplevels_.rend(); ++it) {
+    ToplevelWindow* toplevel = it->get();
+    toplevel->ConfigureForOverviewMode(
+        (it->get() == magnified_toplevel_),  // window_is_magnified
+        (magnified_toplevel_ != NULL),       // dim_if_unmagnified
+        toplevel_to_right,
+        incremental);
+    toplevel_to_right = toplevel;
+  }
+  if (!incremental && create_browser_window_) {
     // The 'create browser window' is always anchored to the right side
     // of the screen.
     create_browser_window_->MoveComposited(
@@ -1376,74 +1695,6 @@ void LayoutManager::ArrangeToplevelWindowsForOverviewMode() {
         kCreateBrowserWindowVerticalPadding,
         0);
     create_browser_window_->MoveClientToComposited();
-  }
-}
-
-void LayoutManager::CalculateOverview() {
-  if (toplevels_.empty())
-    return;
-
-  // First, figure out how much space the magnified window (if any) will
-  // take up.
-  if (magnified_toplevel_) {
-    magnified_toplevel_->UpdateOverviewScaling(
-        width_,  // TODO: Cap this if we end up with wide windows.
-        overview_height_);
-  }
-
-  // Now, figure out the maximum size that we want each unmagnified window
-  // to be able to take.
-  int num_unmag_windows = toplevels_.size();
-  int total_unmag_width = width_ - (toplevels_.size() + 1) * kWindowPadding;
-
-  if (create_browser_window_) {
-    total_unmag_width -=
-        (create_browser_window_->client_width() + kWindowPadding);
-  }
-  if (magnified_toplevel_) {
-    total_unmag_width -= magnified_toplevel_->overview_width();
-    num_unmag_windows -= 1;
-  }
-
-  const int max_unmag_width =
-      num_unmag_windows ?
-      (total_unmag_width / num_unmag_windows) :
-      0;
-  const int max_unmag_height = kMaxWindowHeightRatio * overview_height_;
-
-  // Figure out the actual scaling for each window.
-  for (int i = 0; static_cast<size_t>(i) < toplevels_.size(); ++i) {
-    ToplevelWindow* toplevel = toplevels_[i].get();
-    // We already computed the dimensions for the magnified window.
-    if (toplevel != magnified_toplevel_)
-      toplevel->UpdateOverviewScaling(max_unmag_width, max_unmag_height);
-  }
-
-  // Divide up the remaining space among all of the windows, including
-  // padding around the outer windows.
-  int total_window_width = 0;
-  for (int i = 0; static_cast<size_t>(i) < toplevels_.size(); ++i)
-    total_window_width += toplevels_[i]->overview_width();
-  if (create_browser_window_)
-    total_window_width += create_browser_window_->client_width();
-  int total_padding = width_ - total_window_width;
-  if (total_padding < 0) {
-    LOG(WARNING) << "Summed width of scaled windows (" << total_window_width
-                 << ") exceeds width of overview area (" << width_ << ")";
-    total_padding = 0;
-  }
-  const double padding = create_browser_window_
-      ? total_padding / static_cast<double>(toplevels_.size() + 2) :
-        total_padding / static_cast<double>(toplevels_.size() + 1);
-
-  // Finally, go through and calculate the final position for each window.
-  double running_width = 0;
-  for (int i = 0; static_cast<size_t>(i) < toplevels_.size(); ++i) {
-    ToplevelWindow* toplevel = toplevels_[i].get();
-    int overview_x = round(x_ + running_width + padding);
-    int overview_y = y_ + height_ - toplevel->overview_height();
-    toplevel->UpdateOverviewPosition(overview_x, overview_y);
-    running_width += padding + toplevel->overview_width();
   }
 }
 
@@ -1472,7 +1723,7 @@ bool LayoutManager::PointIsBetweenMagnifiedToplevelWindowAndTabSummary(
     if (toplevel != magnified_toplevel_)
       continue;
     return (y >= tab_summary_->client_y() + tab_summary_->client_height() &&
-            y < toplevel->overview_y());
+            y < toplevel->GetAbsoluteOverviewY());
   }
   LOG(WARNING) << "magnified_toplevel_ "
                << magnified_toplevel_->win()->xid_str()
@@ -1536,6 +1787,10 @@ void LayoutManager::AddKeyBindingsForMode(Mode mode) {
       }
       kb->AddBinding(KeyBindings::KeyCombo(XK_9, KeyBindings::kAltMask),
                      "magnify-last-toplevel");
+      kb->AddBinding(KeyBindings::KeyCombo(XK_h, KeyBindings::kAltMask),
+                     "pan-overview-mode-left");
+      kb->AddBinding(KeyBindings::KeyCombo(XK_l, KeyBindings::kAltMask),
+                     "pan-overview-mode-right");
       break;
   }
 }
@@ -1580,6 +1835,8 @@ void LayoutManager::RemoveKeyBindingsForMode(Mode mode) {
         kb->RemoveBinding(
             KeyBindings::KeyCombo(XK_1 + i, KeyBindings::kAltMask));
       }
+      kb->RemoveBinding(KeyBindings::KeyCombo(XK_h, KeyBindings::kAltMask));
+      kb->RemoveBinding(KeyBindings::KeyCombo(XK_l, KeyBindings::kAltMask));
       break;
   }
 }
@@ -1646,18 +1903,19 @@ void LayoutManager::CycleMagnifiedToplevelWindow(bool forward) {
                     toplevels_.size();
     SetMagnifiedToplevelWindow(toplevels_[new_index].get());
   }
-  ArrangeToplevelWindowsForOverviewMode();
+  LayoutToplevelWindowsForOverviewMode(0.5 * width_);
 
   // Tell the magnified window to display a tab summary now that we've
   // rearranged all of the windows.
-  SendTabSummaryMessage(magnified_toplevel_, true);
+  if (!FLAGS_lm_new_overview_mode)
+    SendTabSummaryMessage(magnified_toplevel_, true);
 }
 
 void LayoutManager::SetMagnifiedToplevelWindow(ToplevelWindow* toplevel) {
   if (magnified_toplevel_ == toplevel)
     return;
   // Hide the previous window's tab summary.
-  if (magnified_toplevel_)
+  if (!FLAGS_lm_new_overview_mode && magnified_toplevel_)
     SendTabSummaryMessage(magnified_toplevel_, false);
   magnified_toplevel_ = toplevel;
 }
@@ -1670,7 +1928,7 @@ void LayoutManager::SendTabSummaryMessage(ToplevelWindow* toplevel, bool show) {
   WmIpc::Message msg(WmIpc::Message::CHROME_SET_TAB_SUMMARY_VISIBILITY);
   msg.set_param(0, show);  // show summary
   if (show)
-    msg.set_param(1, toplevel->overview_center_x());
+    msg.set_param(1, toplevel->GetAbsoluteOverviewCenterX());
   wm_->wm_ipc()->SendMessage(toplevel->win()->xid(), msg);
 }
 
@@ -1700,6 +1958,19 @@ void LayoutManager::SendDeleteRequestToActiveWindow() {
   // sent to it instead.
   if (mode_ == MODE_ACTIVE && active_toplevel_)
     active_toplevel_->win()->SendDeleteRequest(wm_->GetCurrentTimeFromServer());
+}
+
+void LayoutManager::PanOverviewMode(int offset) {
+  overview_panning_offset_ += offset;
+  if (mode_ == MODE_OVERVIEW)
+    ConfigureWindowsForOverviewMode(false);  // incremental=false
+}
+
+void LayoutManager::UpdateOverviewPanningForMotion() {
+  int dx = overview_background_event_coalescer_->x() - overview_drag_last_x_;
+  overview_drag_last_x_ = overview_background_event_coalescer_->x();
+  overview_panning_offset_ -= dx;
+  ConfigureWindowsForOverviewMode(true);  // incremental=true
 }
 
 }  // namespace window_manager

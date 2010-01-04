@@ -356,7 +356,6 @@ TEST_F(LayoutManagerTest, FocusTransient) {
   // Now create another toplevel window, which we'll switch to
   // automatically.
   XWindow xid2 = CreateSimpleWindow();
-  MockXConnection::WindowInfo* info2 = xconn_->GetWindowInfoOrDie(xid2);
   SendInitialEventsForWindow(xid2);
   EXPECT_EQ(xid2, xconn_->focused_xid());
   SendFocusEvents(transient_xid, xid2);
@@ -429,8 +428,6 @@ TEST_F(LayoutManagerTest, FocusTransient) {
 TEST_F(LayoutManagerTest, MultipleTransients) {
   // Create a window.
   XWindow owner_xid = CreateSimpleWindow();
-  MockXConnection::WindowInfo* owner_info =
-      xconn_->GetWindowInfoOrDie(owner_xid);
 
   // Send CreateNotify, MapNotify, and FocusNotify events.
   XEvent event;
@@ -528,7 +525,6 @@ TEST_F(LayoutManagerTest, MultipleTransients) {
 
 TEST_F(LayoutManagerTest, SetWmStateMaximized) {
   XWindow xid = CreateSimpleWindow();
-  MockXConnection::WindowInfo* info = xconn_->GetWindowInfoOrDie(xid);
   SendInitialEventsForWindow(xid);
 
   std::vector<int> atoms;
@@ -595,7 +591,7 @@ TEST_F(LayoutManagerTest, ConfigureToplevel) {
   int new_height = lm_->y() + 5;
   XEvent event;
   MockXConnection::InitConfigureRequestEvent(
-      &event, xid, 0, 0, new_width, new_height);
+      &event, xid, new_x, new_y, new_width, new_height);
   EXPECT_TRUE(wm_->HandleEvent(&event));
 
   // The position change should be ignored, but the window should be
@@ -676,7 +672,6 @@ TEST_F(LayoutManagerTest, InitialWindowStacking) {
 
   // Create and map a toplevel window.
   XWindow xid = CreateSimpleWindow();
-  MockXConnection::WindowInfo* info = xconn_->GetWindowInfoOrDie(xid);
   xconn_->MapWindow(xid);
 
   // Now create a new WindowManager object that will see the toplevel

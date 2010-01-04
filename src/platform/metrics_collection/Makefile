@@ -29,6 +29,7 @@ metrics_library: $(LIBRARY_OBJECTS)
 
 install:
 	install $(CLIENT) $(DESTDIR)/usr/bin
+	install syslog_parser.sh $(DESTDIR)/usr/bin
 	install omaha_tracker.sh $(DESTDIR)/usr/sbin
 
 clean:
