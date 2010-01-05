@@ -1,0 +1,4 @@
+memento_updater.sh opt/google/memento_updater
+memento_updater_logging.sh opt/google/memento_updater
+ping_omaha.sh opt/google/memento_updater
+software_update.sh opt/google/memento_updater

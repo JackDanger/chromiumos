@@ -1,3 +1,9 @@
+memento-updater (0.3) UNRELEASED; urgency=low
+
+  * Use dh(1).
+
+ -- Colin Watson <cjwatson@canonical.com>  Sat, 28 Nov 2009 11:10:50 +0000
+
 memento-updater (0.2) jaunty; urgency=low
 
   * Check for updates at 4AM and 2 minutes after startup
