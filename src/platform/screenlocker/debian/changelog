@@ -1,3 +1,10 @@
+chromeos-screenlocker (1.0-2) UNRELEASED; urgency=low
+
+  * Use dh(1).
+  * Remove unnecessary autotools-dev build-dependency.
+
+ -- Colin Watson <cjwatson@canonical.com>  Sat, 28 Nov 2009 11:17:36 +0000
+
 chromeos-screenlocker (1.0-1) unstable; urgency=low
 
   * Initial release

@@ -6,7 +6,7 @@ Source: chromeos-screenlocker
 Section: x11
 Priority: optional
 Maintainer: The Chromium OS Authors <chromium-os-dev@googlegroups.com>
-Build-Depends: debhelper (>= 7), autotools-dev
+Build-Depends: debhelper (>= 7)
 Standards-Version: 3.8.0
 
 Package: chromeos-screenlocker
