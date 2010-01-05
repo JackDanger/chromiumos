@@ -1,3 +1,9 @@
+chromeos-acpi (0.2) UNRELEASED; urgency=low
+
+  * Use dh(1).
+
+ -- Colin Watson <cjwatson@canonical.com>  Sat, 28 Nov 2009 11:35:09 +0000
+
 chromeos-acpi (0.1) unstable; urgency=low
 
   * Initial Release.
