@@ -3,63 +3,18 @@
 # Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
+%:
+	dh $@
 
 # Uncomment this to turn on verbose mode.
 #export DH_VERBOSE=1
 
-# shared library versions, option 1
-version=2.0.5
-major=2
-# option 2, assuming the library is created as src/.libs/libfoo.so.2.0.5 or so
-#version=`ls src/.libs/lib*.so.* | \
-# awk '{if (match($$0,/[0-9]+\.[0-9]+\.[0-9]+$$/)) print substr($$0,RSTART)}'`
-#major=`ls src/.libs/lib*.so.* | \
-# awk '{if (match($$0,/\.so\.[0-9]+$$/)) print substr($$0,RSTART+4)}'`
-
-build: build-stamp
-build-stamp:
-	dh_testdir
-	touch $@
-
-clean:
-	dh_testdir
-	dh_testroot
-	rm -f build-stamp
-	dh_clean
-
-install: build
-	dh_testdir
-	dh_testroot
-	dh_prep
-	dh_installdirs
-	mkdir -p $(CURDIR)/debian/chromeos-cryptohome/usr/lib/chromeos-cryptohome/utils
-	mkdir -p $(CURDIR)/debian/chromeos-cryptohome/usr/sbin
-	mkdir -p $(CURDIR)/debian/chromeos-cryptohome/etc/security
-	cp $(CURDIR)/lib/common $(CURDIR)/debian/chromeos-cryptohome/usr/lib/chromeos-cryptohome/common
-	cp $(CURDIR)/lib/cryptohome $(CURDIR)/debian/chromeos-cryptohome/usr/lib/chromeos-cryptohome/cryptohome
-	cp $(CURDIR)/lib/utils/declare_commands \
-	   $(CURDIR)/debian/chromeos-cryptohome/usr/lib/chromeos-cryptohome/utils/declare_commands
+override_dh_install:
+	dh_install
 	cp $(CURDIR)/bin/mount $(CURDIR)/debian/chromeos-cryptohome/usr/sbin/mount.cryptohome
 	cp $(CURDIR)/bin/umount $(CURDIR)/debian/chromeos-cryptohome/usr/sbin/umount.cryptohome
-	# How do we update this without incurring a conflict?
-	cp $(CURDIR)/pam_mount.conf.xml $(CURDIR)/debian/chromeos-cryptohome/etc/security/pam_mount.conf.xml
 
-# Build architecture-independent files here.
-binary-indep: install
-	dh_testdir
-	dh_testroot
-	dh_link
-	dh_strip
-	dh_compress
-	dh_fixperms
+override_dh_installdeb:
 	dh_installdeb
 	# Don't treat our version of pam_mount.xml.conf as a conffile.
 	rm debian/chromeos-cryptohome/DEBIAN/conffiles
-	dh_shlibdeps
-	dh_gencontrol
-	dh_md5sums
-	dh_builddeb
-
-binary: binary-indep
-
-.PHONY: build clean install binary-indep binary
