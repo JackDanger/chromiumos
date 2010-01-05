@@ -34,7 +34,8 @@ DEFINE_bool(logtostderr, false,
             "Should logs be written to stderr instead of to a file in "
             "--log_dir?");
 DEFINE_string(minidump_dir, ".",
-              "Directory where crash minidumps should be written");
+              "Directory where crash minidumps should be written; created if "
+              "it doesn't exist.");
 
 using window_manager::ClutterInterface;
 using window_manager::MockClutterInterface;
@@ -43,7 +44,7 @@ using window_manager::RealXConnection;
 using window_manager::WindowManager;
 
 // Get the current time in the local time zone as "YYYYMMDD-HHMMSS".
-std::string GetCurrentTimeAsString() {
+static std::string GetCurrentTimeAsString() {
   time_t now = time(NULL);
   CHECK(now >= 0);
   struct tm now_tm;
@@ -53,12 +54,19 @@ std::string GetCurrentTimeAsString() {
   return std::string(now_str);
 }
 
+// Handler called by Chrome logging code on failed asserts.
+static void HandleLogAssert(const std::string& str) {
+  abort();
+}
+
 int main(int argc, char** argv) {
   gdk_init(&argc, &argv);
   clutter_init(&argc, &argv);
   google::ParseCommandLineFlags(&argc, &argv, true);
   CommandLine::Init(argc, argv);
 
+  if (!file_util::CreateDirectory(FilePath(FLAGS_minidump_dir)))
+    LOG(ERROR) << "Unable to create minidump directory " << FLAGS_minidump_dir;
   google_breakpad::ExceptionHandler exception_handler(
       FLAGS_minidump_dir, NULL, NULL, NULL, true);
 
@@ -75,6 +83,11 @@ int main(int argc, char** argv) {
                          logging::LOG_ONLY_TO_FILE,
                        logging::DONT_LOCK_LOG_FILE,
                        logging::APPEND_TO_OLD_LOG_FILE);
+
+  // Chrome's logging code uses int3 to send SIGTRAP in response to failed
+  // asserts, but Breakpad only installs signal handlers for SEGV, ABRT,
+  // FPE, ILL, and BUS.  Use our own function to send ABRT instead.
+  logging::SetLogAssertHandler(HandleLogAssert);
 
   RealXConnection xconn(GDK_DISPLAY());
 
