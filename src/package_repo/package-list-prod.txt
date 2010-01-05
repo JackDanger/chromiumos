@@ -76,10 +76,10 @@ e4fsprogs-git
 # Chrome OS packages; keep alphabetized
 chromeos-acpi
 chromeos-chrome
-chromeos-connman
 chromeos-cryptohome
 chromeos-init
 chromeos-installer
+chromeos-flimflam
 chromeos-libcros
 chromeos-login
 chromeos-minijail

@@ -107,6 +107,9 @@ deps = {
     # fio
     _third_party_base + "fio/files": "/fio.git@fio-1.34.2",
 
+    # flimflam
+    _third_party_base + "flimflam": "/flimflam.git",
+
     # gpt
     _third_party_base + "gpt": "/gpt.git",
 
