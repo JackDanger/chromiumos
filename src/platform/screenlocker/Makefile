@@ -9,7 +9,8 @@ default::
 all::	
 
 install::	
-	cp xscreensaver /etc/pam.d/xscreensaver	;
+	mkdir -p $(DESTDIR)/etc/pam.d
+	install -m644 xscreensaver $(DESTDIR)/etc/pam.d/
 
 clean::
 

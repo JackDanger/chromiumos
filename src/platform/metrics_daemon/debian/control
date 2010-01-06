@@ -10,7 +10,7 @@ Build-Depends: debhelper (>=7)
 Standards-Version: 3.8.0
 
 Package: chromeos-metrics-daemon
-Architecture: i386
+Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: Metrics daemon for Chrome OS.
  The metrics daemon collects events and sends them to UMA via Chrome.

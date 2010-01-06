@@ -1,0 +1,3 @@
+chromeos_startup sbin
+chromeos_shutdown sbin
+*.conf etc/init.chromeos

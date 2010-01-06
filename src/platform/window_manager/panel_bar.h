@@ -113,6 +113,7 @@ class PanelBar : public EventConsumer {
 
  private:
   FRIEND_TEST(PanelBarTest, ActiveWindowMessage);
+  FRIEND_TEST(PanelBarTest, FocusNewPanel);
 
   // PanelBar-specific information about a panel.
   struct PanelInfo {

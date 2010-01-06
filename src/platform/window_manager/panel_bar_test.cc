@@ -203,6 +203,37 @@ TEST_F(PanelBarTest, ActiveWindowMessage) {
   EXPECT_EQ(content_xid, GetActiveWindowProperty());
 }
 
+// Regression test for bug 540, a crash caused by PanelBar's window-unmap
+// code calling WindowManager::TakeFocus() before the panel had been
+// completely destroyed, resulting in PanelBar::TakeFocus() trying to
+// refocus the partially-destroyed panel.
+TEST_F(PanelBarTest, FocusNewPanel) {
+  // Create an expanded panel.
+  XWindow titlebar_xid = CreatePanelTitlebarWindow(200, 20);
+  SendInitialEventsForWindow(titlebar_xid);
+  XWindow content_xid = CreatePanelContentWindow(200, 400, titlebar_xid, true);
+  SendInitialEventsForWindow(content_xid);
+
+  // It should be focused initially.
+  EXPECT_EQ(content_xid, xconn_->focused_xid());
+  SendFocusEvents(xconn_->GetRootWindow(), content_xid);
+  EXPECT_EQ(content_xid, GetActiveWindowProperty());
+
+  // The panel's address should be contained in 'desired_panel_to_focus_'.
+  ASSERT_EQ(1, panel_bar_->expanded_panels_.size());
+  EXPECT_EQ(panel_bar_->expanded_panels_[0].get(),
+            panel_bar_->desired_panel_to_focus_);
+
+  // Now send an unmap event for the content window.  The panel object
+  // should be destroyed, and 'desired_panel_to_focus_' shouldn't refer to
+  // it anymore.
+  XEvent event;
+  MockXConnection::InitUnmapEvent(&event, content_xid);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  EXPECT_TRUE(panel_bar_->expanded_panels_.empty());
+  EXPECT_EQ(NULL, panel_bar_->desired_panel_to_focus_);
+}
+
 }  // namespace window_manager
 
 int main(int argc, char **argv) {

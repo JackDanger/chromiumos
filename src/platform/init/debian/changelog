@@ -1,3 +1,9 @@
+chromeos-init (0.4) UNRELEASED; urgency=low
+
+  * Use dh(1).
+
+ -- Colin Watson <cjwatson@canonical.com>  Sat, 28 Nov 2009 10:49:54 +0000
+
 chromeos-init (0.3) karmic; urgency=low
 
   * Adds a proper upstart service for D-Bus and makes Connman start-up more

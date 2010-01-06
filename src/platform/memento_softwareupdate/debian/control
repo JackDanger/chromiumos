@@ -6,6 +6,7 @@ Source: memento-updater
 Priority: optional
 Maintainer: The Chromium OS Authors <chromium-os-dev@googlegroups.com>
 Section: utils
+Build-Depends: debhelper (>= 7.0.0)
 
 Package: memento-updater
 Section: utils

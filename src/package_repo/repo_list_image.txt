@@ -31,7 +31,7 @@ ca-certificates 20090814 important misc pool/main/c/ca-certificates/ca-certifica
 # Skipped chromeos-acpi 0.1 local_packages//chromeos-acpi_0.1_i386.deb: local install
 # Skipped chromeos-assets 0.3 local_packages//chromeos-assets_0.3_all.deb: local install
 # Skipped chromeos-chrome 0.1 local_packages//chromeos-chrome_0.1_i386.deb: local install
-# Skipped chromeos-connman 0.3 local_packages//chromeos-connman_0.3_i386.deb: local install
+# Skipped chromeos-flimflam 0.1 local_packages//chromeos-flimflam_0.1_i386.deb: local install
 # Skipped chromeos-cryptohome 0.1 local_packages//chromeos-cryptohome_0.1_all.deb: local install
 # Skipped chromeos-init 0.3 local_packages//chromeos-init_0.3_all.deb: local install
 # Skipped chromeos-installer 0.1 local_packages//chromeos-installer_0.1_all.deb: local install

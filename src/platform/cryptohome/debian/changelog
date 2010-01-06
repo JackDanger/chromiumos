@@ -1,3 +1,9 @@
+chromeos-cryptohome (0.2) UNRELEASED; urgency=low
+
+  * Use dh(1).
+
+ -- Colin Watson <cjwatson@canonical.com>  Sat, 28 Nov 2009 10:40:51 +0000
+
 chromeos-cryptohome (0.1) karmic; urgency=low
 
   * Initial creation of encrypted user home directory helper scripts

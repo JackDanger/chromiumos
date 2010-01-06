@@ -3,47 +3,14 @@
 # Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
+%:
+	dh $@
 
-# Uncomment this to turn on verbose mode.
-#export DH_VERBOSE=1
-
-build: build-stamp
-build-stamp:
-	dh_testdir
-	touch $@
-
-clean:
-	dh_testdir
-	dh_testroot
-	rm -f build-stamp
-	dh_clean
-
-install:
-	dh_testdir
-	dh_testroot
-	dh_prep
-	dh_installdirs
-	cp $(CURDIR)/chromeos_install.sh \
-	  $(CURDIR)/debian/chromeos-installer/usr/sbin/chromeos-install
-	cp $(CURDIR)/postinst.sh \
-	  $(CURDIR)/debian/chromeos-installer/usr/sbin/chromeos-postinst
-	cp $(CURDIR)/postinst.sh \
+override_dh_install:
+	dh_install
+	# TODO: Make this a relative symlink to sbin/chromeos-postinst and
+	# test. Note: Previously this was an absolute symlink but there was
+	# an issue where it would use the host rather than target's
+	# postinst.
+	cp $(CURDIR)/chromeos-postinst \
 	  $(CURDIR)/debian/chromeos-installer/postinst
-
-# Build architecture-independent files here.
-binary-indep: install
-	dh_testdir
-	dh_testroot
-	dh_link
-	dh_strip
-	dh_compress
-	dh_fixperms
-	dh_installdeb
-	dh_shlibdeps
-	dh_gencontrol
-	dh_md5sums
-	dh_builddeb
-
-binary: binary-indep
-
-.PHONY: build clean install binary-indep binary

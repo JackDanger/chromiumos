@@ -1,3 +1,9 @@
+chromeos-chrome (0.2) UNRELEASED; urgency=low
+
+  * Use dh(1).
+
+ -- Colin Watson <cjwatson@canonical.com>  Sat, 28 Nov 2009 10:36:06 +0000
+
 chromeos-chrome (0.1) unstable; urgency=low
 
   * Initial Release.

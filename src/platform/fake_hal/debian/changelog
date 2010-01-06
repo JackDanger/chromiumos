@@ -1,3 +1,9 @@
+hal (1.1) UNRELEASED; urgency=low
+
+  * Use dh(1).
+
+ -- Colin Watson <cjwatson@canonical.com>  Sat, 28 Nov 2009 10:43:17 +0000
+
 hal (1.0) unstable; urgency=low
 
   * Initial Release.

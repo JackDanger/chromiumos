@@ -1,3 +1,9 @@
+chromeos-installer (0.2) UNRELEASED; urgency=low
+
+  * Use dh(1).
+
+ -- Colin Watson <cjwatson@ubuntu.com>  Sat, 28 Nov 2009 10:53:41 +0000
+
 chromeos-installer (0.1) unstable; urgency=low
 
   * Initial Release.

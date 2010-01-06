@@ -178,19 +178,15 @@ void PanelBar::HandleWindowUnmap(Window* win) {
   if (desired_panel_to_focus_ == panel)
     desired_panel_to_focus_ = NULL;
 
-  // If this was a focused content window, then we need to give the focus
-  // away to someone else.
-  if (panel->content_win()->focused()) {
-    // Try to find another expanded panel to focus.
-    Panel* panel_to_focus = GetNearestExpandedPanel(panel);
-    if (panel_to_focus) {
-      FocusPanel(panel_to_focus, false);  // remove_pointer_grab=false
-    } else {
-      // Failing that, let the WindowManager decide what to do with it.
-      wm_->SetActiveWindowProperty(None);
-      wm_->TakeFocus();
-    }
-  }
+  // If this was a focused content window, then we need to try to find
+  // another panel to focus.  We defer actually assigning the focus until
+  // after we've fully dealt with the unmapped panel to avoid issues with
+  // WindowManager::TakeFocus() calling PanelBar::TakeFocus() while we're
+  // in an inconsistent state.
+  bool need_to_assign_focus = panel->content_win()->focused();
+  Panel* panel_to_focus = NULL;
+  if (need_to_assign_focus)
+    panel_to_focus = GetNearestExpandedPanel(panel);
 
   CHECK(panel_infos_.erase(panel) == 1);
   Panels::iterator it = FindPanelInVectorByWindow(collapsed_panels_, *win);
@@ -209,9 +205,20 @@ void PanelBar::HandleWindowUnmap(Window* win) {
     }
   }
 
-  if (num_panels() == 0 && is_visible_) {
-    SetVisibility(false);
+  // Now assign the focus.
+  if (need_to_assign_focus) {
+    if (panel_to_focus) {
+      // If we found a nearby panel, focus it.
+      FocusPanel(panel_to_focus, false);  // remove_pointer_grab=false
+    } else {
+      // Failing that, let the WindowManager decide what to do with it.
+      wm_->SetActiveWindowProperty(None);
+      wm_->TakeFocus();
+    }
   }
+
+  if (num_panels() == 0 && is_visible_)
+    SetVisibility(false);
 }
 
 bool PanelBar::HandleWindowConfigureRequest(
