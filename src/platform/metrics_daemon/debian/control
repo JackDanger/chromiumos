@@ -6,7 +6,7 @@ Source: chromeos-metrics-daemon
 Section: unknown
 Priority: extra
 Maintainer: The Chromium OS Authors <chromium-os-dev@googlegroups.com>
-Build-Depends: debhelper (>= 7), pkg-config, libdbus-1-dev, libglib2.0-dev, libdbus-glib-1-dev, libchrome-dev, libgflags-dev, libgtest-dev
+Build-Depends: debhelper (>= 7), pkg-config, libdbus-1-dev, libglib2.0-dev, libdbus-glib-1-dev, libgflags-dev
 Standards-Version: 3.8.0
 
 Package: chromeos-metrics-daemon
