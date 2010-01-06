@@ -48,5 +48,9 @@ env.Append(
     CPPPATH=['files'],
     CCFLAGS=['-g', '-fno-exceptions', '-Wall', '-Werror']
 )
+for key in Split('CC CXX AR RANLIB LD NM CFLAGS CCFLAGS'):
+  value = os.environ.get(key)
+  if value != None:
+    env[key] = value
 
 env.StaticLibrary('base', sources)
