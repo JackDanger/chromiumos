@@ -1,0 +1,55 @@
+Source: clutter-1.0
+Section: libs
+Priority: optional
+Maintainer: Ubuntu MOTU Developers <ubuntu-motu@lists.ubuntu.com>
+XSBC-Original-Maintainer: Ross Burton <ross@debian.org>
+Uploaders: Rob Bradford <robster@debian.org>, Gustavo Noronha Silva <kov@debian.org>
+Build-Depends: debhelper (>= 5),
+               cdbs (>= 0.4.41),
+               libgl1-mesa-dev | libgl-dev,
+               libgtk2.0-dev,
+               libcairo2-dev (>= 1.4),
+               libpango1.0-dev (>= 1.20),
+               libglib2.0-dev (>= 2.16),
+               gtk-doc-tools
+Standards-Version: 3.8.2
+
+Package: libclutter-1.0-0
+Section: libs
+Architecture: any
+Depends: ${shlibs:Depends},
+         ${misc:Depends}
+Description: Open GL based interactive canvas library
+ Clutter is an Open GL based interactive canvas library, designed for creating
+ fast, mainly 2D single window applications such as media box UIs,
+ presentations, kiosk style applications and so on.
+
+Package: libclutter-1.0-dev
+Section: libdevel
+Architecture: any
+Depends: libclutter-1.0-0 (= ${binary:Version}),
+         libgtk2.0-dev,
+         libgl1-mesa-dev|libgl-dev,
+         ${misc:Depends},
+         ${shlibs:Depends}
+Recommends: pkg-config
+Description: Open GL based interactive canvas library (development files)
+ Clutter is an Open GL based interactive canvas library, designed for creating
+ fast, mainly 2D single window applications such as media box UIs,
+ presentations, kiosk style applications and so on.
+ .
+ This package contains the development files.
+
+Package: libclutter-1.0-dbg
+Section: debug
+Priority: extra
+Architecture: any
+Depends: libclutter-1.0-0 (= ${binary:Version}),
+         ${misc:Depends}
+Description: Open GL based interactive canvas library (debug files)
+ Clutter is an Open GL based interactive canvas library, designed for creating
+ fast, mainly 2D single window applications such as media box UIs,
+ presentations, kiosk style applications and so on.
+ .
+ This package contains the debug files.
+

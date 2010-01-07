@@ -32,15 +32,6 @@ mkdir -p "${OUT_DIR}"
 # Remove previous package from output dir
 rm -f "${OUT_DIR}/${PKG_BASE}-*_*.deb"
 
-# apply patches
-rm -fr "${TOP_SCRIPT_DIR}/files/debian"
-pushd "${TOP_SCRIPT_DIR}/files"
-gunzip -c "${TOP_SCRIPT_DIR}/clutter-1.0_1.0.4-0ubuntu1.diff.gz" | patch -p1
-patch -p1 <"${TOP_SCRIPT_DIR}/debian_rules.patch"
-popd
-
-chmod +x "${TOP_SCRIPT_DIR}/files/debian/rules"
-
 # Build the package
 pushd "$TOP_SCRIPT_DIR/files"
 dpkg-buildpackage -b -tc -us -uc
