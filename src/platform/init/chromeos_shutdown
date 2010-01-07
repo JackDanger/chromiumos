@@ -7,6 +7,14 @@
 # Shutdown is best-effort. We don't want to die on errors.
 set +e
 
+# Measure shutdown time
+if [ ! -d "/var/log/metrics" ]; then
+    mkdir -p /var/log/metrics
+fi
+
+echo `cut -f 1 ' ' /proc/uptime` > /var/log/metrics/uptime_shutdown_start
+cat /sys/block/sda/stat > /var/log/metrics/disk_shutdown_start
+
 # For a given mountpoint, this will kill all processes with open files
 # on that mountpoint so that it can be unmounted. It starts off by sending
 # a TERM and if the process hasn't exited quickly enough it will send KILL.
@@ -65,6 +73,11 @@ kill_with_open_files_on /mnt/stateful_partition /home/chronos
 if [ $? -ne 0 ] ; then
   mount > /var/log/shutdown_cryptohome_umount_failure
 fi
+
+# Measure shutdown time
+echo `cut -f 1 ' ' /proc/uptime` > /var/log/metrics/uptime_shutdown_stop
+cat /sys/block/sda/stat > /var/log/metrics/disk_shutdown_stop
+ 
 umount -n /var/cache /var/log /home /mnt/stateful_partition
 if [ $? -ne 0 ] ; then
   mount > /mnt/stateful_partition/var/log/shutdown_stateful_umount_failure
