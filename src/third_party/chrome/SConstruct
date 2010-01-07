@@ -46,7 +46,7 @@ sources = env.Split("""
 
 env.Append(
     CPPPATH=['files'],
-    CCFLAGS=['-g', '-fno-exceptions', '-Wall', '-Werror']
+    CCFLAGS=['-g', '-fno-exceptions', '-fPIC', '-Wall', '-Werror']
 )
 for key in Split('CC CXX AR RANLIB LD NM CFLAGS CCFLAGS'):
   value = os.environ.get(key)
