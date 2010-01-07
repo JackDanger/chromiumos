@@ -57,10 +57,12 @@ class WindowManager {
   int width() const { return width_; }
   int height() const { return height_; }
 
+  XWindow wm_xid() const { return wm_xid_; }
   XWindow active_window_xid() const { return active_window_xid_; }
 
   KeyBindings* key_bindings() { return key_bindings_.get(); }
   WmIpc* wm_ipc() { return wm_ipc_.get(); }
+  int wm_ipc_version() const { return wm_ipc_version_; }
 
   // Get the title for the window that we create to take ownership of management
   // selections.  This is also used to name our log files.
@@ -300,6 +302,10 @@ class WindowManager {
 
   // Shows overlayed images containing hotkeys.
   scoped_ptr<HotkeyOverlay> hotkey_overlay_;
+
+  // Version of the IPC protocol that Chrome is currently using.  See
+  // WM_NOTIFY_IPC_VERSION in wm_ipc.h for details.
+  int wm_ipc_version_;
 
   DISALLOW_COPY_AND_ASSIGN(WindowManager);
 };

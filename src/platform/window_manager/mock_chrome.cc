@@ -744,7 +744,10 @@ bool PanelTitlebar::on_button_press_event(GdkEventButton* event) {
   mouse_down_ = true;
   mouse_down_abs_x_ = event->x_root;
   mouse_down_abs_y_ = event->y_root;
-  mouse_down_offset_x_ = event->x;
+
+  int width = 1, height = 1;
+  get_size(width, height);
+  mouse_down_offset_x_ = event->x - width;
   mouse_down_offset_y_ = event->y;
   dragging_ = false;
   return true;
@@ -796,7 +799,7 @@ bool PanelTitlebar::on_motion_notify_event(GdkEventMotion* event) {
     }
   }
   if (dragging_) {
-    WmIpc::Message msg(WmIpc::Message::WM_MOVE_PANEL);
+    WmIpc::Message msg(WmIpc::Message::WM_NOTIFY_PANEL_DRAGGED);
     msg.set_param(0, panel_->xid());
     msg.set_param(1, event->x_root - mouse_down_offset_x_);
     msg.set_param(2, event->y_root - mouse_down_offset_y_);
@@ -883,6 +886,9 @@ MockChrome::MockChrome()
       atom_cache_(new AtomCache(xconn_.get())),
       wm_ipc_(new WmIpc(xconn_.get(), atom_cache_.get())),
       window_under_floating_tab_(NULL) {
+  WmIpc::Message msg(WmIpc::Message::WM_NOTIFY_IPC_VERSION);
+  msg.set_param(0, 1);
+  wm_ipc_->SendMessage(wm_ipc_->wm_window(), msg);
 }
 
 ChromeWindow* MockChrome::CreateWindow(int width, int height) {

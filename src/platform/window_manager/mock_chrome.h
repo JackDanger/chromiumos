@@ -293,11 +293,11 @@ class PanelTitlebar : public Gtk::Window {
   // Is the mouse button currently down?
   bool mouse_down_;
 
-  // Cursor's absolute position when the mouse button was pressed.
+  // Pointer's absolute position when the mouse button was pressed.
   int mouse_down_abs_x_;
   int mouse_down_abs_y_;
 
-  // Cursor's offset from the upper-left corner of the titlebar when the
+  // Pointer's offset from the upper-right corner of the titlebar when the
   // mouse button was pressed.
   int mouse_down_offset_x_;
   int mouse_down_offset_y_;

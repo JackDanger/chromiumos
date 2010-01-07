@@ -343,12 +343,12 @@ bool PanelBar::HandleChromeMessage(const WmIpc::Message& msg) {
       }
       break;
     }
-    case WmIpc::Message::WM_MOVE_PANEL: {
+    case WmIpc::Message::WM_NOTIFY_PANEL_DRAGGED: {
       XWindow xid = msg.param(0);
       Window* win = wm_->GetWindow(xid);
       if (!win) {
-        LOG(WARNING) << "Ignoring WM_MOVE_PANEL message for unknown window "
-                     << XidStr(xid);
+        LOG(WARNING) << "Ignoring WM_NOTIFY_PANEL_DRAGGED message for unknown "
+                     << "window " << XidStr(xid);
         return true;
       }
       int x = msg.param(1);
@@ -520,7 +520,10 @@ void PanelBar::MoveDraggedPanel() {
     return;
 
   const int drag_x = dragged_panel_event_coalescer_.x();
-  dragged_panel_->MoveX(drag_x + dragged_panel_->titlebar_width(), false, 0);
+  dragged_panel_->MoveX((wm_->wm_ipc_version() >= 1) ?
+                          drag_x :
+                          drag_x + dragged_panel_->titlebar_width(),
+                        false, 0);
 
   // When an expanded panel is being dragged, we don't move the other
   // panels to make room for it until the drag is done.
@@ -533,7 +536,9 @@ void PanelBar::MoveDraggedPanel() {
   CHECK(dragged_it != collapsed_panels_.end());
 
   // Next, check if the center of the panel has moved over another panel.
-  const int center_x = drag_x + 0.5 * dragged_panel_->titlebar_width();
+  const int center_x = (wm_->wm_ipc_version() >= 1) ?
+                       drag_x - 0.5 * dragged_panel_->titlebar_width() :
+                       drag_x + 0.5 * dragged_panel_->titlebar_width();
   Panels::iterator it = collapsed_panels_.begin();
   for (; it != collapsed_panels_.end(); ++it) {
     int snapped_left = 0, snapped_right = 0;

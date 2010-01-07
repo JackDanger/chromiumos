@@ -672,6 +672,25 @@ TEST_F(WindowManagerTest, ClientListProperties) {
   TestIntArrayProperty(root_xid, stacking_atom, 0);
 }
 
+TEST_F(WindowManagerTest, WmIpcVersion) {
+  // We should assume version 0 if we haven't received a message from Chrome.
+  EXPECT_EQ(0, wm_->wm_ipc_version());
+
+  // Now send the WM a message telling it that Chrome is using version 3.
+  // We use WmIpc to generate the XEvent for us and then pass it to
+  // WindowManager::HandleEvent().
+  MockXConnection::WindowInfo* info = xconn_->GetWindowInfoOrDie(wm_->wm_xid());
+  EXPECT_TRUE(info->client_messages.empty());
+  WmIpc::Message msg(WmIpc::Message::WM_NOTIFY_IPC_VERSION);
+  msg.set_param(0, 3);
+  ASSERT_TRUE(wm_->wm_ipc()->SendMessage(wm_->wm_xid(), msg));
+  ASSERT_EQ(static_cast<size_t>(1), info->client_messages.size());
+  XEvent event;
+  event.xclient = info->client_messages[0];
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  EXPECT_EQ(3, wm_->wm_ipc_version());
+}
+
 }  // namespace window_manager
 
 int main(int argc, char **argv) {

@@ -162,7 +162,8 @@ WindowManager::WindowManager(XConnection* xconn, ClutterInterface* clutter)
       stacked_xids_(new Stacker<XWindow>),
       active_window_xid_(None),
       query_keyboard_state_timer_(0),
-      showing_hotkey_overlay_(false) {
+      showing_hotkey_overlay_(false),
+      wm_ipc_version_(0) {
   CHECK(xconn_);
   CHECK(clutter_);
 }
@@ -817,6 +818,12 @@ bool WindowManager::HandleClientMessage(const XClientMessageEvent& e) {
           << GetXAtomName(e.message_type) << ") and format " << e.format;
   WmIpc::Message msg;
   if (wm_ipc_->GetMessage(e, &msg)) {
+    if (msg.type() == WmIpc::Message::WM_NOTIFY_IPC_VERSION) {
+      wm_ipc_version_ = msg.param(0);
+      LOG(INFO) << "Got WM_NOTIFY_IPC_VERSION message saying that Chrome is "
+                << "using version " << wm_ipc_version_;
+      return true;
+    }
     for (std::set<EventConsumer*>::iterator it = event_consumers_.begin();
          it != event_consumers_.end(); ++it) {
       if ((*it)->HandleChromeMessage(msg))
