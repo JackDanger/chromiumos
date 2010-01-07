@@ -41,6 +41,9 @@ deps = {
     # pam_google
     _platform_base + "pam_google": "/pam_google.git",
 
+    # text_input
+    _platform_base + "text_input": "/text_input.git",
+
     # autotest
     _third_party_base + "autotest/files" : "/autotest.git",
 
