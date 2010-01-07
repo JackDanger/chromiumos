@@ -15,10 +15,20 @@ else
 	CFLAGS += -O2
 endif
 
+DEB_BUILD_GNU_TYPE := $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
+DEB_HOST_GNU_TYPE  := $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
+ifeq ($(DEB_BUILD_GNU_TYPE),$(DEB_HOST_GNU_TYPE))
+CC := gcc
+CCC := g++
+else
+CC := $(DEB_HOST_GNU_TYPE)-gcc
+CCC := $(DEB_HOST_GNU_TYPE)-g++
+endif
+
 build: build-stamp
 build-stamp:
 	dh_testdir
-	$(MAKE)
+	$(MAKE) CC=$(CC) CCC=$(CCC)
 	touch $@
 
 clean:
