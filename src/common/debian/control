@@ -6,7 +6,7 @@ Source: libchromeos
 Section: unknown
 Priority: extra
 Maintainer: The Chromium OS Authors <chromium-os-dev@googlegroups.com>
-Build-Depends: debhelper (>= 7.3.0), dh-chromeos, scons, pkg-config, libchrome-dev, libdbus-1-dev, libglib2.0-dev, libdbus-glib-1-dev
+Build-Depends: debhelper (>= 7.3.0), dh-chromeos, scons, pkg-config, libgtest-dev, libchrome-dev, libdbus-1-dev, libglib2.0-dev, libdbus-glib-1-dev
 Standards-Version: 3.8.0
 
 Package: libchromeos-dev
