@@ -1,3 +1,13 @@
+chromeos-ply-image (0.2) UNRELEASED; urgency=low
+
+  * Use dh(1).
+  * Build-depend on libpng12-dev.
+  * Make the top-level Makefile useful.
+  * Pass toolchain parameters correctly for cross-compilation.
+  * Remove build.sh; debian/rules takes care of calling make now.
+
+ -- Colin Watson <cjwatson@canonical.com>  Thu, 07 Jan 2010 14:40:01 +0000
+
 chromeos-ply-image (0.1) unstable; urgency=low
 
   * Initial Release, derived from plymouth package with Moblin mods.

@@ -4,61 +4,16 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-# Uncomment this to turn on verbose mode.
-#export DH_VERBOSE=1
+DEB_BUILD_GNU_TYPE := $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
+DEB_HOST_GNU_TYPE  := $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
+ifeq ($(DEB_BUILD_GNU_TYPE),$(DEB_HOST_GNU_TYPE))
+CC := gcc
+else
+CC := $(DEB_HOST_GNU_TYPE)-gcc
+endif
 
-INSTALL_DIR=$(CURDIR)/debian/chromeos-ply-image
+%:
+	dh $@
 
-configure: configure-stamp
-configure-stamp:
-	dh_testdir
-	# Add here commands to configure the package.
-
-	touch configure-stamp
-
-
-build: build-stamp
-
-build-stamp: configure-stamp
-	dh_testdir
-
-	# Add here commands to compile the package.
-
-	touch $@
-
-clean:
-	dh_testdir
-	dh_testroot
-	rm -f build-stamp configure-stamp
-
-	# Add here commands to clean up after the build process.
-
-	dh_clean
-
-install: build
-	dh_testdir
-	dh_testroot
-	dh_prep
-	dh_installdirs
-
-	mkdir -p $(INSTALL_DIR)/usr/bin
-	cp src/ply-image $(INSTALL_DIR)/usr/bin
-
-# Build architecture-independent files here.
-binary-indep: install
-# We have nothing to do by default.
-
-# Build architecture-dependent files here.
-binary-arch: install
-	dh_testdir
-	dh_testroot
-	dh_compress
-	dh_fixperms
-	dh_installdeb
-	dh_shlibdeps
-	dh_gencontrol
-	dh_md5sums
-	dh_builddeb
-
-binary: binary-indep binary-arch
-.PHONY: build clean binary-indep binary-arch binary install configure
+override_dh_auto_build:
+	dh_auto_build -- CC=$(CC)
