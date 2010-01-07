@@ -1,0 +1,6 @@
+usr/lib/*.so
+usr/lib/*.a
+usr/include/gtest
+usr/lib/*.la
+usr/share/aclocal
+usr/bin/*

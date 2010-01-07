@@ -1,0 +1,115 @@
+.TH GTEST-CONFIG "1" "January 2009" "gtest-config 1.2.1" "User Commands"
+.SH NAME
+gtest-config \- Google's framework for writing C++ test
+.SH SYNOPSIS
+.B gtest-config
+[\fIOPTIONS\fR...]
+.SH DESCRIPTION
+The `gtest\-config' script provides access to the necessary compile and linking
+flags to connect with Google C++ Testing Framework, both in a build prior to
+installation, and on the system proper after installation. The installation
+overrides may be issued in combination with any other queries, but will only
+affect installation queries if called on a built but not installed gtest. The
+installation queries may not be issued with any other types of queries, and
+only one installation query may be made at a time. The version queries and
+compiler flag queries may be combined as desired but not mixed. Different
+version queries are always combined with logical "and" semantics, and only the
+last of any particular query is used while all previous ones ignored. All
+versions must be specified as a sequence of numbers separated by periods.
+Compiler flag queries output the union of the sets of flags when combined.
+.IP
+Examples:
+.IP
+gtest\-config \fB\-\-min\-version\fR=\fI1\fR.0 || echo "Insufficient Google Test version."
+.IP
+g++ $(gtest\-config \fB\-\-cppflags\fR \fB\-\-cxxflags\fR) \fB\-o\fR foo.o \fB\-c\fR foo.cpp
+g++ $(gtest\-config \fB\-\-ldflags\fR \fB\-\-libs\fR) \fB\-o\fR foo foo.o
+.IP
+# When using a built but not installed Google Test:
+g++ $(../../my_gtest_build/scripts/gtest\-config ...) ...
+.IP
+# When using an installed Google Test, but with installation overrides:
+export GTEST_PREFIX="/opt"
+g++ $(gtest\-config \fB\-\-libdir=\fR"/opt/lib64" ...) ...
+.IP
+Help:
+.TP
+\fB\-\-usage\fR
+brief usage information
+.TP
+\fB\-\-help\fR
+display this help message
+.IP
+Installation Overrides:
+.TP
+\fB\-\-prefix=\fR<dir>
+overrides the installation prefix
+.TP
+\fB\-\-exec\-prefix=\fR<dir>
+overrides the executable installation prefix
+.TP
+\fB\-\-libdir=\fR<dir>
+overrides the library installation prefix
+.TP
+\fB\-\-includedir=\fR<dir>
+overrides the header file installation prefix
+.IP
+Installation Queries:
+.TP
+\fB\-\-prefix\fR
+installation prefix
+.TP
+\fB\-\-exec\-prefix\fR
+executable installation prefix
+.TP
+\fB\-\-libdir\fR
+library installation directory
+.TP
+\fB\-\-includedir\fR
+header file installation directory
+.TP
+\fB\-\-version\fR
+the version of the Google Test installation
+.IP
+Version Queries:
+.TP
+\fB\-\-min\-version\fR=\fIVERSION\fR
+return 0 if the version is at least VERSION
+.TP
+\fB\-\-exact\-version\fR=\fIVERSION\fR
+return 0 if the version is exactly VERSION
+.TP
+\fB\-\-max\-version\fR=\fIVERSION\fR
+return 0 if the version is at most VERSION
+.IP
+Compilation Flag Queries:
+.TP
+\fB\-\-cppflags\fR
+compile flags specific to the C\-like preprocessors
+.TP
+\fB\-\-cxxflags\fR
+compile flags appropriate for C++ programs
+.TP
+\fB\-\-ldflags\fR
+linker flags
+.TP
+\fB\-\-libs\fR
+libraries for linking
+.SH "SEE ALSO"
+The full documentation for
+.B gtest-config
+is maintained as a Texinfo manual.  If the
+.B info
+and
+.B gtest-config
+programs are properly installed at your site, the command
+.IP
+.B info gtest-config
+.PP
+should give you access to the complete manual.
+.SH AUTHOR
+gtest is Copyright 2008, Google Inc.
+.PP
+This manual page was written by Giuseppe Iuculano <giuseppe@iuculano.it>,
+for the Debian project (but may be used by others).
+

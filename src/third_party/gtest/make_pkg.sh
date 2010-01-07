@@ -21,11 +21,20 @@ eval set -- "${FLAGS_ARGV}"
 # Die on any errors
 set -e
 
+# Make output dir
+OUT_DIR="$FLAGS_build_root/x86/local_packages"
+mkdir -p "${OUT_DIR}"
+
 # Build the package
 pushd "$TOP_SCRIPT_DIR/files"
 autoreconf -fvi
-./configure --prefix=/usr
-# No 'deb' target, so do straight install
-make -j$NUM_JOBS
-sudo -E make install
+rm -rf debian
+ln -s ../debian debian
+rm -f ../libgtest0_*.deb ../libgtest-dev_*.deb
+dpkg-buildpackage -b -tc -us -uc -j$NUM_JOBS
+mv ../libgtest0_*.deb ../libgtest-dev_*.deb "$OUT_DIR"
+rm ../gtest_*.changes
 popd
+
+# Install packages that are necessary for building later packages.
+sudo -E dpkg -i "${OUT_DIR}/libgtest0"_*.deb "${OUT_DIR}/libgtest-dev"_*.deb
