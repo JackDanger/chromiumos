@@ -13,3 +13,5 @@ COMMON_SH="$(dirname "$0")/../../scripts/common.sh"
 
 # Make the package
 make_pkg_common "dh-chromeos" "$@"
+
+sudo -E dpkg -i "${OUT_DIR}/dh-chromeos"_*.deb
