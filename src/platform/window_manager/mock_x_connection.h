@@ -20,6 +20,10 @@ class MockXConnection : public XConnection {
   MockXConnection();
   ~MockXConnection();
 
+  void Free(void* item) {}
+  XVisualInfo* GetVisualInfo(long mask,
+                             XVisualInfo* visual_template,
+                             int* item_count);
   bool GetWindowGeometry(XWindow xid, WindowGeometry* geom_out);
   bool MapWindow(XWindow xid);
   bool UnmapWindow(XWindow xid);
@@ -49,6 +53,8 @@ class MockXConnection : public XConnection {
   bool RedirectWindowForCompositing(XWindow xid);
   bool UnredirectWindowForCompositing(XWindow xid);
   XWindow GetCompositingOverlayWindow(XWindow root) { return overlay_; }
+  XPixmap GetCompositingPixmapForWindow(XWindow window) { return None; }
+  bool FreePixmap(XPixmap pixmap) { return true; }
   XWindow GetRootWindow() { return root_; }
   XWindow CreateWindow(XWindow parent, int x, int y, int width, int height,
                        bool override_redirect, bool input_only, int event_mask);
@@ -80,6 +86,10 @@ class MockXConnection : public XConnection {
   std::string GetStringFromKeySym(KeySym keysym) { return ""; }
   bool GrabKey(KeyCode keycode, uint32 modifiers) { return true; }
   bool UngrabKey(KeyCode keycode, uint32 modifiers) { return true; }
+  XDamage CreateDamage(XDrawable drawable, int level) { return None; }
+  void DestroyDamage(XDamage damage) {}
+  void SubtractRegionFromDamage(XDamage damage, XserverRegion repair,
+                                XserverRegion parts) {}
   bool SetDetectableKeyboardAutoRepeat(bool detectable) { return true; }
   bool QueryKeyboardState(std::vector<uint8_t>* keycodes_out) { return true; }
 
@@ -108,6 +118,8 @@ class MockXConnection : public XConnection {
     XWindow parent;
     int x, y;
     int width, height;
+    int border_width;
+    int depth;
     bool mapped;
     bool override_redirect;
     bool input_only;

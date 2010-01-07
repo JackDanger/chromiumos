@@ -88,7 +88,7 @@ wm_env = base_env.Clone()
 wm_env['BUILDERS']['ProtocolBuffer'] = proto_builder
 
 wm_env.ParseConfig('pkg-config --cflags --libs gdk-2.0 libpcrecpp ' +
-                   'xcb x11-xcb xcb-composite xcb-randr xcb-shape')
+                   'xcb x11-xcb xcb-composite xcb-randr xcb-shape xcb-damage')
 
 breakpad_path = '../../third_party/google-breakpad/files/src/client/linux'
 wm_env['CPPPATH'].append(breakpad_path)
@@ -101,13 +101,18 @@ else:
 # Make us still produce a usable binary (for now, at least) on Jaunty
 # systems that are stuck at Clutter 0.9.2.
 if os.system('pkg-config --exact-version=0.9.2 clutter-0.9') == 0:
-  wm_env.Append(CCFLAGS='-DCLUTTER_0_9_2')
+  wm_env.Append(CPPDEFINES=['CLUTTER_0_9_2'])
+
+# This is needed so that glext headers include glBindBuffer and
+# related APIs.
+wm_env.Append(CPPDEFINES=['GL_GLEXT_PROTOTYPES'])
 
 wm_env.ProtocolBuffer('system_metrics.pb.cc', 'system_metrics.proto');
 
 # Define an IPC library that will be used both by the WM and by client apps.
 srcs = Split('''\
   atom_cache.cc
+  real_gl_interface.cc
   real_x_connection.cc
   system_metrics.pb.cc
   util.cc
@@ -127,6 +132,7 @@ srcs = Split('''\
   layout_manager.cc
   metrics_reporter.cc
   motion_event_coalescer.cc
+  no_clutter.cc
   panel.cc
   panel_bar.cc
   shadow.cc
@@ -138,6 +144,7 @@ libwm_core = wm_env.Library('wm_core', srcs)
 
 # Define a library to be used by tests.
 srcs = Split('''\
+  mock_gl_interface.cc
   mock_x_connection.cc
   test_lib.cc
 ''')
@@ -153,6 +160,7 @@ test_env['LINKFLAGS'].append('-lgtest')
 test_env['LIBS'].insert(0, libtest)
 test_env.Program('key_bindings_test', 'key_bindings_test.cc')
 test_env.Program('layout_manager_test', 'layout_manager_test.cc')
+test_env.Program('no_clutter_test', 'no_clutter_test.cc')
 test_env.Program('panel_bar_test', 'panel_bar_test.cc')
 test_env.Program('panel_test', 'panel_test.cc')
 test_env.Program('shadow_test', 'shadow_test.cc')

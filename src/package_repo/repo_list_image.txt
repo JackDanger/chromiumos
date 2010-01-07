@@ -286,6 +286,7 @@ libxapian15 1.0.15-2ubuntu2 important libs pool/main/x/xapian-core/libxapian15_1
 libxau6 1:1.0.4-2 standard libs pool/main/libx/libxau/libxau6_1.0.4-2_i386.deb
 libxaw7 2:1.0.6-1 optional libs pool/main/libx/libxaw/libxaw7_1.0.6-1_i386.deb
 libxcb-composite0 1.4-1 optional libs pool/main/libx/libxcb/libxcb-composite0_1.4-1_i386.deb
+libxcb-damage0 1.4-1 optional libs pool/main/libx/libxcb/libxcb-damage0_1.4-1_i386.deb
 libxcb-randr0 1.4-1 optional libs pool/main/libx/libxcb/libxcb-randr0_1.4-1_i386.deb
 libxcb-render-util0 0.3.6-1 extra libdevel pool/main/x/xcb-util/libxcb-render-util0_0.3.6-1_i386.deb
 libxcb-render0 1.4-1 optional libs pool/main/libx/libxcb/libxcb-render0_1.4-1_i386.deb

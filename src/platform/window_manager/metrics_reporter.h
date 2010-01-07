@@ -24,7 +24,7 @@ class WmIpc;
 // to use DBus instead.
 class MetricsReporter {
  public:
-  MetricsReporter(LayoutManager *lm, WmIpc *ipc)
+  MetricsReporter(LayoutManager* lm, WmIpc* ipc)
       : lm_(lm),
         ipc_(ipc) {
   }
@@ -42,10 +42,10 @@ class MetricsReporter {
   // the boot time and puts it into the provided protobuffer.
   // Returns true on success, false otherwise.
   bool GatherBootTime(const std::string& filename,
-                      chrome_os_pb::SystemMetrics *metrics);
+                      chrome_os_pb::SystemMetrics* metrics);
 
-  LayoutManager *lm_;  // does not take ownership.
-  WmIpc *ipc_;  // does not take ownership.
+  LayoutManager* lm_;  // does not take ownership.
+  WmIpc* ipc_;  // does not take ownership.
 };
 
 }  // namespace window_manager

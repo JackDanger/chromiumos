@@ -60,6 +60,8 @@ static const int kHotkeyOverlayAnimMs = 100;
 // update the hotkey overlay (when it's being shown).
 static const int kHotkeyOverlayPollMs = 100;
 
+#undef DEBUG_EVENTS  // Turn this on if you want to debug events.
+#ifdef DEBUG_EVENTS
 static const char* XEventTypeToName(int type) {
   switch (type) {
     CHROMEOS_CASE_RETURN_LABEL(ButtonPress);
@@ -98,6 +100,7 @@ static const char* XEventTypeToName(int type) {
     default: return "Unknown";
   }
 }
+#endif
 
 static const char* FocusChangeEventModeToName(int mode) {
   switch (mode) {
@@ -356,7 +359,14 @@ bool WindowManager::Init() {
 }
 
 bool WindowManager::HandleEvent(XEvent* event) {
-  VLOG(2) << "Got " << XEventTypeToName(event->type) << " event";
+#ifdef DEBUG_EVENTS
+    if (event->type == xconn_->damage_event_base() + XDamageNotify) {
+    LOG(INFO) << "Got DAMAGE" << " event (" << event->type << ")";
+  } else {
+    LOG(INFO) << "Got " << XEventTypeToName(event->type)
+              << " event (" << event->type << ") in window manager.";
+  }
+#endif
   switch (event->type) {
     case ButtonPress:
       return HandleButtonPress(event->xbutton);
@@ -375,7 +385,6 @@ bool WindowManager::HandleEvent(XEvent* event) {
     case EnterNotify:
       return HandleEnterNotify(event->xcrossing);
     case FocusIn:
-      // fallthrough
     case FocusOut:
       return HandleFocusChange(event->xfocus);
     case KeyPress:

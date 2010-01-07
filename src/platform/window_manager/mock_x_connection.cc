@@ -23,9 +23,18 @@ MockXConnection::MockXConnection()
   // Arbitrary large numbers unlikely to be used by other events.
   shape_event_base_ = 432432;
   randr_event_base_ = 543251;
+  damage_event_base_ = 683827;
+  damage_error_base_ = 728384;
 }
 
 MockXConnection::~MockXConnection() {}
+
+XVisualInfo* MockXConnection::GetVisualInfo(long mask,
+                                            XVisualInfo* visual_template,
+                                            int* item_count) {
+  *item_count = 1;
+  return visual_template;
+}
 
 bool MockXConnection::GetWindowGeometry(XWindow xid, WindowGeometry* geom_out) {
   CHECK(geom_out);
@@ -437,6 +446,8 @@ MockXConnection::WindowInfo::WindowInfo(XWindow xid, XWindow parent)
       y(-1),
       width(1),
       height(1),
+      border_width(0),
+      depth(32),
       mapped(false),
       override_redirect(false),
       input_only(false),

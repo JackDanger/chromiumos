@@ -19,6 +19,10 @@ class RealXConnection : public XConnection {
   explicit RealXConnection(Display* display);
   virtual ~RealXConnection();
 
+  void Free(void* item);
+  XVisualInfo* GetVisualInfo(long mask,
+                             XVisualInfo* visual_template,
+                             int* item_count);
   bool GetWindowGeometry(XWindow xid, WindowGeometry* geom_out);
   bool MapWindow(XWindow xid);
   bool UnmapWindow(XWindow xid);
@@ -44,6 +48,8 @@ class RealXConnection : public XConnection {
   bool RedirectWindowForCompositing(XWindow xid);
   bool UnredirectWindowForCompositing(XWindow xid);
   XWindow GetCompositingOverlayWindow(XWindow root);
+  XPixmap GetCompositingPixmapForWindow(XWindow window);
+  bool FreePixmap(XPixmap pixmap);
   XWindow GetRootWindow() { return root_; }
   XWindow CreateWindow(XWindow parent, int x, int y, int width, int height,
                        bool override_redirect, bool input_only, int event_mask);
@@ -72,12 +78,18 @@ class RealXConnection : public XConnection {
   std::string GetStringFromKeySym(KeySym keysym);
   bool GrabKey(KeyCode keycode, uint32 modifiers);
   bool UngrabKey(KeyCode keycode, uint32 modifiers);
+  XDamage CreateDamage(XDrawable drawable, int level);
+  void DestroyDamage(XDamage damage);
+  void SubtractRegionFromDamage(XDamage damage, XserverRegion repair,
+                                XserverRegion parts);
+
   bool SetDetectableKeyboardAutoRepeat(bool detectable);
   bool QueryKeyboardState(std::vector<uint8_t>* keycodes_out);
 
- private:
-  bool GrabServerImpl();
-  bool UngrabServerImpl();
+  // This convenience function is ONLY available for a real X
+  // connection.  It is not part of the XConnection interface.  This
+  // should not be used by anything other than GLInterface.
+  XDisplay* GetDisplay() { return display_; }
 
   // Ask the server for information about an extension.  Out params may be
   // NULL.  Returns false if the extension isn't present.
@@ -117,8 +129,15 @@ class RealXConnection : public XConnection {
   // returns false.
   bool CheckForXcbError(xcb_void_cookie_t cookie, const char* format, ...);
 
+ private:
+  bool GrabServerImpl();
+  bool UngrabServerImpl();
+
   // The actual connection to the X server.
-  Display* display_;
+  XDisplay* display_;
+
+  // The screen the display is on.
+  int screen_;
 
   // XCB's representation of the connection to the X server.
   xcb_connection_t* xcb_conn_;

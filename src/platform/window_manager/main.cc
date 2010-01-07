@@ -6,6 +6,8 @@
 #include <cstdlib>
 #include <ctime>
 
+#include <unistd.h>
+
 extern "C" {
 #include <clutter/clutter.h>
 #include <gdk/gdk.h>
@@ -22,24 +24,33 @@ extern "C" {
 #include "base/string_util.h"
 #include "handler/exception_handler.h"
 #include "window_manager/clutter_interface.h"
-#include "window_manager/window_manager.h"
+#include "window_manager/no_clutter.h"
+#include "window_manager/real_gl_interface.h"
 #include "window_manager/real_x_connection.h"
+#include "window_manager/window_manager.h"
 
 DECLARE_bool(wm_use_compositing);  // from window_manager.cc
 
 DEFINE_string(log_dir, ".",
               "Directory where logs should be written; created if it doesn't "
               "exist.");
+DEFINE_string(display, "",
+              "X Display to connect to (overrides DISPLAY env var).");
 DEFINE_bool(logtostderr, false,
-            "Should logs be written to stderr instead of to a file in "
-            "--log_dir?");
+            "Write logs to stderr instead of to a file in log_dir.");
 DEFINE_string(minidump_dir, ".",
               "Directory where crash minidumps should be written; created if "
               "it doesn't exist.");
+DEFINE_bool(use_clutter, true,
+            "Specify --nouse_clutter turn off clutter and use GL directly.");
+DEFINE_int32(pause_at_start, 0,
+             "Specify this to pause for N seconds at startup.");
 
 using window_manager::ClutterInterface;
 using window_manager::MockClutterInterface;
+using window_manager::NoClutterInterface;
 using window_manager::RealClutterInterface;
+using window_manager::RealGLInterface;
 using window_manager::RealXConnection;
 using window_manager::WindowManager;
 
@@ -60,10 +71,20 @@ static void HandleLogAssert(const std::string& str) {
 }
 
 int main(int argc, char** argv) {
-  gdk_init(&argc, &argv);
-  clutter_init(&argc, &argv);
   google::ParseCommandLineFlags(&argc, &argv, true);
+  if (!FLAGS_display.empty()) {
+    setenv("DISPLAY", FLAGS_display.c_str(), 1);
+  }
+
+  gdk_init(&argc, &argv);
+  if (FLAGS_use_clutter) {
+    clutter_init(&argc, &argv);
+  }
+
   CommandLine::Init(argc, argv);
+  if (FLAGS_pause_at_start > 0) {
+    ::sleep(FLAGS_pause_at_start);
+  }
 
   if (!file_util::CreateDirectory(FilePath(FLAGS_minidump_dir)))
     LOG(ERROR) << "Unable to create minidump directory " << FLAGS_minidump_dir;
@@ -98,15 +119,27 @@ int main(int argc, char** argv) {
     xconn.GetCompositingOverlayWindow(root);
   }
 
+  scoped_ptr<RealGLInterface> gl_interface;
   scoped_ptr<ClutterInterface> clutter;
   if (FLAGS_wm_use_compositing) {
-    clutter.reset(new RealClutterInterface);
+    if (FLAGS_use_clutter) {
+      clutter.reset(new RealClutterInterface());
+    } else {
+      gl_interface.reset(new RealGLInterface(&xconn));
+      clutter.reset(new NoClutterInterface(&xconn, gl_interface.get()));
+    }
   } else {
     clutter.reset(new MockClutterInterface);
   }
   WindowManager wm(&xconn, clutter.get());
   wm.Init();
 
-  clutter_main();
+  if (FLAGS_use_clutter) {
+    clutter_main();
+  } else {
+    GMainLoop* loop = g_main_loop_ref(g_main_loop_new(NULL, FALSE));
+    g_main_loop_run(loop);
+    g_main_loop_unref(loop);
+  }
   return 0;
 }

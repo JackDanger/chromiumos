@@ -32,11 +32,11 @@ class ScopedFilePointer {
 };
 
 void MetricsReporter::AttemptReport() {
-  Window *chrome_window = lm_->GetChromeWindow();
+  Window* chrome_window = lm_->GetChromeWindow();
   if (!chrome_window) {  // no top-level chrome windows open right now.
     return;
   }
-  LayoutManager::Metrics *metrics = lm_->GetMetrics();
+  LayoutManager::Metrics* metrics = lm_->GetMetrics();
   if (!metrics) {
     return;
   }
@@ -55,7 +55,7 @@ void MetricsReporter::AttemptReport() {
 }
 
 bool MetricsReporter::GatherBootTime(const std::string& filename,
-                                     chrome_os_pb::SystemMetrics *metrics) {
+                                     chrome_os_pb::SystemMetrics* metrics) {
   ScopedFilePointer fp(fopen(filename.c_str(), "r"));
   if (!fp.get()) {
     return false;

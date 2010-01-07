@@ -8,6 +8,7 @@ extern "C" {
 #include <xcb/composite.h>
 #include <xcb/randr.h>
 #include <xcb/shape.h>
+#include <xcb/damage.h>
 #include <X11/extensions/shape.h>
 #include <X11/Xatom.h>
 #include <X11/Xlib-xcb.h>
@@ -38,13 +39,16 @@ static int HandleXError(Display* display, XErrorEvent* event) {
   last_trapped_error_code = event->error_code;
   last_trapped_request_code = event->request_code;
   last_trapped_minor_code = event->minor_code;
+  char error_description[256] = "";
+  XGetErrorText(display, event->error_code,
+                error_description, sizeof(error_description));
   LOG(WARNING) << "Handled X error on display " << display << ":"
                << " error=" << last_trapped_error_code
+               << " (" << error_description << ")"
                << " request=" << last_trapped_request_code
                << " minor=" << last_trapped_minor_code;
   return 0;
 }
-
 
 RealXConnection::RealXConnection(Display* display)
     : display_(display),
@@ -63,6 +67,7 @@ RealXConnection::RealXConnection(Display* display)
 
   CHECK(QueryExtensionInternal("SHAPE", &shape_event_base_, NULL));
   CHECK(QueryExtensionInternal("RANDR", &randr_event_base_, NULL));
+  CHECK(QueryExtensionInternal("DAMAGE", &damage_event_base_, NULL));
 }
 
 RealXConnection::~RealXConnection() {
@@ -72,7 +77,18 @@ RealXConnection::~RealXConnection() {
   }
 }
 
-bool RealXConnection::GetWindowGeometry(XWindow xid, WindowGeometry* geom_out) {
+void RealXConnection::Free(void* item) {
+  XFree(item);
+}
+
+XVisualInfo* RealXConnection::GetVisualInfo(long mask,
+                                            XVisualInfo* visual_template,
+                                            int* item_count) {
+  return XGetVisualInfo(display_, mask, visual_template, item_count);
+}
+
+bool RealXConnection::GetWindowGeometry(XDrawable xid,
+                                        WindowGeometry* geom_out) {
   CHECK(geom_out);
   xcb_get_geometry_cookie_t cookie = xcb_get_geometry(xcb_conn_, xid);
   xcb_generic_error_t* error = NULL;
@@ -80,7 +96,7 @@ bool RealXConnection::GetWindowGeometry(XWindow xid, WindowGeometry* geom_out) {
       xcb_get_geometry_reply(xcb_conn_, cookie, &error));
   scoped_ptr_malloc<xcb_generic_error_t> scoped_error(error);
   if (error) {
-    LOG(WARNING) << "Got X error while getting geometry for window "
+    LOG(WARNING) << "Got X error while getting geometry for drawable "
                  << XidStr(xid);
     return false;
   }
@@ -423,6 +439,7 @@ bool RealXConnection::GetWindowAttributes(
                    << XidStr(xid);
   }
   attr_out->override_redirect = (reply->override_redirect != 0);
+  attr_out->visual_id = reply->visual;
   return true;
 }
 
@@ -449,6 +466,21 @@ XWindow RealXConnection::GetCompositingOverlayWindow(XWindow root) {
     return XCB_NONE;
   }
   return reply->overlay_win;
+}
+
+XPixmap RealXConnection::GetCompositingPixmapForWindow(XWindow window) {
+  const xcb_pixmap_t pixmap = xcb_generate_id(xcb_conn_);
+  xcb_void_cookie_t cookie = xcb_composite_name_window_pixmap_checked(
+      xcb_conn_, window, pixmap);
+  CheckForXcbError(cookie, "in GetCompositingPixmapForWindow "
+                   "(window=0x%08x, pixmap=0x%08x)", static_cast<int>(window),
+                   static_cast<int>(pixmap));
+  return pixmap;
+}
+
+bool RealXConnection::FreePixmap(XPixmap pixmap) {
+  xcb_free_pixmap(xcb_conn_, pixmap);
+  return true;
 }
 
 XWindow RealXConnection::CreateWindow(
@@ -812,6 +844,22 @@ bool RealXConnection::GrabKey(KeyCode keycode, uint32 modifiers) {
 bool RealXConnection::UngrabKey(KeyCode keycode, uint32 modifiers) {
   xcb_ungrab_key(xcb_conn_, keycode, root_, modifiers);
   return true;
+}
+
+XDamage RealXConnection::CreateDamage(XDrawable drawable, int level) {
+  const xcb_damage_damage_t damage = xcb_generate_id(xcb_conn_);
+  xcb_damage_create(xcb_conn_, damage, drawable, level);
+  return damage;
+}
+
+void RealXConnection::DestroyDamage(XDamage damage) {
+  xcb_damage_destroy(xcb_conn_, damage);
+}
+
+void RealXConnection::SubtractRegionFromDamage(XDamage damage,
+                                               XserverRegion repair,
+                                               XserverRegion parts) {
+  xcb_damage_subtract(xcb_conn_, damage, repair, parts);
 }
 
 bool RealXConnection::SetDetectableKeyboardAutoRepeat(bool detectable) {

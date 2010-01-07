@@ -12,6 +12,7 @@
 extern "C" {
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#include <X11/extensions/Xdamage.h>
 }
 
 #include "base/basictypes.h"
@@ -21,6 +22,12 @@ extern "C" {
 namespace window_manager {
 
 typedef ::Atom XAtom;
+typedef ::Damage XDamage;
+typedef ::Display XDisplay;
+typedef ::Drawable XDrawable;
+typedef ::Pixmap XPixmap;
+typedef ::Visual XVisual;
+typedef ::VisualID XVisualID;
 typedef ::Window XWindow;
 
 class ByteMap;  // from util.h
@@ -37,7 +44,16 @@ class XConnection {
   }
   virtual ~XConnection() {}
 
+  virtual void Free(void* item) = 0;
+
+  // Caller assumes ownership of the memory returned from this
+  // function which must be freed by calling Free(), above.
+  virtual XVisualInfo* GetVisualInfo(long mask,
+                                     XVisualInfo* visual_template,
+                                     int* item_count) = 0;
+
   // Get the base event ID for extension events.
+  int damage_event_base() const { return damage_event_base_; }
   int shape_event_base() const { return shape_event_base_; }
   int randr_event_base() const { return randr_event_base_; }
 
@@ -211,6 +227,8 @@ class XConnection {
     MapState map_state;
 
     bool override_redirect;
+
+    XVisualID visual_id;
   };
 
   // Get a window's attributes.
@@ -228,6 +246,13 @@ class XConnection {
   // below the screensaver window but above all other windows).
   virtual XWindow GetCompositingOverlayWindow(XWindow root) = 0;
 
+  // Get a pixmap referring to a redirected window's offscreen storage.
+  virtual XPixmap GetCompositingPixmapForWindow(XWindow window) = 0;
+
+  // Free a pixmap.
+  virtual bool FreePixmap(XPixmap pixmap) = 0;
+
+  // Get the root window.
   virtual XWindow GetRootWindow() = 0;
 
   // Create a new override-redirect window.  'width' and 'height' must be
@@ -241,6 +266,13 @@ class XConnection {
       bool override_redirect,
       bool input_only,
       int event_mask) = 0;
+
+  // Create a new simple window.  'width' and 'height' must be
+  // positive. The window is a child of 'parent'.  The border width is
+  // zero.
+  XWindow CreateSimpleWindow(XWindow parent,
+                             int x, int y,
+                             int width, int height);
 
   // Destroy a window.
   virtual bool DestroyWindow(XWindow xid) = 0;
@@ -328,6 +360,12 @@ class XConnection {
   virtual bool GrabKey(KeyCode keycode, uint32 modifiers) = 0;
   virtual bool UngrabKey(KeyCode keycode, uint32 modifiers) = 0;
 
+  // Manage damage regions.
+  virtual XDamage CreateDamage(XDrawable drawable, int level) = 0;
+  virtual void DestroyDamage(XDamage damage) = 0;
+  virtual void SubtractRegionFromDamage(XDamage damage, XserverRegion repair,
+                                        XserverRegion parts) = 0;
+
   // When auto-repeating a key combo, the X Server may send:
   //   KeyPress   @ time_0    <-- Key pressed down
   //   KeyRelease @ time_1    <-- First auto-repeat
@@ -367,6 +405,8 @@ class XConnection {
  protected:
   // Base IDs for extension events.  Implementations should initialize
   // these in their constructors.
+  int damage_event_base_;
+  int damage_error_base_;
   int shape_event_base_;
   int randr_event_base_;
 

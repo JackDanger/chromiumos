@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 # Package list created by list_installed_packages.sh
-# Creation time: Fri Dec 18 02:32:37 UTC 2009
+# Creation time: Wed Dec 23 00:44:28 UTC 2009
 #
 # Contents of /etc/apt/sources.list:
 #   deb http://us.archive.ubuntu.com/ubuntu karmic main restricted multiverse universe
@@ -444,6 +444,8 @@ libxaw7 2:1.0.6-1 optional libs pool/main/libx/libxaw/libxaw7_1.0.6-1_i386.deb
 libxaw7-dev 2:1.0.6-1 optional libdevel pool/main/libx/libxaw/libxaw7-dev_1.0.6-1_i386.deb
 libxcb-composite0 1.4-1 optional libs pool/main/libx/libxcb/libxcb-composite0_1.4-1_i386.deb
 libxcb-composite0-dev 1.4-1 optional libdevel pool/main/libx/libxcb/libxcb-composite0-dev_1.4-1_i386.deb
+libxcb-damage0 1.4-1 optional libs pool/main/libx/libxcb/libxcb-damage0_1.4-1_i386.deb
+libxcb-damage0-dev 1.4-1 optional libdevel pool/main/libx/libxcb/libxcb-damage0-dev_1.4-1_i386.deb
 libxcb-randr0 1.4-1 optional libs pool/main/libx/libxcb/libxcb-randr0_1.4-1_i386.deb
 libxcb-randr0-dev 1.4-1 optional libdevel pool/main/libx/libxcb/libxcb-randr0-dev_1.4-1_i386.deb
 libxcb-render-util0 0.3.6-1 extra libdevel pool/main/x/xcb-util/libxcb-render-util0_0.3.6-1_i386.deb

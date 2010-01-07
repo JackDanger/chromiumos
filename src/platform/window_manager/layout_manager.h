@@ -62,7 +62,7 @@ class LayoutManager : public EventConsumer {
     }
 
     // Given a metrics protobuffer, populates the applicable fields.
-    void Populate(chrome_os_pb::SystemMetrics *metrics_pb);
+    void Populate(chrome_os_pb::SystemMetrics* metrics_pb);
 
     void Reset() {
       overview_by_keystroke_count = 0;
