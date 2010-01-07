@@ -26,36 +26,29 @@ libgconf2-4
 # DRI drivers are needed to run the clutter-based WM.
 libgl1-mesa-dri
 
-# TODO: Remove. For now, install ssh server until things are farther
+# TODO: Remove. For now, install these useful packages until things are farther
 # along in development.
-openssh-server
-
-# TODO: Remove. For now, install xterm until things are further along.
-xterm
-
-# TODO: Remove. For now, install bootchart until things are futher.
 bootchart
-
-# TODO: For Karmic, we might need to add squashfs-tools until they get
-# get updated.
-#squashfs-tools
+less
+openssh-server
+xterm
 
 # Fonts
 ttf-dejavu
 ttf-droid
 ttf-sil-abyssinica
 
-# for power events (needed specifically to trap lid-close)
+# For power events (needed specifically to trap lid-close)
 acpid
 
-# for power management (battery monitor)
+# For power management (battery monitor)
 devicekit-power
 
-# for mounting
+# For mounting
 devicekit-disks
 policykit-1
 
-# for shutdown to cleanly unmount the stateful partition
+# For shutdown to cleanly unmount the stateful partition
 lsof
 
 # For sound (needed specifically for volume adjustment)
