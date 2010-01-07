@@ -1,3 +1,10 @@
+chromeos-microbenchmark (0.2) UNRELEASED; urgency=low
+
+  * Use dh(1) and dh-chromeos.
+  * Fix SConstruct to use cross-tools from environment if set.
+
+ -- Colin Watson <cjwatson@canonical.com>  Wed, 06 Jan 2010 22:39:44 +0000
+
 chromeos-microbenchmark (0.1) unstable; urgency=low
 
   * Initial release
