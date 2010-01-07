@@ -585,6 +585,8 @@ TEST_F(LayoutManagerTest, ConfigureToplevel) {
   EXPECT_EQ(lm_->height(), info->height);
 
   // Now ask for a new position and larger size.
+  int new_x = 20;
+  int new_y = 40;
   int new_width = lm_->x() + 10;
   int new_height = lm_->y() + 5;
   XEvent event;
