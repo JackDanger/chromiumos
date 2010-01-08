@@ -35,7 +35,6 @@ do
   esac
 done
 
-
 # Function to download a file using wget or scp
 function download {
   echo "Downloading $1"
@@ -59,7 +58,7 @@ CHROME_ZIP_SECOND_TRY=chrome-linux.zip
 # cluster / subnetwork.
 #
 # Most users should build Chromium locally; see below.
-if [ $USE_RELEASE_CHROME = 1 ]
+if [ "$WGET_STABLE_BUILD" = 1 -o $USE_RELEASE_CHROME = 1 ]
 then
   # Use released version of Chrome
   BASE_FROM="http://codf196.jail.google.com/archive/chrome-official"
@@ -92,37 +91,28 @@ rm -f "./$CHROME_ZIP" ./LATEST
 # 3. Build chrome locally and put the zip image in src/build/local_packages.
 # 4. Use wget to pull a tested version of the browser as opposed to the latest
 
-if [ "$WGET_STABLE_BUILD" ]
-then
-  echo "Getting a stable version of the browser"
-  download "http://build.chromium.org/buildbot/archives/chromium-chromiumos-r32516.zip"
-  mv "chromium-chromiumos-r32516.zip" "$CHROME_ZIP"
+if [ -f "$LOCAL_CHROME" ]
+then 
+  # Use local Chrome
+  echo "Using locally-built Chrome from $LOCAL_CHROME"
+  cp "$LOCAL_CHROME" .
 else
+  # Download Chrome build
+  echo "Copying Chrome"
+ 
+  if [ -z "$CHROME_BUILD" ]
+  then
+    # Find latest build of Chrome
+    echo "Checking for latest build of Chrome"
+    download "${BASE_FROM}/LATEST"
+    CHROME_BUILD=`cat LATEST`
+    echo "Latest build of Chrome is $CHROME_BUILD"
+  fi
 
-  if [ -f "$LOCAL_CHROME" ]
-  then 
-    # Use local Chrome
-    echo "Using locally-built Chrome from $LOCAL_CHROME"
-    cp "$LOCAL_CHROME" .
-  else
-
-    # Download Chrome build
-    echo "Copying Chrome"
-    
-    if [ -z "$CHROME_BUILD" ]
-    then
-      # Find latest build of Chrome
-      echo "Checking for latest build of Chrome"
-      download "${BASE_FROM}/LATEST"
-      CHROME_BUILD=`cat LATEST`
-      echo "Latest build of Chrome is $CHROME_BUILD"
-    fi
-
-    download "${BASE_FROM}/${CHROME_BUILD}/${CHROME_ZIP}" || \
-        download "${BASE_FROM}/${CHROME_BUILD}/${CHROME_ZIP_SECOND_TRY}"
-    if [ -f "$CHROME_ZIP_SECOND_TRY" ]
-    then
-      mv "$CHROME_ZIP_SECOND_TRY" "$CHROME_ZIP"
-    fi
+  download "${BASE_FROM}/${CHROME_BUILD}/${CHROME_ZIP}" || \
+   download "${BASE_FROM}/${CHROME_BUILD}/${CHROME_ZIP_SECOND_TRY}"
+  if [ -f "$CHROME_ZIP_SECOND_TRY" ]
+  then
+    mv "$CHROME_ZIP_SECOND_TRY" "$CHROME_ZIP"
   fi
 fi
