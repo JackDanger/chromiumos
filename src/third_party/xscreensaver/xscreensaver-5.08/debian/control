@@ -2,7 +2,7 @@ Source: xscreensaver
 Section: x11
 Priority: optional
 Maintainer: The Chromium OS Authors <chromium-os-dev@googlegroups.com>
-Build-Depends: debhelper (>= 7), autotools-dev, libpam0g-dev (>= 0.72), libx11-dev, libxext-dev, libxinerama-dev, libxmu-dev, libxrandr-dev, libxt-dev, libxxf86misc-dev, libxxf86vm-dev, x11proto-core-dev
+Build-Depends: debhelper (>= 7), autotools-dev, libpam0g-dev (>= 0.72), libx11-dev, libxext-dev, libxinerama-dev, libxmu-dev, libxrandr-dev, libxt-dev, x11proto-core-dev
 Standards-Version: 3.8.0
 
 Package: xscreensaver

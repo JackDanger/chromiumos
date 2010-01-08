@@ -9,6 +9,7 @@ xscreensaver (5.0.8-0ubuntu5cr2) UNRELEASED; urgency=low
   * Configure with --build and --host options for cross-compilation.
   * Fix configure not to unconditionally fail when attempting
     cross-compilation.
+  * Explicitly configure without libxxf86misc and libxxf86vm.
 
  -- Colin Watson <cjwatson@canonical.com>  Fri, 08 Jan 2010 11:44:13 +0000
 
