@@ -1,0 +1,2 @@
+synclient.h usr/include
+libsynaptics.a usr/lib
