@@ -356,7 +356,7 @@ AC_DEFUN(AC_PROG_CC_ANSI,
      AC_MSG_RESULT(yes),
      AC_MSG_RESULT(no)
      AC_MSG_ERROR(Couldn't build even a trivial ANSI C program: check CC.),
-     AC_MSG_ERROR(Couldn't build even a trivial ANSI C program: check CC.))
+     AC_MSG_RESULT(cross-compiling so hoping it will))
 
   if test -n "$GCC"; then
     AC_MSG_RESULT(Turning on gcc compiler warnings.)

@@ -16,9 +16,12 @@
 # This has to be exported to make some magic below work.
 export DH_OPTIONS
 
+export DEB_HOST_GNU_TYPE  ?= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
+export DEB_BUILD_GNU_TYPE ?= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
+
 config.status: configure
 	dh_testdir
-	./configure
+	./configure --build $(DEB_BUILD_GNU_TYPE) --host $(DEB_HOST_GNU_TYPE)
 
 build: build-stamp
 
