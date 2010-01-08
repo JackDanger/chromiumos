@@ -3525,57 +3525,6 @@ echo "${ECHO_T}$ac_cv_gcc_accepts_no_cpp_precomp" >&6; }
    ac_gcc_accepts_no_cpp_precomp="$ac_cv_gcc_accepts_no_cpp_precomp"
   fi
 
-if test -n "$GCC"; then
-   if test -n "$GCC"; then
-   { echo "$as_me:$LINENO: checking whether gcc accepts -std=c89" >&5
-echo $ECHO_N "checking whether gcc accepts -std=c89... $ECHO_C" >&6; }
-if test "${ac_cv_gcc_accepts_std+set}" = set; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-else
-  rm -rf conftest.$ac_ext
-     touch conftest.$ac_ext
-     if ( ( gcc -c -std=c89 conftest.$ac_ext -o/dev/null >/dev/null ) 2>&1 | \
-          grep unrecognized >/dev/null ); then
-       ac_cv_gcc_accepts_std=no
-     else
-       ac_cv_gcc_accepts_std=yes
-       CC="$CC -std=c89"
-     fi
-fi
-{ echo "$as_me:$LINENO: result: $ac_cv_gcc_accepts_std" >&5
-echo "${ECHO_T}$ac_cv_gcc_accepts_std" >&6; }
-   ac_gcc_accepts_std="$ac_cv_gcc_accepts_std"
-  fi
-
-   { echo "$as_me:$LINENO: result: Disabling C++ comments in ANSI C code." >&5
-echo "${ECHO_T}Disabling C++ comments in ANSI C code." >&6; }
-   #
-   # The reason that // comments are banned from xscreensaver is that gcc is
-   # basically the only compiler in the world that supports them in C code.
-   # All other vendors support them only in their C++ compilers, not in their
-   # ANSI C compilers.  This means that it's a portability problem: every time
-   # these comments have snuck into the xscreensaver source code, I've gotten
-   # complaints about it the next day.  So we turn off support for them in gcc
-   # as well to prevent them from accidentially slipping in.
-   #
-   if test "$ac_gcc_accepts_std" = yes ; then
-     #
-     # -std=c89 defines __STRICT_ANSI__, which we don't want.
-     # (That appears to be the only additional preprocessor symbol
-     # it defines, in addition to the syntax changes it makes.)
-     #
-     # -std=gnu89 is no good, because // comments were a GNU extension
-     # before they were in the ANSI C 99 spec...  (gcc 2.96 permits //
-     # with -std=gnu89 but not with -std=c89.)
-     #
-     # $CC already contains "-std=c89" via AC_GCC_ACCEPTS_STD
-     CC="$CC -U__STRICT_ANSI__"
-   else
-     # The old way:
-     CC="$CC -Wp,-lang-c89"
-   fi
-  fi
-
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
 ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
