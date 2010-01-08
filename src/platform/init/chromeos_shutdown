@@ -12,7 +12,7 @@ if [ ! -d "/var/log/metrics" ]; then
     mkdir -p /var/log/metrics
 fi
 
-echo `cut -f 1 ' ' /proc/uptime` > /var/log/metrics/uptime_shutdown_start
+cut -f 1 -d ' ' /proc/uptime > /var/log/metrics/uptime_shutdown_start
 cat /sys/block/sda/stat > /var/log/metrics/disk_shutdown_start
 
 # For a given mountpoint, this will kill all processes with open files
@@ -75,7 +75,7 @@ if [ $? -ne 0 ] ; then
 fi
 
 # Measure shutdown time
-echo `cut -f 1 ' ' /proc/uptime` > /var/log/metrics/uptime_shutdown_stop
+cut -f 1 -d ' ' /proc/uptime > /var/log/metrics/uptime_shutdown_stop
 cat /sys/block/sda/stat > /var/log/metrics/disk_shutdown_stop
  
 umount -n /var/cache /var/log /home /mnt/stateful_partition
