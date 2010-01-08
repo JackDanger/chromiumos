@@ -92,20 +92,6 @@ class PanelBar : public EventConsumer {
 
   void MoveAndResize(int x, int y, int width, int height);
 
-  // Store the position where a panel has been dragged to
-  // 'queued_dragged_panel_x_' and 'queued_dragged_panel_y_'.  These
-  // positions get applied periodically by MoveDraggedPanel(), which is run
-  // by 'dragged_panel_timer_id_' (which gets started indirectly by this
-  // method).
-  void StorePanelPosition(Window* win, int x, int y);
-
-  // Handle the end of a panel drag.  This stops 'dragged_panel_timer_id_'.
-  void HandlePanelDragComplete(Window* win);
-
-  // Move the dragged panel to the queued position.  This is invoked
-  // periodically by a timer.
-  void MoveDraggedPanel();
-
   // Take the input focus if possible.  Returns 'false' if it doesn't make
   // sense to take the focus (currently, we only take the focus if there's
   // at least one expanded panel).
@@ -193,6 +179,20 @@ class PanelBar : public EventConsumer {
   // it ending), we abort it.  The panel's windows are restacked and we
   // start the MoveDraggedPanel() timer if necessary.
   void StartDrag(Panel* panel);
+
+  // Store the position where a panel has been dragged to
+  // 'queued_dragged_panel_x_' and 'queued_dragged_panel_y_'.  These
+  // positions get applied periodically by MoveDraggedPanel(), which is run
+  // by 'dragged_panel_timer_id_' (which gets started indirectly by this
+  // method).
+  void StorePanelPosition(Window* win, int x, int y);
+
+  // Handle the end of a panel drag.  This stops 'dragged_panel_timer_id_'.
+  void HandlePanelDragComplete(Window* win);
+
+  // Move the dragged panel to the queued position.  This is invoked
+  // periodically by a timer.
+  void MoveDraggedPanel();
 
   // Pack all collapsed panels with the exception of 'dragged_panel_'
   // towards the right.  We reserve space for 'dragged_panel_' and update

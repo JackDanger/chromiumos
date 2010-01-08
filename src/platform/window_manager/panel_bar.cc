@@ -471,101 +471,6 @@ void PanelBar::MoveAndResize(int x, int y, int width, int height) {
   }
 }
 
-void PanelBar::StorePanelPosition(Window* win, int x, int y) {
-  CHECK(win);
-  VLOG(2) << "Got request to move panel " << win->xid_str()
-          << " to (" << x << ", " << y << ")";
-
-  dragged_panel_event_coalescer_.StorePosition(x, y);
-
-  if (!dragged_panel_ || dragged_panel_->content_win() != win) {
-    Panel* panel = GetPanelByWindow(*win);
-    if (!panel) {
-      LOG(WARNING) << "Unable to store position for unknown panel "
-                   << win->xid_str();
-      return;
-    }
-    StartDrag(panel);
-  }
-}
-
-void PanelBar::HandlePanelDragComplete(Window* win) {
-  CHECK(win);
-  VLOG(2) << "Got notification that panel drag is complete for "
-          << win->xid_str();
-
-  if (!dragged_panel_ || dragged_panel_->content_win() != win)
-    return;
-
-  PanelInfo* info = GetPanelInfoOrDie(dragged_panel_);
-  if (info->is_expanded) {
-    dragged_panel_->StackAtTopOfLayer(StackingManager::LAYER_EXPANDED_PANEL);
-    // Tell the panel to move its client windows to match its composited
-    // position.
-    dragged_panel_->MoveX(dragged_panel_->right(), true, 0);
-    RepositionExpandedPanels(dragged_panel_);
-  } else {
-    dragged_panel_->StackAtTopOfLayer(StackingManager::LAYER_COLLAPSED_PANEL);
-    // Snap collapsed dragged panels to their correct position.
-    dragged_panel_->MoveX(info->snapped_right, true, kAnimMs);
-  }
-  dragged_panel_ = NULL;
-
-  if (dragged_panel_event_coalescer_.IsRunning())
-    dragged_panel_event_coalescer_.Stop();
-}
-
-void PanelBar::MoveDraggedPanel() {
-  if (!dragged_panel_)
-    return;
-
-  const int drag_x = dragged_panel_event_coalescer_.x();
-  dragged_panel_->MoveX((wm_->wm_ipc_version() >= 1) ?
-                          drag_x :
-                          drag_x + dragged_panel_->titlebar_width(),
-                        false, 0);
-
-  // When an expanded panel is being dragged, we don't move the other
-  // panels to make room for it until the drag is done.
-  if (GetPanelInfoOrDie(dragged_panel_)->is_expanded)
-    return;
-
-  // For collapsed panels, we first find the position of the dragged panel.
-  Panels::iterator dragged_it = FindPanelInVectorByWindow(
-      collapsed_panels_, *(dragged_panel_->content_win()));
-  CHECK(dragged_it != collapsed_panels_.end());
-
-  // Next, check if the center of the panel has moved over another panel.
-  const int center_x = (wm_->wm_ipc_version() >= 1) ?
-                       drag_x - 0.5 * dragged_panel_->titlebar_width() :
-                       drag_x + 0.5 * dragged_panel_->titlebar_width();
-  Panels::iterator it = collapsed_panels_.begin();
-  for (; it != collapsed_panels_.end(); ++it) {
-    int snapped_left = 0, snapped_right = 0;
-    if (it->get() == dragged_panel_) {
-      // If we're comparing against ourselves, use our original position
-      // rather than wherever we've currently been dragged by the user.
-      PanelInfo* info = GetPanelInfoOrDie(dragged_panel_);
-      snapped_left = info->snapped_right - dragged_panel_->titlebar_width();
-      snapped_right = info->snapped_right;
-    } else {
-      snapped_left = (*it)->titlebar_x();
-      snapped_right = (*it)->right();
-    }
-    if (center_x >= snapped_left && center_x < snapped_right)
-      break;
-  }
-
-  // If it has, then we reorder the panels.
-  if (it != collapsed_panels_.end() && it->get() != dragged_panel_) {
-    if (it > dragged_it)
-      rotate(dragged_it, dragged_it + 1, it + 1);
-    else
-      rotate(it, dragged_it, dragged_it + 1);
-    PackCollapsedPanels();
-  }
-}
-
 bool PanelBar::TakeFocus() {
   // If we already decided on a panel to focus, use it.
   if (desired_panel_to_focus_) {
@@ -783,6 +688,101 @@ void PanelBar::StartDrag(Panel* panel) {
 
   if (!dragged_panel_event_coalescer_.IsRunning())
     dragged_panel_event_coalescer_.Start();
+}
+
+void PanelBar::StorePanelPosition(Window* win, int x, int y) {
+  CHECK(win);
+  VLOG(2) << "Got request to move panel " << win->xid_str()
+          << " to (" << x << ", " << y << ")";
+
+  dragged_panel_event_coalescer_.StorePosition(x, y);
+
+  if (!dragged_panel_ || dragged_panel_->content_win() != win) {
+    Panel* panel = GetPanelByWindow(*win);
+    if (!panel) {
+      LOG(WARNING) << "Unable to store position for unknown panel "
+                   << win->xid_str();
+      return;
+    }
+    StartDrag(panel);
+  }
+}
+
+void PanelBar::HandlePanelDragComplete(Window* win) {
+  CHECK(win);
+  VLOG(2) << "Got notification that panel drag is complete for "
+          << win->xid_str();
+
+  if (!dragged_panel_ || dragged_panel_->content_win() != win)
+    return;
+
+  PanelInfo* info = GetPanelInfoOrDie(dragged_panel_);
+  if (info->is_expanded) {
+    dragged_panel_->StackAtTopOfLayer(StackingManager::LAYER_EXPANDED_PANEL);
+    // Tell the panel to move its client windows to match its composited
+    // position.
+    dragged_panel_->MoveX(dragged_panel_->right(), true, 0);
+    RepositionExpandedPanels(dragged_panel_);
+  } else {
+    dragged_panel_->StackAtTopOfLayer(StackingManager::LAYER_COLLAPSED_PANEL);
+    // Snap collapsed dragged panels to their correct position.
+    dragged_panel_->MoveX(info->snapped_right, true, kAnimMs);
+  }
+  dragged_panel_ = NULL;
+
+  if (dragged_panel_event_coalescer_.IsRunning())
+    dragged_panel_event_coalescer_.Stop();
+}
+
+void PanelBar::MoveDraggedPanel() {
+  if (!dragged_panel_)
+    return;
+
+  const int drag_x = dragged_panel_event_coalescer_.x();
+  dragged_panel_->MoveX((wm_->wm_ipc_version() >= 1) ?
+                          drag_x :
+                          drag_x + dragged_panel_->titlebar_width(),
+                        false, 0);
+
+  // When an expanded panel is being dragged, we don't move the other
+  // panels to make room for it until the drag is done.
+  if (GetPanelInfoOrDie(dragged_panel_)->is_expanded)
+    return;
+
+  // For collapsed panels, we first find the position of the dragged panel.
+  Panels::iterator dragged_it = FindPanelInVectorByWindow(
+      collapsed_panels_, *(dragged_panel_->content_win()));
+  CHECK(dragged_it != collapsed_panels_.end());
+
+  // Next, check if the center of the panel has moved over another panel.
+  const int center_x = (wm_->wm_ipc_version() >= 1) ?
+                       drag_x - 0.5 * dragged_panel_->titlebar_width() :
+                       drag_x + 0.5 * dragged_panel_->titlebar_width();
+  Panels::iterator it = collapsed_panels_.begin();
+  for (; it != collapsed_panels_.end(); ++it) {
+    int snapped_left = 0, snapped_right = 0;
+    if (it->get() == dragged_panel_) {
+      // If we're comparing against ourselves, use our original position
+      // rather than wherever we've currently been dragged by the user.
+      PanelInfo* info = GetPanelInfoOrDie(dragged_panel_);
+      snapped_left = info->snapped_right - dragged_panel_->titlebar_width();
+      snapped_right = info->snapped_right;
+    } else {
+      snapped_left = (*it)->titlebar_x();
+      snapped_right = (*it)->right();
+    }
+    if (center_x >= snapped_left && center_x < snapped_right)
+      break;
+  }
+
+  // If it has, then we reorder the panels.
+  if (it != collapsed_panels_.end() && it->get() != dragged_panel_) {
+    if (it > dragged_it)
+      rotate(dragged_it, dragged_it + 1, it + 1);
+    else
+      rotate(it, dragged_it, dragged_it + 1);
+    PackCollapsedPanels();
+  }
 }
 
 void PanelBar::PackCollapsedPanels() {

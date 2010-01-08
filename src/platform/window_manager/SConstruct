@@ -57,7 +57,7 @@ base_env['LINKFLAGS'] = '-lgflags -lprotobuf'
 # Fix issue with scons not passing pkg-config vars through the environment.
 for key in Split('PKG_CONFIG_LIBDIR PKG_CONFIG_PATH'):
   if os.environ.has_key(key):
-    env['ENV'][key] = os.environ[key]
+    base_env['ENV'][key] = os.environ[key]
 
 # Unless we disable strict aliasing, we get warnings about some of the
 # program's command line flags processing code that look like:
