@@ -1,0 +1,2 @@
+libtheme.so usr/lib/gtk-2.0/2.10.0/engines
+resources/gtkrc usr/share/themes/theme/gtk-2.0

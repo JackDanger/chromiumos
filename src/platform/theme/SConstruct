@@ -2,13 +2,20 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import os
+
 SOURCES=['theme_draw.cc', 'theme_main.cc']
 
 env = Environment(
     CPPPATH=[ '..' ],
-    CCFLAGS=['-m32', '-fno-exceptions', '-Wall'],
-    LINKFLAGS=['-m32' ],
+    CCFLAGS=['-fno-exceptions', '-Wall'],
+    CXXFLAGS=['-fPIC'],
 )
+
+for key in Split('CC CXX AR RANLIB LD NM CFLAGS CCFLAGS'):
+  value = os.environ.get(key)
+  if value != None:
+    env[key] = value
 
 env.ParseConfig('pkg-config --cflags --libs gtk+-2.0 glib-2.0')
 

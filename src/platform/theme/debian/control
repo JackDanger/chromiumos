@@ -6,7 +6,7 @@ Source: chromeos-theme
 Section: unknown
 Priority: extra
 Maintainer: The Chromium OS Authors <chromium-os-dev@googlegroups.com>
-Build-Depends: debhelper (>= 7)
+Build-Depends: debhelper (>= 7.3.0), dh-chromeos, scons, libgtk2.0-0
 Standards-Version: 3.8.0
 
 Package: chromeos-theme

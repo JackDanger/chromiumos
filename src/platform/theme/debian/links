@@ -1,0 +1,6 @@
+# NOTE: Ideally we would make 'theme' the default theme such that Gtk
+# automatically loads it, but we aren't running xsettings, which means Gtk
+# always uses Raleigh. To simulate this we create a link from theme's gtkrc
+# to the default place Gtk loads from (/etc/gtk-2.0/gtkrc).
+
+usr/share/themes/theme/gtk-2.0/gtkrc etc/gtk-2.0/gtkrc
