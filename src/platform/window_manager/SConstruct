@@ -87,7 +87,7 @@ wm_env = base_env.Clone()
 # Add a builder for .proto files
 wm_env['BUILDERS']['ProtocolBuffer'] = proto_builder
 
-wm_env.ParseConfig('pkg-config --cflags --libs gdk-2.0 ' +
+wm_env.ParseConfig('pkg-config --cflags --libs gdk-2.0 libpcrecpp ' +
                    'xcb x11-xcb xcb-composite xcb-randr xcb-shape xcb-damage')
 
 breakpad_path = '../../third_party/google-breakpad/files/src/client/linux'

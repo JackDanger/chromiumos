@@ -1,7 +1,7 @@
 To compile this on Ubuntu 9.04 (Jaunty), you may need to install the
 following packages:
 
-  scons libclutter-0.9-dev libgflags-dev \
+  scons libpcre++-dev libclutter-0.9-dev libgflags-dev \
   libgtest-dev libprotobuf-dev libgtkmm-2.4-dev
 
 To build the 'wm' executable, run 'scons wm'.
