@@ -54,9 +54,10 @@ if not base_env.get('CCFLAGS'):
   base_env['CCFLAGS'] = '-I.. -Wall -Werror -O3'
 base_env['LINKFLAGS'] = '-lgflags -lprotobuf'
 
-# Fix up the pkg-config path if it is present in the environment.
-if os.environ.has_key('PKG_CONFIG_PATH'):
-  base_env['ENV']['PKG_CONFIG_PATH'] = os.environ['PKG_CONFIG_PATH']
+# Fix issue with scons not passing pkg-config vars through the environment.
+for key in Split('PKG_CONFIG_LIBDIR PKG_CONFIG_PATH'):
+  if os.environ.has_key(key):
+    env['ENV'][key] = os.environ[key]
 
 # Unless we disable strict aliasing, we get warnings about some of the
 # program's command line flags processing code that look like:

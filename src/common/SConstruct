@@ -18,9 +18,10 @@ for key in Split('CC CXX AR RANLIB LD NM CFLAGS CCFLAGS'):
   if value != None:
     env[key] = value
 
-# Fix up the pkg-config path if it is present in the environment.
-if os.environ.has_key('PKG_CONFIG_PATH'):
-  env['ENV']['PKG_CONFIG_PATH'] = os.environ['PKG_CONFIG_PATH']
+# Fix issue with scons not passing pkg-config vars through the environment.
+for key in Split('PKG_CONFIG_LIBDIR PKG_CONFIG_PATH'):
+  if os.environ.has_key(key):
+    env['ENV'][key] = os.environ[key]
 
 # glib and dbug environment
 env.ParseConfig('pkg-config --cflags --libs dbus-1 glib-2.0 dbus-glib-1')
