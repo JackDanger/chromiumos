@@ -1,3 +1,10 @@
+xscreensaver (5.0.8-0ubuntu5cr2) UNRELEASED; urgency=low
+
+  * Restore still-referenced ignore_all_errors_ehandler function to
+    driver/lock.c.
+
+ -- Colin Watson <cjwatson@canonical.com>  Fri, 08 Jan 2010 11:44:13 +0000
+
 xscreensaver (5.0.8-0ubuntu5cr1) karmic; urgency=low
 
     * Update versions to be higher than the version on stable karmic

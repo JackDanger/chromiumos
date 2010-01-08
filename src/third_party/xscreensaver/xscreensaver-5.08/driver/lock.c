@@ -654,6 +654,14 @@ destroy_passwd_window (saver_info *si)
 
 static Bool error_handler_hit_p = False;
 
+static int
+ignore_all_errors_ehandler (Display *dpy, XErrorEvent *error)
+{
+  error_handler_hit_p = True;
+  return 0;
+}
+
+
 #ifdef HAVE_XHPDISABLERESET
 /* This function enables and disables the C-Sh-Reset hot-key, which
    normally resets the X server (logging out the logged-in user.)
