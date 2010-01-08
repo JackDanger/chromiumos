@@ -2,12 +2,12 @@ Source: xscreensaver
 Section: x11
 Priority: optional
 Maintainer: The Chromium OS Authors <chromium-os-dev@googlegroups.com>
-Build-Depends: debhelper (>= 5), autotools-dev
+Build-Depends: debhelper (>= 7), autotools-dev, libpam0g-dev (>= 0.72), libx11-dev, libxext-dev, libxinerama-dev, libxmu-dev, libxrandr-dev, libxt-dev, libxxf86misc-dev, libxxf86vm-dev, x11proto-core-dev
 Standards-Version: 3.8.0
 
 Package: xscreensaver
 Architecture: any
-Depends: libatk1.0-0 (>= 1.20.0), libc6 (>= 2.3), libcairo2 (>= 1.2.4), libfontconfig1 (>= 2.4.0), libfreetype6 (>= 2.2.1), libglib2.0-0 (>= 2.16.0), libice6 (>= 1:1.0.0), libpam0g (>= 0.99.7.1), libpango1.0-0 (>= 1.14.0), libsm6, libx11-6, libxext6, libxinerama1, libxml2 (>= 2.6.27), libxmu6, libxpm4, libxrandr2 (>= 2:1.2.0), libxrender1, libxt6, libxxf86misc1, libxxf86vm1
+Depends: ${shlibs:Depends}
 Description: Screen locker for Chrome OS
  Based on xscreensaver 5.08.  Modifications to lock.c and logo.c to make
  for Chrome OS.  Removed all hacks (screensaver) and kept this to a bare-minimum kit.

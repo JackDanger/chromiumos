@@ -4,6 +4,8 @@ xscreensaver (5.0.8-0ubuntu5cr2) UNRELEASED; urgency=low
     driver/lock.c.
   * Drop -std=c89 for the moment. Somehow a // comment crept into
     <bits/string3.h>. We ought to fix this, but drop the strictness for now.
+  * Add more complete build-dependencies, and use automatically-generated
+    dependencies rather than hardcoding them.
 
  -- Colin Watson <cjwatson@canonical.com>  Fri, 08 Jan 2010 11:44:13 +0000
 
