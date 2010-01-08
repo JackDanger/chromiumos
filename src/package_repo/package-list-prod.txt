@@ -19,6 +19,9 @@ xserver-xorg-video-intel
 # xserver
 xserver-xorg
 
+# For creating tokens that allow user binaries to communicate with the xserver.
+xauth
+
 # Newer packages of chromium-browser don't seem to have libgconf2 as
 # part of their depends, but chrome won't run without.
 libgconf2-4
