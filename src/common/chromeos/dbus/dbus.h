@@ -46,6 +46,11 @@ class BusConnection {
     return *this;
   }
 
+  const value_type& g_connection() const {
+    DCHECK(object_) << "referencing an empty connection";
+    return object_;
+  }
+
  private:
   friend void swap(BusConnection& x, BusConnection& y);
 
