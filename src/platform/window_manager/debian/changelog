@@ -1,3 +1,9 @@
+chromeos-wm (0.5) UNRELEASED; urgency=low
+
+  * Use dh(1) and dh-chromeos.
+
+ -- Colin Watson <cjwatson@canonical.com>  Sat, 28 Nov 2009 11:20:21 +0000
+
 chromeos-wm (0.4) jaunty; urgency=low
 
   * Make the window manager use the auth token written to disk by pam_google,
