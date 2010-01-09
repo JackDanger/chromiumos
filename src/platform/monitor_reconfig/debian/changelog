@@ -1,3 +1,11 @@
+chromeos-monitor-reconfig (0.2) UNRELEASED; urgency=low
+
+  * Use dh(1).
+  * Declare build-dependencies correctly.
+  * Pass toolchain parameters correctly for cross-compilation.
+
+ -- Colin Watson <cjwatson@canonical.com>  Sat, 28 Nov 2009 11:12:20 +0000
+
 chromeos-monitor-reconfig (0.1) unstable; urgency=low
 
   * Initial release
