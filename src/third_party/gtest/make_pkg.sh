@@ -27,7 +27,6 @@ mkdir -p "${OUT_DIR}"
 
 # Build the package
 pushd "$TOP_SCRIPT_DIR/files"
-autoreconf -fvi
 rm -rf debian
 ln -s ../debian debian
 rm -f ../libgtest0_*.deb ../libgtest-dev_*.deb

@@ -28,6 +28,7 @@ endif
 ifneq "$(wildcard /usr/share/misc/config.guess)" ""
 	cp -f /usr/share/misc/config.guess build-aux/config.guess
 endif
+	autoreconf -fvi
 	dh_auto_configure
 
 
