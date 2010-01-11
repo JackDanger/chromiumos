@@ -15,8 +15,8 @@ mkdir -p $OUT_DIR
 
 pushd $SCRIPT_DIR
 
-TESTS="key_bindings_test layout_manager_test shadow_test util_test
-  window_manager_test window_test"
+TESTS="key_bindings_test layout_manager_test no_clutter_test
+shadow_test util_test window_manager_test window_test"
 
 scons $TESTS
 cp $TESTS $OUT_DIR

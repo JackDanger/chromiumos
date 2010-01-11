@@ -342,9 +342,7 @@ void NoClutterInterface::ContainerActor::LowerChild(
 NoClutterInterface::QuadActor::QuadActor(NoClutterInterface* interface)
     : NoClutterInterface::Actor(interface),
       texture_(0),
-      r_(1.f),
-      g_(1.f),
-      b_(1.f) {
+      color_(1.f, 1.f, 1.f) {
 }
 
 void NoClutterInterface::QuadActor::AddToDisplayListImpl(ActorVector* actors,
@@ -359,7 +357,8 @@ void NoClutterInterface::QuadActor::AddToDisplayListImpl(ActorVector* actors,
 // transform as we traverse (either in AddToDisplayList, or in another
 // traversal pass).
 void NoClutterInterface::QuadActor::Draw() {
-  interface()->gl_interface()->Color4f(r_, g_, b_, opacity());
+  interface()->gl_interface()->Color4f(color_.red, color_.green, color_.blue,
+                                       opacity());
   if (texture_) {
     interface()->gl_interface()->Enable(GL_TEXTURE_2D);
     interface()->gl_interface()->BindTexture(GL_TEXTURE_2D, texture_);
@@ -486,7 +485,7 @@ void NoClutterInterface::TexturePixmapActor::Draw() {
 NoClutterInterface::StageActor::StageActor(NoClutterInterface* an_interface,
                                            int width, int height)
   : NoClutterInterface::ContainerActor(an_interface),
-    stage_color_("#ffffff") {
+    stage_color_(1.f, 1.f, 1.f) {
   window_ = interface()->x_conn()->CreateSimpleWindow(
       interface()->x_conn()->GetRootWindow(),
       0, 0, width, height);
@@ -498,8 +497,8 @@ NoClutterInterface::StageActor::~StageActor() {
 }
 
 void NoClutterInterface::StageActor::SetStageColor(
-    const std::string& color_str) {
-  stage_color_ = color_str;
+    const ClutterInterface::Color& color) {
+  stage_color_ = color;
 }
 
 static bool CompareFrontToBack(NoClutterInterface::Actor* a,
@@ -700,20 +699,20 @@ NoClutterInterface::ContainerActor* NoClutterInterface::CreateGroup() {
 }
 
 NoClutterInterface::Actor* NoClutterInterface::CreateRectangle(
-    const std::string& color_str,
-    const std::string& border_color_str,
+    const ClutterInterface::Color& color,
+    const ClutterInterface::Color& border_color,
     int border_width) {
   QuadActor* actor = new QuadActor(this);
-  // TODO(piman): parse color
-  actor->SetColor(0.f, 1.f, 0.f);
+  // TODO: Handle border color/width properly.
+  actor->SetColor(color);
   return actor;
 }
 
 NoClutterInterface::Actor* NoClutterInterface::CreateImage(
     const std::string& filename) {
   QuadActor* actor = new QuadActor(this);
-  // TODO(piman): load image, create texture set into actor
-  actor->SetColor(1.f, 0.f, 0.f);
+  // TODO: load image, create texture set into actor
+  actor->SetColor(ClutterInterface::Color(1.f, 0.f, 0.f));
   return actor;
 }
 
@@ -725,10 +724,10 @@ NoClutterInterface::CreateTexturePixmap() {
 NoClutterInterface::Actor* NoClutterInterface::CreateText(
     const std::string& font_name,
     const std::string& text,
-    const std::string& color_str) {
+    const ClutterInterface::Color& color) {
   QuadActor* actor = new QuadActor(this);
-  // TODO(piman): create text.
-  actor->SetColor(0.f, 0.f, 1.f);
+  // TODO: Actually create the text.
+  actor->SetColor(color);
   actor->SetOpacity(.5f, 0);
   return actor;
 }

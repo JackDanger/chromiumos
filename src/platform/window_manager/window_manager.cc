@@ -202,7 +202,8 @@ bool WindowManager::Init() {
   stage_xid_ = stage_->GetStageXWindow();
   stage_->SetName("stage");
   stage_->SetSize(width_, height_);
-  stage_->SetStageColor("#222");
+  // Color equivalent to "#222"
+  stage_->SetStageColor(ClutterInterface::Color(0.12549f, 0.12549f, 0.12549f));
   stage_->SetVisibility(true);
 
   stacking_manager_.reset(new StackingManager(xconn_, clutter_));
@@ -1383,8 +1384,8 @@ void WindowManager::ToggleClientWindowDebugging() {
     return;
 
   static const int kDebugFadeMs = 100;
-  static const char* kBgColor = "#fff";
-  static const char* kFgColor = "#000";
+  static const ClutterInterface::Color kBgColor(1.f, 1.f, 1.f);
+  static const ClutterInterface::Color kFgColor(0.f, 0.f, 0.f);
 
   for (std::vector<XWindow>::iterator it = xids.begin();
        it != xids.end(); ++it) {

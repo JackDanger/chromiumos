@@ -54,7 +54,10 @@ TEST_F(NoClutterTest, FloatAnimation) {
   EXPECT_FALSE(anim.Eval(5));
   EXPECT_FLOAT_EQ(-sqrt(50.0f), value);
   EXPECT_FALSE(anim.Eval(10));
-  EXPECT_FLOAT_EQ(0.0f, value);
+
+  // The standard epsilon is just a little too small here..
+  EXPECT_NEAR(0.0f, value, 1.0e-6);
+
   EXPECT_FALSE(anim.Eval(15));
   EXPECT_FLOAT_EQ(sqrt(50.0f), value);
   EXPECT_TRUE(anim.Eval(20));

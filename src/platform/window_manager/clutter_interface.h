@@ -38,6 +38,14 @@ template<class T> class Stacker;  // from util.h
 // animations together.
 class ClutterInterface {
  public:
+  struct Color {
+    Color() : red(0.f), green(0.f), blue(0.f) {}
+    Color(float r, float g, float b) : red(r), green(g), blue(b) {}
+    float red;
+    float green;
+    float blue;
+  };
+
   // Abstract base class for actors, inherited from by both:
   // - more-specific abstract classes within ClutterInterface that add
   //   additional virtual methods
@@ -86,7 +94,7 @@ class ClutterInterface {
     StageActor() {}
     virtual ~StageActor() {}
     virtual XWindow GetStageXWindow() = 0;
-    virtual void SetStageColor(const std::string& color_str) = 0;
+    virtual void SetStageColor(const Color &color) = 0;
     virtual std::string GetDebugString() = 0;
    private:
     DISALLOW_COPY_AND_ASSIGN(StageActor);
@@ -118,14 +126,13 @@ class ClutterInterface {
   // deleting them, even (unlike Clutter) after they have been added to a
   // container.  See RealClutterInterface::Actor for more details.
   virtual ContainerActor* CreateGroup() = 0;
-  virtual Actor* CreateRectangle(const std::string& color_str,
-                                 const std::string& border_color_str,
+  virtual Actor* CreateRectangle(const Color& color, const Color& border_color,
                                  int border_width) = 0;
   virtual Actor* CreateImage(const std::string& filename) = 0;
   virtual TexturePixmapActor* CreateTexturePixmap() = 0;
   virtual Actor* CreateText(const std::string& font_name,
                             const std::string& text,
-                            const std::string& color_str) = 0;
+                            const Color& color) = 0;
   virtual Actor* CloneActor(Actor* orig) = 0;
 
   // Get the default stage object.  Ownership of the StageActor remains
@@ -219,7 +226,7 @@ class RealClutterInterface : public ClutterInterface {
     }
     virtual ~StageActor() {}
     XWindow GetStageXWindow();
-    void SetStageColor(const std::string& color_str);
+    void SetStageColor(const Color& color);
     std::string GetDebugString();
    private:
     // Recursive method called by GetDebugString().
@@ -258,21 +265,22 @@ class RealClutterInterface : public ClutterInterface {
 
   // Begin ClutterInterface methods
   ContainerActor* CreateGroup();
-  Actor* CreateRectangle(const std::string& color_str,
-                         const std::string& border_color_str,
+  Actor* CreateRectangle(const ClutterInterface::Color& color,
+                         const ClutterInterface::Color& border_color,
                          int border_width);
   Actor* CreateImage(const std::string& filename);
   TexturePixmapActor* CreateTexturePixmap();
   Actor* CreateText(const std::string& font_name,
                     const std::string& text,
-                    const std::string& color_str);
+                    const ClutterInterface::Color& color);
   Actor* CloneActor(ClutterInterface::Actor* orig);
   StageActor* GetDefaultStage() { return default_stage_.get(); }
   // End ClutterInterface methods
 
-  // Initialize the passed-in ClutterColor based on 'hex_str'.  Returns
-  // false if the string was unparseable.  Used by assorted *Actor classes.
-  static bool InitColor(ClutterColor* color, const std::string& hex_str);
+  // Convert a Color to a ClutterColor.  Used by assorted *Actor
+  // classes.  The returned ClutterColor has an alpha value that is
+  // fully opaque.
+  static ClutterColor ConvertColor(const ClutterInterface::Color& color);
 
  private:
   scoped_ptr<StageActor> default_stage_;
@@ -378,7 +386,7 @@ class MockClutterInterface : public ClutterInterface {
     StageActor() {}
     virtual ~StageActor() {}
     XWindow GetStageXWindow() { return None; }
-    void SetStageColor(const std::string& color_str) {}
+    void SetStageColor(const ClutterInterface::Color& color) {}
     std::string GetDebugString() { return ""; }
    private:
     DISALLOW_COPY_AND_ASSIGN(StageActor);
@@ -409,8 +417,8 @@ class MockClutterInterface : public ClutterInterface {
 
   // Begin ClutterInterface methods
   ContainerActor* CreateGroup() { return new ContainerActor; }
-  Actor* CreateRectangle(const std::string& color_str,
-                         const std::string& border_color_str,
+  Actor* CreateRectangle(const ClutterInterface::Color& color,
+                         const ClutterInterface::Color& border_color,
                          int border_width) {
     return new Actor;
   }
@@ -418,7 +426,7 @@ class MockClutterInterface : public ClutterInterface {
   TexturePixmapActor* CreateTexturePixmap() { return new TexturePixmapActor; }
   Actor* CreateText(const std::string& font_name,
                     const std::string& text,
-                    const std::string& color_str) {
+                    const ClutterInterface::Color& color) {
     return new Actor;
   }
   Actor* CloneActor(ClutterInterface::Actor* orig) { return new Actor; }

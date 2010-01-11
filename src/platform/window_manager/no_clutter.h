@@ -192,10 +192,8 @@ class NoClutterInterface : public ClutterInterface {
   class QuadActor : public NoClutterInterface::Actor {
    public:
     explicit QuadActor(NoClutterInterface* interface);
-    void SetColor(float r, float g, float b) {
-      r_ = r;
-      g_ = g;
-      b_ = b;
+    void SetColor(const ClutterInterface::Color& color) {
+      color_ = color;
     }
 
     virtual void AddToDisplayListImpl(NoClutterInterface::ActorVector* actors,
@@ -204,9 +202,7 @@ class NoClutterInterface : public ClutterInterface {
 
    protected:
     GLuint texture_;
-    float r_;
-    float g_;
-    float b_;
+    ClutterInterface::Color color_;
 
    private:
     DISALLOW_COPY_AND_ASSIGN(QuadActor);
@@ -255,7 +251,7 @@ class NoClutterInterface : public ClutterInterface {
     StageActor(NoClutterInterface* interface, int width, int height);
     virtual ~StageActor();
     XWindow GetStageXWindow() { return window_;}
-    void SetStageColor(const std::string& color_str);
+    void SetStageColor(const ClutterInterface::Color& color);
     virtual void Draw();
     virtual std::string GetDebugString() {
       NOTIMPLEMENTED();
@@ -269,7 +265,7 @@ class NoClutterInterface : public ClutterInterface {
     // This is the XWindow associated with the stage.  Owned by this class.
     XWindow window_;
 
-    std::string stage_color_;
+    ClutterInterface::Color stage_color_;
     DISALLOW_COPY_AND_ASSIGN(StageActor);
   };
 
@@ -278,14 +274,14 @@ class NoClutterInterface : public ClutterInterface {
 
   // Begin ClutterInterface methods
   ContainerActor* CreateGroup();
-  Actor* CreateRectangle(const std::string& color_str,
-                         const std::string& border_color_str,
+  Actor* CreateRectangle(const ClutterInterface::Color& color,
+                         const ClutterInterface::Color& border_color,
                          int border_width);
   Actor* CreateImage(const std::string& filename);
   TexturePixmapActor* CreateTexturePixmap();
   Actor* CreateText(const std::string& font_name,
                     const std::string& text,
-                    const std::string& color_str);
+                    const ClutterInterface::Color& color);
   Actor* CloneActor(ClutterInterface::Actor* orig);
   StageActor* GetDefaultStage() { return default_stage_.get(); }
   // End ClutterInterface methods

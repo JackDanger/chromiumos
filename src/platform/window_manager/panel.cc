@@ -44,8 +44,16 @@ static const int kPanelMinHeight = 20;
 static const int kResizeUpdateMs = 25;
 
 // Appearance of the box used for non-opaque resizing.
-static const char* kResizeBoxBgColor = "#4181f5";
-static const char* kResizeBoxBorderColor = "#234583";
+
+// Equivalent to "#4181f5" X color.
+static const ClutterInterface::Color kResizeBoxBgColor(0.254902,
+                                                       0.505882,
+                                                       0.960784);
+
+// Equivalent to "#234583" X color.
+static const ClutterInterface::Color kResizeBoxBorderColor(0.137255,
+                                                           0.270588,
+                                                           0.513725);
 static const double kResizeBoxOpacity = 0.3;
 
 const int Panel::kResizeBorderWidth = 5;

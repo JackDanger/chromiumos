@@ -187,11 +187,10 @@ XWindow RealClutterInterface::StageActor::GetStageXWindow() {
 }
 
 void RealClutterInterface::StageActor::SetStageColor(
-    const std::string& color_str) {
+    const ClutterInterface::Color &color) {
   CHECK(clutter_actor_);
-  ClutterColor color;
-  CHECK(InitColor(&color, color_str));
-  clutter_stage_set_color(CLUTTER_STAGE(clutter_actor_), &color);
+  ClutterColor clutter_color = ConvertColor(color);
+  clutter_stage_set_color(CLUTTER_STAGE(clutter_actor_), &clutter_color);
 }
 
 std::string RealClutterInterface::StageActor::GetDebugString() {
@@ -382,16 +381,16 @@ RealClutterInterface::ContainerActor* RealClutterInterface::CreateGroup() {
 }
 
 RealClutterInterface::Actor* RealClutterInterface::CreateRectangle(
-    const std::string& color_str,
-    const std::string& border_color_str,
+    const ClutterInterface::Color& color,
+    const ClutterInterface::Color& border_color,
     int border_width) {
-  ClutterColor color, border_color;
-  CHECK(InitColor(&color, color_str));
-  CHECK(InitColor(&border_color, border_color_str));
+  ClutterColor clutter_color = ConvertColor(color);
+  ClutterColor clutter_border_color = ConvertColor(border_color);
 
-  ClutterActor* clutter_actor = clutter_rectangle_new_with_color(&color);
+  ClutterActor* clutter_actor =
+      clutter_rectangle_new_with_color(&clutter_color);
   clutter_rectangle_set_border_color(
-      CLUTTER_RECTANGLE(clutter_actor), &border_color);
+      CLUTTER_RECTANGLE(clutter_actor), &clutter_border_color);
   clutter_rectangle_set_border_width(
       CLUTTER_RECTANGLE(clutter_actor), border_width);
   return new Actor(clutter_actor);
@@ -409,7 +408,7 @@ RealClutterInterface::Actor* RealClutterInterface::CreateImage(
 }
 
 RealClutterInterface::TexturePixmapActor*
-    RealClutterInterface::CreateTexturePixmap() {
+RealClutterInterface::CreateTexturePixmap() {
   ClutterActor* clutter_actor = NULL;
 #if __arm__
   clutter_actor = clutter_eglx_egl_image_new();
@@ -422,11 +421,10 @@ RealClutterInterface::TexturePixmapActor*
 RealClutterInterface::Actor* RealClutterInterface::CreateText(
     const std::string& font_name,
     const std::string& text,
-    const std::string& color_str) {
-  ClutterColor color;
-  CHECK(InitColor(&color, color_str));
+    const ClutterInterface::Color& color) {
+  ClutterColor clutter_color = ConvertColor(color);
   return new Actor(
-      clutter_text_new_full(font_name.c_str(), text.c_str(), &color));
+      clutter_text_new_full(font_name.c_str(), text.c_str(), &clutter_color));
 }
 
 RealClutterInterface::Actor* RealClutterInterface::CloneActor(
@@ -441,10 +439,14 @@ RealClutterInterface::Actor* RealClutterInterface::CloneActor(
 }
 
 // static
-bool RealClutterInterface::InitColor(
-    ClutterColor* color, const std::string& hex_str) {
-  CHECK(color);
-  return clutter_color_from_string(color, hex_str.c_str());
+ClutterColor RealClutterInterface::ConvertColor(
+    const ClutterInterface::Color& color) {
+  ClutterColor clutter_color;
+  clutter_color.red = static_cast<guint8>(color.red * 255.0f + 0.5f);
+  clutter_color.green = static_cast<guint8>(color.green * 255.0f + 0.5f);
+  clutter_color.blue = static_cast<guint8>(color.blue * 255.0f + 0.5f);
+  clutter_color.alpha = 0xff;
+  return clutter_color;
 }
 
 
