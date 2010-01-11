@@ -7,5 +7,5 @@ Standards-Version: 3.8.0
 
 Package: chromeos-monitor-reconfig
 Architecture: any
-Depends: xserver-xorg
+Depends: xserver-xorg, x11-xserver-utils
 Description: Small module that will reconfigure an external monitor to the largest resolution the fills either horizontally or vertically
