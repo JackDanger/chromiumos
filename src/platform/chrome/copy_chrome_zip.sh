@@ -24,13 +24,17 @@ CHROME_BUILD=
 # Option if set will pull a stable version of the Chromium browser
 WGET_STABLE_BUILD=$GET_STABLE_CHROME
 
+ARCH=i386
+
 # ----------------------------------------------------------------------------
 
 # Check to see if the user wants to grab stable browser build
-while getopts 's' OPTION
+while getopts 'sa:' OPTION
 do
   case $OPTION in
   s)    WGET_STABLE_BUILD=1
+        ;;
+  a)    ARCH="$OPTARG"
         ;;
   esac
 done
@@ -58,26 +62,40 @@ CHROME_ZIP_SECOND_TRY=chrome-linux.zip
 # cluster / subnetwork.
 #
 # Most users should build Chromium locally; see below.
-if [ "$WGET_STABLE_BUILD" = 1 -o $USE_RELEASE_CHROME = 1 ]
+if [ "$WGET_STABLE_BUILD" = 1 -o "$USE_RELEASE_CHROME" = 1 ]
 then
   # Use released version of Chrome
   BASE_FROM="http://codf196.jail.google.com/archive/chrome-official"
 else
   # Use most recent snapshot from Chrome buildbot
-  BASE_FROM="http://build.chromium.org/buildbot/snapshots/chromium-rel-linux-chromiumos"
+  case $ARCH in
+  i386)   BASE_NAME='linux-chromiumos' ;;
+  *)      BASE_NAME='arm' ;;
+  esac
+  BASE_FROM="http://build.chromium.org/buildbot/snapshots/chromium-rel-${BASE_NAME}"
 
   # Chrome OS buildbot does not have http access to chrome-web, so scp
   # the build result instead
-  if [ $USER = "chrome-bot" ]
+  if [ "$USER" = "chrome-bot" ]
   then
     USE_WGET=0
-    BASE_FROM="chrome-web:~/www/snapshots/chromium-rel-linux-chromiumos"
+    BASE_FROM="chrome-web:~/www/snapshots/chromium-rel-${BASE_NAME}"
   fi
 fi
 
 # Path to local Chrome
-LOCAL_CHROME="/home/${USER}/trunk/src/build/x86/local_assets/${CHROME_ZIP}"
-# TODO: Support ARM
+case $ARCH in
+i386)   ARCHDIRS='x86 i386' ;;
+*)      ARCHDIRS="$ARCH" ;;
+esac
+for archdir in $ARCHDIRS
+do
+  LOCAL_CHROME="${HOME}/trunk/src/build/${archdir}/local_assets/${CHROME_ZIP}"
+  if [ -f "$LOCAL_CHROME" ]
+  then
+    break
+  fi
+done
 
 # Clobber any existing destination files
 rm -f "./$CHROME_ZIP" ./LATEST

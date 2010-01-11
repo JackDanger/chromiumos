@@ -1,6 +1,7 @@
 chromeos-chrome (0.2) UNRELEASED; urgency=low
 
   * Use dh(1).
+  * Add basic ARM support.
 
  -- Colin Watson <cjwatson@canonical.com>  Sat, 28 Nov 2009 10:36:06 +0000
 

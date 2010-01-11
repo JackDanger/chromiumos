@@ -6,11 +6,13 @@
 %:
 	dh $@
 
+DEB_HOST_ARCH := $(shell dpkg-architecture -qDEB_HOST_ARCH)
+
 # Uncomment this to turn on verbose mode.
 #export DH_VERBOSE=1
 
 override_dh_auto_build:
-	./copy_chrome_zip.sh
+	./copy_chrome_zip.sh -a $(DEB_HOST_ARCH)
 
 override_dh_auto_install:
 	# (note: use ./dirs file instead of mkdir -p here)
