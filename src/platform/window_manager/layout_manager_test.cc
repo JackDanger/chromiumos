@@ -40,7 +40,7 @@ TEST_F(LayoutManagerTest, Basic) {
       false,     // override redirect
       false,     // input only
       0);        // event mask
-  wm_->TrackWindow(xid1);
+  wm_->TrackWindow(xid1, false);  // override_redirect=false
 
   Window* win1 = wm_->GetWindow(xid1);
   CHECK(win1);
@@ -66,7 +66,7 @@ TEST_F(LayoutManagerTest, Basic) {
       false,     // override redirect
       false,     // input only
       0);        // event mask
-  wm_->TrackWindow(xid2);
+  wm_->TrackWindow(xid2, false);  // override_redirect=false
   Window* win2 = wm_->GetWindow(xid2);
   CHECK(win2);
   win2->MapClient();
@@ -79,7 +79,7 @@ TEST_F(LayoutManagerTest, Basic) {
       false,     // override redirect
       false,     // input only
       0);        // event mask
-  wm_->TrackWindow(xid3);
+  wm_->TrackWindow(xid3, false);  // override_redirect=false
   Window* win3 = wm_->GetWindow(xid3);
   CHECK(win3);
   win3->MapClient();

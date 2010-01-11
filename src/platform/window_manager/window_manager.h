@@ -165,7 +165,7 @@ class WindowManager {
   // for it and register it in 'client_windows_').  Returns NULL for
   // windows that we specifically shouldn't track (e.g. the Clutter stage
   // or the compositing overlay window).
-  Window* TrackWindow(XWindow xid);
+  Window* TrackWindow(XWindow xid, bool override_redirect);
 
   // Handle a window getting mapped.  This is primarily used by
   // HandleMapNotify(), but is abstracted out into a separate method so

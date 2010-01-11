@@ -35,12 +35,12 @@ class PanelTest : public BasicWindowManagerTest {
 
 TEST_F(PanelTest, InputWindows) {
   XWindow titlebar_xid = CreatePanelTitlebarWindow(200, 20);
-  Window titlebar_win(wm_.get(), titlebar_xid);
+  Window titlebar_win(wm_.get(), titlebar_xid, false);
   MockXConnection::WindowInfo* titlebar_info =
       xconn_->GetWindowInfoOrDie(titlebar_xid);
 
   XWindow content_xid = CreatePanelContentWindow(200, 400, titlebar_xid, true);
-  Window content_win(wm_.get(), content_xid);
+  Window content_win(wm_.get(), content_xid, false);
   MockXConnection::WindowInfo* content_info =
       xconn_->GetWindowInfoOrDie(content_xid);
 
@@ -124,14 +124,14 @@ TEST_F(PanelTest, Resize) {
   int orig_titlebar_height = 20;
   XWindow titlebar_xid =
       CreatePanelTitlebarWindow(orig_width, orig_titlebar_height);
-  Window titlebar_win(wm_.get(), titlebar_xid);
+  Window titlebar_win(wm_.get(), titlebar_xid, false);
   MockXConnection::WindowInfo* titlebar_info =
       xconn_->GetWindowInfoOrDie(titlebar_xid);
 
   int orig_content_height = 400;
   XWindow content_xid = CreatePanelContentWindow(
       orig_width, orig_content_height, titlebar_xid, true);
-  Window content_win(wm_.get(), content_xid);
+  Window content_win(wm_.get(), content_xid, false);
   MockXConnection::WindowInfo* content_info =
       xconn_->GetWindowInfoOrDie(content_xid);
 
@@ -209,9 +209,9 @@ TEST_F(PanelTest, ChromeState) {
 
   // Create a panel.
   XWindow titlebar_xid = CreatePanelTitlebarWindow(200, 20);
-  Window titlebar_win(wm_.get(), titlebar_xid);
+  Window titlebar_win(wm_.get(), titlebar_xid, false);
   XWindow content_xid = CreatePanelContentWindow(200, 400, titlebar_xid, false);
-  Window content_win(wm_.get(), content_xid);
+  Window content_win(wm_.get(), content_xid, false);
   Panel panel(wm_.get(), &content_win, &titlebar_win, 0, 0);
 
   // The panel's content window should have have a collapsed state in
@@ -235,9 +235,9 @@ TEST_F(PanelTest, ChromeState) {
 TEST_F(PanelTest, Shadows) {
   // Create a panel.
   XWindow titlebar_xid = CreatePanelTitlebarWindow(200, 20);
-  Window titlebar_win(wm_.get(), titlebar_xid);
+  Window titlebar_win(wm_.get(), titlebar_xid, false);
   XWindow content_xid = CreatePanelContentWindow(200, 400, titlebar_xid, false);
-  Window content_win(wm_.get(), content_xid);
+  Window content_win(wm_.get(), content_xid, false);
   Panel panel(wm_.get(), &content_win, &titlebar_win, 0, 0);
 
   // Both the titlebar and content windows' shadows should be visible

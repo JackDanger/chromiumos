@@ -548,6 +548,8 @@ void MockXConnection::InitCreateWindowEvent(XEvent* event,
   create_event->y = info.y;
   create_event->width = info.width;
   create_event->height = info.height;
+  create_event->border_width = info.border_width;
+  create_event->override_redirect = info.override_redirect ? True : False;
 }
 
 // static

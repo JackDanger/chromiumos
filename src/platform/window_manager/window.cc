@@ -24,14 +24,14 @@ DECLARE_bool(wm_use_compositing);  // from window_manager.cc
 
 namespace window_manager {
 
-Window::Window(WindowManager* wm, XWindow xid)
+Window::Window(WindowManager* wm, XWindow xid, bool override_redirect)
     : xid_(xid),
       xid_str_(XidStr(xid_)),
       wm_(wm),
       actor_(wm_->clutter()->CreateTexturePixmap()),
       shadow_(FLAGS_window_drop_shadows ? new Shadow(wm->clutter()) : NULL),
       transient_for_xid_(None),
-      override_redirect_(false),
+      override_redirect_(override_redirect),
       mapped_(false),
       shaped_(false),
       type_(WmIpc::WINDOW_TYPE_UNKNOWN),
@@ -59,14 +59,9 @@ Window::Window(WindowManager* wm, XWindow xid)
       xid_, FocusChangeMask | PropertyChangeMask, true);
   wm_->xconn()->SelectShapeEventsOnWindow(xid_);
 
-  // Get the window's initial state.
-  XConnection::WindowAttributes attr;
-  if (wm_->xconn()->GetWindowAttributes(xid_, &attr)) {
-    // We update 'mapped_' when we get the MapNotify event instead of doing
-    // it here; things get tricky otherwise since there's a race as to
-    // whether override-redirect windows are mapped or not at this point.
-    override_redirect_ = attr.override_redirect;
-  }
+  // We update 'mapped_' when we get the MapNotify event instead of doing
+  // it here; things get tricky otherwise since there's a race as to
+  // whether override-redirect windows are mapped or not at this point.
 
   XConnection::WindowGeometry geometry;
   if (wm_->xconn()->GetWindowGeometry(xid_, &geometry)) {

@@ -80,9 +80,9 @@ TEST_F(StackingManagerTest, StackActorAtTopOfLayer) {
 TEST_F(StackingManagerTest, StackWindowAtTopOfLayer) {
   // Create two windows.
   XWindow xid = CreateSimpleWindow();
-  Window win(wm_.get(), xid);
+  Window win(wm_.get(), xid, false);
   XWindow xid2 = CreateSimpleWindow();
-  Window win2(wm_.get(), xid2);
+  Window win2(wm_.get(), xid2, false);
 
   // Stack both of the windows in the same layer and make sure that their
   // relative positions are correct.

@@ -673,9 +673,12 @@ bool WindowManager::ManageExistingWindows() {
           << (windows.size() == 1 ? "" : "s");
   for (size_t i = 0; i < windows.size(); ++i) {
     XWindow xid = windows[i];
+    XConnection::WindowAttributes attr;
+    if (!xconn_->GetWindowAttributes(xid, &attr))
+      continue;
     // XQueryTree() returns child windows in bottom-to-top stacking order.
     stacked_xids_->AddOnTop(xid);
-    Window* win = TrackWindow(xid);
+    Window* win = TrackWindow(xid, attr.override_redirect);
     if (win && win->FetchMapState()) {
       win->set_mapped(true);
       HandleMappedWindow(win);
@@ -685,7 +688,7 @@ bool WindowManager::ManageExistingWindows() {
   return true;
 }
 
-Window* WindowManager::TrackWindow(XWindow xid) {
+Window* WindowManager::TrackWindow(XWindow xid, bool override_redirect) {
   // Don't manage our internal windows.
   if (IsInternalWindow(xid) || stacking_manager_->IsInternalWindow(xid))
     return NULL;
@@ -709,7 +712,8 @@ Window* WindowManager::TrackWindow(XWindow xid) {
   if (win) {
     LOG(WARNING) << "Window " << XidStr(xid) << " is already being managed";
   } else {
-    std::tr1::shared_ptr<Window> win_ref(new Window(this, xid));
+    std::tr1::shared_ptr<Window> win_ref(
+        new Window(this, xid, override_redirect));
     client_windows_.insert(std::make_pair(xid, win_ref));
     win = win_ref.get();
   }
@@ -1058,7 +1062,7 @@ bool WindowManager::HandleCreateNotify(const XCreateWindowEvent& e) {
   // intercept this window's structure events, but we still need to
   // composite the window, so we'll create a Window object for it
   // regardless.
-  TrackWindow(e.window);
+  TrackWindow(e.window, e.override_redirect);
 
   return true;
 }

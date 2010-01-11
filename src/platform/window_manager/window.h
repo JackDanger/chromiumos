@@ -48,7 +48,7 @@ class WindowManager;
 // the composited window.
 class Window {
  public:
-  Window(WindowManager* wm, XWindow xid);
+  Window(WindowManager* wm, XWindow xid, bool override_redirect);
   ~Window();
 
   XWindow xid() const { return xid_; }

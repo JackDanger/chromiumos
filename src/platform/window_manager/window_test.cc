@@ -24,7 +24,7 @@ class WindowTest : public BasicWindowManagerTest {};
 
 TEST_F(WindowTest, WindowType) {
   XWindow xid = CreateSimpleWindow();
-  Window win(wm_.get(), xid);
+  Window win(wm_.get(), xid, false);
 
   // Without a window type, we should have a shadow.
   EXPECT_EQ(WmIpc::WINDOW_TYPE_UNKNOWN, win.type());
@@ -56,7 +56,7 @@ TEST_F(WindowTest, ChangeClient) {
   XWindow xid = CreateToplevelWindow(10, 20, 30, 40);
   MockXConnection::WindowInfo* info = xconn_->GetWindowInfoOrDie(xid);
 
-  Window window(wm_.get(), xid);
+  Window window(wm_.get(), xid, false);
 
   // Make sure that the window's initial attributes are loaded correctly.
   EXPECT_EQ(xid, window.xid());
@@ -96,7 +96,7 @@ TEST_F(WindowTest, ChangeClient) {
 
 TEST_F(WindowTest, ChangeComposited) {
   XWindow xid = CreateToplevelWindow(10, 20, 30, 40);
-  Window window(wm_.get(), xid);
+  Window window(wm_.get(), xid, false);
 
   const MockClutterInterface::Actor* actor =
       dynamic_cast<const MockClutterInterface::Actor*>(window.actor());
@@ -135,7 +135,7 @@ TEST_F(WindowTest, TransientFor) {
 
   XWindow owner_xid = 1234;  // arbitrary ID
   info->transient_for = owner_xid;
-  Window win(wm_.get(), xid);
+  Window win(wm_.get(), xid, false);
   EXPECT_EQ(owner_xid, win.transient_for_xid());
 
   XWindow new_owner_xid = 5678;
@@ -157,7 +157,7 @@ TEST_F(WindowTest, GetMaxSize) {
   info->size_hints.base_width = 40;
   info->size_hints.base_width = 30;
 
-  Window win(wm_.get(), xid);
+  Window win(wm_.get(), xid, false);
   ASSERT_TRUE(win.FetchAndApplySizeHints());
   int width = 0, height = 0;
 
@@ -195,7 +195,7 @@ TEST_F(WindowTest, WmProtocols) {
                               XA_ATOM,                           // type
                               values);
 
-  Window win(wm_.get(), xid);
+  Window win(wm_.get(), xid, false);
 
   // Send a WM_DELETE_WINDOW message to the window and check that its
   // contents are correct.
@@ -252,7 +252,7 @@ TEST_F(WindowTest, WmState) {
                          wm_state_atom,  // atom
                          XA_ATOM,        // type
                          modal_atom);
-  Window win(wm_.get(), xid);
+  Window win(wm_.get(), xid, false);
   EXPECT_FALSE(win.wm_state_fullscreen());
   EXPECT_TRUE(win.wm_state_modal());
 
@@ -339,7 +339,7 @@ TEST_F(WindowTest, ChromeState) {
                          state_atom,  // atom
                          XA_ATOM,     // type
                          collapsed_atom);
-  Window win(wm_.get(), xid);
+  Window win(wm_.get(), xid, false);
 
   // Tell the window to set the other atom.
   std::vector<std::pair<XAtom, bool> > states;
@@ -380,7 +380,7 @@ TEST_F(WindowTest, Shape) {
   info->shape->Clear(0xff);
   info->shape->SetRectangle(0, 0, 3, 3, 0x0);
 
-  Window win(wm_.get(), xid);
+  Window win(wm_.get(), xid, false);
   EXPECT_TRUE(info->shape_events_selected);
   EXPECT_TRUE(win.shaped());
   EXPECT_FALSE(win.using_shadow());
@@ -423,6 +423,17 @@ TEST_F(WindowTest, Shape) {
   EXPECT_TRUE(win.using_shadow());
   ASSERT_TRUE(win.shadow() != NULL);
   EXPECT_EQ(shadow_opacity, win.shadow()->opacity());
+}
+
+TEST_F(WindowTest, OverrideRedirectForDestroyedWindow) {
+  // Check that Window's c'tor uses the passed-in override-redirect value
+  // instead of querying the server.  If an override-redirect window has
+  // already been destroyed, we don't want to mistakenly think that it's
+  // non-override-redirect.
+  // TODO: Remove this once we're able to grab the server while
+  // constructing Window objects (see comments in window_manager.cc).
+  Window win(wm_.get(), 43241, true);
+  EXPECT_TRUE(win.override_redirect());
 }
 
 }  // namespace window_manager
