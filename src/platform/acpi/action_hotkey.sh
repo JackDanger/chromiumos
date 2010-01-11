@@ -9,13 +9,12 @@
 
 case "$3" in
   00000013)  # Toggle sound
-        amixer set LineOut toggle
-        amixer set iSpeaker toggle
+        amixer set Master toggle
         ;;
   00000014)  # Decrease volume
-        amixer set LineOut 5%-
+        amixer set Master 5%-
         ;;
   00000015)  # Increase volume
-        amixer set LineOut 5%+
+        amixer set Master 5%+
         ;;
 esac
