@@ -107,9 +107,6 @@ deps = {
     # kernel
     _third_party_base + "kernel/files": "/kernel.git",
 
-    # fio
-    _third_party_base + "fio/files": "/fio.git@fio-1.34.2",
-
     # flimflam
     _third_party_base + "flimflam": "/flimflam.git",
 

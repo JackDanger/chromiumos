@@ -141,9 +141,6 @@ libgudev-1.0-dev
 cdbs
 gtk-doc-tools
 
-# Packages needed to build fio
-libaio-dev
-
 # Packages needed for the devkit server
 python-webpy
 

@@ -156,8 +156,6 @@ lib64gcc1 1:4.4.1-4ubuntu8 optional libs pool/main/g/gcc-4.4/lib64gcc1_4.4.1-4ub
 lib64gomp1 4.4.1-4ubuntu8 optional libs pool/main/g/gcc-4.4/lib64gomp1_4.4.1-4ubuntu8_i386.deb
 lib64stdc++6 4.4.1-4ubuntu8 optional libs pool/main/g/gcc-4.4/lib64stdc++6_4.4.1-4ubuntu8_i386.deb
 libacl1 2.2.47-2 required libs pool/main/a/acl/libacl1_2.2.47-2_i386.deb
-libaio-dev 0.3.107-3ubuntu1 optional libdevel pool/main/liba/libaio/libaio-dev_0.3.107-3ubuntu1_i386.deb
-libaio1 0.3.107-3ubuntu1 optional libs pool/main/liba/libaio/libaio1_0.3.107-3ubuntu1_i386.deb
 libanthy-dev 9100h-0ubuntu1 optional libdevel pool/main/a/anthy/libanthy-dev_9100h-0ubuntu1_i386.deb
 libanthy0 9100h-0ubuntu1 optional libs pool/main/a/anthy/libanthy0_9100h-0ubuntu1_i386.deb
 libapt-pkg-perl 0.1.23build1 optional perl pool/main/liba/libapt-pkg-perl/libapt-pkg-perl_0.1.23build1_i386.deb
