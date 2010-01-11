@@ -32,6 +32,7 @@ libgl1-mesa-dri
 # TODO: Move into a developer addon list. These should all be
 # optional. For now, install these useful packages until things are farther
 # along in development.
+apt
 bootchart
 bsdutils
 diff
