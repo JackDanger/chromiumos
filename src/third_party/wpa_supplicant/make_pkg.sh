@@ -11,7 +11,5 @@
 COMMON_SH="$(dirname "$0")/../../scripts/common.sh"
 . "$COMMON_SH"
 
-./build.sh
-
 # Make the package
 make_pkg_common "chromeos-wpasupplicant" "$@"

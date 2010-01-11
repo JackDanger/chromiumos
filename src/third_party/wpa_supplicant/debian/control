@@ -6,12 +6,12 @@ Source: chromeos-wpasupplicant
 Section: unknown
 Priority: extra
 Maintainer: The Chromium OS Authors <chromium-os-dev@googlegroups.com>
-Build-Depends: debhelper (>= 7)
+Build-Depends: debhelper (>= 7), libdbus-1-dev, libnl-dev, libssl-dev
 Standards-Version: 3.8.0
 
 Package: chromeos-wpasupplicant
 Architecture: any
-Depends: dbus
+Depends: dbus, ${shlibs:Depends}
 Replaces: wpasupplicant
 Description: wpasupplicant
  A version of wpa_supplicant that has bug fixes required by Chrome OS
