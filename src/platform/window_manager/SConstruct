@@ -159,17 +159,11 @@ test_env = wm_env.Clone()
 test_env['LINKFLAGS'].append('-lgtest')
 # libtest needs to be listed first since it depends on wm_core and wm_ipc.
 test_env['LIBS'].insert(0, libtest)
-test_env.Program('key_bindings_test', 'key_bindings_test.cc')
-test_env.Program('layout_manager_test', 'layout_manager_test.cc')
-test_env.Program('no_clutter_test', 'no_clutter_test.cc')
-test_env.Program('panel_bar_test', 'panel_bar_test.cc')
-test_env.Program('panel_test', 'panel_test.cc')
-test_env.Program('shadow_test', 'shadow_test.cc')
-test_env.Program('stacking_manager_test', 'stacking_manager_test.cc')
-test_env.Program('util_test', 'util_test.cc')
-test_env.Program('window_manager_test', 'window_manager_test.cc')
-test_env.Program('window_test', 'window_test.cc')
-test_env.Program('x_connection_test', 'x_connection_test.cc')
+tests = []
+for test_src in Glob('*_test.cc', strings=True):
+  tests += test_env.Program(test_src)
+# Create a 'tests' target that will build all tests.
+test_env.Alias('tests', tests)
 
 mock_chrome_env = wm_env.Clone()
 mock_chrome_env.ParseConfig('pkg-config --cflags --libs gtkmm-2.4')
