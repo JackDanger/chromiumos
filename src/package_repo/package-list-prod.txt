@@ -126,3 +126,6 @@ gptpart
 
 # For collecting metrics
 time
+
+# Install the chromeos build of upstart
+upstart

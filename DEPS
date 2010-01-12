@@ -45,7 +45,7 @@ deps = {
     _platform_base + "text_input": "/text_input.git",
 
     # autotest
-    _third_party_base + "autotest/files" : "/autotest.git",
+    _third_party_base + "autotest/files": "/autotest.git",
 
     # IBus framework
     _third_party_base + "ibus/files": "/ibus.git",
@@ -115,10 +115,10 @@ deps = {
 
     # cairo - branch at 1.8.8, need to fix our clone somehow.
     _third_party_base + "cairo": "/cairo.git",
-    
+
     # gconf - branch at 2.28.0, need to fix our clone somehow.
     _third_party_base + "gconf": "/gconf.git",
-    
+
     # curl
     _third_party_base + "curl": "/curl.git",
 
@@ -137,4 +137,6 @@ deps = {
     # pango (i18n text rendering)
     _third_party_base + "pango": "/pango.git",
 
+    # upstart
+    _third_party_base + "upstart/files": "/upstart.git",
 }
