@@ -36,7 +36,7 @@ rm -f "${OUT_DIR}/lib${PKG_BASE}"-dev_*.deb
 # Rebuild the package
 pushd "$TOP_SCRIPT_DIR"
 rm -f ../lib${PKG_BASE}-dev_*.deb
-dpkg-buildpackage -b -us -uc -j$NUM_JOBS
+dpkg-buildpackage -b -tc -us -uc -j$NUM_JOBS
 mv ../lib${PKG_BASE}-dev_*.deb "$OUT_DIR"
 rm ../${PKG_BASE}_*.changes
 popd

@@ -129,3 +129,8 @@ time
 
 # Install the chromeos build of upstart
 upstart
+
+# Listed as a recommendation rather than dependency by chromeos-chrome to
+# make it easier to replace it with different versions, but included here
+# to make sure that we always include it in images.
+flashplugin-installer
