@@ -155,6 +155,23 @@ inline void swap(Proxy& x, Proxy& y) {
   std::swap(x.object_, y.object_);
 }
 
+// \brief RegisterExclusiveService configures a GObject to run as a service on
+//  a supplied ::BusConnection.
+//
+//  RegisterExclusiveService encapsulates the process of configuring the
+//  supplied \param object at \param service_path on the \param connection.
+//  Exclusivity is ensured by replacing any existing services at that named
+//  location and confirming that the connection is the primary owner.
+//
+//  Type information for the \param object must be installed with
+//  dbus_g_object_type_install_info prior to use.
+
+bool RegisterExclusiveService(const BusConnection& connection,
+                              const char* interface_name,
+                              const char* service_name,
+                              const char* service_path,
+                              GObject* object);
+
 template <typename F> // F is a function signature
 class MonitorConnection;
 

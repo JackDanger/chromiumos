@@ -5,6 +5,7 @@
 #include "chromeos/dbus/dbus.h"
 
 #include <dbus/dbus.h>
+#include <dbus/dbus-glib-bindings.h>
 #include <dbus/dbus-glib-lowlevel.h>
 #include <base/logging.h>
 
@@ -123,6 +124,75 @@ Proxy::value_type Proxy::GetGProxy(const BusConnection& connection,
   }
   return result;
 }
+
+bool RegisterExclusiveService(const BusConnection& connection,
+                              const char* interface_name,
+                              const char* service_name,
+                              const char* service_path,
+                              GObject* object) {
+  CHECK(object);
+  CHECK(interface_name);
+  CHECK(service_name);
+  // Create a proxy to DBus itself so that we can request to become a
+  // service name owner and then register an object at the related service path.
+  Proxy proxy = chromeos::dbus::Proxy(connection,
+                                      DBUS_SERVICE_DBUS,
+                                      DBUS_PATH_DBUS,
+                                      DBUS_INTERFACE_DBUS);
+  // Exclusivity is determined by replacing any existing
+  // service, not queuing, and ensuring we are the primary
+  // owner after the name is ours.
+  guint flags = DBUS_NAME_FLAG_DO_NOT_QUEUE|DBUS_NAME_FLAG_REPLACE_EXISTING;
+  glib::ScopedError err;
+  guint result = 0;
+  // TODO(wad) determine if we are moving away from using generated functions
+  if (!org_freedesktop_DBus_request_name(proxy.gproxy(),
+                                         service_name,
+                                         0,
+                                         &result,
+                                         &Resetter(&err).lvalue())) {
+    LOG(ERROR) << "Unabled to request service name: "
+               << (err->message ? err->message : "Unknown Error.");
+    return false;
+  }
+
+  // Handle the error codes, releasing the name if exclusivity conditions
+  // are not met.
+  bool needs_release = false;
+  if (result != DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER) {
+    LOG(ERROR) << "Failed to become the primary owner. Releasing . . .";
+    needs_release = true;
+  }
+  if (result == DBUS_REQUEST_NAME_REPLY_EXISTS) {
+    LOG(ERROR) << "Service name exists: " << service_name;
+    return false;
+  } else if (result == DBUS_REQUEST_NAME_REPLY_IN_QUEUE) {
+    LOG(ERROR) << "Service name request enqueued despite our flags. Releasing";
+    needs_release = true;
+  }
+  LOG_IF(WARNING, result == DBUS_REQUEST_NAME_REPLY_ALREADY_OWNER)
+    << "Service name already owned by this process";
+  if (needs_release) {
+    if (!org_freedesktop_DBus_release_name(
+           proxy.gproxy(),
+           service_name,
+           &result,
+           &Resetter(&err).lvalue())) {
+      LOG(ERROR) << "Unabled to release service name: "
+                 << (err->message ? err->message : "Unknown Error.");
+    }
+    DLOG(INFO) << "ReleaseName returned code " << result;
+    return false;
+  }
+
+  // Determine a path from the service name and register the object.
+  dbus_g_connection_register_g_object(connection.g_connection(), 
+                                      service_path,
+                                      object);
+  return true;
+}
+
+
 
 }  // namespace dbus
 }  // namespace chromeos
