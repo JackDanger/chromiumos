@@ -204,6 +204,15 @@ libxcb-shape0-dev
 # Packages needed to build slang2
 dbs
 
+# Packages needed to build gtk+2.0
+libatk1.0-doc
+libcairo2-doc
+libglib2.0-doc
+libpango1.0-doc
+
+# Packages needed to build pam
+w3m
+
 # Cross-compiler packages for ARM
 libmpfr-dev-armel-cross
 gfortran-4.4-arm-linux-gnueabi

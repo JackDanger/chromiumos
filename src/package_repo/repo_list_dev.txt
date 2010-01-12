@@ -163,6 +163,7 @@ libarchive1 2.6.2-1 optional libs pool/main/liba/libarchive/libarchive1_2.6.2-1_
 libatk1.0-0 1.28.0-0ubuntu1 optional libs pool/main/a/atk1.0/libatk1.0-0_1.28.0-0ubuntu1_i386.deb
 libatk1.0-data 1.28.0-0ubuntu1 optional misc pool/main/a/atk1.0/libatk1.0-data_1.28.0-0ubuntu1_all.deb
 libatk1.0-dev 1.28.0-0ubuntu1 optional libdevel pool/main/a/atk1.0/libatk1.0-dev_1.28.0-0ubuntu1_i386.deb
+libatk1.0-doc 1.28.0-0ubuntu1 optional doc pool/main/a/atk1.0/libatk1.0-doc_1.28.0-0ubuntu1_all.deb
 libatm1 2.4.1-17.2 important libs pool/main/l/linux-atm/libatm1_2.4.1-17.2_i386.deb
 libattr1 1:2.4.43-3 required libs pool/main/a/attr/libattr1_2.4.43-3_i386.deb
 libaudio2 1.9.2-1 optional libs pool/main/n/nas/libaudio2_1.9.2-1_i386.deb
@@ -185,6 +186,7 @@ libc6-dev-armel-cross 2.10.1-0ubuntu15 extra devel pool/main/e/eglibc/libc6-dev-
 libc6-i686 2.10.1-0ubuntu15 important libs pool/main/e/eglibc/libc6-i686_2.10.1-0ubuntu15_i386.deb
 libcairo2 1.8.8-2ubuntu1 optional libs pool/main/c/cairo/libcairo2_1.8.8-2ubuntu1_i386.deb
 libcairo2-dev 1.8.8-2ubuntu1 optional libdevel pool/main/c/cairo/libcairo2-dev_1.8.8-2ubuntu1_i386.deb
+libcairo2-doc 1.8.8-2ubuntu1 optional libs pool/main/c/cairo/libcairo2-doc_1.8.8-2ubuntu1_all.deb
 libcairomm-1.0-1 1.8.0-1build1 optional libs pool/main/c/cairomm/libcairomm-1.0-1_1.8.0-1build1_i386.deb
 libcairomm-1.0-dev 1.8.0-1build1 optional libdevel pool/main/c/cairomm/libcairomm-1.0-dev_1.8.0-1build1_i386.deb
 libcap-dev 1:2.16-5ubuntu1 optional libdevel pool/main/libc/libcap2/libcap-dev_2.16-5ubuntu1_i386.deb
@@ -242,6 +244,7 @@ libfontenc1 1:1.0.4-3 optional x11 pool/main/libf/libfontenc/libfontenc1_1.0.4-3
 libfreetype6 2.3.9-5 optional libs pool/main/f/freetype/libfreetype6_2.3.9-5_i386.deb
 libfreetype6-dev 2.3.9-5 optional libdevel pool/main/f/freetype/libfreetype6-dev_2.3.9-5_i386.deb
 libfribidi0 0.10.9-1build1 important libs pool/main/f/fribidi/libfribidi0_0.10.9-1build1_i386.deb
+libgc1c2 1:6.8-1.2 standard libs pool/main/libg/libgc/libgc1c2_6.8-1.2_i386.deb
 libgcc1 1:4.4.1-4ubuntu8 required libs pool/main/g/gcc-4.4/libgcc1_4.4.1-4ubuntu8_i386.deb
 libgcc1-armel-cross 1:4.4.2-1ubuntu1 extra devel pool/main/g/gcc-4.4-armel/libgcc1-armel-cross_4.4.2-1ubuntu1_all.deb
 libgconf2-4 2.28.0-0ubuntu2 optional libs pool/main/g/gconf/libgconf2-4_2.28.0-0ubuntu2_i386.deb
@@ -258,6 +261,7 @@ libglade2-0 1:2.6.4-1 optional libs pool/main/libg/libglade2/libglade2-0_2.6.4-1
 libglib2.0-0 2.22.2-0ubuntu1 important libs pool/main/g/glib2.0/libglib2.0-0_2.22.2-0ubuntu1_i386.deb
 libglib2.0-data 2.22.2-0ubuntu1 important misc pool/main/g/glib2.0/libglib2.0-data_2.22.2-0ubuntu1_all.deb
 libglib2.0-dev 2.22.2-0ubuntu1 optional libdevel pool/main/g/glib2.0/libglib2.0-dev_2.22.2-0ubuntu1_i386.deb
+libglib2.0-doc 2.22.2-0ubuntu1 optional doc pool/main/g/glib2.0/libglib2.0-doc_2.22.2-0ubuntu1_all.deb
 libglibmm-2.4-1c2a 2.22.1-2 optional libs pool/main/g/glibmm2.4/libglibmm-2.4-1c2a_2.22.1-2_i386.deb
 libglibmm-2.4-dev 2.22.1-2 optional libdevel pool/main/g/glibmm2.4/libglibmm-2.4-dev_2.22.1-2_i386.deb
 libgmp3-dev-armel-cross 2:4.3.1+dfsg-1ubuntu2 extra devel pool/main/g/gmp/libgmp3-dev-armel-cross_4.3.1+dfsg-1ubuntu2_all.deb
@@ -347,6 +351,7 @@ libpam0g-dev 1.1.0-2ubuntu1 optional libdevel pool/main/p/pam/libpam0g-dev_1.1.0
 libpango1.0-0 1.26.0-1 optional libs pool/main/p/pango1.0/libpango1.0-0_1.26.0-1_i386.deb
 libpango1.0-common 1.26.0-1 optional misc pool/main/p/pango1.0/libpango1.0-common_1.26.0-1_all.deb
 libpango1.0-dev 1.26.0-1 optional libdevel pool/main/p/pango1.0/libpango1.0-dev_1.26.0-1_i386.deb
+libpango1.0-doc 1.26.0-1 optional doc pool/main/p/pango1.0/libpango1.0-doc_1.26.0-1_all.deb
 libpangomm-1.4-1 2.26.0-0ubuntu2 optional libs pool/main/p/pangomm/libpangomm-1.4-1_2.26.0-0ubuntu2_i386.deb
 libpangomm-1.4-dev 2.26.0-0ubuntu2 optional libdevel pool/main/p/pangomm/libpangomm-1.4-dev_2.26.0-0ubuntu2_i386.deb
 libparse-debcontrol-perl 2.005-2 optional perl pool/main/libp/libparse-debcontrol-perl/libparse-debcontrol-perl_2.005-2_all.deb
@@ -627,6 +632,7 @@ uuid-runtime 2.16-1ubuntu5 standard libs pool/main/u/util-linux/uuid-runtime_2.1
 valgrind 1:3.5.0-2ubuntu2 optional devel pool/main/v/valgrind/valgrind_3.5.0-2ubuntu2_i386.deb
 vim-common 2:7.2.245-2ubuntu2 important editors pool/main/v/vim/vim-common_7.2.245-2ubuntu2_i386.deb
 vim-tiny 2:7.2.245-2ubuntu2 important editors pool/main/v/vim/vim-tiny_7.2.245-2ubuntu2_i386.deb
+w3m 0.5.2-2ubuntu1 standard text pool/main/w/w3m/w3m_0.5.2-2ubuntu1_i386.deb
 wdiff 0.5-18 optional text pool/main/w/wdiff/wdiff_0.5-18_i386.deb
 wget 1.11.4-2ubuntu2 standard web pool/main/w/wget/wget_1.11.4-2ubuntu2_i386.deb
 whiptail 0.52.10-4ubuntu1 important utils pool/main/n/newt/whiptail_0.52.10-4ubuntu1_i386.deb
