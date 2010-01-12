@@ -1,0 +1,18 @@
+#!/bin/bash
+
+# Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# base-files
+
+cp -a "${ROOT}/usr/share/base-files/networks"  \
+  "${ROOT}/usr/share/base-files/nsswitch.conf" \
+  "${ROOT}/usr/share/base-files/profile"       \
+  "${ROOT}/etc/"
+
+# TODO: Does this belong here or in another postinst?
+touch "${ROOT}/etc/fstab"
+
+# TODO:This is needed by stuff that uses sysv-rc. Maybe move there?
+mkdir -p "${ROOT_FS_DIR}/etc/init.d"

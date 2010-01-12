@@ -1,0 +1,17 @@
+#!/bin/bash
+
+# Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# libpam-runtime
+
+# The postinst script calls pam-auth-update, which is a perl script that
+# expects to run within the targetfs. Until we fix this, we just copy
+# from the build chroot.
+cp -a /etc/pam.d/common-*      \
+  /etc/pam.d/login             \
+  /etc/pam.d/newusers          \
+  /etc/pam.d/su                \
+  /etc/pam.d/sudo              \
+  "${ROOT}/etc/pam.d/"
