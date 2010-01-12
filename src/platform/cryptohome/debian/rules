@@ -9,6 +9,13 @@
 # Uncomment this to turn on verbose mode.
 #export DH_VERBOSE=1
 
+build: build-stamp
+	scons -Q
+
+build-stamp:
+	dh_testdir
+	touch $@
+
 override_dh_install:
 	dh_install
 	cp $(CURDIR)/bin/mount $(CURDIR)/debian/chromeos-cryptohome/usr/sbin/mount.cryptohome
