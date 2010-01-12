@@ -5,14 +5,14 @@
 Source: chromeos-cryptohome
 Priority: extra
 Maintainer: The Chromium OS Authors <chromium-os-dev@googlegroups.com>
-Build-Depends: debhelper (>= 7.0.50)
+Build-Depends: debhelper (>= 7.0.50), libdbus-glib-1-dev, libglib2.0-dev
 Standards-Version: 3.8.0
 Section: libs
 
 Package: chromeos-cryptohome
 Section: libs
 Architecture: all
-Depends: bash, libpam-mount, e4fsprogs-git, dmsetup, openssl, mount, ${shlibs:Depends}, ${misc:Depends}
+Depends: bash, libpam-mount, e4fsprogs-git, dmsetup, openssl, mount, libdbus-glib-1-2, libglib2.0-0, ${shlibs:Depends}, ${misc:Depends}
 Description: Helper scripts which smooth the integration of
  chromeos-pam-google and libpam-mount to provide automatic
  encrypted home directories.

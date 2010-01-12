@@ -1,0 +1,5 @@
+[D-BUS Service]
+Name=org.chromium.Cryptohome
+Exec=/usr/sbin/cryptohomed
+# TODO(wad) restrict using capabilities
+User=root
