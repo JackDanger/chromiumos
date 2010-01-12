@@ -26,6 +26,7 @@
 /src/platform/cros/
 /src/platform/login_manager/
 /src/platform/pam_google/
+/src/platform/text_input/
 /src/third_party/autotest/files/
 /src/third_party/cairo/
 /src/third_party/chrome/files/
