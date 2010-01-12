@@ -4,17 +4,10 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 %:
-	dh $@
+	dh --buildsystem=scons_chromeos $@
 
 # Uncomment this to turn on verbose mode.
 #export DH_VERBOSE=1
-
-build: build-stamp
-	scons -Q
-
-build-stamp:
-	dh_testdir
-	touch $@
 
 override_dh_install:
 	dh_install
