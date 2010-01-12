@@ -105,6 +105,7 @@ TEST_F(WindowManagerTest, ExistingWindows) {
   // event is sent.
   wm_.reset(NULL);
   xconn_.reset(new MockXConnection);
+  clutter_.reset(new MockClutterInterface(xconn_.get()));
   XWindow xid = CreateSimpleWindow();
   MockXConnection::WindowInfo* info = xconn_->GetWindowInfoOrDie(xid);
   xconn_->MapWindow(xid);
@@ -122,6 +123,7 @@ TEST_F(WindowManagerTest, ExistingWindows) {
   // MapRequest (and subsequent MapNotify).
   wm_.reset(NULL);
   xconn_.reset(new MockXConnection);
+  clutter_.reset(new MockClutterInterface(xconn_.get()));
   xid = CreateSimpleWindow();
   info = xconn_->GetWindowInfoOrDie(xid);
 
@@ -151,6 +153,7 @@ TEST_F(WindowManagerTest, ExistingWindows) {
   // CreateNotify event about it.
   wm_.reset(NULL);
   xconn_.reset(new MockXConnection);
+  clutter_.reset(new MockClutterInterface(xconn_.get()));
   xid = CreateSimpleWindow();
   info = xconn_->GetWindowInfoOrDie(xid);
 
@@ -180,6 +183,7 @@ TEST_F(WindowManagerTest, ExistingWindows) {
   // WindowManager has been initialized.
   wm_.reset(NULL);
   xconn_.reset(new MockXConnection);
+  clutter_.reset(new MockClutterInterface(xconn_.get()));
   xid = None;
   info = NULL;
 
@@ -339,10 +343,18 @@ TEST_F(WindowManagerTest, Reparent) {
   XEvent event;
   MockXConnection::InitCreateWindowEvent(&event, *info);
   EXPECT_TRUE(wm_->HandleEvent(&event));
+  // The window shouldn't be redirected yet, since it hasn't been mapped.
+  EXPECT_FALSE(info->redirected);
 
-  // Clutter should redirect the window for us, so pretend like that's
-  // happened here.
-  info->redirected = true;
+  // After we send a map request, the window should be redirected.
+  MockXConnection::InitMapRequestEvent(&event, *info);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  EXPECT_TRUE(info->mapped);
+  EXPECT_TRUE(info->redirected);
+
+  // Finally, let the window manager know that the window has been mapped.
+  MockXConnection::InitMapEvent(&event, xid);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
 
   XReparentEvent* reparent_event = &(event.xreparent);
   memset(reparent_event, 0, sizeof(*reparent_event));
@@ -689,6 +701,95 @@ TEST_F(WindowManagerTest, WmIpcVersion) {
   event.xclient = info->client_messages[0];
   EXPECT_TRUE(wm_->HandleEvent(&event));
   EXPECT_EQ(3, wm_->wm_ipc_version());
+}
+
+// Test that we defer redirection of client windows until we see them getting
+// mapped (and also that we redirect windows that were already mapped at
+// startup).
+TEST_F(WindowManagerTest, DeferRedirection) {
+  // First, create a window that's already mapped when the window manager is
+  // started.
+  wm_.reset(NULL);
+  xconn_.reset(new MockXConnection);
+  clutter_.reset(new MockClutterInterface(xconn_.get()));
+  XWindow existing_xid = CreateSimpleWindow();
+  MockXConnection::WindowInfo* existing_info =
+      xconn_->GetWindowInfoOrDie(existing_xid);
+  xconn_->MapWindow(existing_xid);
+  wm_.reset(new WindowManager(xconn_.get(), clutter_.get()));
+  CHECK(wm_->Init());
+
+  // Check that the window manager redirected it.
+  EXPECT_TRUE(existing_info->redirected);
+  Window* existing_win = wm_->GetWindow(existing_xid);
+  ASSERT_TRUE(existing_win != NULL);
+  EXPECT_TRUE(existing_win->redirected());
+  MockClutterInterface::TexturePixmapActor* existing_mock_actor =
+      dynamic_cast<MockClutterInterface::TexturePixmapActor*>(
+          existing_win->actor());
+  CHECK(existing_mock_actor);
+  EXPECT_EQ(existing_xid, existing_mock_actor->xid());
+
+  // Now, create a new window, but don't map it yet.
+  XWindow xid = CreateSimpleWindow();
+  MockXConnection::WindowInfo* info = xconn_->GetWindowInfoOrDie(xid);
+  XEvent event;
+  MockXConnection::InitCreateWindowEvent(&event, *info);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+
+  // The window shouldn't be redirected initially.
+  EXPECT_FALSE(info->redirected);
+  Window* win = wm_->GetWindow(xid);
+  ASSERT_TRUE(win != NULL);
+  EXPECT_FALSE(win->redirected());
+  MockClutterInterface::TexturePixmapActor* mock_actor =
+      dynamic_cast<MockClutterInterface::TexturePixmapActor*>(win->actor());
+  CHECK(mock_actor);
+  EXPECT_EQ(None, mock_actor->xid());
+
+  // After we send a MapRequest event, the window should be mapped and
+  // redirected.
+  MockXConnection::InitMapRequestEvent(&event, *info);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  EXPECT_TRUE(info->mapped);
+  EXPECT_TRUE(info->redirected);
+  EXPECT_TRUE(win->redirected());
+  EXPECT_EQ(xid, mock_actor->xid());
+
+  // Finally, let the window manager know that the window has been mapped.
+  MockXConnection::InitMapEvent(&event, xid);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+
+  // There won't be a MapRequest event for override-redirect windows, but they
+  // should still get redirected in response to the MapNotify.
+  XWindow override_redirect_xid = xconn_->CreateWindow(
+        xconn_->GetRootWindow(),
+        10, 20,  // x, y
+        30, 40,  // width, height
+        true,    // override redirect
+        false,   // input only
+        0);      // event mask
+  MockXConnection::WindowInfo* override_redirect_info =
+      xconn_->GetWindowInfoOrDie(override_redirect_xid);
+  xconn_->MapWindow(override_redirect_xid);
+  ASSERT_TRUE(override_redirect_info->mapped);
+
+  // Send CreateNotify and MapNotify events to the window manager.
+  MockXConnection::InitCreateWindowEvent(&event, *override_redirect_info);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  MockXConnection::InitMapEvent(&event, override_redirect_xid);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+
+  // Now check that it's redirected.
+  EXPECT_TRUE(override_redirect_info->redirected);
+  Window* override_redirect_win = wm_->GetWindow(override_redirect_xid);
+  ASSERT_TRUE(override_redirect_win != NULL);
+  EXPECT_TRUE(override_redirect_win->redirected());
+  MockClutterInterface::TexturePixmapActor* override_redirect_mock_actor =
+      dynamic_cast<MockClutterInterface::TexturePixmapActor*>(
+          override_redirect_win->actor());
+  CHECK(override_redirect_mock_actor);
+  EXPECT_EQ(override_redirect_xid, override_redirect_mock_actor->xid());
 }
 
 }  // namespace window_manager

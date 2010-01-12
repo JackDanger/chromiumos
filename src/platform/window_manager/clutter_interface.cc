@@ -9,6 +9,7 @@
 #include "base/string_util.h"
 #include "chromeos/obsolete_logging.h"
 #include "window_manager/util.h"
+#include "window_manager/x_connection.h"
 
 namespace window_manager {
 
@@ -529,6 +530,12 @@ int MockClutterInterface::ContainerActor::GetStackingIndex(
   return stacked_children_->GetIndex(cast_actor);
 }
 
+
+bool MockClutterInterface::TexturePixmapActor::SetTexturePixmapWindow(
+    XWindow xid) {
+  xid_ = xid;
+  return xconn_->RedirectWindowForCompositing(xid);
+}
 
 bool MockClutterInterface::TexturePixmapActor::SetAlphaMask(
     const unsigned char* bytes, int width, int height) {

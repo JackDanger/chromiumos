@@ -34,6 +34,7 @@ Window::Window(WindowManager* wm, XWindow xid, bool override_redirect)
       override_redirect_(override_redirect),
       mapped_(false),
       shaped_(false),
+      redirected_(false),
       type_(WmIpc::WINDOW_TYPE_UNKNOWN),
       client_x_(-1),
       client_y_(-1),
@@ -85,13 +86,6 @@ Window::Window(WindowManager* wm, XWindow xid, bool override_redirect)
           << "at (" << client_x_ << ", " << client_y_ << ") "
           << "with dimensions " << client_width_ << "x" << client_height_;
 
-  if (!actor_->IsUsingTexturePixmapExtension()) {
-    static bool logged = false;
-    LOG_IF(WARNING, !logged) <<
-        "Not using texture-from-pixmap extension -- expect slowness";
-    logged = true;
-  }
-  actor_->SetTexturePixmapWindow(xid_);
   actor_->Move(composited_x_, composited_y_, 0);
   actor_->SetSize(client_width_, client_height_);
   actor_->SetVisibility(false);
@@ -132,6 +126,20 @@ Window::Window(WindowManager* wm, XWindow xid, bool override_redirect)
 }
 
 Window::~Window() {
+}
+
+void Window::Redirect() {
+  VLOG(1) << "Redirecting window " << xid_str_ << " for compositing";
+  if (redirected_)
+    LOG(WARNING) << "Redirecting already-redirected window " << xid_str_;
+  if (!actor_->IsUsingTexturePixmapExtension()) {
+    static bool logged = false;
+    LOG_IF(WARNING, !logged) <<
+        "Not using texture-from-pixmap extension -- expect slowness";
+    logged = true;
+  }
+  actor_->SetTexturePixmapWindow(xid_);
+  redirected_ = true;
 }
 
 bool Window::FetchAndApplySizeHints() {

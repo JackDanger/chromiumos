@@ -65,7 +65,7 @@ int InitAndRunTests(int* argc, char** argv, bool* log_to_stderr) {
 
 void BasicWindowManagerTest::SetUp() {
   xconn_.reset(new MockXConnection);
-  clutter_.reset(new MockClutterInterface);
+  clutter_.reset(new MockClutterInterface(xconn_.get()));
   wm_.reset(new WindowManager(xconn_.get(), clutter_.get()));
   CHECK(wm_->Init());
 }

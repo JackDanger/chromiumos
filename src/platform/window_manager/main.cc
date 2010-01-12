@@ -129,7 +129,7 @@ int main(int argc, char** argv) {
       clutter.reset(new NoClutterInterface(&xconn, gl_interface.get()));
     }
   } else {
-    clutter.reset(new MockClutterInterface);
+    clutter.reset(new MockClutterInterface(&xconn));
   }
   WindowManager wm(&xconn, clutter.get());
   wm.Init();

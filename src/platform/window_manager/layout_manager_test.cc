@@ -667,7 +667,7 @@ TEST_F(LayoutManagerTest, InitialWindowStacking) {
   // Reset everything so we can start from scratch.
   wm_.reset(NULL);
   xconn_.reset(new MockXConnection);
-  clutter_.reset(new MockClutterInterface);
+  clutter_.reset(new MockClutterInterface(xconn_.get()));
   lm_ = NULL;
 
   // Create and map a toplevel window.

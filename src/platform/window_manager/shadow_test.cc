@@ -8,6 +8,7 @@
 #include "base/scoped_ptr.h"
 #include "base/logging.h"
 #include "window_manager/clutter_interface.h"
+#include "window_manager/mock_x_connection.h"
 #include "window_manager/shadow.h"
 #include "window_manager/test_lib.h"
 
@@ -19,10 +20,12 @@ namespace window_manager {
 class ShadowTest : public ::testing::Test {
  protected:
   virtual void SetUp() {
-    clutter_.reset(new MockClutterInterface);
+    xconn_.reset(new MockXConnection);
+    clutter_.reset(new MockClutterInterface(xconn_.get()));
   }
 
-  scoped_ptr<ClutterInterface> clutter_;
+  scoped_ptr<MockXConnection> xconn_;
+  scoped_ptr<MockClutterInterface> clutter_;
 };
 
 TEST_F(ShadowTest, Basic) {

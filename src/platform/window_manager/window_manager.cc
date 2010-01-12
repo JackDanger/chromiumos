@@ -734,6 +734,10 @@ void WindowManager::HandleMappedWindow(Window* win) {
     }
   }
 
+  // Redirect the window if we didn't already do it in response to a MapNotify
+  // event (i.e. previously-existing or override-redirect).
+  if (!win->redirected())
+    win->Redirect();
   SetWmStateProperty(win->xid(), 1);  // NormalState
   for (std::set<EventConsumer*>::iterator it = event_consumers_.begin();
        it != event_consumers_.end(); ++it) {
@@ -1190,6 +1194,7 @@ bool WindowManager::HandleMapRequest(const XMapRequestEvent& e) {
     return true;
   }
 
+  win->Redirect();
   if (win->override_redirect()) {
     LOG(WARNING) << "Huh?  Got a MapRequest event for override-redirect "
                  << "window " << XidStr(e.window);
@@ -1286,6 +1291,7 @@ bool WindowManager::HandleReparentNotify(const XReparentEvent& e) {
       if (!win->override_redirect())
         UpdateClientListStackingProperty();
 
+      bool was_mapped = false;
       if (win->mapped()) {
         // Make sure that all event consumers know that the window's going
         // away.
@@ -1293,13 +1299,22 @@ bool WindowManager::HandleReparentNotify(const XReparentEvent& e) {
              it != event_consumers_.end(); ++it) {
           (*it)->HandleWindowUnmap(win);
         }
+        was_mapped = true;
       }
 
       client_windows_.erase(e.window);
 
       // We're not going to be compositing the window anymore, so
       // unredirect it so it'll get drawn using the usual path.
-      xconn_->UnredirectWindowForCompositing(e.window);
+      if (was_mapped) {
+        // TODO: This is only an issue as long as we have Clutter using a
+        // separate X connection -- see
+        // http://code.google.com/p/chromium-os/issues/detail?id=1151 .
+        LOG(WARNING) << "Possible race condition -- unredirecting "
+                     << XidStr(e.window) << " after it was already "
+                     << "mapped";
+        xconn_->UnredirectWindowForCompositing(e.window);
+      }
     }
   }
   return true;

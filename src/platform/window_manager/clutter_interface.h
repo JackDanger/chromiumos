@@ -28,6 +28,7 @@ typedef ::Window XWindow;
 namespace window_manager {
 
 template<class T> class Stacker;  // from util.h
+class XConnection;
 
 // A wrapper around Clutter's C API.
 //
@@ -395,24 +396,34 @@ class MockClutterInterface : public ClutterInterface {
   class TexturePixmapActor : public MockClutterInterface::Actor,
                              public ClutterInterface::TexturePixmapActor {
    public:
-    TexturePixmapActor() : alpha_mask_bytes_(NULL) {}
+    TexturePixmapActor(XConnection* xconn)
+        : xconn_(xconn),
+          alpha_mask_bytes_(NULL),
+          xid_(None) {}
     virtual ~TexturePixmapActor() {
       ClearAlphaMask();
     }
     const unsigned char* alpha_mask_bytes() const { return alpha_mask_bytes_; }
+    const XWindow xid() const { return xid_; }
 
-    bool SetTexturePixmapWindow(XWindow xid) { return true; }
+    bool SetTexturePixmapWindow(XWindow xid);
     bool IsUsingTexturePixmapExtension() { return false; }
     bool SetAlphaMask(const unsigned char* bytes, int width, int height);
     void ClearAlphaMask();
 
    private:
+    XConnection* xconn_;  // not owned
+
     // Shape as set by SetAlphaMask(), or NULL if the actor is unshaped.
     unsigned char* alpha_mask_bytes_;
+
+    // Redirected window that we're displaying.
+    XWindow xid_;
+
     DISALLOW_COPY_AND_ASSIGN(TexturePixmapActor);
   };
 
-  MockClutterInterface() {}
+  MockClutterInterface(XConnection* xconn) : xconn_(xconn) {}
   ~MockClutterInterface() {}
 
   // Begin ClutterInterface methods
@@ -423,7 +434,9 @@ class MockClutterInterface : public ClutterInterface {
     return new Actor;
   }
   Actor* CreateImage(const std::string& filename) { return new Actor; }
-  TexturePixmapActor* CreateTexturePixmap() { return new TexturePixmapActor; }
+  TexturePixmapActor* CreateTexturePixmap() {
+    return new TexturePixmapActor(xconn_);
+  }
   Actor* CreateText(const std::string& font_name,
                     const std::string& text,
                     const ClutterInterface::Color& color) {
@@ -434,6 +447,7 @@ class MockClutterInterface : public ClutterInterface {
   // End ClutterInterface methods
 
  private:
+  XConnection* xconn_;  // not owned
   StageActor default_stage_;
 
   DISALLOW_COPY_AND_ASSIGN(MockClutterInterface);
