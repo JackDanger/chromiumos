@@ -35,6 +35,7 @@ libgl1-mesa-dri
 apt
 bootchart
 bsdutils
+bzip2
 diff
 hostname
 ifupdown
