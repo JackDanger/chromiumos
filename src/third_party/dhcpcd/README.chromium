@@ -1,0 +1,7 @@
+URL: http://roy.marples.name/projects/dhcpcd/
+Version: Current as of Wed Jan 13 13:08 PDT 2010
+License: BSD License clause 2. 
+License File: No LICENSE file is available since the source code does not contain one.  
+
+Description:
+  The source code for dhcpcd and dhcpcd-dbus. 

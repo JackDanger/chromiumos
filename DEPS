@@ -151,4 +151,10 @@ deps = {
 
     # vim
     _third_party_base + "vim": "/vim.git",
+
+    # dhcpcd
+    _third_party_base + "dhcpcd/dhcpcd": "/dhcpcd.git",
+
+    # dhcpcd-dbus
+    _third_party_base + "dhcpcd/dhcpcd-dbus": "/dhcpcd-dbus.git",
 }
