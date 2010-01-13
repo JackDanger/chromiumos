@@ -63,6 +63,7 @@
 /src/third_party/wpa_supplicant/hostap.git/
 /src/third_party/xf86-video-msm/
 /src/third_party/xscreensaver/xscreensaver-5.08/
+/src/third_party/xserver-xorg-core/
 /tools/chromiumos-build/
 
 # Top-level directories to ignore

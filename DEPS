@@ -139,4 +139,7 @@ deps = {
 
     # upstart
     _third_party_base + "upstart/files": "/upstart.git",
+
+    # xserver-xorg-core
+    _third_party_base + "xserver-xorg-core": "/xserver-xorg-core.git",
 }
