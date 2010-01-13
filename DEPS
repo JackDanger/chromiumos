@@ -142,4 +142,13 @@ deps = {
 
     # xserver-xorg-core
     _third_party_base + "xserver-xorg-core": "/xserver-xorg-core.git",
+
+    # dhcp3
+    _third_party_base + "dhcp3": "/dhcp3.git",
+
+    # rsyslog
+    _third_party_base + "rsyslog": "/rsyslog.git",
+
+    # vim
+    _third_party_base + "vim": "/vim.git",
 }
