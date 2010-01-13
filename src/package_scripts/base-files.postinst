@@ -11,6 +11,10 @@ cp -a "${ROOT}/usr/share/base-files/networks"  \
   "${ROOT}/usr/share/base-files/profile"       \
   "${ROOT}/etc/"
 
+install -d --owner=root --group=root --mode=0755  \
+  "${ROOT}/media"                                 \
+  "${ROOT}/opt"
+
 # TODO: Does this belong here or in another postinst?
 touch "${ROOT}/etc/fstab"
 
