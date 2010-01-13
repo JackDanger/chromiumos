@@ -22,7 +22,9 @@ extern "C" {
 #include "base/logging.h"
 #include "base/scoped_ptr.h"
 #include "base/string_util.h"
+#ifdef USE_BREAKPAD
 #include "handler/exception_handler.h"
+#endif
 #include "window_manager/clutter_interface.h"
 #include "window_manager/no_clutter.h"
 #include "window_manager/real_gl_interface.h"
@@ -86,10 +88,12 @@ int main(int argc, char** argv) {
     ::sleep(FLAGS_pause_at_start);
   }
 
+#ifdef USE_BREAKPAD
   if (!file_util::CreateDirectory(FilePath(FLAGS_minidump_dir)))
     LOG(ERROR) << "Unable to create minidump directory " << FLAGS_minidump_dir;
   google_breakpad::ExceptionHandler exception_handler(
       FLAGS_minidump_dir, NULL, NULL, NULL, true);
+#endif
 
   if (!FLAGS_logtostderr) {
     if (!file_util::CreateDirectory(FilePath(FLAGS_log_dir)))

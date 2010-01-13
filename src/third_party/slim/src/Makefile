@@ -5,14 +5,17 @@
 #######################################################
 CXX=/usr/bin/g++
 CC=/usr/bin/gcc
-BREAKPAD_DIR=../../google-breakpad/files/src/client/linux
-CFLAGS=-Wall -I. -I/usr/include/freetype2 -I/usr/include/freetype2/config -I/usr/include/libpng12 -I/usr/include -I$(BREAKPAD_DIR)
+CFLAGS=-Wall -I. -I/usr/include/freetype2 -I/usr/include/freetype2/config -I/usr/include/libpng12 -I/usr/include
 CXXFLAGS=$(CFLAGS)
 LDFLAGS=-lXft -lX11 -lpng12 -lm -lXmu -lpng -ljpeg
 CUSTOM=-DHAVE_SHADOW
 ifdef USE_PAM
 LDFLAGS+= -lpam
 CUSTOM+= -DUSE_PAM
+endif
+ifdef USE_BREAKPAD
+LDFLAGS+= -lbreakpad
+CUSTOM+= -DUSE_BREAKPAD
 endif
 PREFIX=/usr
 CFGDIR=/etc
@@ -37,8 +40,8 @@ TEST_OBJECTS=minidump_callback_unittest.o minidump_callback.o slim_testrunner.o
 
 all: slim
 
-slim: $(OBJECTS) breakpad
-	$(CXX) $(LDFLAGS) $(OBJECTS) $(BREAKPAD_DIR)/libbreakpad.a -o $(NAME)
+slim: $(OBJECTS)
+	$(CXX) $(OBJECTS) $(LDFLAGS) -o $(NAME)
 
 .cpp.o:
 	$(CXX) $(CXXFLAGS) $(DEFINES) $(CUSTOM) -c $< -o $@
@@ -73,9 +76,6 @@ install-theme:
 		 $(DESTDIR)$(PREFIX)/share/slim/themes/default/panel.png
 	install -D -m 644 themes/default/background.jpg \
 		 $(DESTDIR)$(PREFIX)/share/slim/themes/default/background.jpg
-
-breakpad: $(BREAKPAD_DIR)/Makefile
-	cd $(BREAKPAD_DIR) && make libbreakpad.a
 
 unittests: $(TEST_OBJECTS)
 	$(CXX) $(LDFLAGS) -lgtest $(TEST_OBJECTS) -o $(TESTNAME)

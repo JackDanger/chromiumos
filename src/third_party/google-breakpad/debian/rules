@@ -1,0 +1,36 @@
+#!/usr/bin/make -f
+# -*- makefile -*-
+# Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+%:
+	dh $@
+
+DEB_BUILD_GNU_TYPE := $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
+DEB_HOST_GNU_TYPE  := $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
+ifeq ($(DEB_BUILD_GNU_TYPE),$(DEB_HOST_GNU_TYPE))
+CC := gcc
+CXX := g++
+else
+CC := $(DEB_HOST_GNU_TYPE)-gcc
+CXX := $(DEB_HOST_GNU_TYPE)-g++
+endif
+
+# Keep this in sync with files/src/client/linux/Makefile. -m32 removed. We
+# take this approach because, while we know we don't need -m32 in Chromium
+# OS, it's less clear whether it's needed elsewhere.
+CXXFLAGS := -gstabs+ -I../../ -I../../testing/gtest/include -I../../testing -I../../third_party/linux/include -I../../testing/include -I../../testing/gtest -D_REENTRANT -Wall
+
+override_dh_auto_build:
+	dh_auto_build
+	dh_auto_build -D src/client/linux -- libbreakpad.a \
+		CC=$(CC) CXX=$(CXX) CXXFLAGS="$(CXXFLAGS)"
+
+override_dh_auto_clean:
+	dh_auto_clean
+	dh_auto_clean -D src/client/linux
+
+override_dh_auto_install:
+	dh_auto_install -- docdir=\$${prefix}/share/doc/libbreakpad-dev
+	# prefer src/client/linux/
+	rm -f debian/libbreakpad-dev/usr/lib/libbreakpad*

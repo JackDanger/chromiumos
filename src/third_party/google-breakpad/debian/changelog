@@ -1,0 +1,5 @@
+google-breakpad (0~svn483-1) UNRELEASED; urgency=low
+
+  * Initial release.
+
+ -- The Chromium OS Authors <chromium-os-dev@googlegroups.com>  Thu, 07 Jan 2010 15:04:21 +0000

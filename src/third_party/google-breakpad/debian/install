@@ -1,0 +1,3 @@
+src/client/linux/handler/*.h usr/include/handler
+src/client/linux/minidump_writer/*.h usr/include/minidump_writer
+src/client/linux/libbreakpad.a usr/lib

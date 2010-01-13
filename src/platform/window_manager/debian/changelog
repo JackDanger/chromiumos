@@ -1,6 +1,7 @@
 chromeos-wm (0.5) UNRELEASED; urgency=low
 
   * Use dh(1) and dh-chromeos.
+  * Use packaged version of Google Breakpad.
 
  -- Colin Watson <cjwatson@canonical.com>  Sat, 28 Nov 2009 11:20:21 +0000
 

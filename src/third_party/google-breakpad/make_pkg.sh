@@ -18,19 +18,26 @@ DEFINE_string build_root "$DEFAULT_BUILD_ROOT" "Root of build output"
 FLAGS "$@" || exit 1
 eval set -- "${FLAGS_ARGV}"
 
+PKG_BASE=google-breakpad
+
 # Die on any errors
 set -e
 
+# Make output dir
+OUT_DIR="$FLAGS_build_root/x86/local_packages"
+mkdir -p "${OUT_DIR}"
+
+# Remove previous package from output dir
+rm -f "$OUT_DIR"/libbreakpad-dev_*.deb
+
 # Build the package
 pushd "$TOP_SCRIPT_DIR/files"
-./configure --prefix=/usr
-# No 'deb' target, so do straight install
-make -j$NUM_JOBS
-sudo -E make install
-
-# Build the client library as well.
-pushd src/client/linux
-make -j$NUM_JOBS
+rm -rf debian
+ln -s ../debian debian
+dpkg-buildpackage -b -us -uc -j$NUM_JOBS
+mv ../libbreakpad-dev_*.deb "$OUT_DIR"
+rm ../${PKG_BASE}_*.changes
 popd
 
-popd
+# Install packages that are necessary for building later packages.
+sudo -E dpkg -i "${OUT_DIR}/libbreakpad-dev"_*.deb

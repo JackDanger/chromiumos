@@ -22,11 +22,18 @@ else
 	CFLAGS += -O2
 endif
 
+DEB_HOST_ARCH := $(shell dpkg-architecture -qDEB_HOST_ARCH)
+ifneq (,$(filter i386 amd64,$(DEB_HOST_ARCH)))
+	BREAKPAD := USE_BREAKPAD=1
+else
+	BREAKPAD :=
+endif
+
 build: build-stamp
 build-stamp:
 	dh_testdir
 	QUILT_PATCHES=debian/patches quilt push -a || test $$? = 2
-	$(MAKE) USE_PAM=1 CC=$(CC) CXX=$(CXX)
+	$(MAKE) USE_PAM=1 $(BREAKPAD) CC=$(CC) CXX=$(CXX)
 	sh debian/debian-moreblue.shar
 	sh debian/debian-moreblue-orbit.shar
 	touch $@
@@ -47,7 +54,7 @@ install: build
 	dh_testroot
 	dh_clean -k
 	dh_installdirs
-	$(MAKE) USE_PAM=1 DESTDIR=$(CURDIR)/debian/slim install
+	$(MAKE) USE_PAM=1 $(BREAKPAD) DESTDIR=$(CURDIR)/debian/slim install
 
 
 binary-indep:

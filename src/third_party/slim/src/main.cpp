@@ -11,17 +11,21 @@
 
 #include "app.h"
 #include "const.h"
+#ifdef USE_BREAKPAD
 #include "handler/exception_handler.h"
 #include "minidump_callback.h"
+#endif
 
 App* LoginApp = 0;
 
 int main(int argc, char** argv) {
+#ifdef USE_BREAKPAD
     google_breakpad::ExceptionHandler handler(kMinidumpDir,
                                               FilterCallback,
                                               MinidumpCallback,
                                               const_cast<char*>(kMinidumpDir),
                                               true);
+#endif
     LoginApp = new App(argc, argv);
     LoginApp->Run();
     return 0;

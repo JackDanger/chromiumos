@@ -9,8 +9,15 @@
 # Uncomment this to turn on verbose mode.
 #export DH_VERBOSE=1
 
+DEB_HOST_ARCH := $(shell dpkg-architecture -qDEB_HOST_ARCH)
+ifneq (,$(filter i386 amd64,$(DEB_HOST_ARCH)))
+	BREAKPAD := USE_BREAKPAD=1
+else
+	BREAKPAD :=
+endif
+
 override_dh_auto_build:
-	dh_auto_build -- wm screenshot
+	dh_auto_build -- $(BREAKPAD) wm screenshot
 
 override_dh_auto_install:
 	cp $(CURDIR)/wm $(CURDIR)/debian/chromeos-wm/usr/bin/chromeos-wm
