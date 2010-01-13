@@ -1,5 +1,6 @@
 libchromeos.a usr/lib
 chromeos/callback.h usr/include/chromeos
+chromeos/dbus/abstract_dbus_service.h usr/include/chromeos/dbus
 chromeos/dbus/dbus.h usr/include/chromeos/dbus
 chromeos/exception.h usr/include/chromeos
 chromeos/glib/object.h usr/include/chromeos/glib

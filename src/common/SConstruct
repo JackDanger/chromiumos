@@ -5,7 +5,8 @@
 import os
 import sys
 
-SOURCES=['chromeos/dbus/dbus.cc',
+SOURCES=['chromeos/dbus/abstract_dbus_service.cc',
+         'chromeos/dbus/dbus.cc',
          'chromeos/string.cc',
          'chromeos/utility.cc']
 

@@ -56,29 +56,6 @@ bool Service::Reset() {
   return true;
 }
 
-bool Service::Register(const chromeos::dbus::BusConnection &conn) {
-  return chromeos::dbus::RegisterExclusiveService(conn,
-                                                  service_interface(),
-                                                  service_name(),
-                                                  service_path(),
-                                                  G_OBJECT(cryptohome_.get()));
-}
-
-bool Service::Run() {
-  if (!loop_) {
-    LOG(ERROR) << "No run loop. Call Initialize before use.";
-    return false;
-  }
-  ::g_main_loop_run(loop_);
-  DLOG(INFO) << "Run() completed";
-  return true;
-}
-
-bool Service::Shutdown() {
-  ::g_main_loop_quit(loop_);
-  return true;
-}
-
 gboolean Service::IsMounted(gboolean *OUT_is_mounted, GError **error) {
   int status = system(is_mounted_command());
   *OUT_is_mounted = !status;

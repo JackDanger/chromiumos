@@ -8,6 +8,7 @@
 #include <glib-object.h>
 
 #include <base/logging.h>
+#include <chromeos/dbus/abstract_dbus_service.h>
 #include <chromeos/dbus/dbus.h>
 #include <chromeos/glib/object.h>
 
@@ -27,21 +28,15 @@ struct Cryptohome;
 // TODO(wad) make an AbstractDbusService class which wraps a placeholder
 //           GObject struct that references the service. Then subclass to
 //           implement and push the abstract to common/chromeos/dbus/
-class Service {
+class Service : public chromeos::dbus::AbstractDbusService {
  public:
   Service();
   virtual ~Service();
+
+  // From chromeos::dbus::AbstractDbusService
   // Setup the wrapped GObject and the GMainLoop
   virtual bool Initialize();
   virtual bool Reset();
-  // Registers the GObject as a service with the system DBus
-  // TODO(wad) make this testable by making BusConn and Proxy
-  //           subclassing friendly.
-  virtual bool Register(const chromeos::dbus::BusConnection &conn);
-  // Starts the run loop
-  virtual bool Run();
-  // Stops the run loop
-  virtual bool Shutdown();
 
   // Used internally during registration to set the
   // proper service information.
@@ -51,6 +46,9 @@ class Service {
     { return kCryptohomeServicePath; }
   virtual const char *service_interface() const
     { return kCryptohomeInterface; }
+  virtual GObject* service_object() const {
+    return G_OBJECT(cryptohome_.get());
+  }
   // Command-related accesors
   virtual const char *mount_command() const
     { return mount_command_; }
@@ -76,6 +74,9 @@ class Service {
                          GError **error);
   virtual gboolean Unmount(gboolean *OUT_done, GError **error);
 
+ protected:
+  virtual GMainLoop *main_loop() { return loop_; }
+
  private:
   GMainLoop *loop_;
   scoped_ptr<gobject::Cryptohome> cryptohome_;
@@ -87,4 +88,3 @@ class Service {
 
 }  // cryptohome
 #endif  // CRYPTOHOME_SERVICE_H_
-

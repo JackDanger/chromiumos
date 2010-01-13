@@ -36,7 +36,7 @@ BusConnection GetSystemBusConnection() {
   glib::ScopedError error;
   ::DBusGConnection* result = ::dbus_g_bus_get(DBUS_BUS_SYSTEM,
                                                &Resetter(&error).lvalue());
-  CHECK(result);
+  CHECK(result) << (error->message ? error->message : "Unknown Error");
   // Set to not exit when when system bus is disconnected.
   // This fixes the problem where when the dbus daemon is stopped, exit is
   // called which kills Chrome.
