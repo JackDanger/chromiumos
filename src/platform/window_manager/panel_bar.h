@@ -8,7 +8,6 @@
 extern "C" {
 #include <X11/Xlib.h>
 }
-#include <deque>
 #include <map>
 #include <tr1/memory>
 
@@ -18,7 +17,7 @@ extern "C" {
 #include "base/scoped_ptr.h"
 #include "window_manager/clutter_interface.h"
 #include "window_manager/event_consumer.h"
-#include "window_manager/motion_event_coalescer.h"
+#include "window_manager/panel_container.h"
 #include "window_manager/wm_ipc.h"
 
 typedef ::Window XWindow;
@@ -30,8 +29,9 @@ class Shadow;
 class Window;
 class WindowManager;
 
-// The panel bar positions and controls Chrome panel windows.
-class PanelBar : public EventConsumer {
+// The panel bar handles panels that are pinned to the bottom of the
+// screen.
+class PanelBar : public PanelContainer {
  public:
   PanelBar(WindowManager* wm, int x, int y, int width, int height);
   ~PanelBar();
@@ -43,53 +43,32 @@ class PanelBar : public EventConsumer {
   int width() const { return width_; }
   int height() const { return height_; }
 
-  // Note: Begin overridden EventConsumer methods.
+  // Begin overridden PanelContainer methods.
+  void GetInputWindows(std::vector<XWindow>* windows_out);
+  void AddPanel(Panel* panel, PanelSource source, bool expanded);
+  void RemovePanel(Panel* panel);
+  bool ShouldAddDraggedPanel(const Panel* panel, int drag_x, int drag_y);
+  void HandleInputWindowButtonPress(XWindow xid,
+                                    int x, int y,
+                                    int x_root, int y_root,
+                                    int button,
+                                    Time timestamp);
+  void HandleInputWindowButtonRelease(XWindow xid,
+                                      int x, int y,
+                                      int x_root, int y_root,
+                                      int button,
+                                      Time timestamp) {}
+  void HandleInputWindowPointerLeave(XWindow xid, Time timestamp);
+  void HandlePanelButtonPress(Panel* panel, int button, Time timestamp);
+  void HandlePanelFocusChange(Panel* panel, bool focus_in);
+  void HandleSetPanelStateMessage(Panel* panel, bool expand);
+  bool HandleNotifyPanelDraggedMessage(Panel* panel, int drag_x, int drag_y);
+  void HandleNotifyPanelDragCompleteMessage(Panel* panel);
+  void HandleFocusPanelMessage(Panel* panel);
+  // End overridden PanelContainer methods.
 
-  bool IsInputWindow(XWindow xid) {
-    return xid == anchor_input_win_ || panel_input_windows_.count(xid);
-  }
-
-  // Handle a window's map request.  If it's panel content or titlebar
-  // window, we move it offscreen, restack it, and map it.
-  bool HandleWindowMapRequest(Window* win);
-
-  // Handle the addition of a window.  When a content window is mapped, its
-  // titlebar (which must've previously been mapped) is looked up and a new
-  // Panel object is created.  Does nothing when passed non-content windows.
-  void HandleWindowMap(Window* win);
-
-  // Handle the removal of a window by deleting its panel.  The window can
-  // be either the content window itself or its titlebar.  Does nothing
-  // when passed non-panel windows.
-  void HandleWindowUnmap(Window* win);
-
-  // Handle a request from a client window to get moved or resized.
-  bool HandleWindowConfigureRequest(
-      Window* win, int req_x, int req_y, int req_width, int req_height);
-
-  // Handle events for windows.
-  bool HandleButtonPress(XWindow xid,
-                         int x, int y,
-                         int x_root, int y_root,
-                         int button,
-                         Time timestamp);
-  bool HandleButtonRelease(XWindow xid,
-                           int x, int y,
-                           int x_root, int y_root,
-                           int button,
-                           Time timestamp);
-  bool HandlePointerLeave(XWindow xid, Time timestamp);
-  bool HandlePointerMotion(XWindow xid, int x, int y, Time timestamp);
-
-  // Handle messages from client apps.
-  bool HandleChromeMessage(const WmIpc::Message& msg);
-  bool HandleClientMessage(const XClientMessageEvent& e);
-
-  // Handle windows getting or losing the input focus.
-  bool HandleFocusChange(XWindow xid, bool focus_in);
-
-  // Note: End overridden EventConsumer methods.
-
+  // Move and resize the panel bar, and adjust the positions of all of its
+  // panels accordingly.
   void MoveAndResize(int x, int y, int width, int height);
 
   // Take the input focus if possible.  Returns 'false' if it doesn't make
@@ -103,10 +82,7 @@ class PanelBar : public EventConsumer {
 
   // PanelBar-specific information about a panel.
   struct PanelInfo {
-    PanelInfo()
-        : is_expanded(false),
-          snapped_right(0) {
-    }
+    PanelInfo() : is_expanded(false), snapped_right(0) {}
 
     // Is the panel currently expanded?
     bool is_expanded;
@@ -119,7 +95,7 @@ class PanelBar : public EventConsumer {
   };
 
   // Save some typing.
-  typedef std::vector<std::tr1::shared_ptr<Panel> > Panels;
+  typedef std::vector<Panel*> Panels;
 
   int num_panels() const {
     return expanded_panels_.size() + collapsed_panels_.size();
@@ -128,19 +104,14 @@ class PanelBar : public EventConsumer {
   // Get the PanelInfo object for a panel, crashing if it's not present.
   PanelInfo* GetPanelInfoOrDie(Panel* panel);
 
-  // Do some initial setup for windows that we're going to manage.
-  // This includes stacking them and moving them offscreen.
-  void DoInitialSetupForWindow(Window* win);
-
-  // Create a panel given mapped content and titlebar windows and add it to
-  // the panel bar.
-  Panel* CreatePanel(Window* content_win, Window* titlebar_win, bool expanded);
-
   // Expand a panel.  We move it from 'collapsed_panels_' to
   // 'expanded_panels_' and reposition the other expanded panels to not
   // overlap.  If 'create_anchor' is true, we additionally create an anchor
   // for it.
-  void ExpandPanel(Panel* panel, bool create_anchor);
+  void ExpandPanel(Panel* panel,
+                   bool create_anchor,
+                   bool reposition_other_panels,
+                   int anim_ms);
 
   // Collapse a panel.  We move it from 'expanded_panels_' to
   // 'collapsed_panels_' and pack all of the collapsed panels to the right.
@@ -151,7 +122,7 @@ class PanelBar : public EventConsumer {
   // non-resizable, notifying Chrome, updating its PanelInfo object, etc.
   // The caller is still responsible for getting the panel into
   // 'collapsed_panels_'.  Helper method used by both CollapsePanel() and
-  // CreatePanel().
+  // AddPanel().
   void ConfigureCollapsedPanel(Panel* panel);
 
   // Focus the passed-in panel's content window.  Also removes its passive
@@ -174,25 +145,8 @@ class PanelBar : public EventConsumer {
   // Get a panel's index in a vector, or -1 if it's not present.
   static int GetPanelIndex(Panels& panels, const Panel& panel);
 
-  // Start a drag of the passed-in panel.  If there's a previous drag
-  // (which there shouldn't be; we should've already gotten notification of
-  // it ending), we abort it.  The panel's windows are restacked and we
-  // start the MoveDraggedPanel() timer if necessary.
-  void StartDrag(Panel* panel);
-
-  // Store the position where a panel has been dragged to
-  // 'queued_dragged_panel_x_' and 'queued_dragged_panel_y_'.  These
-  // positions get applied periodically by MoveDraggedPanel(), which is run
-  // by 'dragged_panel_timer_id_' (which gets started indirectly by this
-  // method).
-  void StorePanelPosition(Window* win, int x, int y);
-
-  // Handle the end of a panel drag.  This stops 'dragged_panel_timer_id_'.
-  void HandlePanelDragComplete(Window* win);
-
-  // Move the dragged panel to the queued position.  This is invoked
-  // periodically by a timer.
-  void MoveDraggedPanel();
+  // Handle the end of a panel drag.
+  void HandlePanelDragComplete(Panel* panel);
 
   // Pack all collapsed panels with the exception of 'dragged_panel_'
   // towards the right.  We reserve space for 'dragged_panel_' and update
@@ -205,11 +159,11 @@ class PanelBar : public EventConsumer {
 
   // Insert a panel into 'collapsed_panels_' in the correct position (in
   // terms of left-to-right positioning).
-  void InsertCollapsedPanel(std::tr1::shared_ptr<Panel> new_panel);
+  void InsertCollapsedPanel(Panel* new_panel);
 
   // Insert a panel into 'expanded_panels_' in the correct position (in
   // terms of left-to-right positioning).
-  void InsertExpandedPanel(std::tr1::shared_ptr<Panel> new_panel);
+  void InsertExpandedPanel(Panel* new_panel);
 
   // Create an anchor for a panel.  If there's a previous anchor, we
   // destroy it.
@@ -259,13 +213,9 @@ class PanelBar : public EventConsumer {
   // The panel that's currently being dragged, or NULL if none is.
   Panel* dragged_panel_;
 
-  // Batches motion events for dragged panels so that we can rate-limit the
-  // frequency of their processing.
-  MotionEventCoalescer dragged_panel_event_coalescer_;
-
   // Input window used to receive events for the anchor displayed under
   // panels after they're expanded.
-  XWindow anchor_input_win_;
+  XWindow anchor_input_xid_;
 
   // Panel for which the anchor is currently being displayed.
   Panel* anchor_panel_;
@@ -280,9 +230,6 @@ class PanelBar : public EventConsumer {
 
   // Is the panel bar visible?
   bool is_visible_;
-
-  // Have we already seen a MapRequest event?
-  bool saw_map_request_;
 
   DISALLOW_COPY_AND_ASSIGN(PanelBar);
 };

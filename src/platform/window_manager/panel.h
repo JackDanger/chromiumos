@@ -33,21 +33,19 @@ class WindowManager;
 // windows are aligned.
 class Panel {
  public:
-  // 'initial_right' is one pixel to the right of the initial position of
-  // the right edge of the panel, and 'initial_y' is the initial position
-  // of the top of the titlebar.  For example, to place the left column of
-  // a 10-pixel-wide panel at X-coordinate 0 and the right column at 9,
-  // pass 10 for 'initial_right'.
-  Panel(WindowManager* wm,
-        Window* content_win,
-        Window* titlebar_win,
-        int initial_right,
-        int initial_y);
+  // The panel's windows will remain untouched until Move() is invoked.
+  // (PanelManager would have previously moved the client windows offscreen
+  // in response to their map requests, and Window's c'tor makes composited
+  // windows invisible.)
+  Panel(WindowManager* wm, Window* content_win, Window* titlebar_win);
   ~Panel();
 
   const Window* const_content_win() const { return content_win_; }
   Window* content_win() { return content_win_; }
   Window* titlebar_win() { return titlebar_win_; }
+
+  XWindow content_xid() const { return content_win_->xid(); }
+  XWindow titlebar_xid() const { return titlebar_win_->xid(); }
 
   // Get the X ID of the content window.  This is handy for logging.
   const std::string& xid_str() const { return content_win_->xid_str(); }
@@ -60,6 +58,8 @@ class Panel {
   int content_x() const { return content_win_->composited_x(); }
   int titlebar_x() const { return titlebar_win_->composited_x(); }
   int content_center() const { return content_x() + 0.5 * content_width(); }
+
+  int titlebar_y() const { return titlebar_win_->composited_y(); }
 
   int content_width() const { return content_win_->client_width(); }
   int titlebar_width() const { return titlebar_win_->client_width(); }
@@ -82,6 +82,12 @@ class Panel {
   // Move the panel.  'right' is given in terms of one pixel beyond
   // the panel's right edge (since content and titlebar windows share a
   // common right edge), while 'y' is the top of the titlebar window.
+  // For example, to place the left column of a 10-pixel-wide panel at
+  // X-coordinate 0 and the right column at 9, pass 10 for 'right'.
+  //
+  // Note: Move() must be called initially to configure the windows (see
+  // the constructor's comment).
+  void Move(int right, int y, bool move_client_windows, int anim_ms);
   void MoveX(int right, bool move_client_windows, int anim_ms);
   void MoveY(int y, bool move_client_windows, int anim_ms);
 
@@ -102,6 +108,14 @@ class Panel {
   // Notify Chrome about the panel's current visibility state and update
   // the content window's _CHROME_STATE property.
   bool NotifyChromeAboutState(bool expanded);
+
+  // Add a button grab on the content window so we'll be notified when it
+  // gets clicked.  This is done for unfocused panels.
+  void AddButtonGrab();
+
+  // Remove a button grab on the content window, optionally also removing a
+  // pointer grab and replaying the click that triggered the pointer grab.
+  void RemoveButtonGrab(bool remove_pointer_grab);
 
  private:
   FRIEND_TEST(PanelTest, InputWindows);  // uses '*_input_xid_'
@@ -156,6 +170,10 @@ class Panel {
   // Should we configure handles around the panel that can be dragged to
   // resize it?
   bool resizable_;
+
+  // Have the composited windows been scaled and shown?  We defer doing
+  // this until the first time that Move() is called.
+  bool composited_windows_set_up_;
 
   // XID of the input window currently being dragged to resize the panel,
   // or None if no drag is in progress.

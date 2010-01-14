@@ -24,6 +24,10 @@ class MotionEventCoalescer {
   int x() const { return x_; }
   int y() const { return y_; }
 
+  void set_synchronous(bool synchronous) {
+    synchronous_ = synchronous;
+  }
+
   // Start or stop the timer.
   void Start();
   void Stop();
@@ -69,6 +73,10 @@ class MotionEventCoalescer {
   // TODO: When we're using a callback library that supports parameters, we
   // should just pass the position directly to the callback.
   scoped_ptr<chromeos::Closure> cb_;
+
+  // Should we just invoke the callback in response to each StorePosition()
+  // call instead of using a timer?  Useful for tests.
+  bool synchronous_;
 };
 
 }  // namespace window_manager

@@ -32,7 +32,7 @@ class HotkeyOverlay;
 class KeyBindings;
 class LayoutManager;
 class MetricsReporter;
-class PanelBar;
+class PanelManager;
 class StackingManager;
 class Window;
 class WmIpc;
@@ -121,8 +121,9 @@ class WindowManager {
   static const int kPanelBarHeight;
 
   friend class LayoutManagerTest;         // uses 'layout_manager_'
-  friend class PanelTest;                 // uses 'panel_bar_'
-  friend class PanelBarTest;              // uses 'panel_bar_'
+  friend class PanelTest;                 // uses 'panel_manager_'
+  friend class PanelBarTest;              // uses 'panel_manager_'
+  friend class PanelManagerTest;          // uses 'panel_manager_'
   FRIEND_TEST(LayoutManagerTest, Basic);  // uses TrackWindow()
   FRIEND_TEST(WindowTest, TransientFor);  // uses TrackWindow()
   FRIEND_TEST(WindowManagerTest, RegisterExistence);
@@ -291,8 +292,8 @@ class WindowManager {
   scoped_ptr<WmIpc> wm_ipc_;
   scoped_ptr<KeyBindings> key_bindings_;
   scoped_ptr<LayoutManager> layout_manager_;
+  scoped_ptr<PanelManager> panel_manager_;
   scoped_ptr<MetricsReporter> metrics_reporter_;
-  scoped_ptr<PanelBar> panel_bar_;
 
   // GLib source ID for the timer that calls QueryKeyboardStateThunk().
   guint query_keyboard_state_timer_;

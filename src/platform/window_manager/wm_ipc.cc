@@ -110,24 +110,29 @@ bool WmIpc::GetMessageGdk(const GdkEventClient& e, Message* msg) {
   return GetMessage(xe.xclient, msg);
 }
 
-bool WmIpc::SendMessage(XWindow xid, const Message& msg) {
-  VLOG(2) << "Sending message of type " << msg.type() << " to " << XidStr(xid);
+void WmIpc::FillXEventFromMessage(XEvent* event,
+                                  XWindow xid,
+                                  const Message& msg) {
+  CHECK(event);
 
-  XEvent e;
-  e.xclient.type = ClientMessage;
-  e.xclient.window = xid;
-  e.xclient.message_type = atom_cache_->GetXAtom(ATOM_CHROME_WM_MESSAGE);
-  e.xclient.format = XConnection::kLongFormat;  // 32-bit values
-  e.xclient.data.l[0] = msg.type();
+  event->xclient.type = ClientMessage;
+  event->xclient.window = xid;
+  event->xclient.message_type = atom_cache_->GetXAtom(ATOM_CHROME_WM_MESSAGE);
+  event->xclient.format = XConnection::kLongFormat;  // 32-bit values
+  event->xclient.data.l[0] = msg.type();
 
   // XClientMessageEvent only gives us five 32-bit items, and we're using
   // the first one for our message type.
   CHECK_LE(msg.max_params(), 4);
-  for (int i = 0; i < msg.max_params(); ++i) {
-    e.xclient.data.l[i+1] = msg.param(i);
-  }
+  for (int i = 0; i < msg.max_params(); ++i)
+    event->xclient.data.l[i+1] = msg.param(i);
+}
 
-  return xconn_->SendEvent(xid, &e, 0);  // empty event mask
+bool WmIpc::SendMessage(XWindow xid, const Message& msg) {
+  VLOG(2) << "Sending message of type " << msg.type() << " to " << XidStr(xid);
+  XEvent event;
+  FillXEventFromMessage(&event, xid, msg);
+  return xconn_->SendEvent(xid, &event, 0);  // empty event mask
 }
 
 }  // namespace window_manager

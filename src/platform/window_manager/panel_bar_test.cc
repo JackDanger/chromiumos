@@ -11,6 +11,7 @@
 #include "window_manager/mock_x_connection.h"
 #include "window_manager/panel.h"
 #include "window_manager/panel_bar.h"
+#include "window_manager/panel_manager.h"
 #include "window_manager/shadow.h"
 #include "window_manager/test_lib.h"
 #include "window_manager/util.h"
@@ -27,10 +28,10 @@ class PanelBarTest : public BasicWindowManagerTest {
  protected:
   virtual void SetUp() {
     BasicWindowManagerTest::SetUp();
-    panel_bar_ = wm_->panel_bar_.get();
+    panel_bar_ = wm_->panel_manager_->panel_bar_.get();
   }
 
-  PanelBar* panel_bar_;  // instance belonging to 'wm_'
+  PanelBar* panel_bar_;  // instance belonging to wm_->panel_manager_
 };
 
 TEST_F(PanelBarTest, Basic) {
@@ -221,7 +222,7 @@ TEST_F(PanelBarTest, FocusNewPanel) {
 
   // The panel's address should be contained in 'desired_panel_to_focus_'.
   ASSERT_EQ(1, panel_bar_->expanded_panels_.size());
-  EXPECT_EQ(panel_bar_->expanded_panels_[0].get(),
+  EXPECT_EQ(panel_bar_->expanded_panels_[0],
             panel_bar_->desired_panel_to_focus_);
 
   // Now send an unmap event for the content window.  The panel object

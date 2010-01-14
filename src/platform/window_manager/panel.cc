@@ -59,11 +59,7 @@ static const double kResizeBoxOpacity = 0.3;
 const int Panel::kResizeBorderWidth = 5;
 const int Panel::kResizeCornerSize = 25;
 
-Panel::Panel(WindowManager* wm,
-             Window* content_win,
-             Window* titlebar_win,
-             int initial_right,
-             int initial_y)
+Panel::Panel(WindowManager* wm, Window* content_win, Window* titlebar_win)
     : wm_(wm),
       content_win_(content_win),
       titlebar_win_(titlebar_win),
@@ -79,6 +75,7 @@ Panel::Panel(WindowManager* wm,
       left_input_xid_(wm_->CreateInputWindow(-1, -1, 1, 1, 0)),
       right_input_xid_(wm_->CreateInputWindow(-1, -1, 1, 1, 0)),
       resizable_(false),
+      composited_windows_set_up_(false),
       drag_xid_(0),
       drag_start_x_(0),
       drag_start_y_(0),
@@ -89,12 +86,6 @@ Panel::Panel(WindowManager* wm,
   CHECK(wm_);
   CHECK(content_win_);
   CHECK(titlebar_win_);
-
-  // We need to grab button presses on the panel so we'll know when it gets
-  // clicked and can focus it.  (We can't just listen on ButtonPressMask,
-  // since only one client is allowed to do so for a given window and the
-  // app is probably doing it itself.)
-  content_win_->AddButtonGrab();
 
   // Install passive button grabs on all the resize handles, using
   // asynchronous mode so that we'll continue to receive mouse events while
@@ -123,20 +114,6 @@ Panel::Panel(WindowManager* wm,
     content_win_->ResizeClient(
         capped_width, capped_height, Window::GRAVITY_NORTHWEST);
   }
-
-  titlebar_win_->ScaleComposited(1.0, 1.0, 0);
-  titlebar_win_->SetCompositedOpacity(1.0, 0);
-  titlebar_win_->MoveComposited(initial_right - titlebar_width(), initial_y, 0);
-  titlebar_win_->MoveClientToComposited();
-  titlebar_win_->ShowComposited();
-
-  content_win_->ScaleComposited(1.0, 1.0, 0);
-  content_win_->SetCompositedOpacity(1.0, 0);
-  content_win_->MoveComposited(initial_right - content_width(),
-                               initial_y + titlebar_height(),
-                               0);
-  content_win_->MoveClientToComposited();
-  content_win_->ShowComposited();
 
   wm_->xconn()->SetWindowCursor(top_input_xid_, XC_top_side);
   wm_->xconn()->SetWindowCursor(top_left_input_xid_, XC_top_left_corner);
@@ -246,7 +223,29 @@ void Panel::HandleInputWindowPointerMotion(XWindow xid, int x, int y) {
   resize_event_coalescer_.StorePosition(x, y);
 }
 
+void Panel::Move(int right, int y, bool move_client_windows, int anim_ms) {
+  titlebar_win_->MoveComposited(right - titlebar_width(), y, anim_ms);
+  content_win_->MoveComposited(
+      right - content_width(), y + titlebar_win_->client_height(), anim_ms);
+  if (!composited_windows_set_up_) {
+    titlebar_win_->ScaleComposited(1.0, 1.0, 0);
+    titlebar_win_->SetCompositedOpacity(1.0, 0);
+    titlebar_win_->ShowComposited();
+    content_win_->ScaleComposited(1.0, 1.0, 0);
+    content_win_->SetCompositedOpacity(1.0, 0);
+    content_win_->ShowComposited();
+    composited_windows_set_up_ = true;
+  }
+  if (move_client_windows) {
+    titlebar_win_->MoveClientToComposited();
+    content_win_->MoveClientToComposited();
+    ConfigureInputWindows();
+  }
+}
+
 void Panel::MoveX(int right, bool move_client_windows, int anim_ms) {
+  DCHECK(composited_windows_set_up_)
+      << "Move() must be called initially to configure composited windows";
   titlebar_win_->MoveCompositedX(right - titlebar_width(), anim_ms);
   content_win_->MoveCompositedX(right - content_width(), anim_ms);
   if (move_client_windows) {
@@ -257,6 +256,8 @@ void Panel::MoveX(int right, bool move_client_windows, int anim_ms) {
 }
 
 void Panel::MoveY(int y, bool move_client_windows, int anim_ms) {
+  DCHECK(composited_windows_set_up_)
+      << "Move() must be called initially to configure composited windows";
   titlebar_win_->MoveCompositedY(y, anim_ms);
   content_win_->MoveCompositedY(y + titlebar_win_->client_height(), anim_ms);
   if (move_client_windows) {
@@ -313,6 +314,20 @@ bool Panel::NotifyChromeAboutState(bool expanded) {
   success &= content_win_->ChangeChromeState(states);
 
   return success;
+}
+
+void Panel::AddButtonGrab() {
+  // We grab button presses on the panel so we'll know when it gets clicked
+  // and can focus it.  (We can't just listen on ButtonPressMask, since
+  // only one client is allowed to do so for a given window and the app is
+  // probably doing it itself.)
+  content_win_->AddButtonGrab();
+}
+
+void Panel::RemoveButtonGrab(bool remove_pointer_grab) {
+  content_win_->RemoveButtonGrab();
+  if (remove_pointer_grab)
+    wm_->xconn()->RemovePointerGrab(true, CurrentTime);  // replay_events
 }
 
 void Panel::Resize(int width, int height, Window::Gravity gravity) {

@@ -257,6 +257,11 @@ class WmIpc {
   // possible.
   bool GetMessageGdk(const GdkEventClient& e, Message* msg);
 
+  // Fill the passed-in Xlib event with the passed-in message.
+  void FillXEventFromMessage(XEvent* event,
+                             XWindow xid,
+                             const Message& msg);
+
   // Send a message to a window.  false is returned if an error occurs.
   bool SendMessage(XWindow xid, const Message& msg);
 

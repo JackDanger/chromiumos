@@ -16,15 +16,15 @@ MotionEventCoalescer::MotionEventCoalescer(Closure* cb, int timeout_ms)
       have_queued_position_(false),
       x_(0),
       y_(0),
-      cb_(cb) {
+      cb_(cb),
+      synchronous_(false) {
   CHECK(cb);
   CHECK_GT(timeout_ms, 0);
 }
 
 MotionEventCoalescer::~MotionEventCoalescer() {
-  if (IsRunning()) {
+  if (IsRunning())
     StopInternal(false);
-  }
 }
 
 void MotionEventCoalescer::Start() {
@@ -33,21 +33,24 @@ void MotionEventCoalescer::Start() {
                  << "is already running";
     return;
   }
-  timer_id_ = g_timeout_add(timeout_ms_, &HandleTimerThunk, this);
+  if (!synchronous_)
+    timer_id_ = g_timeout_add(timeout_ms_, &HandleTimerThunk, this);
   have_queued_position_ = false;
 }
 
 void MotionEventCoalescer::Stop() {
-  StopInternal(true);
+  if (!synchronous_)
+    StopInternal(true);
 }
 
 void MotionEventCoalescer::StorePosition(int x, int y) {
-  if (x == x_ && y == y_) {
+  if (x == x_ && y == y_)
     return;
-  }
   x_ = x;
   y_ = y;
   have_queued_position_ = true;
+  if (synchronous_)
+    HandleTimer();
 }
 
 void MotionEventCoalescer::StopInternal(bool maybe_run_callback) {

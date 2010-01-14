@@ -25,7 +25,7 @@ extern "C" {
 #include "window_manager/key_bindings.h"
 #include "window_manager/layout_manager.h"
 #include "window_manager/metrics_reporter.h"
-#include "window_manager/panel_bar.h"
+#include "window_manager/panel_manager.h"
 #include "window_manager/stacking_manager.h"
 #include "window_manager/util.h"
 #include "window_manager/window.h"
@@ -302,10 +302,8 @@ bool WindowManager::Init() {
   layout_manager_.reset(new LayoutManager(this, 0, 0, width_, height_));
   event_consumers_.insert(layout_manager_.get());
 
-  panel_bar_.reset(new PanelBar(this,
-                                0, height_ - kPanelBarHeight,  // x, y
-                                width_, kPanelBarHeight));
-  event_consumers_.insert(panel_bar_.get());
+  panel_manager_.reset(new PanelManager(this, kPanelBarHeight));
+  event_consumers_.insert(panel_manager_.get());
 
   hotkey_overlay_.reset(new HotkeyOverlay(xconn_, clutter_));
   stage_->AddActor(hotkey_overlay_->group());
@@ -492,18 +490,15 @@ void WindowManager::ConfigureExternalMonitor() {
 }
 
 void WindowManager::TakeFocus() {
-  if (!layout_manager_->TakeFocus() &&
-      !panel_bar_->TakeFocus()) {
+  if (!layout_manager_->TakeFocus() && !panel_manager_->TakeFocus())
     xconn_->FocusWindow(root_, CurrentTime);
-  }
 }
 
 void WindowManager::HandlePanelBarVisibilityChange(bool visible) {
-  if (visible) {
+  if (visible)
     layout_manager_->Resize(width_, height_ - kPanelBarHeight);
-  } else {
+  else
     layout_manager_->Resize(width_, height_);
-  }
 }
 
 bool WindowManager::SetActiveWindowProperty(XWindow xid) {
@@ -1332,9 +1327,9 @@ bool WindowManager::HandleRRScreenChangeNotify(
   if (background_.get())
     background_->SetSize(width_, height_);
   layout_manager_->Resize(
-      width_, height_ - (panel_bar_->is_visible() ? kPanelBarHeight : 0));
-  panel_bar_->MoveAndResize(
-      0, height_ - kPanelBarHeight, width_, kPanelBarHeight);
+      width_,
+      height_ - (panel_manager_->IsPanelBarVisible() ? kPanelBarHeight : 0));
+  panel_manager_->HandleScreenResize();
   hotkey_overlay_->group()->Move(width_ / 2, height_ / 2, 0);
   xconn_->ResizeWindow(background_xid_, width_, height_);
 
@@ -1374,6 +1369,8 @@ bool WindowManager::HandleUnmapNotify(const XUnmapEvent& e) {
     UpdateClientListProperty();
     UpdateClientListStackingProperty();
   }
+  if (active_window_xid_ == e.window)
+    SetActiveWindowProperty(None);
   return true;
 }
 

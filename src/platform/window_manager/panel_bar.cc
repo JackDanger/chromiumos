@@ -40,14 +40,28 @@ static const int kBarPadding = 1;
 // resized to match the width of the content window.
 static const int kCollapsedTitlebarWidth = 200;
 
-// Amount of time to take for animations.
-static const int kAnimMs = 150;
+// Amount of time to take when arranging panels.
+static const int kPanelArrangeAnimMs = 150;
+
+// Amount of time to take when fading the panel anchor in or out.
+static const int kAnchorFadeAnimMs = 150;
+
+// Amount of time to take when making the panel bar slide up or down.
+static const int kBarSlideAnimMs = 150;
 
 // Amount of time to take for expanding and collapsing panels.
 static const int kPanelStateAnimMs = 150;
 
-// Frequency with which we should update the position of dragged panels.
-static const int kDraggedPanelUpdateMs = 25;
+// Amount of time to take when animating a dropped panel sliding into the
+// panel bar.
+static const int kDroppedPanelAnimMs = 50;
+
+// How many pixels away from the panel bar should a panel be dragged before
+// it gets detached?
+static const int kPanelDetachThresholdPixels = 50;
+
+// How close does a panel need to get to the panel bar before it's attached?
+static const int kPanelAttachThresholdPixels = 20;
 
 PanelBar::PanelBar(WindowManager* wm, int x, int y, int width, int height)
     : wm_(wm),
@@ -59,15 +73,13 @@ PanelBar::PanelBar(WindowManager* wm, int x, int y, int width, int height)
       bar_actor_(wm_->clutter()->CreateImage(FLAGS_panel_bar_image)),
       bar_shadow_(new Shadow(wm_->clutter())),
       dragged_panel_(NULL),
-      dragged_panel_event_coalescer_(
-          NewPermanentCallback(this, &PanelBar::MoveDraggedPanel),
-          kDraggedPanelUpdateMs),
-      anchor_input_win_(None),
+      anchor_input_xid_(
+          wm_->CreateInputWindow(-1, -1, 1, 1,
+                                 ButtonPressMask | LeaveWindowMask)),
       anchor_panel_(NULL),
       anchor_actor_(wm_->clutter()->CreateImage(FLAGS_panel_anchor_image)),
       desired_panel_to_focus_(NULL),
-      is_visible_(false),
-      saw_map_request_(false) {
+      is_visible_(false) {
   bar_actor_->SetVisibility(false);
   wm_->stage()->AddActor(bar_actor_.get());
   wm_->stacking_manager()->StackActorAtTopOfLayer(
@@ -94,75 +106,79 @@ PanelBar::PanelBar(WindowManager* wm, int x, int y, int width, int height)
 }
 
 PanelBar::~PanelBar() {
+  wm_->xconn()->DestroyWindow(anchor_input_xid_);
 }
 
-bool PanelBar::HandleWindowMapRequest(Window* win) {
-  saw_map_request_ = true;
-
-  if (win->type() != WmIpc::WINDOW_TYPE_CHROME_PANEL_CONTENT &&
-      win->type() != WmIpc::WINDOW_TYPE_CHROME_PANEL_TITLEBAR)
-    return false;
-
-  DoInitialSetupForWindow(win);
-  win->MapClient();
-  return true;
+void PanelBar::GetInputWindows(vector<XWindow>* windows_out) {
+  CHECK(windows_out);
+  windows_out->clear();
+  windows_out->push_back(anchor_input_xid_);
 }
 
-void PanelBar::HandleWindowMap(Window* win) {
-  CHECK(win);
+void PanelBar::AddPanel(Panel* panel, PanelSource source, bool expanded) {
+  DCHECK(panel);
 
-  if (win->type() != WmIpc::WINDOW_TYPE_CHROME_PANEL_CONTENT &&
-      win->type() != WmIpc::WINDOW_TYPE_CHROME_PANEL_TITLEBAR)
-    return;
+  // If this is a newly-created panel, determine the offscreen position
+  // from which we want it to animate in.  (Dragged panels should just get
+  // animated from wherever they were before.)
+  if (source == PANEL_SOURCE_NEW) {
+    const int initial_right = expanded ?
+        x_ + width_ - kBarPadding :
+        x_ + width_ - collapsed_panel_width_ - kBarPadding;
+    const int initial_y = y_ + height_;
+    panel->Move(initial_right, initial_y, true, 0);
+  }
 
-  // Handle initial setup for existing windows for which we never saw a map
-  // request event.
-  if (!saw_map_request_)
-    DoInitialSetupForWindow(win);
+  vector<XWindow> input_windows;
+  panel->GetInputWindows(&input_windows);
+  for (vector<XWindow>::const_iterator it = input_windows.begin();
+       it != input_windows.end(); ++it) {
+    CHECK(panel_input_windows_.insert(make_pair(*it, panel)).second);
+  }
 
-  switch (win->type()) {
-    case WmIpc::WINDOW_TYPE_CHROME_PANEL_TITLEBAR:
-      // Don't do anything with panel titlebars when they're first
-      // mapped; we'll handle them after we see the corresponding content
-      // window.
-      break;
-    case WmIpc::WINDOW_TYPE_CHROME_PANEL_CONTENT: {
-      if (win->type_params().empty()) {
-        LOG(WARNING) << "Panel " << win->xid_str() << " is missing type "
-                     << "parameter for titlebar window";
-        break;
-      }
-      Window* titlebar = wm_->GetWindow(win->type_params().at(0));
-      if (!titlebar) {
-        LOG(WARNING) << "Unable to find titlebar "
-                     << XidStr(win->type_params()[0])
-                     << " for panel " << win->xid_str();
-        break;
-      }
+  shared_ptr<PanelInfo> info(new PanelInfo);
+  info->is_expanded = false;
+  info->snapped_right = panel->right();
+  panel_infos_.insert(make_pair(panel, info));
 
-      // TODO(derat): Make the second param required after Chrome has been
-      // updated.
-      bool expanded = win->type_params().size() >= 2 ?
-          win->type_params().at(1) : false;
-      Panel* panel = CreatePanel(win, titlebar, expanded);
-      if (expanded)
-        FocusPanel(panel, false);  // remove_pointer_grab=false
-      break;
+  if (!expanded) {
+    ConfigureCollapsedPanel(panel);
+    collapsed_panels_.insert(collapsed_panels_.begin(), panel);
+    collapsed_panel_width_ += panel->titlebar_width() + kBarPadding;
+  } else {
+    panel->StackAtTopOfLayer(
+        (source == PANEL_SOURCE_DRAGGED) ?
+        StackingManager::LAYER_DRAGGED_EXPANDED_PANEL :
+        StackingManager::LAYER_EXPANDED_PANEL);
+    collapsed_panels_.push_back(panel);
+    bool reposition_other_panels = (source != PANEL_SOURCE_DRAGGED);
+    int anim_ms = 0;
+    switch (source) {
+      case PANEL_SOURCE_NEW: anim_ms = kPanelStateAnimMs; break;
+      case PANEL_SOURCE_DRAGGED: anim_ms = 0; break;
+      case PANEL_SOURCE_DROPPED: anim_ms = kDroppedPanelAnimMs; break;
+      default: NOTREACHED() << "Unknown panel source " << source;
     }
-    default:
-      NOTREACHED() << "Unhandled window type " << win->type();
+    ExpandPanel(panel, false, reposition_other_panels, anim_ms);
   }
 
-  if (num_panels() > 0 && !is_visible_) {
-    SetVisibility(true);
+  // If this is a new panel or it was already focused (e.g. it was
+  // focused when it got detached, and now it's being reattached),
+  // call FocusPanel() to focus it if needed and update
+  // 'desired_panel_to_focus_'.
+  if (expanded &&
+      (source == PANEL_SOURCE_NEW || panel->content_win()->focused())) {
+    FocusPanel(panel, false);  // remove_pointer_grab=false
+  } else {
+    panel->AddButtonGrab();
   }
+
+  if (num_panels() > 0 && !is_visible_)
+    SetVisibility(true);
 }
 
-void PanelBar::HandleWindowUnmap(Window* win) {
-  CHECK(win);
-  Panel* panel = GetPanelByWindow(*win);
-  if (!panel)
-    return;
+void PanelBar::RemovePanel(Panel* panel) {
+  DCHECK(panel);
 
   vector<XWindow> input_windows;
   panel->GetInputWindows(&input_windows);
@@ -171,49 +187,30 @@ void PanelBar::HandleWindowUnmap(Window* win) {
     CHECK(panel_input_windows_.erase(*it) == 1);
   }
 
-  if (dragged_panel_ == panel)
-    HandlePanelDragComplete(win);
   if (anchor_panel_ == panel)
     DestroyAnchor();
+  if (dragged_panel_ == panel)
+    dragged_panel_ = NULL;
+  // If this was a focused content window, then let's try to find a nearby
+  // panel to focus if we get asked to do so later.
   if (desired_panel_to_focus_ == panel)
-    desired_panel_to_focus_ = NULL;
-
-  // If this was a focused content window, then we need to try to find
-  // another panel to focus.  We defer actually assigning the focus until
-  // after we've fully dealt with the unmapped panel to avoid issues with
-  // WindowManager::TakeFocus() calling PanelBar::TakeFocus() while we're
-  // in an inconsistent state.
-  bool need_to_assign_focus = panel->content_win()->focused();
-  Panel* panel_to_focus = NULL;
-  if (need_to_assign_focus)
-    panel_to_focus = GetNearestExpandedPanel(panel);
+    desired_panel_to_focus_ = GetNearestExpandedPanel(panel);
 
   CHECK(panel_infos_.erase(panel) == 1);
-  Panels::iterator it = FindPanelInVectorByWindow(collapsed_panels_, *win);
+  Panels::iterator it = FindPanelInVectorByWindow(
+      collapsed_panels_, *(panel->content_win()));
   if (it != collapsed_panels_.end()) {
     collapsed_panel_width_ -= ((*it)->titlebar_width() + kBarPadding);
     collapsed_panels_.erase(it);
     PackCollapsedPanels();
   } else {
-    it = FindPanelInVectorByWindow(expanded_panels_, *win);
+    it = FindPanelInVectorByWindow(expanded_panels_, *(panel->content_win()));
     if (it != expanded_panels_.end()) {
       expanded_panels_.erase(it);
     } else {
-      LOG(WARNING) << "Got panel " << panel->xid_str() << " for window "
-                   << win->xid_str() << " but didn't find it in "
-                   << "collapsed_panels_ or expanded_panels_";
-    }
-  }
-
-  // Now assign the focus.
-  if (need_to_assign_focus) {
-    if (panel_to_focus) {
-      // If we found a nearby panel, focus it.
-      FocusPanel(panel_to_focus, false);  // remove_pointer_grab=false
-    } else {
-      // Failing that, let the WindowManager decide what to do with it.
-      wm_->SetActiveWindowProperty(None);
-      wm_->TakeFocus();
+      LOG(WARNING) << "Got request to remove panel " << panel->xid_str()
+                   << " but didn't find it in collapsed_panels_ or "
+                   << "expanded_panels_";
     }
   }
 
@@ -221,220 +218,152 @@ void PanelBar::HandleWindowUnmap(Window* win) {
     SetVisibility(false);
 }
 
-bool PanelBar::HandleWindowConfigureRequest(
-    Window* win, int req_x, int req_y, int req_width, int req_height) {
-  Panel* panel = GetPanelByWindow(*win);
-  if (!panel)
-    return false;
-
-  // Ignore the request (we'll get strange behavior if we honor a resize
-  // request from the client while the user is manually resizing the
-  // panel).
-  // TODO: This means that panels can't resize themselves, which isn't what
-  // we want.  If the user is currently resizing the window, we might want
-  // to save the panel's resize request and apply it afterwards.
-  return true;
+bool PanelBar::ShouldAddDraggedPanel(const Panel* panel,
+                                     int drag_x,
+                                     int drag_y) {
+  return drag_y + panel->total_height() > y_ - kPanelAttachThresholdPixels;
 }
 
-bool PanelBar::HandleButtonPress(XWindow xid,
-                                 int x, int y,
-                                 int x_root, int y_root,
-                                 int button,
-                                 Time timestamp) {
-  // If the press was in the anchor window, destroy the anchor and
-  // collapse the corresponding panel.
-  if (xid == anchor_input_win_) {
-    if (button != 1) {
-      return true;
-    }
-    VLOG(1) << "Got button press in anchor window";
-    Panel* panel = anchor_panel_;
-    DestroyAnchor();
-    if (panel) {
-      CollapsePanel(panel);
-    } else {
-      LOG(WARNING) << "Anchor panel no longer exists";
-    }
-    return true;
-  }
+void PanelBar::HandleInputWindowButtonPress(XWindow xid,
+                                            int x, int y,
+                                            int x_root, int y_root,
+                                            int button,
+                                            Time timestamp) {
+  CHECK_EQ(xid, anchor_input_xid_);
+  if (button != 1)
+    return;
 
-  map<XWindow, Panel*>::iterator it = panel_input_windows_.find(xid);
-  if (it != panel_input_windows_.end()) {
-    it->second->HandleInputWindowButtonPress(xid, x, y, button, timestamp);
-    return true;
-  }
-
-  // Otherwise, check if this was in a content window whose button presses
-  // we've grabbed.  If so, give the focus to the panel.
-  Window* win = wm_->GetWindow(xid);
-  if (win) {
-    Panel* panel = GetPanelByWindow(*win);
-    if (panel) {
-      if (win == panel->content_win()) {
-        VLOG(1) << "Got button press in panel " << panel->xid_str()
-                << "; giving it the focus";
-        // Get rid of the passive button grab, and then ungrab the pointer
-        // and replay events so the panel will get a copy of the click.
-        FocusPanel(panel, true);  // remove_pointer_grab=true
-      }
-      return true;
-    }
-  }
-
-  return false;
+  // Destroy the anchor and collapse the corresponding panel.
+  VLOG(1) << "Got button press in anchor window";
+  Panel* panel = anchor_panel_;
+  DestroyAnchor();
+  if (panel)
+    CollapsePanel(panel);
+  else
+    LOG(WARNING) << "Anchor panel no longer exists";
 }
 
-bool PanelBar::HandleButtonRelease(XWindow xid,
-                                   int x, int y,
-                                   int x_root, int y_root,
-                                   int button,
-                                   Time timestamp) {
-  map<XWindow, Panel*>::iterator it = panel_input_windows_.find(xid);
-  if (it != panel_input_windows_.end()) {
-    it->second->HandleInputWindowButtonRelease(xid, x, y, button, timestamp);
-    return true;
-  }
-  return false;
-}
+void PanelBar::HandleInputWindowPointerLeave(XWindow xid, Time timestamp) {
+  CHECK_EQ(xid, anchor_input_xid_);
 
-bool PanelBar::HandlePointerLeave(XWindow xid, Time timestamp) {
   // TODO: There appears to be a bit of a race condition here.  If the
   // mouse cursor has already been moved away before the anchor input
   // window gets created, the anchor never gets a mouse leave event.  Find
   // some way to work around this.
-  if (xid != anchor_input_win_) {
-    return false;
-  }
   VLOG(1) << "Got mouse leave in anchor window";
   DestroyAnchor();
-  return true;
 }
 
-bool PanelBar::HandlePointerMotion(XWindow xid, int x, int y, Time timestamp) {
-  map<XWindow, Panel*>::iterator it = panel_input_windows_.find(xid);
-  if (it != panel_input_windows_.end()) {
-    it->second->HandleInputWindowPointerMotion(xid, x, y);
+void PanelBar::HandlePanelButtonPress(
+    Panel* panel, int button, Time timestamp) {
+  DCHECK(panel);
+  VLOG(1) << "Got button press in panel " << panel->xid_str()
+          << "; giving it the focus";
+  // Get rid of the passive button grab, and then ungrab the pointer
+  // and replay events so the panel will get a copy of the click.
+  FocusPanel(panel, true);  // remove_pointer_grab=true
+}
+
+void PanelBar::HandlePanelFocusChange(Panel* panel, bool focus_in) {
+  DCHECK(panel);
+  if (!focus_in)
+    panel->AddButtonGrab();
+}
+
+void PanelBar::HandleSetPanelStateMessage(Panel* panel, bool expand) {
+  DCHECK(panel);
+  if (expand)
+    ExpandPanel(panel, true, true, kPanelStateAnimMs);
+  else
+    CollapsePanel(panel);
+}
+
+bool PanelBar::HandleNotifyPanelDraggedMessage(Panel* panel,
+                                               int drag_x,
+                                               int drag_y) {
+  DCHECK(panel);
+
+  VLOG(2) << "Notified about drag of panel " << panel->xid_str()
+          << " to (" << drag_x << ", " << drag_y << ")";
+
+  PanelInfo* info = GetPanelInfoOrDie(panel);
+  if (info->is_expanded &&
+      drag_y <= y_ - panel->total_height() - kPanelDetachThresholdPixels) {
+    return false;
+  }
+
+  if (dragged_panel_ != panel) {
+    if (dragged_panel_) {
+      LOG(WARNING) << "Abandoning dragged panel " << dragged_panel_->xid_str()
+                   << " in favor of " << panel->xid_str();
+      HandlePanelDragComplete(dragged_panel_);
+    }
+
+    VLOG(2) << "Starting drag of panel " << panel->xid_str();
+    dragged_panel_ = panel;
+    panel->StackAtTopOfLayer(
+        GetPanelInfoOrDie(panel)->is_expanded ?
+          StackingManager::LAYER_DRAGGED_EXPANDED_PANEL :
+          StackingManager::LAYER_DRAGGED_COLLAPSED_PANEL);
+  }
+
+  dragged_panel_->MoveX((wm_->wm_ipc_version() >= 1) ?
+                          drag_x :
+                          drag_x + dragged_panel_->titlebar_width(),
+                        false, 0);
+
+  // When an expanded panel is being dragged, we don't move the other
+  // panels to make room for it until the drag is done.
+  if (info->is_expanded)
     return true;
-  }
-  return false;
-}
 
-bool PanelBar::HandleChromeMessage(const WmIpc::Message& msg) {
-  switch (msg.type()) {
-    // TODO: This is getting long; move cases into individual methods.
-    case WmIpc::Message::WM_SET_PANEL_STATE: {
-      XWindow xid = msg.param(0);
-      Window* win = wm_->GetWindow(xid);
-      if (!win) {
-        LOG(WARNING) << "Ignoring WM_SET_PANEL_STATE message for unknown "
-                     << "window " << XidStr(xid);
-        return true;
-      }
-      Panel* panel = GetPanelByWindow(*win);
-      if (!panel) {
-        LOG(WARNING) << "Ignoring WM_SET_PANEL_STATE message for non-panel "
-                     << "window " << win->xid_str();
-        return true;
-      }
-      if (msg.param(1)) {
-        ExpandPanel(panel, true);  // create_anchor
-      } else {
-        CollapsePanel(panel);
-      }
-      break;
+  // For collapsed panels, we first find the position of the dragged panel.
+  Panels::iterator dragged_it = FindPanelInVectorByWindow(
+      collapsed_panels_, *(dragged_panel_->content_win()));
+  CHECK(dragged_it != collapsed_panels_.end());
+
+  // Next, check if the center of the panel has moved over another panel.
+  const int center_x = (wm_->wm_ipc_version() >= 1) ?
+                       drag_x - 0.5 * dragged_panel_->titlebar_width() :
+                       drag_x + 0.5 * dragged_panel_->titlebar_width();
+  Panels::iterator it = collapsed_panels_.begin();
+  for (; it != collapsed_panels_.end(); ++it) {
+    int snapped_left = 0, snapped_right = 0;
+    if (*it == dragged_panel_) {
+      // If we're comparing against ourselves, use our original position
+      // rather than wherever we've currently been dragged by the user.
+      snapped_left = info->snapped_right - dragged_panel_->titlebar_width();
+      snapped_right = info->snapped_right;
+    } else {
+      snapped_left = (*it)->titlebar_x();
+      snapped_right = (*it)->right();
     }
-    case WmIpc::Message::WM_NOTIFY_PANEL_DRAGGED: {
-      XWindow xid = msg.param(0);
-      Window* win = wm_->GetWindow(xid);
-      if (!win) {
-        LOG(WARNING) << "Ignoring WM_NOTIFY_PANEL_DRAGGED message for unknown "
-                     << "window " << XidStr(xid);
-        return true;
-      }
-      int x = msg.param(1);
-      int y = msg.param(2);
-      StorePanelPosition(win, x, y);
+    if (center_x >= snapped_left && center_x < snapped_right)
       break;
-    }
-    case WmIpc::Message::WM_NOTIFY_PANEL_DRAG_COMPLETE: {
-      XWindow xid = msg.param(0);
-      Window* win = wm_->GetWindow(xid);
-      if (!win) {
-        LOG(WARNING) << "Ignoring WM_NOTIFY_PANEL_DRAG_COMPLETE message for "
-                     << "unknown window " << XidStr(xid);
-        return true;
-      }
-      HandlePanelDragComplete(win);
-      break;
-    }
-    case WmIpc::Message::WM_FOCUS_WINDOW: {
-      XWindow xid = msg.param(0);
-      Window* win = wm_->GetWindow(xid);
-      if (!win) {
-        LOG(WARNING) << "Got WM_FOCUS_WINDOW message for unknown window "
-                     << XidStr(xid);
-        return false;
-      }
-      Panel* panel = GetPanelByWindow(*win);
-      if (!panel) {
-        // Not a panel -- maybe it's a top-level window.
-        return false;
-      }
-      if (!GetPanelInfoOrDie(panel)->is_expanded) {
-        LOG(WARNING) << "Ignoring WM_FOCUS_WINDOW message for collapsed panel "
-                     << panel->xid_str();
-        return true;
-      }
-      FocusPanel(panel, false);  // remove_pointer_grab=false
-      break;
-    }
-    default:
-      return false;
   }
+
+  // If it has, then we reorder the panels.
+  if (it != collapsed_panels_.end() && *it != dragged_panel_) {
+    if (it > dragged_it)
+      rotate(dragged_it, dragged_it + 1, it + 1);
+    else
+      rotate(it, dragged_it, dragged_it + 1);
+    PackCollapsedPanels();
+  }
+
   return true;
 }
 
-bool PanelBar::HandleClientMessage(const XClientMessageEvent& e) {
-  Window* win = wm_->GetWindow(e.window);
-  if (!win)
-    return false;
-
-  Panel* panel = GetPanelByWindow(*win);
-  if (!panel)
-    return false;
-
-  if (e.message_type == wm_->GetXAtom(ATOM_NET_ACTIVE_WINDOW)) {
-    if (e.format != XConnection::kLongFormat)
-      return true;
-    VLOG(1) << "Got _NET_ACTIVE_WINDOW request to focus " << XidStr(e.window)
-            << " (requestor says its currently-active window is "
-            << XidStr(e.data.l[2]) << "; real active window is "
-            << XidStr(wm_->active_window_xid()) << ")";
-
-    if (!GetPanelInfoOrDie(panel)->is_expanded)
-      ExpandPanel(panel, false);  // create_anchor=false
-    FocusPanel(panel, false);  // remove_pointer_grab=false
-    return true;
-  }
-  return false;
+void PanelBar::HandleNotifyPanelDragCompleteMessage(Panel* panel) {
+  DCHECK(panel);
+  HandlePanelDragComplete(panel);
 }
 
-bool PanelBar::HandleFocusChange(XWindow xid, bool focus_in) {
-  Window* win = wm_->GetWindow(xid);
-  if (!win) {
-    return false;
-  }
-  Panel* panel = GetPanelByWindow(*win);
-  if (!panel) {
-    return false;
-  }
-
-  if (!focus_in) {
-    VLOG(1) << "Panel " << panel->xid_str() << " lost focus; adding "
-            << "button grab";
-    panel->content_win()->AddButtonGrab();
-  }
-  return true;
+void PanelBar::HandleFocusPanelMessage(Panel* panel) {
+  DCHECK(panel);
+  if (!GetPanelInfoOrDie(panel)->is_expanded)
+    ExpandPanel(panel, false, true, kPanelStateAnimMs);
+  FocusPanel(panel, false);  // remove_pointer_grab=false
 }
 
 void PanelBar::MoveAndResize(int x, int y, int width, int height) {
@@ -451,13 +380,11 @@ void PanelBar::MoveAndResize(int x, int y, int width, int height) {
   // Update all of the panels' Y positions...
   for (Panels::iterator it = expanded_panels_.begin();
        it != expanded_panels_.end(); ++it) {
-    Panel* panel = it->get();
-    panel->MoveY(y_ - panel->total_height(), true, 0);
+    (*it)->MoveY(y_ - (*it)->total_height(), true, 0);
   }
   for (Panels::iterator it = collapsed_panels_.begin();
        it != collapsed_panels_.end(); ++it) {
-    Panel* panel = it->get();
-    panel->MoveY(y_ + height_ - panel->titlebar_height(), true, 0);
+    (*it)->MoveY(y_ + height_ - (*it)->titlebar_height(), true, 0);
   }
 
   // ... and their X positions.
@@ -465,8 +392,8 @@ void PanelBar::MoveAndResize(int x, int y, int width, int height) {
   if (!expanded_panels_.empty()) {
     // Arbitrarily move the first panel onscreen, if it isn't already, and
     // then try to arrange all of the other panels to not overlap.
-    Panel* fixed_panel = expanded_panels_[0].get();
-    MoveExpandedPanelOnscreen(fixed_panel, kAnimMs);
+    Panel* fixed_panel = expanded_panels_[0];
+    MoveExpandedPanelOnscreen(fixed_panel, kPanelArrangeAnimMs);
     RepositionExpandedPanels(fixed_panel);
   }
 }
@@ -482,7 +409,7 @@ bool PanelBar::TakeFocus() {
   if (expanded_panels_.empty()) {
     return false;
   }
-  FocusPanel(expanded_panels_[0].get(), false);  // remove_pointer_grab=false
+  FocusPanel(expanded_panels_[0], false);  // remove_pointer_grab=false
   return true;
 }
 
@@ -494,56 +421,10 @@ PanelBar::PanelInfo* PanelBar::GetPanelInfoOrDie(Panel* panel) {
   return info.get();
 }
 
-void PanelBar::DoInitialSetupForWindow(Window* win) {
-  wm_->stacking_manager()->StackWindowAtTopOfLayer(
-      win, StackingManager::LAYER_COLLAPSED_PANEL);
-  win->MoveClientOffscreen();
-}
-
-Panel* PanelBar::CreatePanel(
-    Window* content_win, Window* titlebar_win, bool expanded) {
-  CHECK(content_win);
-  CHECK(titlebar_win);
-
-  VLOG(1) << "Adding " << (expanded ? "expanded" : "collapsed")
-          << " panel with content window " << content_win->xid_str()
-          << " and titlebar window " << titlebar_win->xid_str();
-
-  // Determine the offscreen position from which we want the panel to
-  // animate in.
-  const int initial_right = expanded ?
-      x_ + width_ - kBarPadding :
-      x_ + width_ - collapsed_panel_width_ - kBarPadding;
-  const int initial_y = y_ + height_;
-
-  shared_ptr<Panel> panel(
-      new Panel(wm_, content_win, titlebar_win, initial_right, initial_y));
-
-  vector<XWindow> input_windows;
-  panel->GetInputWindows(&input_windows);
-  for (vector<XWindow>::const_iterator it = input_windows.begin();
-       it != input_windows.end(); ++it) {
-    CHECK(panel_input_windows_.insert(make_pair(*it, panel.get())).second);
-  }
-
-  shared_ptr<PanelInfo> info(new PanelInfo);
-  info->is_expanded = false;
-  info->snapped_right = initial_right;
-  panel_infos_.insert(make_pair(panel.get(), info));
-
-  if (!expanded) {
-    ConfigureCollapsedPanel(panel.get());
-    collapsed_panels_.insert(collapsed_panels_.begin(), panel);
-    collapsed_panel_width_ += panel->titlebar_width() + kBarPadding;
-  } else {
-    collapsed_panels_.push_back(panel);
-    ExpandPanel(panel.get(), false);  // create_anchor
-  }
-
-  return panel.get();
-}
-
-void PanelBar::ExpandPanel(Panel* panel, bool create_anchor) {
+void PanelBar::ExpandPanel(Panel* panel,
+                           bool create_anchor,
+                           bool reposition_other_panels,
+                           int anim_ms) {
   CHECK(panel);
   PanelInfo* info = GetPanelInfoOrDie(panel);
   if (info->is_expanded) {
@@ -554,19 +435,19 @@ void PanelBar::ExpandPanel(Panel* panel, bool create_anchor) {
 
   panel->StackAtTopOfLayer(StackingManager::LAYER_EXPANDED_PANEL);
   panel->SetTitlebarWidth(panel->content_width());
-  panel->MoveY(y_ - panel->total_height(), true, kPanelStateAnimMs);
+  panel->MoveY(y_ - panel->total_height(), true, anim_ms);
   panel->SetResizable(true);
-  panel->SetContentShadowOpacity(1.0, kPanelStateAnimMs);
+  panel->SetContentShadowOpacity(1.0, anim_ms);
   panel->NotifyChromeAboutState(true);
   info->is_expanded = true;
 
   Panels::iterator it =
       FindPanelInVectorByWindow(collapsed_panels_, *(panel->content_win()));
   CHECK(it != collapsed_panels_.end());
-  shared_ptr<Panel> ref = *it;
   collapsed_panels_.erase(it);
-  InsertExpandedPanel(ref);
-  RepositionExpandedPanels(panel);
+  InsertExpandedPanel(panel);
+  if (reposition_other_panels)
+    RepositionExpandedPanels(panel);
 
   if (create_anchor)
     CreateAnchor(panel);
@@ -594,9 +475,8 @@ void PanelBar::CollapsePanel(Panel* panel) {
   Panels::iterator it =
       FindPanelInVectorByWindow(expanded_panels_, *(panel->content_win()));
   CHECK(it != expanded_panels_.end());
-  shared_ptr<Panel> ref = *it;
   expanded_panels_.erase(it);
-  InsertCollapsedPanel(shared_ptr<Panel>(ref));
+  InsertCollapsedPanel(panel);
   PackCollapsedPanels();
 
   // Give up the focus if this panel had it.
@@ -625,9 +505,7 @@ void PanelBar::ConfigureCollapsedPanel(Panel* panel) {
 
 void PanelBar::FocusPanel(Panel* panel, bool remove_pointer_grab) {
   CHECK(panel);
-  panel->content_win()->RemoveButtonGrab();
-  if (remove_pointer_grab)
-    wm_->xconn()->RemovePointerGrab(true, CurrentTime);  // replay_events
+  panel->RemoveButtonGrab(true);  // remove_pointer_grab
   wm_->SetActiveWindowProperty(panel->content_win()->xid());
   panel->content_win()->TakeFocus(wm_->GetCurrentTimeFromServer());
   panel->StackAtTopOfLayer(StackingManager::LAYER_EXPANDED_PANEL);
@@ -636,14 +514,12 @@ void PanelBar::FocusPanel(Panel* panel, bool remove_pointer_grab) {
 
 Panel* PanelBar::GetPanelByWindow(const Window& win) {
   Panels::iterator it = FindPanelInVectorByWindow(collapsed_panels_, win);
-  if (it != collapsed_panels_.end()) {
-    return it->get();
-  }
+  if (it != collapsed_panels_.end())
+    return *it;
 
   it = FindPanelInVectorByWindow(expanded_panels_, win);
-  if (it != expanded_panels_.end()) {
-    return it->get();
-  }
+  if (it != expanded_panels_.end())
+    return *it;
 
   return NULL;
 }
@@ -667,122 +543,27 @@ int PanelBar::GetPanelIndex(Panels& panels, const Panel& panel) {
   return it - panels.begin();
 }
 
-void PanelBar::StartDrag(Panel* panel) {
-  if (dragged_panel_ == panel)
-    return;
-
-  if (dragged_panel_) {
-    LOG(WARNING) << "Abandoning dragged panel " << dragged_panel_->xid_str()
-                 << " in favor of " << panel->xid_str();
-    if (GetPanelInfoOrDie(dragged_panel_)->is_expanded)
-      RepositionExpandedPanels(dragged_panel_);
-  }
-
-  VLOG(2) << "Starting drag of panel " << panel->xid_str();
-  dragged_panel_ = panel;
-
-  panel->StackAtTopOfLayer(
-      GetPanelInfoOrDie(panel)->is_expanded ?
-        StackingManager::LAYER_DRAGGED_EXPANDED_PANEL :
-        StackingManager::LAYER_DRAGGED_COLLAPSED_PANEL);
-
-  if (!dragged_panel_event_coalescer_.IsRunning())
-    dragged_panel_event_coalescer_.Start();
-}
-
-void PanelBar::StorePanelPosition(Window* win, int x, int y) {
-  CHECK(win);
-  VLOG(2) << "Got request to move panel " << win->xid_str()
-          << " to (" << x << ", " << y << ")";
-
-  dragged_panel_event_coalescer_.StorePosition(x, y);
-
-  if (!dragged_panel_ || dragged_panel_->content_win() != win) {
-    Panel* panel = GetPanelByWindow(*win);
-    if (!panel) {
-      LOG(WARNING) << "Unable to store position for unknown panel "
-                   << win->xid_str();
-      return;
-    }
-    StartDrag(panel);
-  }
-}
-
-void PanelBar::HandlePanelDragComplete(Window* win) {
-  CHECK(win);
+void PanelBar::HandlePanelDragComplete(Panel* panel) {
+  CHECK(panel);
   VLOG(2) << "Got notification that panel drag is complete for "
-          << win->xid_str();
+          << panel->xid_str();
 
-  if (!dragged_panel_ || dragged_panel_->content_win() != win)
+  if (dragged_panel_ != panel)
     return;
 
-  PanelInfo* info = GetPanelInfoOrDie(dragged_panel_);
+  PanelInfo* info = GetPanelInfoOrDie(panel);
   if (info->is_expanded) {
-    dragged_panel_->StackAtTopOfLayer(StackingManager::LAYER_EXPANDED_PANEL);
+    panel->StackAtTopOfLayer(StackingManager::LAYER_EXPANDED_PANEL);
     // Tell the panel to move its client windows to match its composited
     // position.
-    dragged_panel_->MoveX(dragged_panel_->right(), true, 0);
-    RepositionExpandedPanels(dragged_panel_);
+    panel->MoveX(panel->right(), true, 0);
+    RepositionExpandedPanels(panel);
   } else {
-    dragged_panel_->StackAtTopOfLayer(StackingManager::LAYER_COLLAPSED_PANEL);
+    panel->StackAtTopOfLayer(StackingManager::LAYER_COLLAPSED_PANEL);
     // Snap collapsed dragged panels to their correct position.
-    dragged_panel_->MoveX(info->snapped_right, true, kAnimMs);
+    panel->MoveX(info->snapped_right, true, kPanelArrangeAnimMs);
   }
   dragged_panel_ = NULL;
-
-  if (dragged_panel_event_coalescer_.IsRunning())
-    dragged_panel_event_coalescer_.Stop();
-}
-
-void PanelBar::MoveDraggedPanel() {
-  if (!dragged_panel_)
-    return;
-
-  const int drag_x = dragged_panel_event_coalescer_.x();
-  dragged_panel_->MoveX((wm_->wm_ipc_version() >= 1) ?
-                          drag_x :
-                          drag_x + dragged_panel_->titlebar_width(),
-                        false, 0);
-
-  // When an expanded panel is being dragged, we don't move the other
-  // panels to make room for it until the drag is done.
-  if (GetPanelInfoOrDie(dragged_panel_)->is_expanded)
-    return;
-
-  // For collapsed panels, we first find the position of the dragged panel.
-  Panels::iterator dragged_it = FindPanelInVectorByWindow(
-      collapsed_panels_, *(dragged_panel_->content_win()));
-  CHECK(dragged_it != collapsed_panels_.end());
-
-  // Next, check if the center of the panel has moved over another panel.
-  const int center_x = (wm_->wm_ipc_version() >= 1) ?
-                       drag_x - 0.5 * dragged_panel_->titlebar_width() :
-                       drag_x + 0.5 * dragged_panel_->titlebar_width();
-  Panels::iterator it = collapsed_panels_.begin();
-  for (; it != collapsed_panels_.end(); ++it) {
-    int snapped_left = 0, snapped_right = 0;
-    if (it->get() == dragged_panel_) {
-      // If we're comparing against ourselves, use our original position
-      // rather than wherever we've currently been dragged by the user.
-      PanelInfo* info = GetPanelInfoOrDie(dragged_panel_);
-      snapped_left = info->snapped_right - dragged_panel_->titlebar_width();
-      snapped_right = info->snapped_right;
-    } else {
-      snapped_left = (*it)->titlebar_x();
-      snapped_right = (*it)->right();
-    }
-    if (center_x >= snapped_left && center_x < snapped_right)
-      break;
-  }
-
-  // If it has, then we reorder the panels.
-  if (it != collapsed_panels_.end() && it->get() != dragged_panel_) {
-    if (it > dragged_it)
-      rotate(dragged_it, dragged_it + 1, it + 1);
-    else
-      rotate(it, dragged_it, dragged_it + 1);
-    PackCollapsedPanels();
-  }
 }
 
 void PanelBar::PackCollapsedPanels() {
@@ -790,7 +571,7 @@ void PanelBar::PackCollapsedPanels() {
 
   for (Panels::reverse_iterator it = collapsed_panels_.rbegin();
        it != collapsed_panels_.rend(); ++it) {
-    Panel* panel = it->get();
+    Panel* panel = *it;
     // TODO: PackCollapsedPanels() gets called in response to every move
     // message that we receive about a dragged panel.  Check that it's not
     // too inefficient to do all of these lookups vs. storing the panel
@@ -799,7 +580,7 @@ void PanelBar::PackCollapsedPanels() {
 
     info->snapped_right = x_ + width_ - collapsed_panel_width_ - kBarPadding;
     if (panel != dragged_panel_ && panel->right() != info->snapped_right)
-      panel->MoveX(info->snapped_right, true, kAnimMs);
+      panel->MoveX(info->snapped_right, true, kPanelArrangeAnimMs);
 
     collapsed_panel_width_ += panel->titlebar_width() + kBarPadding;
   }
@@ -815,17 +596,16 @@ void PanelBar::RepositionExpandedPanels(Panel* fixed_panel) {
   // Next, check if the panel has moved to the other side of another panel.
   const int center_x = fixed_panel->content_center();
   for (size_t i = 0; i < expanded_panels_.size(); ++i) {
-    Panel* panel = expanded_panels_[i].get();
+    Panel* panel = expanded_panels_[i];
     if (center_x <= panel->content_center() ||
         i == expanded_panels_.size() - 1) {
       if (panel != fixed_panel) {
         // If it has, then we reorder the panels.
-        shared_ptr<Panel> ref = expanded_panels_[fixed_index];
         expanded_panels_.erase(expanded_panels_.begin() + fixed_index);
         if (i < expanded_panels_.size()) {
-          expanded_panels_.insert(expanded_panels_.begin() + i, ref);
+          expanded_panels_.insert(expanded_panels_.begin() + i, fixed_panel);
         } else {
-          expanded_panels_.push_back(ref);
+          expanded_panels_.push_back(fixed_panel);
         }
       }
       break;
@@ -836,7 +616,7 @@ void PanelBar::RepositionExpandedPanels(Panel* fixed_panel) {
   int total_width = 0;
   fixed_index = -1;
   for (int i = 0; i < static_cast<int>(expanded_panels_.size()); ++i) {
-    Panel* panel = expanded_panels_[i].get();
+    Panel* panel = expanded_panels_[i];
     if (panel == fixed_panel) {
       fixed_index = i;
       break;
@@ -848,8 +628,7 @@ void PanelBar::RepositionExpandedPanels(Panel* fixed_panel) {
 
   // Move panels over to the right of the fixed panel until all of the ones
   // on the left will fit.
-  int avail_width = max(fixed_panel->content_x() - kBarPadding - x_,
-                             0);
+  int avail_width = max(fixed_panel->content_x() - kBarPadding - x_, 0);
   while (total_width > avail_width) {
     new_fixed_index--;
     CHECK(new_fixed_index >= 0);
@@ -859,9 +638,10 @@ void PanelBar::RepositionExpandedPanels(Panel* fixed_panel) {
   // Reorder the fixed panel if its index changed.
   if (new_fixed_index != fixed_index) {
     Panels::iterator it = expanded_panels_.begin() + fixed_index;
-    shared_ptr<Panel> ref = *it;
+    CHECK(*it == fixed_panel);
     expanded_panels_.erase(it);
-    expanded_panels_.insert(expanded_panels_.begin() + new_fixed_index, ref);
+    expanded_panels_.insert(expanded_panels_.begin() + new_fixed_index,
+                            fixed_panel);
     fixed_index = new_fixed_index;
   }
 
@@ -883,9 +663,10 @@ void PanelBar::RepositionExpandedPanels(Panel* fixed_panel) {
   // Do the reordering again.
   if (new_fixed_index != fixed_index) {
     Panels::iterator it = expanded_panels_.begin() + fixed_index;
-    shared_ptr<Panel> ref = *it;
+    CHECK(*it == fixed_panel);
     expanded_panels_.erase(it);
-    expanded_panels_.insert(expanded_panels_.begin() + new_fixed_index, ref);
+    expanded_panels_.insert(expanded_panels_.begin() + new_fixed_index,
+                            fixed_panel);
     fixed_index = new_fixed_index;
   }
 
@@ -896,13 +677,13 @@ void PanelBar::RepositionExpandedPanels(Panel* fixed_panel) {
          expanded_panels_.rbegin() +
          (expanded_panels_.size() - new_fixed_index);
        it != expanded_panels_.rend(); ++it) {
-    Panel* panel = it->get();
+    Panel* panel = *it;
     if (panel->right() > boundary) {
-      panel->MoveX(boundary, true, kAnimMs);
+      panel->MoveX(boundary, true, kPanelArrangeAnimMs);
     } else if (panel->content_x() < x_) {
       panel->MoveX(
           min(boundary, x_ + panel->content_width() + kBarPadding),
-          true, kAnimMs);
+          true, kPanelArrangeAnimMs);
     }
     boundary = panel->content_x() - kBarPadding;
   }
@@ -910,21 +691,23 @@ void PanelBar::RepositionExpandedPanels(Panel* fixed_panel) {
   boundary = expanded_panels_[fixed_index]->right() + kBarPadding;
   for (Panels::iterator it = expanded_panels_.begin() + new_fixed_index + 1;
        it != expanded_panels_.end(); ++it) {
-    Panel* panel = it->get();
+    Panel* panel = *it;
     if (panel->content_x() < boundary) {
-      panel->MoveX(boundary + panel->content_width(), true, kAnimMs);
+      panel->MoveX(boundary + panel->content_width(),
+                   true,
+                   kPanelArrangeAnimMs);
     } else if (panel->right() > x_ + width_) {
       panel->MoveX(max(boundary + panel->content_width(), width_ - kBarPadding),
-                   true, kAnimMs);
+                   true, kPanelArrangeAnimMs);
     }
     boundary = panel->right() + kBarPadding;
   }
 }
 
-void PanelBar::InsertCollapsedPanel(shared_ptr<Panel> new_panel) {
+void PanelBar::InsertCollapsedPanel(Panel* new_panel) {
   size_t index = 0;
   for (; index < collapsed_panels_.size(); ++index) {
-    Panel* panel = collapsed_panels_[index].get();
+    Panel* panel = collapsed_panels_[index];
     if (new_panel->titlebar_x() < panel->titlebar_x()) {
       break;
     }
@@ -932,10 +715,10 @@ void PanelBar::InsertCollapsedPanel(shared_ptr<Panel> new_panel) {
   collapsed_panels_.insert(collapsed_panels_.begin() + index, new_panel);
 }
 
-void PanelBar::InsertExpandedPanel(shared_ptr<Panel> new_panel) {
+void PanelBar::InsertExpandedPanel(Panel* new_panel) {
   size_t index = 0;
   for (; index < expanded_panels_.size(); ++index) {
-    Panel* panel = expanded_panels_[index].get();
+    Panel* panel = expanded_panels_[index];
     if (new_panel->content_x() < panel->content_x()) {
       break;
     }
@@ -944,14 +727,10 @@ void PanelBar::InsertExpandedPanel(shared_ptr<Panel> new_panel) {
 }
 
 void PanelBar::CreateAnchor(Panel* panel) {
-  if (anchor_input_win_ != None) {
-    LOG(WARNING) << "Destroying extra input window "
-                 << XidStr(anchor_input_win_);
-    wm_->xconn()->DestroyWindow(anchor_input_win_);
-  }
-  anchor_input_win_ = wm_->CreateInputWindow(
-      panel->titlebar_x(), y_, panel->titlebar_width(), height_,
-      ButtonPressMask | LeaveWindowMask);
+  wm_->ConfigureInputWindow(
+      anchor_input_xid_,
+      panel->titlebar_x(), y_,
+      panel->titlebar_width(), height_);
   anchor_panel_ = panel;
 
   anchor_actor_->Move(
@@ -959,15 +738,12 @@ void PanelBar::CreateAnchor(Panel* panel) {
         0.5 * (panel->titlebar_width() - anchor_actor_->GetWidth()),
       y_ + 0.5 * (height_ - anchor_actor_->GetHeight()),
       0);  // anim_ms
-  anchor_actor_->SetOpacity(1, kAnimMs);
+  anchor_actor_->SetOpacity(1, kAnchorFadeAnimMs);
 }
 
 void PanelBar::DestroyAnchor() {
-  if (anchor_input_win_ != None) {
-    wm_->xconn()->DestroyWindow(anchor_input_win_);
-    anchor_input_win_ = None;
-  }
-  anchor_actor_->SetOpacity(0, kAnimMs);
+  wm_->ConfigureInputWindow(anchor_input_xid_, -1, -1, 1, 1);
+  anchor_actor_->SetOpacity(0, kAnchorFadeAnimMs);
   anchor_panel_ = NULL;
   PackCollapsedPanels();
 }
@@ -980,7 +756,7 @@ Panel* PanelBar::GetNearestExpandedPanel(Panel* panel) {
   int best_distance = kint32max;
   for (Panels::iterator it = expanded_panels_.begin();
        it != expanded_panels_.end(); ++it) {
-    if (it->get() == panel)
+    if (*it == panel)
       continue;
 
     int distance = kint32max;
@@ -993,7 +769,7 @@ Panel* PanelBar::GetNearestExpandedPanel(Panel* panel) {
 
     if (distance < best_distance) {
       best_distance = distance;
-      nearest_panel = it->get();
+      nearest_panel = *it;
     }
   }
   return nearest_panel;
@@ -1005,13 +781,13 @@ void PanelBar::SetVisibility(bool visible) {
   }
 
   if (visible) {
-    bar_actor_->MoveY(y_, kAnimMs);
-    bar_shadow_->MoveY(y_, kAnimMs);
-    bar_shadow_->SetOpacity(1, kAnimMs);
+    bar_actor_->MoveY(y_, kBarSlideAnimMs);
+    bar_shadow_->MoveY(y_, kBarSlideAnimMs);
+    bar_shadow_->SetOpacity(1, kBarSlideAnimMs);
   } else {
-    bar_actor_->MoveY(y_ + height_, kAnimMs);
-    bar_shadow_->MoveY(y_ + height_, kAnimMs);
-    bar_shadow_->SetOpacity(0, kAnimMs);
+    bar_actor_->MoveY(y_ + height_, kBarSlideAnimMs);
+    bar_shadow_->MoveY(y_ + height_, kBarSlideAnimMs);
+    bar_shadow_->SetOpacity(0, kBarSlideAnimMs);
   }
   is_visible_ = visible;
   wm_->HandlePanelBarVisibilityChange(visible);

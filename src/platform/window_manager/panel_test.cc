@@ -11,6 +11,7 @@
 #include "window_manager/mock_x_connection.h"
 #include "window_manager/panel.h"
 #include "window_manager/panel_bar.h"
+#include "window_manager/panel_manager.h"
 #include "window_manager/shadow.h"
 #include "window_manager/stacking_manager.h"
 #include "window_manager/test_lib.h"
@@ -27,10 +28,10 @@ class PanelTest : public BasicWindowManagerTest {
  protected:
   virtual void SetUp() {
     BasicWindowManagerTest::SetUp();
-    panel_bar_ = wm_->panel_bar_.get();
+    panel_bar_ = wm_->panel_manager_->panel_bar_.get();
   }
 
-  PanelBar* panel_bar_;  // instance belonging to 'wm_'
+  PanelBar* panel_bar_;  // instance belonging to wm_->panel_manager_
 };
 
 TEST_F(PanelTest, InputWindows) {
@@ -45,8 +46,9 @@ TEST_F(PanelTest, InputWindows) {
       xconn_->GetWindowInfoOrDie(content_xid);
 
   // Create a panel.
-  Panel panel(wm_.get(), &content_win, &titlebar_win, 0, 0);
+  Panel panel(wm_.get(), &content_win, &titlebar_win);
   panel.SetResizable(true);
+  panel.Move(0, 0, true, 0);
 
   // Restack the panel and check that its titlebar is stacked above the
   // content window, and that the content window is above all of the input
@@ -136,8 +138,9 @@ TEST_F(PanelTest, Resize) {
       xconn_->GetWindowInfoOrDie(content_xid);
 
   // Create a panel.
-  Panel panel(wm_.get(), &content_win, &titlebar_win, 0, 0);
+  Panel panel(wm_.get(), &content_win, &titlebar_win);
   panel.SetResizable(true);
+  panel.Move(0, 0, true, 0);
 
   // Check that one of the panel's resize handles has an asynchronous grab
   // installed on the first mouse button.
@@ -212,7 +215,8 @@ TEST_F(PanelTest, ChromeState) {
   Window titlebar_win(wm_.get(), titlebar_xid, false);
   XWindow content_xid = CreatePanelContentWindow(200, 400, titlebar_xid, false);
   Window content_win(wm_.get(), content_xid, false);
-  Panel panel(wm_.get(), &content_win, &titlebar_win, 0, 0);
+  Panel panel(wm_.get(), &content_win, &titlebar_win);
+  panel.Move(0, 0, true, 0);
 
   // The panel's content window should have have a collapsed state in
   // _CHROME_STATE initially.
@@ -238,7 +242,8 @@ TEST_F(PanelTest, Shadows) {
   Window titlebar_win(wm_.get(), titlebar_xid, false);
   XWindow content_xid = CreatePanelContentWindow(200, 400, titlebar_xid, false);
   Window content_win(wm_.get(), content_xid, false);
-  Panel panel(wm_.get(), &content_win, &titlebar_win, 0, 0);
+  Panel panel(wm_.get(), &content_win, &titlebar_win);
+  panel.Move(0, 0, true, 0);
 
   // Both the titlebar and content windows' shadows should be visible
   // initially.

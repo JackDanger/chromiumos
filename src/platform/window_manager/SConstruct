@@ -132,6 +132,7 @@ srcs = Split('''\
   no_clutter.cc
   panel.cc
   panel_bar.cc
+  panel_manager.cc
   shadow.cc
   stacking_manager.cc
   window.cc

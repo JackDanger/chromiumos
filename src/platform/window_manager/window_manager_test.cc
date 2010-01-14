@@ -15,6 +15,7 @@
 #include "window_manager/layout_manager.h"
 #include "window_manager/mock_x_connection.h"
 #include "window_manager/panel_bar.h"
+#include "window_manager/panel_manager.h"
 #include "window_manager/test_lib.h"
 #include "window_manager/util.h"
 #include "window_manager/window.h"
@@ -562,17 +563,19 @@ TEST_F(WindowManagerTest, RandR) {
   // objects that it owns.  The panel bar shouldn't be visible since there
   // are no panels (and as a result, the layout manager should be taking up
   // the entire screen).
-  EXPECT_FALSE(wm_->panel_bar_->is_visible());
+  EXPECT_FALSE(wm_->panel_manager_->IsPanelBarVisible());
 
   EXPECT_EQ(0, wm_->layout_manager_->x());
   EXPECT_EQ(0, wm_->layout_manager_->y());
   EXPECT_EQ(new_width, wm_->layout_manager_->width());
   EXPECT_EQ(new_height, wm_->layout_manager_->height());
 
-  EXPECT_EQ(0, wm_->panel_bar_->x());
-  EXPECT_EQ(new_height - WindowManager::kPanelBarHeight, wm_->panel_bar_->y());
-  EXPECT_EQ(new_width, wm_->panel_bar_->width());
-  EXPECT_EQ(WindowManager::kPanelBarHeight, wm_->panel_bar_->height());
+  EXPECT_EQ(0, wm_->panel_manager_->panel_bar_->x());
+  EXPECT_EQ(new_height - WindowManager::kPanelBarHeight,
+            wm_->panel_manager_->panel_bar_->y());
+  EXPECT_EQ(new_width, wm_->panel_manager_->panel_bar_->width());
+  EXPECT_EQ(WindowManager::kPanelBarHeight,
+            wm_->panel_manager_->panel_bar_->height());
 
   // EWMH properties on the root window should be updated as well.
   TestIntArrayProperty(root_xid, geometry_atom, 2, new_width, new_height);
@@ -689,16 +692,10 @@ TEST_F(WindowManagerTest, WmIpcVersion) {
   EXPECT_EQ(0, wm_->wm_ipc_version());
 
   // Now send the WM a message telling it that Chrome is using version 3.
-  // We use WmIpc to generate the XEvent for us and then pass it to
-  // WindowManager::HandleEvent().
-  MockXConnection::WindowInfo* info = xconn_->GetWindowInfoOrDie(wm_->wm_xid());
-  EXPECT_TRUE(info->client_messages.empty());
   WmIpc::Message msg(WmIpc::Message::WM_NOTIFY_IPC_VERSION);
   msg.set_param(0, 3);
-  ASSERT_TRUE(wm_->wm_ipc()->SendMessage(wm_->wm_xid(), msg));
-  ASSERT_EQ(static_cast<size_t>(1), info->client_messages.size());
   XEvent event;
-  event.xclient = info->client_messages[0];
+  wm_->wm_ipc()->FillXEventFromMessage(&event, wm_->wm_xid(), msg);
   EXPECT_TRUE(wm_->HandleEvent(&event));
   EXPECT_EQ(3, wm_->wm_ipc_version());
 }
