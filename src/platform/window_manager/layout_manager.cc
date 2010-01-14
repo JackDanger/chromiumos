@@ -1167,13 +1167,11 @@ void LayoutManager::ToplevelWindow::AddTransientWindow(Window* transient_win) {
   // All transient windows other than info bubbles get centered over their
   // owner.
   if (transient_win->type() == WmIpc::WINDOW_TYPE_CHROME_INFO_BUBBLE) {
-    transient->x_offset = transient_win->client_x() - win_->client_x();
-    transient->y_offset = transient_win->client_y() - win_->client_y();
+    transient->SaveOffsetsRelativeToOwnerWindow(win_);
+    transient->centered = false;
   } else {
-    transient->x_offset =
-        0.5 * (win_->client_width() - transient_win->client_width());
-    transient->y_offset =
-        0.5 * (win_->client_height() - transient_win->client_height());
+    transient->UpdateOffsetsToCenterOverOwnerWindow(win_);
+    transient->centered = true;
   }
 
   // If the new transient is non-modal, stack it above the top non-modal
@@ -1233,19 +1231,27 @@ void LayoutManager::ToplevelWindow::HandleTransientWindowConfigureRequest(
   CHECK(transient);
 
   // Move and resize the transient window as requested.
+  bool moved = false;
   if (req_x != transient_win->client_x() ||
       req_y != transient_win->client_y()) {
     transient_win->MoveClient(req_x, req_y);
-    transient->x_offset = req_x - win()->client_x();
-    transient->y_offset = req_y - win()->client_y();
-    MoveAndScaleTransientWindow(transient, 0);
+    transient->SaveOffsetsRelativeToOwnerWindow(win_);
+    transient->centered = false;
+    moved = true;
   }
 
   if (req_width != transient_win->client_width() ||
       req_height != transient_win->client_height()) {
     transient_win->ResizeClient(
         req_width, req_height, Window::GRAVITY_NORTHWEST);
+    if (transient->centered) {
+      transient->UpdateOffsetsToCenterOverOwnerWindow(win_);
+      moved = true;
+    }
   }
+
+  if (moved)
+    MoveAndScaleTransientWindow(transient, 0);
 }
 
 void LayoutManager::ToplevelWindow::HandleFocusChange(

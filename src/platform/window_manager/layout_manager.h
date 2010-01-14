@@ -21,6 +21,7 @@ extern "C" {
 #include "window_manager/clutter_interface.h"
 #include "window_manager/event_consumer.h"
 #include "window_manager/key_bindings.h"
+#include "window_manager/window.h"
 #include "window_manager/wm_ipc.h"  // for WmIpc::Message
 
 typedef ::Window XWindow;
@@ -301,10 +302,24 @@ class LayoutManager : public EventConsumer {
       TransientWindow(Window* win)
           : win(win),
             x_offset(0),
-            y_offset(0) {
+            y_offset(0),
+            centered(false) {
       }
       ~TransientWindow() {
         win = NULL;
+      }
+
+      // Save the transient window's current offset from its owner.
+      void SaveOffsetsRelativeToOwnerWindow(Window* owner_win) {
+        x_offset = win->client_x() - owner_win->client_x();
+        y_offset = win->client_y() - owner_win->client_y();
+      }
+
+      // Update offsets so the transient will be centered over the
+      // passed-in owner window.
+      void UpdateOffsetsToCenterOverOwnerWindow(Window* owner_win) {
+        x_offset = 0.5 * (owner_win->client_width() - win->client_width());
+        y_offset = 0.5 * (owner_win->client_height() - win->client_height());
       }
 
       // The transient window itself.
@@ -313,6 +328,11 @@ class LayoutManager : public EventConsumer {
       // Transient window's position's offset from its owner's origin.
       int x_offset;
       int y_offset;
+
+      // Is the transient window centered over its owner?  We set this when
+      // we first center a transient window but remove it if the client
+      // ever moves the transient itself.
+      bool centered;
     };
 
     WindowManager* wm() { return layout_manager_->wm_; }

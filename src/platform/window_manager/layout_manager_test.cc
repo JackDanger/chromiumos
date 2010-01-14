@@ -235,6 +235,18 @@ TEST_F(LayoutManagerTest, ConfigureTransient) {
   MockXConnection::InitConfigureNotifyEvent(&event, *owner_info);
   EXPECT_TRUE(wm_->HandleEvent(&event));
 
+  // Now resize the transient window and make sure that it gets re-centered.
+  MockXConnection::InitConfigureRequestEvent(
+      &event, transient_xid, 0, 0, 400, 300);
+  event.xconfigurerequest.value_mask = CWWidth | CWHeight;
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  EXPECT_EQ(400, transient_info->width);
+  EXPECT_EQ(300, transient_info->height);
+  EXPECT_EQ(owner_info->x + 0.5 * (owner_info->width - transient_info->width),
+            transient_info->x);
+  EXPECT_EQ(owner_info->y + 0.5 * (owner_info->height - transient_info->height),
+            transient_info->y);
+
   // Send a ConfigureRequest event to move and resize the transient window
   // and make sure that it gets applied.
   MockXConnection::InitConfigureRequestEvent(
@@ -244,6 +256,17 @@ TEST_F(LayoutManagerTest, ConfigureTransient) {
   EXPECT_EQ(owner_info->y + 10, transient_info->y);
   EXPECT_EQ(200, transient_info->width);
   EXPECT_EQ(150, transient_info->height);
+
+  // If we resize the transient window again now, it shouldn't get
+  // re-centered (since we explicitly moved it previously).
+  MockXConnection::InitConfigureRequestEvent(
+      &event, transient_xid, 0, 0, 40, 30);
+  event.xconfigurerequest.value_mask = CWWidth | CWHeight;
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  EXPECT_EQ(owner_info->x + 20, transient_info->x);
+  EXPECT_EQ(owner_info->y + 10, transient_info->y);
+  EXPECT_EQ(40, transient_info->width);
+  EXPECT_EQ(30, transient_info->height);
 
   // Create and map an info bubble window.
   int bubble_x = owner_info->x + 40;
