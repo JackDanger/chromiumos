@@ -1,0 +1,34 @@
+# Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+libasound2.postinst d58c6d94c74c094de2cf20fd8f9bf6d7
+libblkid1.preinst 3faedacf69ac16b9624476956d1d791c
+libbz2-1.0.postinst 6f62a916f07747383db67dc759ea9dc0
+libc-bin.postinst 3e0f1729659bfabbc7b602fdbcaa01bc
+libc6.preinst 659907f34884c55522ab0c98ad0ca380
+libcomerr2.postinst fcfe41f2080037c87322ed25394c2427
+libdb4.7.postinst ca71a00e518b17326b70d58aa19dec93
+libdevmapper1.02.1.preinst e54f68335205bd1f860670671e9ddd73
+libgcc1.postinst 713e32ccd97b8164811f8489cbf6da83
+libgdbm3.postinst 2ee0589221fd0888ada90018cf8fc9fe
+libgtk2.0-0.postinst 8720bd9cc4a682252b2d71554cbf9dad
+libgtk2.0-0.preinst d04fb91edba1fd396913555f98346668
+libgtk2.0-common.preinst 60e9ab157c3d8b63a29fab2a5ac60434
+libidn11.postinst 0173f9b1812b4fc087fbe79f07ad4207
+libjpeg62.postinst 827a6a90a34a70ce453274b8256fd568
+libldap-2.4-2.postinst dac88adbf1bbb4bf1387a067cc134fbc
+libnewt0.52.postinst fde128bbabd89a11562fb79c22cf0cea
+libnspr4-0d.postinst 58c924e8e0acf43a5484a7f4bb066d05
+libnspr4-0d.preinst e473cdc7ca73ad7fd4e6457f94c7abdd
+libnss3-1d.postinst ad773c67798f3a18b849a698ae27c9dd
+libnss3-1d.preinst 36e97d7d7f2f06ff7eba4a9c2f56eab7
+libpam-modules.preinst 65979b6b4fa2da97f3cf100c59d0814b
+libpam0g.postinst 0a3ae3aa41ff0179a61efbc89c3314e3
+libpango1.0-0.postinst b143d4f9a17c9edccc2ec108b36b2921
+libpango1.0-common.preinst 22cb478b3833e1b558b4ba7109c4ebd0
+libselinux1.postinst b7a006a554058d0c89ad22095e403e84
+libsepol1.postinst 16c354b04ad12dcce51f8a1f6e88a5da
+libslang2.postinst e16ff7e603b3e2b3459b5e8e0ce082e5
+libssl0.9.8.postinst b038d7c782155204c8aec56920c03078
+libstdc++6.postinst f8b51eead56fd2dd36093c980d8a8b22
+libxxf86vm1.postinst 5d0e769df33e016b3c52a0971e8d258c
