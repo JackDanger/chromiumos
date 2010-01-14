@@ -34,11 +34,14 @@
 /src/third_party/connman/connman-0.42/
 /src/third_party/curl/
 /src/third_party/dhcp3/
+/src/third_party/dhcpcd/dhcpcd-dbus/
+/src/third_party/dhcpcd/dhcpcd/
 /src/third_party/e2fsprogs/files/
 /src/third_party/fio/files/
 /src/third_party/flimflam/
 /src/third_party/gconf/
 /src/third_party/gflags/files/
+/src/third_party/gmock/files/
 /src/third_party/google-breakpad/files/
 /src/third_party/gpt/
 /src/third_party/gtest/files/
