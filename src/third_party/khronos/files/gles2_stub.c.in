@@ -1,0 +1,52 @@
+/* Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file. */
+
+#include "gles2_stub.h"
+
+#include <GLES2/gl2.h>
+
+static const char* kExtensions = "";
+static const char* kRenderer = "OpenGL-ES 2.0 stub";
+static const char* kShadingLanguageVersion = "OpenGL ES GLSL ES 1.0";
+static const char* kVendor = "Chromium OS";
+static const char* kVersion = "OpenGL ES 2.0";
+
+#define GL_CONTEXT() (&glContext)
+
+static GlContext glContext = {1};
+
+GLuint glCreateProgram() {
+  GlContext* gl = GL_CONTEXT();
+  return gl->next_name_++;
+}
+
+GLuint glCreateShader(GLenum type) {
+  GlContext* gl = GL_CONTEXT();
+  return gl->next_name_++;
+}
+
+GLenum glGetError() {
+  return GL_NO_ERROR;
+}
+
+const GLubyte* glGetString(GLenum name) {
+  switch (name) {
+    case GL_EXTENSIONS:
+      return (GLubyte*)kExtensions;
+    case GL_RENDERER:
+      return (GLubyte*)kRenderer;
+    case GL_SHADING_LANGUAGE_VERSION:
+      return (GLubyte*)kShadingLanguageVersion;
+    case GL_VENDOR:
+      return (GLubyte*)kVendor;
+    case GL_VERSION:
+      return (GLubyte*)kVersion;
+    default:
+      return (GLubyte*)"";
+  }
+}
+
+/* Auto-Generated Entry Points */
+$AutoStubs
+

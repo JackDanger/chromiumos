@@ -1,0 +1,14 @@
+URL: http://www.khronos.org
+Version: OpenGL-ES 2.0 and EGL 1.4
+License: SGI Free Software License B 2.0 and EGL/KHR license
+License File: files/khronos_license.txt
+              files/SGIFreeSWLicB.2.0.pdf
+
+Description:
+  EGL and OpenGL-ES 2.0 headers.  Chromium adds stub libraries that to ease
+linking of programs.  These headers were pulled from khronos.org on January 11,
+2010.  Specific revisions are detailed in the headers themselves.
+
+Local Modification:
+- Add stub EGL and OpenGL-ES 2.0 libraries.
+
