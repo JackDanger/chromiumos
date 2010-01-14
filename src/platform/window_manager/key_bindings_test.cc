@@ -59,7 +59,7 @@ struct TestAction {
   int end_call_count;
 };
 
-class KeyBindingTest : public ::testing::Test {
+class KeyBindingsTest : public ::testing::Test {
  protected:
   virtual void SetUp() {
     xconn_.reset(new MockXConnection());
@@ -94,14 +94,14 @@ class KeyBindingTest : public ::testing::Test {
     }
   }
 
-  scoped_ptr<window_manager::XConnection> xconn_;
+  scoped_ptr<window_manager::MockXConnection> xconn_;
   scoped_ptr<window_manager::KeyBindings> bindings_;
   std::vector<TestAction*> actions_;
 
   static const int kNumActions = 10;
 };
 
-TEST_F(KeyBindingTest, Basic) {
+TEST_F(KeyBindingsTest, Basic) {
   // Action 0: Requests begin, end, and repeat callbacks.
   AddAction(0, true, true, true);
   bindings_->AddBinding(KeyBindings::KeyCombo(XK_e, KeyBindings::kControlMask),
@@ -141,7 +141,7 @@ TEST_F(KeyBindingTest, Basic) {
   EXPECT_EQ(1, actions_[0]->end_call_count);
 }
 
-TEST_F(KeyBindingTest, ModifierKey) {
+TEST_F(KeyBindingsTest, ModifierKey) {
   // Action 0: Requests begin and end callbacks.
   AddAction(0, true, true, true);
 
@@ -163,7 +163,7 @@ TEST_F(KeyBindingTest, ModifierKey) {
   EXPECT_EQ(1, actions_[0]->end_call_count);
 }
 
-TEST_F(KeyBindingTest, NullCallbacks) {
+TEST_F(KeyBindingsTest, NullCallbacks) {
   // Action 0: Requests end callback only.
   AddAction(0, false, false, true);
   bindings_->AddBinding(KeyBindings::KeyCombo(XK_e, KeyBindings::kControlMask),
@@ -234,7 +234,7 @@ TEST_F(KeyBindingTest, NullCallbacks) {
   EXPECT_EQ(0, actions_[2]->end_call_count);
 }
 
-TEST_F(KeyBindingTest, InvalidOperations) {
+TEST_F(KeyBindingsTest, InvalidOperations) {
   EXPECT_FALSE(bindings_->RemoveAction("nonexistant"));
   EXPECT_FALSE(bindings_->RemoveBinding(KeyBindings::KeyCombo(XK_e)));
   EXPECT_FALSE(bindings_->AddBinding(KeyBindings::KeyCombo(XK_e),
@@ -248,7 +248,7 @@ TEST_F(KeyBindingTest, InvalidOperations) {
   EXPECT_FALSE(bindings_->AddBinding(combo, "test"));  // Double add
 }
 
-TEST_F(KeyBindingTest, ManyActionsAndBindings) {
+TEST_F(KeyBindingsTest, ManyActionsAndBindings) {
   AddAllActions();
 
   // Add multiple key bindings for each action.
@@ -340,6 +340,66 @@ TEST_F(KeyBindingTest, ManyActionsAndBindings) {
   for (int i = 0; i < kNumActions; ++i) {
     EXPECT_FALSE(bindings_->RemoveAction(actions_[i]->name));
   }
+}
+
+// Test that we use the lowercase versions of keysyms.
+TEST_F(KeyBindingsTest, Lowercase) {
+  // Add a Ctrl+E (uppercase 'e') binding and check that it's activated by
+  // both uppercase and lowercase keysyms.
+  AddAction(0, true, false, true);
+  bindings_->AddBinding(KeyBindings::KeyCombo(XK_E, KeyBindings::kControlMask),
+                       actions_[0]->name);
+  EXPECT_TRUE(bindings_->HandleKeyPress(XK_e, KeyBindings::kControlMask));
+  EXPECT_TRUE(bindings_->HandleKeyRelease(XK_e, KeyBindings::kControlMask));
+  EXPECT_TRUE(bindings_->HandleKeyPress(XK_E, KeyBindings::kControlMask));
+  EXPECT_TRUE(bindings_->HandleKeyRelease(XK_E, KeyBindings::kControlMask));
+  EXPECT_EQ(2, actions_[0]->begin_call_count);
+  EXPECT_EQ(2, actions_[0]->end_call_count);
+
+  // Add a Ctrl+j (lowercase 'j') binding and check that it's activated
+  // by both too.
+  AddAction(1, true, false, true);
+  bindings_->AddBinding(KeyBindings::KeyCombo(XK_j, KeyBindings::kControlMask),
+                       actions_[1]->name);
+  EXPECT_TRUE(bindings_->HandleKeyPress(XK_j, KeyBindings::kControlMask));
+  EXPECT_TRUE(bindings_->HandleKeyRelease(XK_j, KeyBindings::kControlMask));
+  EXPECT_TRUE(bindings_->HandleKeyPress(XK_J, KeyBindings::kControlMask));
+  EXPECT_TRUE(bindings_->HandleKeyRelease(XK_J, KeyBindings::kControlMask));
+  EXPECT_EQ(2, actions_[1]->begin_call_count);
+  EXPECT_EQ(2, actions_[1]->end_call_count);
+
+  // Add a Shift+r (lowercase 'r') binding and check that it's activated by
+  // the corresponding uppercase keysym (the X server will give us
+  // uppercase since shift is down).
+  AddAction(2, true, false, true);
+  bindings_->AddBinding(KeyBindings::KeyCombo(XK_r, KeyBindings::kShiftMask),
+                       actions_[2]->name);
+  EXPECT_TRUE(bindings_->HandleKeyPress(XK_R, KeyBindings::kShiftMask));
+  EXPECT_TRUE(bindings_->HandleKeyRelease(XK_R, KeyBindings::kShiftMask));
+  EXPECT_EQ(1, actions_[2]->begin_call_count);
+  EXPECT_EQ(1, actions_[2]->end_call_count);
+}
+
+// Test that keysyms are still recognized when Caps Lock is on.
+TEST_F(KeyBindingsTest, RemoveCapsLock) {
+  AddAction(0, true, false, true);
+  bindings_->AddBinding(KeyBindings::KeyCombo(XK_e, KeyBindings::kControlMask),
+                       actions_[0]->name);
+
+  // We need to grab both Ctrl+e and Ctrl+CapsLock+e; we wouldn't get
+  // triggered when Caps Lock is on otherwise.
+  KeyCode keycode = xconn_->GetKeyCodeFromKeySym(XK_e);
+  EXPECT_TRUE(xconn_->KeyIsGrabbed(keycode, KeyBindings::kControlMask));
+  EXPECT_TRUE(
+      xconn_->KeyIsGrabbed(keycode, KeyBindings::kControlMask | LockMask));
+
+  EXPECT_TRUE(bindings_->HandleKeyPress(
+                  XK_E, KeyBindings::kControlMask | LockMask));
+  EXPECT_TRUE(bindings_->HandleKeyRelease(
+                  XK_E, KeyBindings::kControlMask | LockMask));
+  EXPECT_EQ(1, actions_[0]->begin_call_count);
+  EXPECT_EQ(0, actions_[0]->repeat_call_count);
+  EXPECT_EQ(1, actions_[0]->end_call_count);
 }
 
 }  // namespace window_manager

@@ -5,8 +5,11 @@
 #ifndef WINDOW_MANAGER_MOCK_X_CONNECTION_H_
 #define WINDOW_MANAGER_MOCK_X_CONNECTION_H_
 
-#include <tr1/memory>
+#include <map>
+#include <set>
 #include <string>
+#include <tr1/memory>
+#include <utility>
 
 #include "base/logging.h"
 
@@ -84,8 +87,8 @@ class MockXConnection : public XConnection {
   KeySym GetKeySymFromKeyCode(uint32 keycode) { return keycode; }
   uint32 GetKeyCodeFromKeySym(KeySym keysym) { return keysym; }
   std::string GetStringFromKeySym(KeySym keysym) { return ""; }
-  bool GrabKey(KeyCode keycode, uint32 modifiers) { return true; }
-  bool UngrabKey(KeyCode keycode, uint32 modifiers) { return true; }
+  bool GrabKey(KeyCode keycode, uint32 modifiers);
+  bool UngrabKey(KeyCode keycode, uint32 modifiers);
   XDamage CreateDamage(XDrawable drawable, int level) { return None; }
   void DestroyDamage(XDamage damage) {}
   void SubtractRegionFromDamage(XDamage damage, XserverRegion repair,
@@ -167,6 +170,10 @@ class MockXConnection : public XConnection {
   XWindow focused_xid() const { return focused_xid_; }
   XWindow pointer_grab_xid() const { return pointer_grab_xid_; }
 
+  bool KeyIsGrabbed(KeyCode keycode, uint32 modifiers) {
+    return grabbed_keys_.count(std::make_pair(keycode, modifiers)) > 0;
+  }
+
   const Stacker<XWindow>& stacked_xids() const {
     return *(stacked_xids_.get());
   }
@@ -223,6 +230,9 @@ class MockXConnection : public XConnection {
 
   // Window that has currently grabbed the pointer, or None.
   XWindow pointer_grab_xid_;
+
+  // Keys that have been grabbed (pairs are key codes and modifiers).
+  std::set<std::pair<KeyCode, uint32> > grabbed_keys_;
 
   DISALLOW_COPY_AND_ASSIGN(MockXConnection);
 };

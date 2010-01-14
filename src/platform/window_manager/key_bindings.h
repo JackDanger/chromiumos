@@ -48,7 +48,6 @@ class KeyBindings {
   // Set of possible modifer mask bits. OR these together to create a KeyCombo
   // modifiers value.
   static const uint kShiftMask = ShiftMask;
-  static const uint kLockMask = LockMask;
   static const uint kControlMask = ControlMask;
   static const uint kAltMask = Mod1Mask;
   static const uint kMetaMask = Mod2Mask;     // TODO: Verify
@@ -58,14 +57,16 @@ class KeyBindings {
 
   // A key and modifier combination, such as (XK_Tab, kAltMask) for alt-tab.
   struct KeyCombo {
-    explicit KeyCombo(KeySym key_param)
-        : key(key_param), modifiers(0) { }
-    KeyCombo(KeySym key_param, uint modifiers_param)
-        : key(key_param), modifiers(modifiers_param) { }
+    // We lowercase keysyms (the uppercase distinction when Shift is down
+    // or Caps Lock is on isn't useful for us) and mask LockMask out of the
+    // modifier (so that bindings will still be recognized if Caps Lock is
+    // enabled).
+    explicit KeyCombo(KeySym key_param, uint modifiers_param = 0);
 
     KeySym key;
     uint modifiers;
   };
+
   struct KeyComboComparator {
     bool operator()(const KeyCombo& a,
                     const KeyCombo& b) const;

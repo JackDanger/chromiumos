@@ -20,6 +20,13 @@ namespace window_manager {
 
 using chromeos::Closure;
 
+KeyBindings::KeyCombo::KeyCombo(KeySym key_param, uint modifiers_param) {
+  KeySym upper_keysym = None, lower_keysym = None;
+  XConvertCase(key_param, &lower_keysym, &upper_keysym);
+  key = lower_keysym;
+  modifiers = (modifiers_param & ~LockMask);
+}
+
 bool KeyBindings::KeyComboComparator::operator()(const KeyCombo& a,
                                                  const KeyCombo& b) const {
   return (a.key < b.key) ||
@@ -126,6 +133,8 @@ bool KeyBindings::AddBinding(const KeyCombo& combo,
 
   KeyCode keycode = xconn_->GetKeyCodeFromKeySym(combo.key);
   xconn_->GrabKey(keycode, combo.modifiers);
+  // Also grab this key combination plus Caps Lock.
+  xconn_->GrabKey(keycode, combo.modifiers | LockMask);
   return true;
 }
 
@@ -147,6 +156,7 @@ bool KeyBindings::RemoveBinding(const KeyCombo& combo) {
 
   KeyCode keycode = xconn_->GetKeyCodeFromKeySym(combo.key);
   xconn_->UngrabKey(keycode, combo.modifiers);
+  xconn_->UngrabKey(keycode, combo.modifiers | LockMask);
   return true;
 }
 
@@ -212,9 +222,6 @@ uint KeyBindings::KeySymToModifier(uint keysym) {
     case XK_Control_L:
     case XK_Control_R:
       return kControlMask;
-    case XK_Caps_Lock:
-    case XK_Shift_Lock:
-      return kLockMask;
     case XK_Alt_L:
     case XK_Alt_R:
       return kAltMask;
