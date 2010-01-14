@@ -72,7 +72,11 @@ deps = {
 
     # gtest 1.3.0
     _third_party_base + "gtest/files":
-        "http://googletest.googlecode.com/svn/trunk@209",
+        "http://googletest.googlecode.com/svn/trunk@327",
+
+    # googlemock 1.4
+    _third_party_base + "gmock/files":
+        "http://googlemock.googlecode.com/svn/trunk@221",
 
     # gtk+2.0 - branch at 2.18.3, need to fix our clone somehow.
     _third_party_base + "gtk+2.0": "/gtkplus2.0.git",

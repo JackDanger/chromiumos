@@ -1,0 +1,24 @@
+# Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Source: gmock
+Priority: extra
+Maintainer: The Chromium OS Authors <chromium-os-dev@googlegroups.com>
+Build-Depends: debhelper (>= 7.3.0), libgtest0 (<= 1.4.0), libgtest-dev
+Standards-Version: 3.8.0
+Section: libs
+
+Package: libgmock
+Section: libs
+Architecture: all
+Depends: ${shlibs:Depends}, ${misc:Depends}, libgtest0 (<= 1.4.0)
+Description: Google's C++ Mocking framework
+ Shared objects for Google's C++ Mocking framework.
+
+Package: libgmock-dev
+Section: libs
+Architecture: all
+Depends: ${shlibs:Depends}, ${misc:Depends}, libgmock, libgtest-dev
+Description: Google's C++ Mocking framework
+ Headers and static libraries as well as configuration binaries.
