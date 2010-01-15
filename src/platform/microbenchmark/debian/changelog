@@ -1,3 +1,9 @@
+chromeos-microbenchmark (0.3) UNRELEASED; urgency=low
+
+  * include gtest in Build-Deps
+
+ -- The Chromium OS Authors <chromium-os-dev@googlegroups.com>  Fri, 15 Jan 2010 12:00:00 -0800
+
 chromeos-microbenchmark (0.2) UNRELEASED; urgency=low
 
   * Use dh(1) and dh-chromeos.

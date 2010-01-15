@@ -5,7 +5,7 @@
 Source: chromeos-microbenchmark
 Priority: extra
 Maintainer: The Chromium OS Authors <chromium-os-dev@googlegroups.com>
-Build-Depends: debhelper (>= 7.0.50), dh-chromeos
+Build-Depends: debhelper (>= 7.0.50), dh-chromeos, libgtest-dev
 Standards-Version: 3.8.0
 Section: libs
 
