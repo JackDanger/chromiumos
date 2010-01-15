@@ -33,9 +33,11 @@ mkdir -p "$PKG_BUILD_DIR"
 rm -rf "${PKG_BUILD_DIR}/build"
 cp -rp "${TOP_SCRIPT_DIR}/files" "${PKG_BUILD_DIR}/build"
 pushd "${PKG_BUILD_DIR}/build"
-# Apply patches
-gunzip -c "${TOP_SCRIPT_DIR}/ibus-chewing_1.2.0.20090818-2.diff.gz" | patch -p1
-chmod u+x ./debian/rules
+if [ ! -e debian/rules ]; then
+  # Apply patches
+  gunzip -c "${TOP_SCRIPT_DIR}/ibus-chewing_1.2.0.20090818-2.diff.gz" | patch -p1
+  chmod u+x ./debian/rules
+fi
 
 # Build the package
 dpkg-buildpackage -b -tc -us -uc
