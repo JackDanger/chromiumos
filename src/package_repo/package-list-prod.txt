@@ -37,6 +37,7 @@ bootchart
 bsdutils
 bzip2
 diff
+gnupg  # needed by apt-get to verify signatures
 hostname
 ifupdown
 iproute
@@ -47,6 +48,7 @@ net-tools
 openssh-server
 tar
 vim-tiny
+x11-utils
 xterm
 
 # Fonts
