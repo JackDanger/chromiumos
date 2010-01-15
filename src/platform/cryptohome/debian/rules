@@ -15,7 +15,6 @@ override_dh_install:
 	cp $(CURDIR)/bin/umount $(CURDIR)/debian/chromeos-cryptohome/usr/sbin/umount.cryptohome
 	# Files for transitioning to DBus
 	cp $(CURDIR)/cryptohomed $(CURDIR)/debian/chromeos-cryptohome/usr/sbin/cryptohomed
-	cp $(CURDIR)/libcryptohome.so $(CURDIR)/debian/chromeos-cryptohome/usr/lib/libcryptohome.so
 	cp $(CURDIR)/libcryptohome_service.so $(CURDIR)/debian/chromeos-cryptohome/usr/lib/libcryptohome_service.so
 	# TODO(wad) treat as conffiles
 	cp $(CURDIR)/etc/Cryptohome.conf $(CURDIR)/debian/chromeos-cryptohome/etc/dbus-1/system.d/Cryptohome.conf
