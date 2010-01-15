@@ -24,14 +24,16 @@
 //                      NULL);   // No end callback
 //   bindings.AddBinding(
 //       KeyBindings::KeyCombo(XK_Tab, kAltMask), "switch-window");
-//
+
+#include <map>
+#include <set>
+#include <string>
+
 extern "C" {
 #include <X11/keysym.h>
 #include <X11/X.h>
 #include <X11/Xlib.h>
 }
-#include <map>
-#include <string>
 
 #include "base/basictypes.h"
 #include "chromeos/callback.h"
@@ -47,13 +49,13 @@ class KeyBindings {
  public:
   // Set of possible modifer mask bits. OR these together to create a KeyCombo
   // modifiers value.
-  static const uint kShiftMask = ShiftMask;
-  static const uint kControlMask = ControlMask;
-  static const uint kAltMask = Mod1Mask;
-  static const uint kMetaMask = Mod2Mask;     // TODO: Verify
-  static const uint kNumLockMask = Mod3Mask;  // TODO: Verify
-  static const uint kSuperMask = Mod4Mask;
-  static const uint kHyperMask = Mod5Mask;    // TODO: Verify
+  static const uint32 kShiftMask = ShiftMask;
+  static const uint32 kControlMask = ControlMask;
+  static const uint32 kAltMask = Mod1Mask;
+  static const uint32 kMetaMask = Mod2Mask;     // TODO: Verify
+  static const uint32 kNumLockMask = Mod3Mask;  // TODO: Verify
+  static const uint32 kSuperMask = Mod4Mask;
+  static const uint32 kHyperMask = Mod5Mask;    // TODO: Verify
 
   // A key and modifier combination, such as (XK_Tab, kAltMask) for alt-tab.
   struct KeyCombo {
@@ -61,10 +63,10 @@ class KeyBindings {
     // or Caps Lock is on isn't useful for us) and mask LockMask out of the
     // modifier (so that bindings will still be recognized if Caps Lock is
     // enabled).
-    explicit KeyCombo(KeySym key_param, uint modifiers_param = 0);
+    explicit KeyCombo(KeySym key_param, uint32 modifiers_param = 0);
 
     KeySym key;
-    uint modifiers;
+    uint32 modifiers;
   };
 
   struct KeyComboComparator {
@@ -102,7 +104,7 @@ class KeyBindings {
  private:
   // Returns the modifier mask value that is equivalent to the given keysym
   // if the keysym is a modifier type; else 0.
-  uint KeySymToModifier(uint keysym);
+  uint32 KeySymToModifier(uint32 keysym);
 
   XConnection* xconn_;  // Weak reference
 
@@ -111,6 +113,11 @@ class KeyBindings {
 
   typedef std::map<KeyCombo, std::string, KeyComboComparator> BindingsMap;
   BindingsMap bindings_;
+
+  // Map from a keysym to the names of all of the actions that use it as
+  // their non-modifier key.
+  typedef std::map<KeySym, std::set<std::string> > KeySymMap;
+  KeySymMap action_names_by_keysym_;
 
   DISALLOW_COPY_AND_ASSIGN(KeyBindings);
 };

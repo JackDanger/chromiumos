@@ -402,6 +402,23 @@ TEST_F(KeyBindingsTest, RemoveCapsLock) {
   EXPECT_EQ(1, actions_[0]->end_call_count);
 }
 
+// Test that we terminate in-progress actions correctly when their modifier
+// keys get released before the non-modifier key.
+TEST_F(KeyBindingsTest, ModifierReleasedFirst) {
+  AddAction(0, true, false, true);
+  bindings_->AddBinding(KeyBindings::KeyCombo(XK_k, KeyBindings::kControlMask),
+                       actions_[0]->name);
+
+  EXPECT_FALSE(bindings_->HandleKeyPress(XK_Control_L, 0));
+  EXPECT_TRUE(bindings_->HandleKeyPress(XK_k, KeyBindings::kControlMask));
+  EXPECT_FALSE(bindings_->HandleKeyRelease(XK_Control_L,
+                                           KeyBindings::kControlMask));
+  EXPECT_TRUE(bindings_->HandleKeyRelease(XK_k, 0));
+
+  EXPECT_EQ(1, actions_[0]->begin_call_count);
+  EXPECT_EQ(1, actions_[0]->end_call_count);
+}
+
 }  // namespace window_manager
 
 int main(int argc, char **argv) {

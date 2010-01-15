@@ -19,8 +19,10 @@ extern "C" {
 namespace window_manager {
 
 using chromeos::Closure;
+using std::set;
+using std::string;
 
-KeyBindings::KeyCombo::KeyCombo(KeySym key_param, uint modifiers_param) {
+KeyBindings::KeyCombo::KeyCombo(KeySym key_param, uint32 modifiers_param) {
   KeySym upper_keysym = None, lower_keysym = None;
   XConvertCase(key_param, &lower_keysym, &upper_keysym);
   key = lower_keysym;
@@ -61,8 +63,7 @@ struct Action {
   scoped_ptr<Closure> end_closure;
 
   // The set of key combinations currently bound to this action.
-  std::set<KeyBindings::KeyCombo,
-           KeyBindings::KeyComboComparator> bindings;
+  set<KeyBindings::KeyCombo, KeyBindings::KeyComboComparator> bindings;
 
   DISALLOW_COPY_AND_ASSIGN(Action);
 };
@@ -84,10 +85,11 @@ KeyBindings::~KeyBindings() {
   CHECK_EQ(bindings_.size(), 0);
 }
 
-bool KeyBindings::AddAction(const std::string& action_name,
+bool KeyBindings::AddAction(const string& action_name,
                             Closure* begin_closure,
                             Closure* repeat_closure,
                             Closure* end_closure) {
+  CHECK(!action_name.empty());
   if (actions_.find(action_name) != actions_.end()) {
     LOG(WARNING) << "Attempting to add action that already exists: "
                  << action_name;
@@ -98,7 +100,7 @@ bool KeyBindings::AddAction(const std::string& action_name,
   return true;
 }
 
-bool KeyBindings::RemoveAction(const std::string& action_name) {
+bool KeyBindings::RemoveAction(const string& action_name) {
   ActionMap::iterator iter = actions_.find(action_name);
   if (iter == actions_.end()) {
     LOG(WARNING) << "Attempting to remove non-existant action: " << action_name;
@@ -114,8 +116,7 @@ bool KeyBindings::RemoveAction(const std::string& action_name) {
   return true;
 }
 
-bool KeyBindings::AddBinding(const KeyCombo& combo,
-                             const std::string& action_name) {
+bool KeyBindings::AddBinding(const KeyCombo& combo, const string& action_name) {
   if (bindings_.find(combo) != bindings_.end()) {
     LOG(WARNING) << "Attempt to overwrite existing key binding for action: "
                  << action_name;
@@ -130,6 +131,7 @@ bool KeyBindings::AddBinding(const KeyCombo& combo,
   Action* const action = iter->second;
   CHECK(action->bindings.insert(combo).second);
   CHECK(bindings_.insert(make_pair(combo, action_name)).second);
+  CHECK(action_names_by_keysym_[combo.key].insert(action_name).second);
 
   KeyCode keycode = xconn_->GetKeyCodeFromKeySym(combo.key);
   xconn_->GrabKey(keycode, combo.modifiers);
@@ -147,6 +149,13 @@ bool KeyBindings::RemoveBinding(const KeyCombo& combo) {
   CHECK(action_iter != actions_.end());
   Action* action = action_iter->second;
   CHECK_EQ(action->bindings.erase(combo), 1);
+
+  KeySymMap::iterator keysym_iter = action_names_by_keysym_.find(combo.key);
+  CHECK(keysym_iter != action_names_by_keysym_.end());
+  CHECK_EQ(keysym_iter->second.erase(bindings_iter->second), 1);
+  if (keysym_iter->second.empty()) {
+    action_names_by_keysym_.erase(keysym_iter);
+  }
   bindings_.erase(bindings_iter);
 
   // If this action triggered its own binding's removal we won't know what
@@ -186,35 +195,40 @@ bool KeyBindings::HandleKeyPress(KeySym keysym, uint32 modifiers) {
 }
 
 bool KeyBindings::HandleKeyRelease(KeySym keysym, uint32 modifiers) {
-  // If the keycode that we are interested in is in fact a modifier key,
-  // then that will also show up in the modifiers (since indeed that modifier
-  // key was down just prior to the key release). If that is the case, then
-  // we remove from modifiers instead of counting it as part of the combo.
-  modifiers &= ~KeySymToModifier(keysym);
-
   KeyCombo combo(keysym, modifiers);
 
-  BindingsMap::const_iterator bindings_iter = bindings_.find(combo);
-  if (bindings_iter == bindings_.end()) {
+  // It's possible that a combo's modifier key(s) will get released before
+  // its non-modifier key: for an Alt+Tab combo, imagine seeing Alt press,
+  // Tab press, Alt release, and then Tab release.  In this case, kAltMask
+  // won't be present in the Tab release event's modifier bitmap.  We still
+  // want to run the end closure for the in-progress action when we receive
+  // the Tab release, so we check all of the non-modifier key's actions
+  // here to see if any of them are active.
+  KeySymMap::const_iterator keysym_iter =
+      action_names_by_keysym_.find(combo.key);
+  if (keysym_iter == action_names_by_keysym_.end()) {
     return false;
   }
 
-  const std::string& action_name = bindings_iter->second;
-  ActionMap::iterator action_iter = actions_.find(action_name);
-  CHECK(action_iter != actions_.end());
-  Action* const action = action_iter->second;
-  if (!action->running) {
-    LOG(WARNING) << "Got KeyRelease for non-running action: " << action_name;
+  bool ran_end_closure = false;
+  for (set<string>::const_iterator action_name_iter =
+         keysym_iter->second.begin();
+       action_name_iter != keysym_iter->second.end(); ++action_name_iter) {
+    ActionMap::iterator action_iter = actions_.find(*action_name_iter);
+    CHECK(action_iter != actions_.end());
+    Action* const action = action_iter->second;
+    if (action->running) {
+      action->running = false;
+      if (action->end_closure.get()) {
+        action->end_closure->Run();
+        ran_end_closure = true;
+      }
+    }
   }
-  action->running = false;
-  if (action->end_closure.get()) {
-    action->end_closure->Run();
-    return true;
-  }
-  return false;
+  return ran_end_closure;
 }
 
-uint KeyBindings::KeySymToModifier(uint keysym) {
+uint32 KeyBindings::KeySymToModifier(uint32 keysym) {
   switch (keysym) {
     case XK_Shift_L:
     case XK_Shift_R:
