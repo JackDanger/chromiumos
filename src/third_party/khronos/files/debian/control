@@ -1,0 +1,21 @@
+# Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Source: khronos-egl-2.0
+Section: libdevel
+Priority: extra
+Maintainer: The Chromium OS Authors <chromium-os-dev@googlegroups.com>
+Build-Depends: debhelper (>= 7.3.0), dh-chromeos, scons
+Standards-Version: 3.8.0
+
+Package: libkhronos-egl-2.0
+Architecture: armel
+Description: Khronos OpenGL ES 2.0 shared library
+ Run-time Khronos OpenGL ES 2.0 library.
+
+Package: libkhronos-egl-2.0-dev
+Architecture: armel
+Depends: libkhronos-egl-2.0 (= ${binary:Version})
+Description: Khronos OpenGL ES 2.0 headers
+ Files for Khronos OpenGL ES 2.0 development.

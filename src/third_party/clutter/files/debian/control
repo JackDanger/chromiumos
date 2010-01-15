@@ -7,6 +7,7 @@ Uploaders: Rob Bradford <robster@debian.org>, Gustavo Noronha Silva <kov@debian.
 Build-Depends: debhelper (>= 5),
                cdbs (>= 0.4.41),
                libgl1-mesa-dev | libgl-dev,
+               libkhronos-egl-2.0-dev [armel],
                libgtk2.0-dev,
                libcairo2-dev (>= 1.4),
                libpango1.0-dev (>= 1.20),
