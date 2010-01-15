@@ -10,8 +10,8 @@
 #include <base/logging.h>
 #include <base/string_util.h>
 #include <chromeos/dbus/dbus.h>
+#include <chromeos/dbus/service_constants.h>
 
-#include "cryptohome/constants.h"
 #include "cryptohome/bindings/client.h"
 
 namespace switches {

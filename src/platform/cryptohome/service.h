@@ -10,9 +10,8 @@
 #include <base/logging.h>
 #include <chromeos/dbus/abstract_dbus_service.h>
 #include <chromeos/dbus/dbus.h>
+#include <chromeos/dbus/service_constants.h>
 #include <chromeos/glib/object.h>
-
-#include "cryptohome/constants.h"
 
 namespace cryptohome {
 namespace gobject {
