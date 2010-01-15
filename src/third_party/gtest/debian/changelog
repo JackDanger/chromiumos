@@ -1,6 +1,7 @@
 gtest (1.4.0) karmic; urgency=low
 
   * update to use 1.4.0 source
+  * Don't run tests while cross-compiling.
 
  -- The Chromium OS Authors <chromium-os-dev@googlegroups.com>  Fri, 13 Jan 2010 12:00:00 -0800
 
