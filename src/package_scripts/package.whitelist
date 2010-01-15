@@ -1,6 +1,42 @@
 # Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
+acpid.postinst b420640fca40493672528e8de25eff4d
+acpid.preinst 3444fcdc1646287d1080e9cdd6e4bb76
+alsa-utils.postinst e7655972240a6b8324a5f43a192d966d
+alsa-utils.preinst 2f402794561b09e83829f928d4e57ae7
+base-files.preinst 860926bcd31cb38163bdb5b120a5aa93
+base-passwd.postinst d7acba77fa3ce02c044b0285e2f51b76
+bash.postinst 371ff982cb2547c6c42264c5872d6fe6
+bootchart.postinst 496667d59ea6e1fb0805e642862013ed
+bootchart.preinst 7e36e1027c570682aab508e9a3ef9b1c
+bsdutils.postinst 4a917a1c2cdef71d2a134d430056fb5d
+chromeos-flimflam.postinst c3dc1c274e37e3baf7177014e366c787
+chromeos-libcros.postinst 0023c445744c40a8296bcddace1cd1c4
+chromeos-libcros.preinst 9d39e2d8492e128f93001deade52fc44
+chromeos-login.postinst 31a408f910030ecdeec134ed29f3146b
+chromeos-login.preinst f689a96e64df419a69afbf20a43672b0
+chromeos-theme.postinst a9248df8d1a4d62366f6bfb19f6ec095
+chromeos-theme.preinst c78a2d5070edca14255591686341b523
+chromeos-wm.postinst 113e4222e02c1800532fb374c03ce8c5
+chromeos-wm.preinst 2683e255774cdc679ba95f2b92c521e6
+chromeos-wpasupplicant.postinst fbdc45e1cf3471997fda6f1534032caa
+consolekit.postinst 6c0d719567d5a5cf84a47a9d0059d26d
+consolekit.preinst 9e078075810ead1f4533e788a3ce5359
+cpio.postinst 979b5690f48abd86a6e025c56e89fde3
+cpp.postinst a724070f4fc3a2ac63582176dd61d71b
+dbus.preinst ee5b98b0ceb0644953dbe04b71d66a1a
+debconf.postinst f4067c4e04c45da71267335fca3ad5e2
+debconf.preinst 64e2d3a4511983d52c4f508d54576e07
+debianutils.postinst 81792af19455c4f061f3a340a57095a9
+defoma.postinst e517bb09692fb330fb81418c7a5d4a10
+devicekit-disks.postinst bf852f7146e5a464837c5fb0f7742e3b
+devicekit-power.postinst c32d1c0124392d9155ad24c48e177ced
+dhcp3-client.preinst b471b29f75eb24a07543a0b89db520b7
+dmsetup.postinst 969f1a663b7450d99f3136a32513a079
+dmsetup.preinst 1d056fd775a8365aa14b9a8ada1c56f2
+dpkg.preinst acff80f01260fb41a0c86005efd8f51b
+e2fsprogs.preinst 9e483860a5b617e59c3ad00d8bc1f94f
 libasound2.postinst d58c6d94c74c094de2cf20fd8f9bf6d7
 libblkid1.preinst 3faedacf69ac16b9624476956d1d791c
 libbz2-1.0.postinst 6f62a916f07747383db67dc759ea9dc0
