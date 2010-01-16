@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# chromos-chrome
+
+set -e
+
+chmod 6755 "${ROOT}/opt/google/chrome/session" || true
+chmod 6755 "${ROOT}/opt/google/chrome/emit_login_prompt_ready" || true
