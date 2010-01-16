@@ -1,0 +1,19 @@
+#!/bin/bash
+
+# Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# $ROOT - The path to the target root file system.
+# $SRC_ROOT - The path to the source tree.
+
+# dash.postinst
+
+set -e
+
+# Dash is (for now) our /bin/sh.
+rm -f ${ROOT}/bin/sh
+ln -s /bin/dash ${ROOT}/bin/sh
+
+# We don't need to call add-shells b/c we don't use /etc/shells
+# Don't bother with man pages

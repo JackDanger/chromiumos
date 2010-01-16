@@ -25,6 +25,7 @@ consolekit.postinst 6c0d719567d5a5cf84a47a9d0059d26d
 consolekit.preinst 9e078075810ead1f4533e788a3ce5359
 cpio.postinst 979b5690f48abd86a6e025c56e89fde3
 cpp.postinst a724070f4fc3a2ac63582176dd61d71b
+dash.postinst 345de5a0b6c4bc1414f9211b3e477d89
 dbus.preinst ee5b98b0ceb0644953dbe04b71d66a1a
 debconf.postinst f4067c4e04c45da71267335fca3ad5e2
 debconf.preinst 64e2d3a4511983d52c4f508d54576e07
