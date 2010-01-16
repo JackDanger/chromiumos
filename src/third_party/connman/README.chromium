@@ -1,8 +1,0 @@
-URL: http://www.connman.net
-Version: Current as of Tue Jul  21 14:14:54 PDT 2009
-License: GPL v2
-License File: LICENSE 
-
-Description:
-  The source code for connman including local modifications
-  (awaiting acceptance upstream).
