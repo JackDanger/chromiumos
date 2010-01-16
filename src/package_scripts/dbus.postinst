@@ -1,0 +1,25 @@
+#!/bin/bash
+
+# Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# $ROOT - The path to the target root file system.
+# $SRC_ROOT - The path to the source tree.
+
+# dbus.postinst
+
+set -e
+
+. "$(dirname "$0")/adduser_functions.sh"
+
+# Create the messagebus user
+add_user "messagebus" $DBUS_UID $DBUS_GID "" /var/run/dbus /bin/false
+add_group "messagebus" $DBUS_GID
+
+LAUNCHER="${ROOT}/lib/dbus-1.0/dbus-daemon-launch-helper"
+chown root:$DBUS_GID "$LAUNCHER"
+chmod 4754 "$LAUNCHER"
+
+# skip sys-v startup scripts that we don't use
+# no need to actually run dbus at this point
