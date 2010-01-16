@@ -33,6 +33,7 @@ debianutils.postinst 81792af19455c4f061f3a340a57095a9
 defoma.postinst e517bb09692fb330fb81418c7a5d4a10
 devicekit-disks.postinst bf852f7146e5a464837c5fb0f7742e3b
 devicekit-power.postinst c32d1c0124392d9155ad24c48e177ced
+dhcp3-client.postinst 8fd77e711e0f6e2db0d815087339656c
 dhcp3-client.preinst b471b29f75eb24a07543a0b89db520b7
 dmsetup.postinst 969f1a663b7450d99f3136a32513a079
 dmsetup.preinst 1d056fd775a8365aa14b9a8ada1c56f2

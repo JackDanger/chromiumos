@@ -19,4 +19,4 @@ install -d --owner=root --group=root --mode=0755  \
 touch "${ROOT}/etc/fstab"
 
 # TODO:This is needed by stuff that uses sysv-rc. Maybe move there?
-mkdir -p "${ROOT_FS_DIR}/etc/init.d"
+mkdir -p "${ROOT}/etc/init.d"
