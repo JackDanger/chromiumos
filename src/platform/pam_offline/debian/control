@@ -1,0 +1,16 @@
+# Copyright (c) 2009-2010 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+Source: chromeos-pam-offline
+Priority: extra
+Maintainer: The Chromium OS Authors <chromium-os-dev@googlegroups.com>
+Build-Depends: libchromeos-dev, debhelper (>= 7)
+Standards-Version: 3.8.0
+Section: libs
+
+Package: chromeos-pam-offline
+Section: libs
+Architecture: any
+Depends: libpam0g, libssl, ${shlibs:Depends}, ${misc:Depends}
+Description: Linux-PAM module to perform offline authentication in Chrome(ium)OS.

@@ -1,0 +1,39 @@
+# -*- python -*-
+
+# Copyright (c) 2009-2010 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import os
+
+env = Environment()
+
+pam_sources = env.Split("""utils.cc
+                        pam_prompt_wrapper.cc
+  	                credentials.cc
+                        username_password.cc
+                        username_password_fetcher.cc
+                        authenticator.cc
+                        pam_offline.cc""")
+
+test_sources = env.Split("""pam_offline_testrunner.cc
+                         username_password_unittest.cc
+                         pam_prompt_wrapper_unittest.cc
+                         username_password_fetcher_unittest.cc
+                         authenticator_unittest.cc
+                         pam_offline_unittest.cc
+                         """)
+
+env.Append(
+    CPPPATH=['..', '../../third_party/chrome/files', '../../common'],
+    CCFLAGS=['-g', '-fno-exceptions', '-Wall', '-Werror'],
+    LIBPATH=['../../third_party/chrome'],
+    LIBS=['pam', 'ssl', 'base', 'rt', 'pthread', 'chromeos'],
+)
+
+env_lib = env.Clone()
+env_lib.SharedLibrary('chromeos_pam_offline', pam_sources)
+
+env_test = env.Clone()
+env_test.Append(LIBS=['gflags', 'gtest', 'pcrecpp', 'curl'])
+env_test.Program('pam_offline_unittests', pam_sources + test_sources)

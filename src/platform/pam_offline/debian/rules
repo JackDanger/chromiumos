@@ -1,0 +1,61 @@
+#!/usr/bin/make -f
+# -*- makefile -*-
+# Copyright (c) 2009-2010 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# Uncomment this to turn on verbose mode.
+#export DH_VERBOSE=1
+
+# The number of jobs to pass to tools that can run in parallel (such as make
+# and dpkg-buildpackage
+NUM_JOBS=`cat /proc/cpuinfo | grep processor | awk '{a++} END {print a}'`
+
+# shared library versions, option 1
+version=2.0.5
+major=2
+# option 2, assuming the library is created as src/.libs/libfoo.so.2.0.5 or so
+#version=`ls src/.libs/lib*.so.* | \
+# awk '{if (match($$0,/[0-9]+\.[0-9]+\.[0-9]+$$/)) print substr($$0,RSTART)}'`
+#major=`ls src/.libs/lib*.so.* | \
+# awk '{if (match($$0,/\.so\.[0-9]+$$/)) print substr($$0,RSTART+4)}'`
+
+build: build-stamp
+build-stamp:
+	dh_testdir
+	scons -j$(NUM_JOBS) libchromeos_pam_offline.so
+	touch $@
+
+clean:
+	dh_testdir
+	dh_testroot
+	rm -f build-stamp
+	scons -c
+	dh_clean
+
+install: build
+	 dh_testdir
+	 dh_testroot
+	 dh_prep
+	 dh_installdirs
+	 mkdir -p $(CURDIR)/debian/chromeos-pam-offline/lib/security
+	 cp $(CURDIR)/libchromeos_pam_offline.so $(CURDIR)/debian/chromeos-pam-offline/lib/security/chromeos_pam_offline.so
+	 mkdir -p $(CURDIR)/debian/chromeos-pam-offline/etc
+
+# Build architecture-dependent files here.
+binary-arch: install
+	     dh_testdir
+	     dh_testroot
+	     dh_link
+	     dh_strip
+	     dh_compress
+	     dh_fixperms
+	     dh_installdeb
+	     dh_shlibdeps
+	     dh_gencontrol
+	     dh_md5sums
+	     dh_builddeb
+
+binary: binary-arch
+
+.PHONY: build clean install binary-arch binary

@@ -1,0 +1,36 @@
+chromeos-pam-offline (0.6) unstable; urgency=low
+
+  * Add depends to .deb, add libchromeos dep, code cleanup
+
+ -- The Chromium OS Authors <chromium-os-dev@googlegroups.com>  Tue, 12 Jan 2010 20:11:58 +0000
+
+chromeos-pam-offline (0.5) unstable; urgency=low
+
+  * Clean up log message, code style issues
+
+ -- The Chromium OS Authors <chromium-os-dev@googlegroups.com>  Tue, 12 Jan 2010 20:11:58 +0000
+
+chromeos-pam-offline (0.4) unstable; urgency=low
+
+  * Implement offline checks
+
+ -- The Chromium OS Authors <chromium-os-dev@googlegroups.com>  Tue, 12 Jan 2010 18:14:08 +0000
+
+chromeos-pam-offline (0.3) unstable; urgency=low
+
+  * Link with librt and libpthread
+
+ -- The Chromium OS Authors <chromium-os-dev@googlegroups.com>  Mon, 14 Dec 2009 18:18:41 +0000
+
+chromeos-pam-offline (0.2) unstable; urgency=low
+
+  * Remove pem file that conflicts with pam_google
+
+ -- The Chromium OS Authors <chromium-os-dev@googlegroups.com>  Fri, 11 Dec 2009 21:03:33 +0000
+
+chromeos-pam-offline (0.1) unstable; urgency=low
+
+  * Initial release
+
+ -- The Chromium OS Authors <chromium-os-dev@googlegroups.com>  Thu, 10 Dec 2009 22:32:11 +0000
+	
