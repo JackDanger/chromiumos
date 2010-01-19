@@ -87,6 +87,7 @@ libslang2.postinst e16ff7e603b3e2b3459b5e8e0ce082e5
 libssl0.9.8.postinst b038d7c782155204c8aec56920c03078
 libstdc++6.postinst f8b51eead56fd2dd36093c980d8a8b22
 libxxf86vm1.postinst 5d0e769df33e016b3c52a0971e8d258c
+login.postinst 41f8680e0cbb1d6445021e85ba01852b
 login.preinst b73598958015ddacf45fc349925aaced
 mawk.postinst 4d78490023c77db55809128037ad118c
 mime-support.postinst 7468a507f27173f504c162ef1bcf5322
@@ -113,6 +114,7 @@ tar.postinst 62f859480043760bdbc6f14e188aed86
 time.postinst d521d478a6f6b7a38399058f7fdb2251
 time.preinst 726bac46028e6a4705daae53c0e654f7
 ttf-dejavu.preinst ffa8c2757c4e61eed61bc8ce2692fa77
+tzdata.postinst 31d7e701d870adbcf6744c3db09a9b2b
 ucf.preinst 9987f34a919667714d64c8453ade05fb
 udev.preinst c46a8027715ed705c951cadeba38f25d
 upstart.postinst 586b2d517192b5cb4eb5c5209ab1f503
