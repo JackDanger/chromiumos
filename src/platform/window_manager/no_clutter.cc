@@ -38,6 +38,9 @@ using std::tr1::shared_ptr;
 
 namespace window_manager {
 
+const float NoClutterInterface::kMinDepth = -2048.0f;
+const float NoClutterInterface::kMaxDepth = 2048.0f;
+
 NoClutterInterface::AnimationBase::AnimationBase(AnimationTime start_time,
                                                  AnimationTime end_time)
     : start_time_(start_time),
@@ -354,8 +357,7 @@ void NoClutterInterface::ContainerActor::LowerChild(
 
 NoClutterInterface::QuadActor::QuadActor(NoClutterInterface* interface)
     : NoClutterInterface::Actor(interface),
-      color_(1.f, 1.f, 1.f),
-      texture_(new TextureRep(interface->gl_interface(), XCB_NONE)) {
+      color_(1.f, 1.f, 1.f) {
 }
 
 void NoClutterInterface::QuadActor::AddToDisplayListImpl(
@@ -537,8 +539,6 @@ void NoClutterInterface::StageActor::Draw() {
   // arbitrary value that is a power of two) -- the maximum number of
   // layers depends on the number of actors and the bit-depth of the
   // hardware's z-buffer.
-  const float kMinDepth = -2048.0f;
-  const float kMaxDepth = 2048.0f;
 
   interface()->gl_interface()->MatrixMode(GL_PROJECTION);
   interface()->gl_interface()->LoadIdentity();

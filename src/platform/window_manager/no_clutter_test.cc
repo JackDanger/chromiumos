@@ -15,6 +15,7 @@
 #include "window_manager/no_clutter.h"
 #include "window_manager/mock_gl_interface.h"
 #include "window_manager/mock_x_connection.h"
+#include "window_manager/util.h"
 
 DEFINE_bool(logtostderr, false,
             "Print debugging messages to stderr (suppressed otherwise)");
@@ -106,10 +107,14 @@ TEST_F(NoClutterTest, LayerDepth) {
   interface()->Draw();
   EXPECT_EQ(7, interface()->actor_count());
 
-  // Code uses a depth range of -1 to 1.  Layers are
-  // disributed evenly within that range.
-  depth = 2047.0f;
-  thickness = -1.0f;
+  // Code uses a depth range of kMinDepth to kMaxDepth.  Layers are
+  // disributed evenly within that range, except we don't use the
+  // frontmost or backmost values in that range.
+  uint32 max_count = NextPowerOfTwo(
+      static_cast<uint32>(interface()->actor_count() + 2));
+  thickness = -(NoClutterInterface::kMaxDepth -
+                NoClutterInterface::kMinDepth) / max_count;
+  depth = NoClutterInterface::kMaxDepth + thickness;
 
   EXPECT_FLOAT_EQ(depth,
                   dynamic_cast<NoClutterInterface::QuadActor*>(rect1)->z());

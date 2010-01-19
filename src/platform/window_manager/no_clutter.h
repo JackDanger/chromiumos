@@ -31,6 +31,9 @@ class NoClutterInterface : public ClutterInterface {
   typedef std::vector<Actor*> ActorVector;
   typedef std::list<std::tr1::shared_ptr<AnimationBase> > AnimationList;
 
+  static const float kMinDepth;
+  static const float kMaxDepth;
+
   struct TextureRep {
    public:
     TextureRep(GLInterface* new_gl_interface, GLuint new_texture)
