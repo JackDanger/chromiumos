@@ -31,6 +31,27 @@ class NoClutterInterface : public ClutterInterface {
   typedef std::vector<Actor*> ActorVector;
   typedef std::list<std::tr1::shared_ptr<AnimationBase> > AnimationList;
 
+  struct TextureRep {
+   public:
+    TextureRep(GLInterface* new_gl_interface, GLuint new_texture)
+        : texture(new_texture),
+          gl_interface(new_gl_interface) {
+      // A zero texture id is not the end of the world, but might
+      // indicate a bug somewhere.  We use a NULL shared_ptr to
+      // indicate no texture in the Actor code.
+      DCHECK(texture != 0);
+    }
+
+    ~TextureRep() {
+      if (texture) {
+        gl_interface->DeleteTextures(1, &texture);
+      }
+    }
+
+    GLuint texture;
+    GLInterface* gl_interface;
+  };
+
   class AnimationBase {
    public:
     // This is in milliseconds.
@@ -113,10 +134,15 @@ class NoClutterInterface : public ClutterInterface {
     void LowerToBottom();
     // End ClutterInterface::Actor methods
 
-    // Updates the actor in response to time passing.  The actor is
+    // Updates the actor in response to time passing, and counts the
+    // number of actors as it goes.
+    virtual void Update(int* count, AnimationBase::AnimationTime now);
+
+    // Calcluates and sets the Z depth for the actor.  The actor is
     // set to depth 'depth', and updates the parameter to contain the
-    // depth that should be used for the next actor.
-    virtual void Update(float* depth, AnimationBase::AnimationTime now);
+    // depth that should be used for the next actor by adding the
+    // layer_thickness.
+    virtual void ComputeDepth(float* depth, float layer_thickness);
 
     // Traverse the scene and add actors to the given display list.
     // When opaque is true, only opaque actors are added, when opaque
@@ -175,7 +201,8 @@ class NoClutterInterface : public ClutterInterface {
     }
     void AddActor(ClutterInterface::Actor* actor);
     void RemoveActor(ClutterInterface::Actor* actor);
-    virtual void Update(float* depth, AnimationBase::AnimationTime now);
+    virtual void Update(int* count, AnimationBase::AnimationTime now);
+    virtual void ComputeDepth(float* depth, float layer_thickness);
     virtual void AddToDisplayListImpl(NoClutterInterface::ActorVector* actors,
                                       bool opaque);
     // Raise one child over another.  Raise to top if "above" is NULL.
@@ -200,11 +227,25 @@ class NoClutterInterface : public ClutterInterface {
                                       bool opaque);
     virtual void Draw();
 
+    // We use reference counted textures here so that we can be sure
+    // that when we clone actors that they 1) share the same texture
+    // ID instead of copying the texture data, and 2) delete the
+    // textures properly when all actors using that texture go out of
+    // scope.
+    void set_texture(std::tr1::shared_ptr<TextureRep>& texture) {
+      texture_ = texture;
+    }
+
+    GLuint texture_id() const {
+      return texture_.get() ? texture_->texture : 0;
+    }
+
    protected:
-    GLuint texture_;
     ClutterInterface::Color color_;
 
    private:
+    std::tr1::shared_ptr<TextureRep> texture_;
+
     DISALLOW_COPY_AND_ASSIGN(QuadActor);
   };
 
@@ -292,6 +333,7 @@ class NoClutterInterface : public ClutterInterface {
   AnimationBase::AnimationTime GetCurrentTime() { return now_; }
   bool HandleEvent(XEvent* event);
   GLuint vertex_buffer() { return vertex_buffer_; }
+  int actor_count() { return actor_count_; }
 
   void Draw();
 
@@ -364,6 +406,11 @@ class NoClutterInterface : public ClutterInterface {
 
   // This is the vertex buffer that holds the rect we use for rendering stages.
   GLuint vertex_buffer_;
+
+  // This is the count of actors in the tree as of the last time
+  // Update was called.  It is used to compute the depth delta for
+  // layer depth calculations.
+  int actor_count_;
 
   DISALLOW_COPY_AND_ASSIGN(NoClutterInterface);
 };

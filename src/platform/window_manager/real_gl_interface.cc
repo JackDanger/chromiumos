@@ -9,8 +9,11 @@
 
 namespace window_manager {
 
+static std::string kGlxExtensions;
 static PFNGLXBINDTEXIMAGEEXTPROC _gl_bind_tex_image = NULL;
 static PFNGLXRELEASETEXIMAGEEXTPROC _gl_release_tex_image = NULL;
+static PFNGLXCREATEPIXMAPPROC _gl_create_pixmap = NULL;
+static PFNGLXDESTROYPIXMAPPROC _gl_destroy_pixmap = NULL;
 
 void RealGLInterface::GlxFree(void* item) {
   XFree(item);
@@ -18,29 +21,57 @@ void RealGLInterface::GlxFree(void* item) {
 
 RealGLInterface::RealGLInterface(RealXConnection* connection)
     : xconn_(connection) {
-  if (_gl_bind_tex_image == NULL) {
-    _gl_bind_tex_image = reinterpret_cast<PFNGLXBINDTEXIMAGEEXTPROC>(
-        glXGetProcAddress(
-            reinterpret_cast<const GLubyte*>("glXBindTexImageEXT")));
+  if (kGlxExtensions.size() == 0) {
+    kGlxExtensions = std::string(glXQueryExtensionsString(
+        xconn_->GetDisplay(), DefaultScreen(xconn_->GetDisplay())));
+    LOG(INFO) << "Supported extensions: " << kGlxExtensions;
   }
-  CHECK(_gl_bind_tex_image)
-      << "Unable to find proc address for glXBindTexImageEXT";
+  if (kGlxExtensions.find("GLX_EXT_texture_from_pixmap") != std::string::npos) {
+    if (_gl_bind_tex_image == NULL) {
+      _gl_bind_tex_image = reinterpret_cast<PFNGLXBINDTEXIMAGEEXTPROC>(
+          glXGetProcAddress(
+              reinterpret_cast<const GLubyte*>("glXBindTexImageEXT")));
+    }
+    CHECK(_gl_bind_tex_image)
+        << "Unable to find proc address for glXBindTexImageEXT";
 
-  if (_gl_release_tex_image == NULL) {
-    _gl_release_tex_image = reinterpret_cast<PFNGLXRELEASETEXIMAGEEXTPROC>(
-        glXGetProcAddress(
-            reinterpret_cast<const GLubyte*>("glXReleaseTexImageEXT")));
+    if (_gl_release_tex_image == NULL) {
+      _gl_release_tex_image = reinterpret_cast<PFNGLXRELEASETEXIMAGEEXTPROC>(
+          glXGetProcAddress(
+              reinterpret_cast<const GLubyte*>("glXReleaseTexImageEXT")));
+    }
+    CHECK(_gl_release_tex_image)
+        << "Unable to find proc address for glXReleaseTexImageEXT";
+  } else {
+    CHECK(false) << "Texture from pixmap not supported on this device.";
   }
-  CHECK(_gl_release_tex_image)
-      << "Unable to find proc address for glXReleaseTexImageEXT";
+  if (kGlxExtensions.find("GLX_SGIX_fbconfig") != std::string::npos) {
+    if (_gl_create_pixmap == NULL) {
+      _gl_create_pixmap = reinterpret_cast<PFNGLXCREATEPIXMAPPROC>(
+          glXGetProcAddress(
+              reinterpret_cast<const GLubyte*>("glXCreatePixmap")));
+    }
+    CHECK(_gl_create_pixmap)
+        << "Unable to find proc address for glXCreatePixmap";
+
+    if (_gl_destroy_pixmap == NULL) {
+      _gl_destroy_pixmap = reinterpret_cast<PFNGLXDESTROYPIXMAPPROC>(
+          glXGetProcAddress(
+              reinterpret_cast<const GLubyte*>("glXDestroyPixmap")));
+    }
+    CHECK(_gl_destroy_pixmap)
+        << "Unable to find proc address for glXDestroyPixmap";
+  } else {
+    CHECK(false) << "FBConfig not supported on this device.";
+  }
 }
 
 GLXPixmap RealGLInterface::CreateGlxPixmap(GLXFBConfig config,
                                            XPixmap pixmap,
                                            const int* attrib_list) {
   xconn_->TrapErrors();
-  GLXPixmap result = glXCreatePixmap(xconn_->GetDisplay(), config,
-                                     pixmap, attrib_list);
+  GLXPixmap result = _gl_create_pixmap(xconn_->GetDisplay(), config,
+                                       pixmap, attrib_list);
   if (int error = xconn_->UntrapErrors()) {
     LOG(WARNING) << "Got X error while creating a GL pixmap: "
                  << xconn_->GetErrorText(error);
@@ -51,7 +82,7 @@ GLXPixmap RealGLInterface::CreateGlxPixmap(GLXFBConfig config,
 
 void RealGLInterface::DestroyGlxPixmap(GLXPixmap pixmap) {
   xconn_->TrapErrors();
-  glXDestroyPixmap(xconn_->GetDisplay(), pixmap);
+  _gl_destroy_pixmap(xconn_->GetDisplay(), pixmap);
   if (int error = xconn_->UntrapErrors()) {
     LOG(WARNING) << "Got X error while destroying a GL pixmap: "
                  << xconn_->GetErrorText(error);
@@ -276,6 +307,28 @@ void RealGLInterface::TexCoordPointer(GLint size, GLenum type,
 
 void RealGLInterface::TexParameteri(GLenum target, GLenum pname, GLint param) {
   glTexParameteri(target, pname, param);
+}
+
+void RealGLInterface::TexParameterf(GLenum target, GLenum pname,
+                                    GLfloat param) {
+  glTexParameterf(target, pname, param);
+}
+
+void RealGLInterface::TexEnvf(GLenum target, GLenum pname, GLfloat param) {
+  glTexEnvf(target, pname, param);
+}
+
+void RealGLInterface::TexImage2D(GLenum target,
+                                 GLint level,
+                                 GLint internalFormat,
+                                 GLsizei width,
+                                 GLsizei height,
+                                 GLint border,
+                                 GLenum format,
+                                 GLenum type,
+                                 const GLvoid *pixels ) {
+  glTexImage2D(target, level, internalFormat, width, height,
+               border, format, type, pixels);
 }
 
 void RealGLInterface::Translatef(GLfloat x, GLfloat y, GLfloat z) {

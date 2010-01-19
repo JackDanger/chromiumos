@@ -71,6 +71,17 @@ class MockGLInterface : public GLInterface {
   void TexCoordPointer(GLint size, GLenum type, GLsizei stride,
                        const GLvoid* pointer) {}
   void TexParameteri(GLenum target, GLenum pname, GLint param) {}
+  void TexParameterf(GLenum target, GLenum pname, GLfloat param) {}
+  void TexEnvf(GLenum target, GLenum pname, GLfloat param) {}
+  void TexImage2D(GLenum target,
+                  GLint level,
+                  GLint internalFormat,
+                  GLsizei width,
+                  GLsizei height,
+                  GLint border,
+                  GLenum format,
+                  GLenum type,
+                  const GLvoid *pixels ) { }
   void Translatef(GLfloat x, GLfloat y, GLfloat z) {}
   void VertexPointer(GLint size, GLenum type, GLsizei stride,
                      const GLvoid* pointer) {}

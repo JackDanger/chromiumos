@@ -21,6 +21,8 @@
 #include <string>
 
 #include "base/logging.h"
+#include "window_manager/image_container.h"
+#include "window_manager/util.h"
 
 using std::tr1::shared_ptr;
 
@@ -165,10 +167,9 @@ void NoClutterInterface::Actor::LowerToBottom() {
   set_dirty();
 }
 
-void NoClutterInterface::Actor::Update(float* depth,
+void NoClutterInterface::Actor::Update(int* count,
                                        AnimationBase::AnimationTime now) {
-  set_z(*depth);
-  *depth += 1.0f;
+  (*count)++;
   AnimationList::iterator iterator = animations_.begin();
   if (!animations_.empty()) set_dirty();
   while (iterator != animations_.end()) {
@@ -181,9 +182,13 @@ void NoClutterInterface::Actor::Update(float* depth,
   }
 }
 
+void NoClutterInterface::Actor::ComputeDepth(float* depth, float thickness) {
+  set_z(*depth);
+  (*depth) += thickness;
+}
+
 void NoClutterInterface::Actor::AddToDisplayList(
-    NoClutterInterface::ActorVector* actors,
-    bool opaque) {
+    NoClutterInterface::ActorVector* actors, bool opaque) {
   if (!IsVisible())
     return;
   AddToDisplayListImpl(actors, opaque);
@@ -230,7 +235,7 @@ void NoClutterInterface::ContainerActor::AddActor(
 void NoClutterInterface::ContainerActor::RemoveActor(
     ClutterInterface::Actor* actor) {
   ActorVector::iterator iterator = std::find(children_.begin(), children_.end(),
-                                           actor);
+                                             actor);
   if (iterator != children_.end()) {
     children_.erase(iterator);
     set_dirty();
@@ -238,12 +243,21 @@ void NoClutterInterface::ContainerActor::RemoveActor(
 }
 
 void NoClutterInterface::ContainerActor::Update(
-    float* depth, AnimationBase::AnimationTime now) {
+    int* count, AnimationBase::AnimationTime now) {
   for (ActorVector::iterator iterator = children_.begin();
        iterator != children_.end(); ++iterator) {
-    (*iterator)->Update(depth, now);
+    (*iterator)->Update(count, now);
   }
-  NoClutterInterface::Actor::Update(depth, now);
+  NoClutterInterface::Actor::Update(count, now);
+}
+
+void NoClutterInterface::ContainerActor::ComputeDepth(float* depth,
+                                                      float thickness) {
+  for (ActorVector::iterator iterator = children_.begin();
+       iterator != children_.end(); ++iterator) {
+    (*iterator)->ComputeDepth(depth, thickness);
+  }
+  NoClutterInterface::Actor::ComputeDepth(depth, thickness);
 }
 
 void NoClutterInterface::ContainerActor::AddToDisplayListImpl(
@@ -338,17 +352,17 @@ void NoClutterInterface::ContainerActor::LowerChild(
   }
 }
 
-
 NoClutterInterface::QuadActor::QuadActor(NoClutterInterface* interface)
     : NoClutterInterface::Actor(interface),
-      texture_(0),
-      color_(1.f, 1.f, 1.f) {
+      color_(1.f, 1.f, 1.f),
+      texture_(new TextureRep(interface->gl_interface(), XCB_NONE)) {
 }
 
-void NoClutterInterface::QuadActor::AddToDisplayListImpl(ActorVector* actors,
-                                                         bool opaque) {
-  if (opaque == is_opaque())
+void NoClutterInterface::QuadActor::AddToDisplayListImpl(
+    ActorVector* actors, bool opaque) {
+  if (opaque == is_opaque()) {
     actors->push_back(this);
+  }
 }
 
 // TODO: Implement group attribute propagation.  Right now, the
@@ -359,9 +373,9 @@ void NoClutterInterface::QuadActor::AddToDisplayListImpl(ActorVector* actors,
 void NoClutterInterface::QuadActor::Draw() {
   interface()->gl_interface()->Color4f(color_.red, color_.green, color_.blue,
                                        opacity());
-  if (texture_) {
+  if (texture_id()) {
     interface()->gl_interface()->Enable(GL_TEXTURE_2D);
-    interface()->gl_interface()->BindTexture(GL_TEXTURE_2D, texture_);
+    interface()->gl_interface()->BindTexture(GL_TEXTURE_2D, texture_id());
   } else {
     interface()->gl_interface()->Disable(GL_TEXTURE_2D);
   }
@@ -393,7 +407,7 @@ bool NoClutterInterface::TexturePixmapActor::SetTexturePixmapWindow(
 }
 
 bool NoClutterInterface::TexturePixmapActor::Bind() {
-  CHECK(!texture_) << "Missing texture in Bind.";
+  CHECK(!texture_id()) << "Missing texture in Bind.";
   CHECK(!pixmap_) << "Missing pixmap in Bind.";
   CHECK(!glx_pixmap_) << "Missing GLX pixmap in Bind.";
   CHECK(window_) << "Missing window in Bind.";
@@ -419,9 +433,13 @@ bool NoClutterInterface::TexturePixmapActor::Bind() {
                          interface()->config_24_;
   glx_pixmap_ = interface()->gl_interface()->CreateGlxPixmap(config, pixmap_,
                                                              attribs);
-
-  interface()->gl_interface()->GenTextures(1, &texture_);
-  interface()->gl_interface()->BindTexture(GL_TEXTURE_2D, texture_);
+  LOG_IF(ERROR, glx_pixmap_ == XCB_NONE) << "Newly created GLX Pixmap is NULL";
+  GLuint new_texture = 0;
+  interface()->gl_interface()->GenTextures(1, &new_texture);
+  shared_ptr<TextureRep> texture_rep(new TextureRep(interface()->gl_interface(),
+                                                    new_texture));
+  set_texture(texture_rep);
+  interface()->gl_interface()->BindTexture(GL_TEXTURE_2D, new_texture);
   interface()->gl_interface()->TexParameteri(GL_TEXTURE_2D,
                                              GL_TEXTURE_MIN_FILTER,
                                              GL_NEAREST);
@@ -442,10 +460,8 @@ void NoClutterInterface::TexturePixmapActor::Reset() {
     interface()->x_conn()->DestroyDamage(damage_);
     damage_ = XCB_NONE;
   }
-  if (texture_) {
-    interface()->gl_interface()->DeleteTextures(1, &texture_);
-    texture_ = XCB_NONE;
-  }
+  shared_ptr<TextureRep> texture_rep;
+  set_texture(texture_rep);
   if (glx_pixmap_) {
     interface()->gl_interface()->DestroyGlxPixmap(glx_pixmap_);
     glx_pixmap_ = XCB_NONE;
@@ -457,11 +473,12 @@ void NoClutterInterface::TexturePixmapActor::Reset() {
 }
 
 void NoClutterInterface::TexturePixmapActor::Refresh() {
-  LOG_IF(ERROR, !texture_ || !glx_pixmap_) << "Refreshing with no textures.";
-  if (!texture_ || !glx_pixmap_)
+  LOG_IF(ERROR, !texture_id() || !glx_pixmap_)
+      << "Refreshing with no textures.";
+  if (!texture_id() || !glx_pixmap_)
     return;
 
-  interface()->gl_interface()->BindTexture(GL_TEXTURE_2D, texture_);
+  interface()->gl_interface()->BindTexture(GL_TEXTURE_2D, texture_id());
   interface()->gl_interface()->ReleaseGlxTexImage(glx_pixmap_,
                                                   GLX_FRONT_LEFT_EXT);
   interface()->gl_interface()->BindGlxTexImage(glx_pixmap_,
@@ -474,18 +491,18 @@ void NoClutterInterface::TexturePixmapActor::Refresh() {
 }
 
 void NoClutterInterface::TexturePixmapActor::Draw() {
-  if (!texture_ && window_) {
+  if (!texture_id() && window_) {
     Bind();
   }
-  if (!texture_)
+  if (!texture_id())
     return;
   NoClutterInterface::QuadActor::Draw();
 }
 
 NoClutterInterface::StageActor::StageActor(NoClutterInterface* an_interface,
                                            int width, int height)
-  : NoClutterInterface::ContainerActor(an_interface),
-    stage_color_(1.f, 1.f, 1.f) {
+    : NoClutterInterface::ContainerActor(an_interface),
+      stage_color_(1.f, 1.f, 1.f) {
   window_ = interface()->x_conn()->CreateSimpleWindow(
       interface()->x_conn()->GetRootWindow(),
       0, 0, width, height);
@@ -512,9 +529,21 @@ static bool CompareBackToFront(NoClutterInterface::Actor* a,
 }
 
 void NoClutterInterface::StageActor::Draw() {
+  // The eventual plan here is to have three depth ranges, one in the
+  // front that is 4096 deep, one in the back that is 4096 deep, and
+  // the remaining in the middle for drawing 3D UI elements.
+  // Currently, this code represents just the front layer range.  Note
+  // that the number of layers is NOT limited to 4096 (this is an
+  // arbitrary value that is a power of two) -- the maximum number of
+  // layers depends on the number of actors and the bit-depth of the
+  // hardware's z-buffer.
+  const float kMinDepth = -2048.0f;
+  const float kMaxDepth = 2048.0f;
+
   interface()->gl_interface()->MatrixMode(GL_PROJECTION);
   interface()->gl_interface()->LoadIdentity();
-  interface()->gl_interface()->Ortho(0, width(), height(), 0, -100, 100);
+  interface()->gl_interface()->Ortho(0, width(), height(), 0,
+                                     kMinDepth, kMaxDepth);
   interface()->gl_interface()->MatrixMode(GL_MODELVIEW);
   interface()->gl_interface()->LoadIdentity();
   ActorVector actors;
@@ -528,6 +557,18 @@ void NoClutterInterface::StageActor::Draw() {
   interface()->gl_interface()->TexCoordPointer(2, GL_FLOAT, 0, NULL);
   CHECK_GL_ERROR();
 
+  // This calculates the next power of two for the actor count, so
+  // that we can avoid roundoff errors when computing the depth.
+  // Also, add two empty layers at the front and the back that we
+  // won't use in order to avoid issues at the extremes.
+  uint32 count = NextPowerOfTwo(
+      static_cast<uint32>(interface()->actor_count() + 2));
+  float layer_thickness = -(kMaxDepth - kMinDepth) / count;
+
+  // Don't start at the very edge of the z-buffer depth.
+  float depth = kMaxDepth + layer_thickness;
+
+  ComputeDepth(&depth, layer_thickness);
   AddToDisplayList(&actors, true);
   if (!actors.empty()) {
     interface()->gl_interface()->Disable(GL_BLEND);
@@ -574,7 +615,8 @@ NoClutterInterface::NoClutterInterface(XConnection* xconn,
       config_32_(0),
       config_24_(0),
       num_frames_drawn_(0),
-      vertex_buffer_(0) {
+      vertex_buffer_(0),
+      actor_count_(0) {
   CHECK(xconn_);
   DCHECK(gl_interface_);
   now_ = GetCurrentRealTime();
@@ -711,8 +753,40 @@ NoClutterInterface::Actor* NoClutterInterface::CreateRectangle(
 NoClutterInterface::Actor* NoClutterInterface::CreateImage(
     const std::string& filename) {
   QuadActor* actor = new QuadActor(this);
-  // TODO: load image, create texture set into actor
-  actor->SetColor(ClutterInterface::Color(1.f, 0.f, 0.f));
+  scoped_ptr<ImageContainer> container(
+      ImageContainer::CreateContainer(filename));
+  if (container.get() &&
+      container->LoadImage() == ImageContainer::IMAGE_LOAD_SUCCESS) {
+    // Create an OpenGL texture with the loaded image data.
+    GLuint new_texture;
+    gl_interface()->Enable(GL_TEXTURE_2D);
+    gl_interface()->GenTextures(1, &new_texture);
+    shared_ptr<TextureRep> texture_rep(new TextureRep(gl_interface(),
+                                                      new_texture));
+    actor->set_texture(texture_rep);
+    gl_interface()->BindTexture(GL_TEXTURE_2D, new_texture);
+    gl_interface()->TexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+    gl_interface()->TexParameterf(GL_TEXTURE_2D,
+                                  GL_TEXTURE_MIN_FILTER,
+                                  GL_LINEAR);
+    gl_interface()->TexParameterf(GL_TEXTURE_2D,
+                                  GL_TEXTURE_MAG_FILTER,
+                                  GL_LINEAR);
+    gl_interface()->TexParameterf(GL_TEXTURE_2D,
+                                  GL_TEXTURE_WRAP_S,
+                                  GL_CLAMP_TO_EDGE);
+    gl_interface()->TexParameterf(GL_TEXTURE_2D,
+                                  GL_TEXTURE_WRAP_T,
+                                  GL_CLAMP_TO_EDGE);
+    gl_interface()->TexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+                               container->width(), container->height(),
+                               0, GL_RGBA, GL_UNSIGNED_BYTE,
+                               container->data());
+    LOG(INFO) << "Binding image " << filename << " to texture " << new_texture;
+  } else {
+    actor->SetColor(ClutterInterface::Color(1.f, 0.f, 1.f));
+  }
+
   return actor;
 }
 
@@ -741,7 +815,7 @@ NoClutterInterface::Actor* NoClutterInterface::CloneActor(
 
 void NoClutterInterface::RemoveActor(Actor* actor) {
   ActorVector::iterator iterator = std::find(actors_.begin(), actors_.end(),
-                                           actor);
+                                             actor);
   if (iterator != actors_.end()) {
     actors_.erase(iterator);
   }
@@ -754,8 +828,6 @@ static GdkFilterReturn FilterEvent(GdkXEvent* xevent,
   return interface->HandleEvent(reinterpret_cast<XEvent*>(xevent)) ?
       GDK_FILTER_REMOVE : GDK_FILTER_CONTINUE;
 }
-
-#include "chromeos/utility.h"
 
 bool NoClutterInterface::HandleEvent(XEvent* xevent) {
   if (xevent->type != DestroyNotify &&
@@ -818,8 +890,8 @@ void NoClutterInterface::DrawNeedle() {
 
 void NoClutterInterface::Draw() {
   now_ = GetCurrentRealTime();
-  float depth = 1.0f;
-  default_stage_->Update(&depth, now_);
+  actor_count_ = 0;
+  default_stage_->Update(&actor_count_, now_);
   if (dirty_) {
     default_stage_->Draw();
     DrawNeedle();

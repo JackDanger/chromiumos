@@ -45,6 +45,81 @@ class NoClutterTest : public ::testing::Test {
   XConnection* x_connection_;
 };
 
+TEST_F(NoClutterTest, LayerDepth) {
+  // Create an actor tree to test.
+  ClutterInterface::StageActor* stage = interface()->GetDefaultStage();
+  ClutterInterface::ContainerActor* group1 = interface()->CreateGroup();
+  ClutterInterface::ContainerActor* group2 = interface()->CreateGroup();
+  ClutterInterface::ContainerActor* group3 = interface()->CreateGroup();
+  ClutterInterface::Actor* rect1 =
+      interface()->CreateRectangle(ClutterInterface::Color(),
+                                   ClutterInterface::Color(), 0);
+  ClutterInterface::Actor* rect2 =
+      interface()->CreateRectangle(ClutterInterface::Color(),
+                                   ClutterInterface::Color(), 0);
+  ClutterInterface::Actor* rect3 =
+      interface()->CreateRectangle(ClutterInterface::Color(),
+                                   ClutterInterface::Color(), 0);
+  stage->AddActor(group1);
+  group1->AddActor(group2);
+  group2->AddActor(rect1);
+  group2->AddActor(group3);
+  group3->AddActor(rect2);
+  group3->AddActor(rect3);
+
+  // Test lower-level layer-setting routines
+  int count = 0;
+  dynamic_cast<NoClutterInterface::StageActor*>(stage)->Update(&count, 0LL);
+  EXPECT_EQ(7, count);
+  NoClutterInterface::ActorVector actors;
+  // Start at a default depth range of -100 to 100.  Layers are
+  // disributed evenly within that range.
+  float depth = 100.0f;
+  float thickness = -(100.0f - -100.0f)/count;
+  dynamic_cast<NoClutterInterface::StageActor*>(stage)->ComputeDepth(
+      &depth, thickness);
+  EXPECT_FLOAT_EQ(-100.0f, depth);
+  depth = 100.0f;  // Reset depth.
+  EXPECT_FLOAT_EQ(depth,
+                  dynamic_cast<NoClutterInterface::QuadActor*>(rect1)->z());
+  depth += thickness;
+  EXPECT_FLOAT_EQ(depth,
+                  dynamic_cast<NoClutterInterface::QuadActor*>(rect2)->z());
+  depth += thickness;
+  EXPECT_FLOAT_EQ(depth,
+                  dynamic_cast<NoClutterInterface::QuadActor*>(rect3)->z());
+
+  depth += thickness;
+  EXPECT_FLOAT_EQ(depth,
+                  dynamic_cast<NoClutterInterface::ContainerActor*>(
+                      group3)->z());
+  depth += thickness;
+  EXPECT_FLOAT_EQ(depth,
+                  dynamic_cast<NoClutterInterface::ContainerActor*>(
+                      group2)->z());
+  depth += thickness;
+  EXPECT_FLOAT_EQ(depth,
+                  dynamic_cast<NoClutterInterface::ContainerActor*>(
+                      group1)->z());
+
+  // Test higher-level results.
+  interface()->Draw();
+  EXPECT_EQ(7, interface()->actor_count());
+
+  // Code uses a depth range of -1 to 1.  Layers are
+  // disributed evenly within that range.
+  depth = 2047.0f;
+  thickness = -1.0f;
+
+  EXPECT_FLOAT_EQ(depth,
+                  dynamic_cast<NoClutterInterface::QuadActor*>(rect1)->z());
+  depth += thickness;
+  EXPECT_FLOAT_EQ(depth,
+                  dynamic_cast<NoClutterInterface::QuadActor*>(rect2)->z());
+  depth += thickness;
+  EXPECT_FLOAT_EQ(depth,
+                  dynamic_cast<NoClutterInterface::QuadActor*>(rect3)->z());
+}
 
 TEST_F(NoClutterTest, FloatAnimation) {
   float value = -10.0f;

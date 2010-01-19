@@ -125,6 +125,7 @@ libwm_ipc = wm_env.Library('wm_ipc', srcs)
 srcs = Split('''\
   clutter_interface.cc
   hotkey_overlay.cc
+  image_container.cc
   key_bindings.cc
   layout_manager.cc
   metrics_reporter.cc

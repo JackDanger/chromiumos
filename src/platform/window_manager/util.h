@@ -198,6 +198,17 @@ void FillTimeval(double time, struct timeval* tv);
 // Helper method to convert an XID into a hex string.
 std::string XidStr(unsigned long xid);
 
+// Helper method to return the next highest power of two.
+inline uint32 NextPowerOfTwo(uint32 x) {
+  x--;
+  x = x | (x >> 1);
+  x = x | (x >> 2);
+  x = x | (x >> 4);
+  x = x | (x >> 8);
+  x = x | (x >> 16);
+  return x + 1;
+}
+
 }  // namespace window_manager
 
 #endif  // WINDOW_MANAGER_UTIL_H_

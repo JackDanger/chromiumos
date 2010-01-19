@@ -84,6 +84,17 @@ class GLInterface {
   virtual void TexCoordPointer(GLint size, GLenum type, GLsizei stride,
                                const GLvoid* pointer) = 0;
   virtual void TexParameteri(GLenum target, GLenum pname, GLint param) = 0;
+  virtual void TexParameterf(GLenum target, GLenum pname, GLfloat param) = 0;
+  virtual void TexEnvf(GLenum target, GLenum pname, GLfloat param) = 0;
+  virtual void TexImage2D(GLenum target,
+                          GLint level,
+                          GLint internalFormat,
+                          GLsizei width,
+                          GLsizei height,
+                          GLint border,
+                          GLenum format,
+                          GLenum type,
+                          const GLvoid *pixels ) = 0;
   virtual void Translatef(GLfloat x, GLfloat y, GLfloat z) = 0;
   virtual void VertexPointer(GLint size, GLenum type, GLsizei stride,
                              const GLvoid* pointer) = 0;
