@@ -102,6 +102,9 @@ deps = {
     _third_party_base + "tpm-emulator/files":
         "http://svn.berlios.de/svnroot/repos/tpm-emulator/trunk@341",
 
+    # trousers
+    _third_party_base + "trousers": "/trousers.git",
+
     # chrome-base
     _third_party_base + "chrome/files/base":
         "http://src.chromium.org/svn/trunk/src/base@33520",

@@ -62,6 +62,7 @@
 /src/third_party/shunit2/files/
 /src/third_party/syslinux/files/
 /src/third_party/tpm-emulator/files/
+/src/third_party/trousers/
 /src/third_party/tzdata/
 /src/third_party/upstart/files/
 /src/third_party/vim/
