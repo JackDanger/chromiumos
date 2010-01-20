@@ -22,34 +22,15 @@ xserver-xorg
 # For creating tokens that allow user binaries to communicate with the xserver.
 xauth
 
+# Some things freak out if the hostname is not set.
+hostname
+
 # Newer packages of chromium-browser don't seem to have libgconf2 as
 # part of their depends, but chrome won't run without.
 libgconf2-4
 
 # DRI drivers are needed to run the clutter-based WM.
 libgl1-mesa-dri
-
-# TODO: Move into a developer addon list. These should all be
-# optional. For now, install these useful packages until things are farther
-# along in development.
-apt
-bootchart
-bsdutils
-bzip2
-diff
-gnupg  # needed by apt-get to verify signatures
-hostname
-ifupdown
-iproute
-iputils-ping
-less
-ncurses-base
-net-tools
-openssh-server
-tar
-vim-tiny
-x11-utils
-xterm
 
 # Fonts
 ttf-dejavu
