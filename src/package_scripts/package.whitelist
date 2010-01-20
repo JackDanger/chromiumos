@@ -113,6 +113,7 @@ openssl.postinst 5fc7ac6874a8160849391f541cab343e
 passwd.preinst d29d8fbaae7eb01f85adb69136551049
 perl-modules.preinst 1f2ed274c4f1e851d4a9b78e7314a9b2
 perl.postinst f54c9d8877caf1bb55c89a604ba972b8
+policykit-1.postinst 010397b7df71376c72d381823cdfa307
 procps.postinst 8a0bf1abf3e86f00d03ade0a629c1b76
 procps.preinst 167bbf327e9d481190dafcfc788c433f
 psmisc.postinst b8d01f7a8639f5710427ec1aca71c2df

@@ -1,0 +1,20 @@
+#!/bin/bash
+
+# Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# $ROOT - The path to the target root file system.
+# $SRC_ROOT - The path to the source tree.
+
+# policykit-1.postinst
+
+set -e
+
+chown -f root:root "${ROOT}/var/lib/polkit-1"
+chown -f root:root "${ROOT}/usr/lib/policykit-1/polkit-agent-helper-1"
+chown -f root:root "${ROOT}/usr/bin/pkexec"
+
+chmod -f 700 "${ROOT}/var/lib/polkit-1"
+chmod -f 4755 "${ROOT}/usr/lib/policykit-1/polkit-agent-helper-1"
+chmod -f 4755 "${ROOT}/usr/bin/pkexec"
