@@ -18,7 +18,9 @@ sub DESCRIPTION {
 
 sub check_auto_buildable {
 	my $this=shift;
-	if (-e $this->get_sourcepath("SConstruct")) {
+	if (-e $this->get_sourcepath("SConstruct.chromiumos")) {
+		return -e $this->get_sourcepath("SConstruct.chromiumos");
+	} elsif (-e $this->get_sourcepath("SConstruct")) {
 		return -e $this->get_sourcepath("SConstruct");
 	} elsif (-e $this->get_sourcepath("Sconstruct")) {
 		return -e $this->get_sourcepath("Sconstruct");
@@ -42,6 +44,16 @@ my %toolchain = (
 	LD => 'ld',
 	NM => 'nm',
 );
+
+sub do_scons {
+	my $this=shift;
+
+	my @opts;
+	if (-e $this->get_sourcepath("SConstruct.chromiumos")) {
+		push @opts, "-f", "SConstruct.chromiumos";
+	}
+	return $this->doit_in_sourcedir("scons", @opts, @_);
+}
 
 sub build {
 	my $this=shift;
@@ -68,12 +80,12 @@ sub build {
 		push @opts, "-j$num_jobs";
 	}
 
-	$this->doit_in_sourcedir("scons", @opts, @_);
+	$this->do_scons(@opts, @_);
 }
 
 sub clean {
 	my $this=shift;
-	$this->doit_in_sourcedir("scons", "-c", @_);
+	$this->do_scons("-c", @_);
 	unlink($this->get_buildpath(".sconsign.dblite"));
 	rmtree($this->get_buildpath(".sconf_temp"));
 }
