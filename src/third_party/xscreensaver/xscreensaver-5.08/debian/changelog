@@ -1,3 +1,9 @@
+xscreensaver (5.08-0ubuntu5cr2) UNRELEASED; urgency=low
+
+  * Rename to match upstream version prefix, so ours will come first. Again.
+
+ -- The Chromium OS Authors <chromium-os-dev@googlegroups.com>  Tue, 19 Jan 2010 16:30:58 -0800
+
 xscreensaver (5.0.8-0ubuntu5cr2) UNRELEASED; urgency=low
 
   * Restore still-referenced ignore_all_errors_ehandler function to
