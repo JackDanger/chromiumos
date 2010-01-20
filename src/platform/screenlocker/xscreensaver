@@ -4,12 +4,12 @@
 
 # /etc/pam.d/xscreensaver
 #
-# Configure the pam modules that slim uses to authenticate the user.
+# Configure the pam modules that xscreensaver uses to authenticate the user.
 
 # We borrow from the system default in /etc/pam.d/common-*
 
 # from common-auth
-auth	[success=1 default=ignore]	pam_google.so offline_first
+auth	[success=1 default=ignore]	chromeos_pam_offline.so
 auth	requisite			pam_deny.so
 auth	required			pam_permit.so
 

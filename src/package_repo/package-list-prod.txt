@@ -85,6 +85,7 @@ chromeos-metrics-collection
 chromeos-metrics-daemon
 chromeos-monitor-reconfig
 chromeos-pam-google
+chromeos-pam-offline
 chromeos-ply-image
 chromeos-screenlocker
 chromeos-theme

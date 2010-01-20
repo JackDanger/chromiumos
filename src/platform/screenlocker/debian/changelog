@@ -1,3 +1,9 @@
+chromeos-screenlocker (1.0-3) UNRELEASED; urgency=low
+
+  * Use chromeos_pam_offline.so instead of pam_google.so
+
+ -- The Chromium OS Authors <chromium-os-dev@googlegroups.com>  Tue, 19 Jan 2010 16:39:43 -0800
+
 chromeos-screenlocker (1.0-2) UNRELEASED; urgency=low
 
   * Use dh(1).
