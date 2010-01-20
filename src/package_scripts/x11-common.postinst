@@ -1,0 +1,22 @@
+#!/bin/bash
+
+# Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# $ROOT - The path to the target root file system.
+# $SRC_ROOT - The path to the source tree.
+
+# x11-common.postinst
+
+set -e
+
+# Create /etc/X11 in case it doesn't exist.
+install -d --owner=root --group=root --mode=0755  \
+  "${ROOT}/etc/X11"
+
+# The setuid X wrapper uses this to determine who is allowed to start X.
+cat <<EOF > "${ROOT}/etc/X11/Xwrapper.config"
+# See 'man 5 Xwrapper.config'
+allowed_users=console
+EOF

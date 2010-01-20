@@ -1,0 +1,22 @@
+#!/bin/bash
+
+# Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# $ROOT - The path to the target root file system.
+# $SRC_ROOT - The path to the source tree.
+
+# ntp.postinst
+
+set -e
+
+. "$(dirname "$0")/adduser_functions.sh"
+
+add_user "ntp" $NTP_UID $NTP_GID "" /home/ntp /bin/false
+add_group "ntp" $NTP_GID
+
+chown -R $NTP_UID:$NTP_GID  \
+  "${ROOT}/var/lib/ntp"  \
+  "${ROOT}/var/log/ntpstats"
+

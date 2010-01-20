@@ -4,6 +4,8 @@
 # 200 and going up
 DBUS_UID=200
 DBUS_GID=200
+NTP_UID=201
+NTP_GID=201
 
 # Call with these params:
 # username (e.g. "messagebus")

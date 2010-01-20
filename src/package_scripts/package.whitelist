@@ -56,6 +56,7 @@ gconf2-common.postinst fdeead7c941e005561ee122113c71020
 gzip.postinst c21c402fdb67803a858f3e116ceba56e
 initscripts.postinst 0f27aaf3aabdf415187743cc60d80a5b
 initscripts.preinst cba37467b65bbcff9e10f28403e62d2e
+less.postinst 9eda7f2aea16c3a7a0a1336a4662b7f5
 libasound2.postinst d58c6d94c74c094de2cf20fd8f9bf6d7
 libblkid1.preinst 3faedacf69ac16b9624476956d1d791c
 libbz2-1.0.postinst 6f62a916f07747383db67dc759ea9dc0
@@ -97,6 +98,7 @@ mount.postinst b0835c6651e93f3b38205fe63817faec
 mount.preinst 749fce403dd02de0e5185df114760958
 ncurses-base.preinst e4c29eccdd2e84e75ce086ca5427e1bd
 ncurses-bin.preinst 1765771809c657943dcf73e2cfefd4d3
+ntp.postinst 1fcafa4bf9ce359b66a82ced6fd312d2
 ntp.preinst 53bbf8419723aea5038268b90b5e0ebc
 openssh-client.postinst 611413f15037991a00d4833899a88674
 openssl.postinst 5fc7ac6874a8160849391f541cab343e
@@ -125,10 +127,13 @@ util-linux.postinst 2698bff9dd50cba52afd9dfeed332258
 util-linux.preinst ca9f87a6f9ee70b2eb9347fb20efa474
 vim-common.postinst ce137d4c7299ac70929b931591262161
 vim-common.preinst 4116dab88c97636df1b5b4abe8684433
+vim-tiny.postinst b7f0095cde11c0c307d2e24b3967d9a7
 x11-common.postinst 6877408cbe66a065741be48876ce05cf
 x11-common.preinst 5b131bba7671ad4178cb77f19cd65ec0
 xserver-xorg-core.postinst 76c868d7a9d2207bedb1d9f89502986b
 xserver-xorg-core.preinst 2329fcb84cc6a78902330caf77f28fce
 xserver-xorg-video-all.preinst fc175c0ed1caa82cd387efeae10593a4
+xserver-xorg.postinst 94fb1b5a98784369eb47e8c0cbbd3402
+xserver-xorg.preinst 210dfce3c64c03c2f4606bb6d3badf5c
 xterm.postinst b01734e48b017ab0727ac11992553431
 xterm.preinst a497ff85842a79085713e673755ba2d8
