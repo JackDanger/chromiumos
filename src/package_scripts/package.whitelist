@@ -81,6 +81,7 @@ libnss3-1d.preinst 36e97d7d7f2f06ff7eba4a9c2f56eab7
 libpam-modules.preinst 65979b6b4fa2da97f3cf100c59d0814b
 libpam0g.postinst 0a3ae3aa41ff0179a61efbc89c3314e3
 libpango1.0-0.postinst b143d4f9a17c9edccc2ec108b36b2921
+libpango1.0-common.postinst ffe0c3109f4d83644894dff42d5a41ae
 libpango1.0-common.preinst 22cb478b3833e1b558b4ba7109c4ebd0
 libselinux1.postinst b7a006a554058d0c89ad22095e403e84
 libsepol1.postinst 16c354b04ad12dcce51f8a1f6e88a5da
