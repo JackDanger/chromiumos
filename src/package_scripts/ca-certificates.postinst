@@ -1,0 +1,54 @@
+#!/bin/bash
+
+# Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# ca-certificates.postinst
+
+set -e
+
+function check_hash {
+  # Takes three arguments, first - a failure message, 
+  # second - the file to check
+  # third - the list of known good hashes
+  local err_msg="${1}"
+  local file="${2}"
+  local good_hashes="${3}"
+
+  local file_hash=`md5sum ${file} | awk '{ print $1 }'`
+  if ! echo "${good_hashes}" | grep -q "${file_hash}"; then
+    echo "${err_msg}"
+    exit 1
+  fi
+}
+
+GOOD_FILE_LIST_HASHES="b177303cc840c8b2cc326e61c9d9edd8"
+check_hash \
+    "Replacement ca-certificates.postinst needs to be revalidated [list]" \
+    "${ROOT}/var/lib/dpkg/info/ca-certificates.list" "${GOOD_FILE_LIST_HASHES}"
+
+GOOD_UPDATE_SCRIPT_HASHES="8f3121435028440e46c24b3c4affbe4f"
+check_hash \
+    "Replacement ca-certificates.postinst needs to be revalidated [update]" \
+    "${ROOT}/usr/sbin/update-ca-certificates" "${GOOD_UPDATE_SCRIPT_HASHES}"
+
+
+grep "\.crt$" "${ROOT}/var/lib/dpkg/info/ca-certificates.list"  | \
+    sed -e "s,/usr/share/ca-certificates/,," | \
+    sort > "${ROOT}/etc/ca-certificates.conf"
+
+# The following lines emulate update-ca-certificates when /etc/ssl/certs is
+# empty and there are no remove (^!.*) lines in /etc/ca-certificates.conf
+
+CERT_DIR="/usr/share/ca-certificates"
+for cert in `cat "${ROOT}/etc/ca-certificates.conf"`; do 
+  pem="${ROOT}/etc/ssl/certs/`basename ${cert} .crt`.pem"
+  ln -sf ${CERT_DIR}/${cert} ${pem}
+  cat "${ROOT}/${CERT_DIR}/${cert}" >> \
+      "${ROOT}/tmp/ca-certificates.crt"
+done
+
+c_rehash "${ROOT}/etc/ssl/certs"
+
+mv "${ROOT}/tmp/ca-certificates.crt" "${ROOT}/etc/ssl/certs/"

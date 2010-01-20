@@ -16,6 +16,7 @@ bootchart.preinst 7e36e1027c570682aab508e9a3ef9b1c
 bsdutils.postinst 4a917a1c2cdef71d2a134d430056fb5d
 bzip2.postinst 839de13765e17bda0a573fa30e567c40
 bzip2.preinst 40bfc73fc0252c474096d0304f424c16
+ca-certificates.postinst 082f6f6ab5595f56376398b864b15624
 chromeos-acpi.postinst 3fe0c6b1530bb257f5ef91add2e962f2
 chromeos-chrome.postinst 36f20f4a67706aa4a242a06b61350502
 chromeos-cryptohome.preinst 16a482986020218733717ed5967ac3d8
