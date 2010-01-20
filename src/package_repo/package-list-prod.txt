@@ -22,6 +22,11 @@ xserver-xorg
 # For creating tokens that allow user binaries to communicate with the xserver.
 xauth
 
+# Needed by the developer kit.
+# TODO: Remove these from the prod list eventually but keep in debug.
+apt
+tar
+
 # Some things freak out if the hostname is not set.
 hostname
 
