@@ -79,7 +79,10 @@ libnspr4-0d.postinst 58c924e8e0acf43a5484a7f4bb066d05
 libnspr4-0d.preinst e473cdc7ca73ad7fd4e6457f94c7abdd
 libnss3-1d.postinst ad773c67798f3a18b849a698ae27c9dd
 libnss3-1d.preinst 36e97d7d7f2f06ff7eba4a9c2f56eab7
+libpam-modules.postinst 08f8aa96ff60d43aa954a1f2db3786cb
 libpam-modules.preinst 65979b6b4fa2da97f3cf100c59d0814b
+libpam-mount.postinst 5094f99c0f352028b0682c1538a71f24
+libpam-runtime.postinst 572b28945d7cc6d40131fa86bb7d17bb
 libpam0g.postinst 0a3ae3aa41ff0179a61efbc89c3314e3
 libpango1.0-0.postinst b143d4f9a17c9edccc2ec108b36b2921
 libpango1.0-common.postinst ffe0c3109f4d83644894dff42d5a41ae
