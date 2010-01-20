@@ -2,6 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include "service_constants.h"
+
+GQuark chromeos_login_error_quark() {
+  return g_quark_from_static_string("chromeos-login-error-quark");
+}
+
 namespace cryptohome {
 const char *kCryptohomeInterface = "org.chromium.CryptohomeInterface";
 const char *kCryptohomeServiceName = "org.chromium.Cryptohome";
