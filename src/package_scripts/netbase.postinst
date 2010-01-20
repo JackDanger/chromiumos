@@ -1,0 +1,23 @@
+#!/bin/bash
+
+# Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# $ROOT - The path to the target root file system.
+# $SRC_ROOT - The path to the source tree.
+
+# netbase.postinst
+
+set -e
+
+cat > "${ROOT}/etc/hosts" <<EOF
+127.0.0.1 localhost
+
+::1 localhost ip6-localhost ip6-loopback
+fe00::0 ip6-localnet
+ff00::0 ip6-mcastprefix
+ff02::1 ip6-allnodes
+ff02::2 ip6-allrouters
+ff02::3 ip6-allhosts
+EOF

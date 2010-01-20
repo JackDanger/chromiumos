@@ -105,6 +105,7 @@ mount.postinst b0835c6651e93f3b38205fe63817faec
 mount.preinst 749fce403dd02de0e5185df114760958
 ncurses-base.preinst e4c29eccdd2e84e75ce086ca5427e1bd
 ncurses-bin.preinst 1765771809c657943dcf73e2cfefd4d3
+netbase.postinst 214534f7f07589d1af9f8651837c788e
 ntp.postinst 1fcafa4bf9ce359b66a82ced6fd312d2
 ntp.preinst 53bbf8419723aea5038268b90b5e0ebc
 openssh-client.postinst 611413f15037991a00d4833899a88674
