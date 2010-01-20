@@ -125,6 +125,7 @@ python-cairo.preinst f5d2f914acffb86ee672d1a9016d2821
 rsyslog.postinst 2963ccb5af0816506d5e6e31ac7560a6
 rsyslog.preinst 22d8d28f059d4817befd7e83a549e7df
 slim.postinst 5e2d655d7ffdcb9f61f600a6c6fee809
+sudo.postinst d7f8fab2402d40b90c788d296478298e
 sysv-rc.postinst e1e124ac7bfd8f779ec4b94f6cf12bbe
 sysv-rc.preinst 764e7376d191c5b3d8df28ca0febe9da
 tar.postinst 62f859480043760bdbc6f14e188aed86
