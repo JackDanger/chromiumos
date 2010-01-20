@@ -1,0 +1,20 @@
+#!/bin/bash
+
+# Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# $ROOT - The path to the target root file system.
+# $SRC_ROOT - The path to the source tree.
+
+# rsyslog.postinst
+
+set -e
+
+. "$(dirname "$0")/adduser_functions.sh"
+
+add_user "syslog" $SYSLOG_UID $SYSLOG_GID "" /home/syslog /bin/false
+add_group "syslog" $SYSLOG_GID
+
+cp -a "${ROOT}/usr/share/rsyslog/50-default.conf" \
+  "${ROOT}/etc/rsyslog.d/50-default.conf"

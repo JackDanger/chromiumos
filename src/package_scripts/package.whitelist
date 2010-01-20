@@ -115,6 +115,7 @@ procps.postinst 8a0bf1abf3e86f00d03ade0a629c1b76
 procps.preinst 167bbf327e9d481190dafcfc788c433f
 psmisc.postinst b8d01f7a8639f5710427ec1aca71c2df
 python-cairo.preinst f5d2f914acffb86ee672d1a9016d2821
+rsyslog.postinst 2963ccb5af0816506d5e6e31ac7560a6
 rsyslog.preinst 22d8d28f059d4817befd7e83a549e7df
 slim.postinst 5e2d655d7ffdcb9f61f600a6c6fee809
 sysv-rc.postinst e1e124ac7bfd8f779ec4b94f6cf12bbe
