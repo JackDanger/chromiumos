@@ -113,6 +113,7 @@ ntp.postinst 1fcafa4bf9ce359b66a82ced6fd312d2
 ntp.preinst 53bbf8419723aea5038268b90b5e0ebc
 openssh-client.postinst 611413f15037991a00d4833899a88674
 openssl.postinst 5fc7ac6874a8160849391f541cab343e
+passwd.postinst 6eff5d8c5b33508d1b0efd1ebb601cd2
 passwd.preinst d29d8fbaae7eb01f85adb69136551049
 perl-modules.preinst 1f2ed274c4f1e851d4a9b78e7314a9b2
 perl.postinst f54c9d8877caf1bb55c89a604ba972b8

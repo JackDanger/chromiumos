@@ -1,0 +1,21 @@
+#!/bin/bash
+
+# Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# $ROOT - The path to the target root file system.
+# $SRC_ROOT - The path to the source tree.
+
+# passwd.postinst
+
+set -e
+
+cd "${ROOT}/etc"
+
+touch shadow
+
+chown root:root passwd group
+chmod 644 passwd group
+chown root:shadow shadow
+chmod 640 shadow

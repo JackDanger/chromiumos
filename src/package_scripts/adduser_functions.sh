@@ -17,7 +17,7 @@ SYSLOG_GID=202
 # home dir (e.g. "/home/foo" or "/var/run/dbus")
 # shell (e.g. "/bin/sh" or "/bin/false")
 add_user() {
-  echo "${1}:x:${2}:${3}:${4}:${5}:${6}" | \
+  echo "${1}:*:${2}:${3}:${4}:${5}:${6}" | \
     dd of="${ROOT}/etc/passwd" conv=notrunc oflag=append
 }
 
