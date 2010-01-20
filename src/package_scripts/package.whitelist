@@ -58,6 +58,8 @@ gconf2-common.postinst fdeead7c941e005561ee122113c71020
 gnupg.postinst a0935f7b6d9d5297cc24136849c21df0
 gnupg.preinst 72aeb8f001dd519fc1eb1eaa3715baa0
 gzip.postinst c21c402fdb67803a858f3e116ceba56e
+ifupdown.postinst 85cf83f043aace04f7c16209eb0d130b
+ifupdown.preinst 3494056247ac4dd1e017436c51b8f4f0
 im-switch.postinst 43aca28ef3e3e34afd07ca911de63700
 initscripts.postinst 0f27aaf3aabdf415187743cc60d80a5b
 initscripts.preinst cba37467b65bbcff9e10f28403e62d2e
@@ -99,6 +101,7 @@ libssl0.9.8.postinst b038d7c782155204c8aec56920c03078
 libstdc++6.postinst f8b51eead56fd2dd36093c980d8a8b22
 libuuid1.postinst cda7f535f20095e2a57f0f2654fa75ec
 libxxf86vm1.postinst 5d0e769df33e016b3c52a0971e8d258c
+linux-sound-base.postinst 5a50fd32c901c220edf595c416cc7bda
 login.postinst 41f8680e0cbb1d6445021e85ba01852b
 login.preinst b73598958015ddacf45fc349925aaced
 mawk.postinst 4d78490023c77db55809128037ad118c
