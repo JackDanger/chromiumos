@@ -63,6 +63,7 @@ libasound2.postinst d58c6d94c74c094de2cf20fd8f9bf6d7
 libblkid1.preinst 3faedacf69ac16b9624476956d1d791c
 libbz2-1.0.postinst 6f62a916f07747383db67dc759ea9dc0
 libc-bin.postinst 3e0f1729659bfabbc7b602fdbcaa01bc
+libc6.postinst 441a1db798fd1a0fdaae84677a743481
 libc6.preinst 659907f34884c55522ab0c98ad0ca380
 libcomerr2.postinst fcfe41f2080037c87322ed25394c2427
 libdb4.7.postinst ca71a00e518b17326b70d58aa19dec93
