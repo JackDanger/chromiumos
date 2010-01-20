@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# im-switch.postinst
+
+set -e
+
+cd "${ROOT}/etc/X11/xinit/xinput.d/"
+
+ln -s default all_ALL
+ln -s th-xim th_TH
