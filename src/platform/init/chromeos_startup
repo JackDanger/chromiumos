@@ -23,8 +23,8 @@ PRE_DISK_STAT=$(cat /sys/block/sda/stat)
 echo 0 > /sys/devices/virtual/graphics/fbcon/cursor_blink
 
 # Since we defer udev until later in the boot process, we pre-populate /dev
-# with the set of devices needed for X to run.
-cp -a -f /lib/udev/devices/* /dev
+# with the set of devices needed for X and other early services to run.
+cp -a -f /lib/chromiumos/devices/* /dev
 
 # Splash screen!
 if [ -x /usr/bin/ply-image ]
