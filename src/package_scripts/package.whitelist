@@ -6,6 +6,8 @@ acpid.preinst 3444fcdc1646287d1080e9cdd6e4bb76
 adduser.postinst 2014b0ae677c1638d4aba92e0740f53f
 alsa-utils.postinst e7655972240a6b8324a5f43a192d966d
 alsa-utils.preinst 2f402794561b09e83829f928d4e57ae7
+apt.postinst e82ccae14856d483a8fc03c980e2be44
+apt.preinst ebf49968b57ad227d84f860acf5734e8
 base-files.postinst bb3c6cd54ea0ffed1f310328a848240a
 base-files.preinst 860926bcd31cb38163bdb5b120a5aa93
 base-passwd.postinst d7acba77fa3ce02c044b0285e2f51b76

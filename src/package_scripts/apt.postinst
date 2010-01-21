@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# apt.postinst
+
+set -e
+
+if [ ! -f "${ROOT}/etc/apt/trusted.gpg" ]; then
+  cp "${ROOT}/usr/share/apt/ubuntu-archive.gpg" "${ROOT}/etc/apt/trusted.gpg"
+fi
