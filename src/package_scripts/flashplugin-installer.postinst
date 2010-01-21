@@ -1,0 +1,41 @@
+#!/bin/bash
+
+# Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# flashplugin-installer.postinst
+
+set -e
+
+case "$ARCH" in
+  x86)
+    VERSION="10.0.32.18"
+    FILENAME="adobe-flashplugin_${VERSION}.orig.tar.gz"
+    CHECKSUM="859058c0085671c8e822a083cf7ca03ac3e0dea6"
+    URL="http://archive.canonical.com/pool/partner/a/adobe-flashplugin/"
+   ;;
+# todo
+#  armel)
+#   ;;
+  *)
+   echo "Unknown architecture for flashplugin"
+   exit 1
+   ;;
+esac
+
+if [ ! -d "${SRC_ROOT}/build/${ARCH}/local_assets/" ]; then
+  mkdir -p "${SRC_ROOT}/build/${ARCH}/local_assets/"
+fi
+
+cd "${SRC_ROOT}/build/${ARCH}/local_assets/"
+
+if [ ! -f "adobe-flashplugin-${VERSION}.orig/libflashplayer.so" ]; then
+  rm ${FILENAME} 2>/dev/null || true
+  wget "${URL}/${FILENAME}"
+  echo "${CHECKSUM}  ${FILENAME}" | sha1sum -c
+  tar xzf $FILENAME
+fi
+
+install -m 644 "adobe-flashplugin-${VERSION}.orig/libflashplayer.so" \
+        "${ROOT}/usr/lib/flashplugin-installer/"

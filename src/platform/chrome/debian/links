@@ -1,2 +1,2 @@
 opt/google/chrome/chrome usr/bin/google-chrome
-usr/lib/flashplugin-installer/libflashplayer.so opt/google/chrome/plugins
+usr/lib/flashplugin-installer/libflashplayer.so opt/google/chrome/plugins/libflashplayer.so

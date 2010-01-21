@@ -20,6 +20,7 @@ override_dh_auto_install:
 	unzip $(CURDIR)/chrome-chromeos.zip
 	# We may need to rename .../chrome-linux to chrome-chromeos
 	mv $(CURDIR)/chrome-linux $(CURDIR)/chrome-chromeos || true
+	mkdir $(CURDIR)/chrome-chromeos/plugins
 	mv $(CURDIR)/chrome-chromeos \
 	  $(CURDIR)/debian/chromeos-chrome/opt/google/chrome
 
