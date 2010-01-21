@@ -106,6 +106,7 @@ login.postinst 41f8680e0cbb1d6445021e85ba01852b
 login.preinst b73598958015ddacf45fc349925aaced
 mawk.postinst 4d78490023c77db55809128037ad118c
 mime-support.postinst 7468a507f27173f504c162ef1bcf5322
+module-init-tools.postinst 1264be0e53a7294a9de918acd7b09976
 module-init-tools.preinst 2ebf95a84b04c20fb9b9d2e98bbe39fa
 mount.postinst b0835c6651e93f3b38205fe63817faec
 mount.preinst 749fce403dd02de0e5185df114760958
