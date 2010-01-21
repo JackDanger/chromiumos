@@ -47,6 +47,7 @@ dhcp3-client.postinst 8fd77e711e0f6e2db0d815087339656c
 dhcp3-client.preinst b471b29f75eb24a07543a0b89db520b7
 dmsetup.postinst 969f1a663b7450d99f3136a32513a079
 dmsetup.preinst 1d056fd775a8365aa14b9a8ada1c56f2
+dpkg.postinst c4adb2e3d44f2343829c96200babbaac
 dpkg.preinst acff80f01260fb41a0c86005efd8f51b
 e2fsprogs.preinst 9e483860a5b617e59c3ad00d8bc1f94f
 findutils.postinst c249caf7500cc2e1e599c717bbb7100f

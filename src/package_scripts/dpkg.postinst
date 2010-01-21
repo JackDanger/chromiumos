@@ -1,0 +1,18 @@
+#!/bin/bash
+
+# Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# $ROOT - The path to the target root file system.
+# $SRC_ROOT - The path to the source tree.
+
+# dpkg.postinst
+
+touch "${ROOT}/var/lib/dpkg/diversions"
+touch "${ROOT}/var/lib/dpkg/statoverride"
+touch "${ROOT}/var/lib/dpkg/status"
+
+touch "${ROOT}/var/log/dpkg.log"
+chmod 644 "${ROOT}/var/log/dpkg.log"
+chown root:root "${ROOT}/var/log/dpkg.log"
