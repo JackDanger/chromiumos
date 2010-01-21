@@ -143,6 +143,7 @@ ttf-dejavu.preinst ffa8c2757c4e61eed61bc8ce2692fa77
 ttf-droid.postinst 440b66403c35257f8d3cbe2516eee5fa
 ttf-sil-abyssinica.postinst d7f7ad8cf84d6cc89047c0d6dbd39fc6
 tzdata.postinst 31d7e701d870adbcf6744c3db09a9b2b
+ucf.postinst a1d59eb3860969e4af7b0b0e89b18bf7
 ucf.preinst 9987f34a919667714d64c8453ade05fb
 udev.postinst 4db507bddabd175e9226ba58be3f0a67
 udev.preinst c46a8027715ed705c951cadeba38f25d
