@@ -82,6 +82,9 @@ screenshot_env = base_env.Clone()
 screenshot_env.ParseConfig('pkg-config --cflags --libs cairo')
 screenshot_env.Program('screenshot', 'screenshot.cc')
 
+# Check for NO_CLUTTER on the build line
+no_clutter = 'NO_CLUTTER' in ARGUMENTS
+
 # Start a new environment for the window manager.
 wm_env = base_env.Clone()
 
@@ -102,20 +105,24 @@ if os.system('pkg-config --exact-version=0.9.2 clutter-0.9') == 0:
 
 # This is needed so that glext headers include glBindBuffer and
 # related APIs.
-wm_env.Append(CPPDEFINES=['GL_GLEXT_PROTOTYPES'])
+if no_clutter:
+  wm_env.Append(CPPDEFINES=['GL_GLEXT_PROTOTYPES'])
 
 wm_env.ProtocolBuffer('system_metrics.pb.cc', 'system_metrics.proto');
 
 # Define an IPC library that will be used both by the WM and by client apps.
 srcs = Split('''\
   atom_cache.cc
-  real_gl_interface.cc
   real_x_connection.cc
   system_metrics.pb.cc
   util.cc
   wm_ipc.cc
   x_connection.cc
 ''')
+if no_clutter:
+  srcs.append(Split('''\
+    real_gl_interface.cc
+  '''))
 libwm_ipc = wm_env.Library('wm_ipc', srcs)
 
 # Create a library with just the additional files needed by the window
@@ -130,7 +137,6 @@ srcs = Split('''\
   layout_manager.cc
   metrics_reporter.cc
   motion_event_coalescer.cc
-  no_clutter.cc
   panel.cc
   panel_bar.cc
   panel_manager.cc
@@ -139,6 +145,10 @@ srcs = Split('''\
   window.cc
   window_manager.cc
 ''')
+if no_clutter:
+  srcs.append(Split('''\
+    no_clutter.cc
+  '''))
 libwm_core = wm_env.Library('wm_core', srcs)
 
 # Define a library to be used by tests.
@@ -151,8 +161,10 @@ libtest = wm_env.Library('test', Split(srcs))
 
 wm_env['LIBS'] += [libwm_core, libwm_ipc]
 if 'USE_BREAKPAD' in ARGUMENTS:
-  wm_env['LIBS'].append('libbreakpad')
-  wm_env['CPPFLAGS'] = '-DUSE_BREAKPAD'
+  wm_env.Append(CPPDEFINES=['USE_BREAKPAD'], LIBS=['libbreakpad'])
+
+if no_clutter:
+  wm_env.Append(CPPDEFINES=['NO_CLUTTER'])
 
 wm_env.Program('wm', 'main.cc')
 
@@ -162,6 +174,8 @@ test_env['LINKFLAGS'].append('-lgtest')
 test_env['LIBS'].insert(0, libtest)
 tests = []
 for test_src in Glob('*_test.cc', strings=True):
+  if test_src == 'no_clutter_test.cc' and not no_clutter:
+    continue
   tests += test_env.Program(test_src)
 # Create a 'tests' target that will build all tests.
 test_env.Alias('tests', tests)

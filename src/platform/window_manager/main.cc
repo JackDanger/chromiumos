@@ -26,8 +26,10 @@ extern "C" {
 #include "handler/exception_handler.h"
 #endif
 #include "window_manager/clutter_interface.h"
+#ifdef NO_CLUTTER
 #include "window_manager/no_clutter.h"
 #include "window_manager/real_gl_interface.h"
+#endif
 #include "window_manager/real_x_connection.h"
 #include "window_manager/window_manager.h"
 
@@ -43,16 +45,22 @@ DEFINE_bool(logtostderr, false,
 DEFINE_string(minidump_dir, ".",
               "Directory where crash minidumps should be written; created if "
               "it doesn't exist.");
+#ifdef NO_CLUTTER
 DEFINE_bool(use_clutter, true,
             "Specify --nouse_clutter turn off clutter and use GL directly.");
+#endif
 DEFINE_int32(pause_at_start, 0,
              "Specify this to pause for N seconds at startup.");
 
 using window_manager::ClutterInterface;
 using window_manager::MockClutterInterface;
+#ifdef NO_CLUTTER
 using window_manager::NoClutterInterface;
+#endif
 using window_manager::RealClutterInterface;
+#ifdef NO_CLUTTER
 using window_manager::RealGLInterface;
+#endif
 using window_manager::RealXConnection;
 using window_manager::WindowManager;
 
@@ -79,7 +87,11 @@ int main(int argc, char** argv) {
   }
 
   gdk_init(&argc, &argv);
+#ifdef NO_CLUTTER
   if (FLAGS_use_clutter) {
+#else
+  if (1) {
+#endif
     clutter_init(&argc, &argv);
   }
 
@@ -123,27 +135,37 @@ int main(int argc, char** argv) {
     xconn.GetCompositingOverlayWindow(root);
   }
 
+#ifdef NO_CLUTTER
   scoped_ptr<RealGLInterface> gl_interface;
+#endif
   scoped_ptr<ClutterInterface> clutter;
   if (FLAGS_wm_use_compositing) {
+#ifdef NO_CLUTTER
     if (FLAGS_use_clutter) {
+#endif
       clutter.reset(new RealClutterInterface());
+#ifdef NO_CLUTTER
     } else {
       gl_interface.reset(new RealGLInterface(&xconn));
       clutter.reset(new NoClutterInterface(&xconn, gl_interface.get()));
     }
+#endif
   } else {
     clutter.reset(new MockClutterInterface(&xconn));
   }
   WindowManager wm(&xconn, clutter.get());
   wm.Init();
 
+#ifdef NO_CLUTTER
   if (FLAGS_use_clutter) {
+#endif
     clutter_main();
+#ifdef NO_CLUTTER
   } else {
     GMainLoop* loop = g_main_loop_ref(g_main_loop_new(NULL, FALSE));
     g_main_loop_run(loop);
     g_main_loop_unref(loop);
   }
+#endif
   return 0;
 }
