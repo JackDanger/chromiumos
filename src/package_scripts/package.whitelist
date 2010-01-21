@@ -128,6 +128,7 @@ python-cairo.preinst f5d2f914acffb86ee672d1a9016d2821
 readline-common.postinst 290a757799de6a16beb1e83136a0ea9e
 rsyslog.postinst 2963ccb5af0816506d5e6e31ac7560a6
 rsyslog.preinst 22d8d28f059d4817befd7e83a549e7df
+shared-mime-info.postinst 20041634f2b91fd275dbdcd58275b00d
 slim.postinst 5e2d655d7ffdcb9f61f600a6c6fee809
 sudo.postinst d7f8fab2402d40b90c788d296478298e
 sysv-rc.postinst e1e124ac7bfd8f779ec4b94f6cf12bbe
