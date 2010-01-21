@@ -1,3 +1,10 @@
+libchrome (0.2) unstable; urgency=low
+
+  * Export additional headers: file_descriptor_posix.h, hash_tables.h, and
+    platform_file.h.
+
+ -- The Chromium OS Authors <chromium-os-dev@googlegroups.com>  Thu, 21 Jan 2010 15:20:46 -0800
+
 libchrome (0.1) unstable; urgency=low
 
   * Initial release.
