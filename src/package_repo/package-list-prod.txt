@@ -103,6 +103,10 @@ iw
 libnl1
 linux-firmware
 
+# For 3g support
+ppp
+modemmanager
+
 # For IBus
 ibus
 ibus-anthy

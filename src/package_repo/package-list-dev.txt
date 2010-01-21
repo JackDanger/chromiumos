@@ -180,6 +180,9 @@ m17n-db
 # Packages needed to build wireless tools
 libnl-dev
 
+# Packages needed to build flimflam
+ppp-dev
+
 # Packages needed to build chromeos-minijail
 libcap-dev
 
