@@ -1,0 +1,30 @@
+#!/bin/bash
+
+# Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# console-setup.postinst
+
+set -e
+
+cat > "${ROOT}/etc/default/console-setup" << EOF
+VERBOSE_OUTPUT=no
+ACTIVE_CONSOLES="/dev/tty[1-6]"
+CHARMAP="UTF-8"
+CODESET="Uni1"
+FONTFACE="VGA"
+FONTSIZE="16"
+XKBMODEL="pc105"
+XKBLAYOUT="us"
+XKBVARIANT=""
+XKBOPTIONS=""
+EOF
+
+# If ckbcomp changes this will probably still work, but may use config files
+# from the build environment. You can audit that it doesn't by strace'ing
+# the command and checking that all the config files it opens are from the
+# destination image.
+
+"${ROOT}/usr/bin/ckbcomp" -I"${ROOT}/usr/share/X11/xkb" -model pc105 us | \
+    gzip -9 > "${ROOT}/etc/console-setup/cached.kmap.gz"
