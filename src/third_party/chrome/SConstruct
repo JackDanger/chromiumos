@@ -28,6 +28,7 @@ sources = env.Split("""
                     files/base/file_util.h
                     files/base/file_util_linux.cc
                     files/base/file_util_posix.cc
+                    files/base/json/json_reader.cc
                     files/base/lock_impl_posix.cc
                     files/base/logging.cc
                     files/base/platform_file_posix.cc
@@ -42,6 +43,7 @@ sources = env.Split("""
                     files/base/time_posix.cc
                     files/base/utf_string_conversion_utils.cc
                     files/base/utf_string_conversions.cc
+                    files/base/values.cc
                     """)
 
 env.Append(

@@ -69,7 +69,7 @@ base_env.Append(CCFLAGS=['-fno-strict-aliasing'])
 
 base_env.Append(CPPPATH=['..'])
 
-base_env.Append(LIBS=Split('base chromeos gflags protobuf rt'))
+base_env.Append(LIBS=Split('base chromeos rt'))
 
 base_env.ParseConfig('pkg-config --cflags --libs x11')
 
@@ -79,6 +79,11 @@ screenshot_env = base_env.Clone()
 screenshot_env.ParseConfig('pkg-config --cflags --libs cairo')
 screenshot_env.Program('screenshot', 'screenshot.cc')
 
+xtest_env = base_env.Clone()
+xtest_env.ParseConfig('pkg-config --cflags --libs libpcrecpp')
+xtest_env.Append(LIBS=['Xtst'])
+xtest_env.Program('xtest', 'xtest.cc')
+
 # Check for NO_CLUTTER on the build line
 no_clutter = 'NO_CLUTTER' in ARGUMENTS
 
@@ -87,6 +92,8 @@ wm_env = base_env.Clone()
 
 # Add a builder for .proto files
 wm_env['BUILDERS']['ProtocolBuffer'] = proto_builder
+
+wm_env.Append(LIBS=Split('gflags protobuf'))
 
 wm_env.ParseConfig('pkg-config --cflags --libs gdk-2.0 libpcrecpp ' +
                    'xcb x11-xcb xcb-composite xcb-randr xcb-shape xcb-damage')
