@@ -13,7 +13,7 @@
 utils::declare_commands read echo mkdir test mount grep blockdev
 utils::declare_commands pkill chown df tr cut dd cat openssl
 utils::declare_commands losetup dmsetup tune2fs chmod xxd exec
-utils::declare_commands head tail cp umount touch rm date true
+utils::declare_commands head tail cp umount touch rm date true sleep
 
 # Be sure to use our e4fsprogs instead of the stable version.
 export PATH=/usr/lib/e4fsprogs-git/bin:${PATH}
@@ -99,8 +99,22 @@ function cryptohome::maximize() {
   $dmsetup resume $mapperdev
   if [[ "$online" -eq 0 ]]; then
     cryptohome::check -f
+    # Do it as quickly as possible if we are offline.
+    $resize2fs $mapperdev
+  else
+    # If we're online, we don't want to saturate the I/O and it's
+    # okay if it doesn't complete. So we add ten block groups at a time.
+    # With lazy inode tables, this isn't adding much data to disk, but
+    # it will blast several megabytes directly to disk if the image is
+    # quite large. For small images, the metadata needed is very little,
+    # but this rate limited resize won't take long either.
+    local next_blocks=$current
+    while [[ "$next_blocks" -lt "$blocks" ]]; do
+      $sleep 2  # TODO(wad) make configurable
+      next_blocks=$((next_blocks + (BLOCKS_IN_A_GROUP * 10)))
+      $resize2fs -f $mapperdev ${next_blocks} || true
+    done
   fi
-  $resize2fs $mapperdev
   cryptohome::log "maximize end"
 }
 

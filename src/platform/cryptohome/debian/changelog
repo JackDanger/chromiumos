@@ -1,3 +1,9 @@
+chromeos-cryptohome (0.4) UNRELEASED; urgency=low
+
+  * Rate limit cryptohome::maximize to avoid spamming I/O on login
+
+ -- The Chromium OS Authors <chromium-os-dev@googlegroups.com>  Fri, 22 Jan 2010 16:26:11 -0500
+
 chromeos-cryptohome (0.3) UNRELEASED; urgency=low
 
   * Add a temporary DBus layer on top of the scripts
