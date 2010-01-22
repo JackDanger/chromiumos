@@ -113,6 +113,7 @@ ibus-anthy
 ibus-chewing
 ibus-hangul
 ibus-m17n
+m17n-db
 ibus-gtk
 
 # For partitioning (GPT format)
