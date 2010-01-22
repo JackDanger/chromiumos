@@ -54,7 +54,7 @@ install: build
 	mkdir -p $(INSTALL_DIR)/sbin
 	mkdir -p $(INSTALL_DIR)/etc/dbus-1/system.d/
 	cp -R build/* $(INSTALL_DIR)/
-	cp $(WPA_DIR)/wpa_supplicant/dbus-wpa_supplicant.conf $(INSTALL_DIR)/etc/dbus-1/system.d/wpa_supplicant.conf
+	cp $(WPA_DIR)/wpa_supplicant/dbus/dbus-wpa_supplicant.conf $(INSTALL_DIR)/etc/dbus-1/system.d/wpa_supplicant.conf
 
 # Build architecture-independent files here.
 binary-indep: install
