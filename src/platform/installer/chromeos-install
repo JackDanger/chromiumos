@@ -206,7 +206,7 @@ sudo tune2fs -L "H-STATE" "$STATEFUL_PARTITION"
 STATEFUL_DIR=/tmp/stateful_partition_on_hd
 mkdir -p "$STATEFUL_DIR"
 sudo mount "$STATEFUL_PARTITION" "$STATEFUL_DIR"
-sudo cp -fpru /home/* "$STATEFUL_DIR"
+! sudo cp -fpru /home/* "$STATEFUL_DIR"
 sudo umount "$STATEFUL_DIR"
 
 # Force data to disk before we declare done.
