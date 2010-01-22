@@ -122,6 +122,7 @@ netbase.postinst 214534f7f07589d1af9f8651837c788e
 ntp.postinst 1fcafa4bf9ce359b66a82ced6fd312d2
 ntp.preinst 53bbf8419723aea5038268b90b5e0ebc
 openssh-client.postinst 611413f15037991a00d4833899a88674
+openssh-client.preinst 816dde6a58f5c526cb7e9182e63e94c5
 openssl.postinst 5fc7ac6874a8160849391f541cab343e
 passwd.postinst 6eff5d8c5b33508d1b0efd1ebb601cd2
 passwd.preinst d29d8fbaae7eb01f85adb69136551049
@@ -162,6 +163,7 @@ vim-common.preinst 4116dab88c97636df1b5b4abe8684433
 vim-tiny.postinst b7f0095cde11c0c307d2e24b3967d9a7
 x11-common.postinst 6877408cbe66a065741be48876ce05cf
 x11-common.preinst 5b131bba7671ad4178cb77f19cd65ec0
+xdg-utils.postinst 24b84445762c731de1cdb3cecb985a85
 xserver-xorg-core.postinst 76c868d7a9d2207bedb1d9f89502986b
 xserver-xorg-core.postinst f841216c2ce30eeeee74609105f00345
 xserver-xorg-core.preinst 1dded00d198a127cdabeb0a242252239
