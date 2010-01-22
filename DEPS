@@ -27,8 +27,11 @@ use_relative_urls2=True
 _third_party_base = "src/third_party/"
 _platform_base = "src/platform/"
 
-deps = {
+vars = {
+  "chromium_revision": "36775",
+}
 
+deps = {
     # chromiumos-build
     "tools/chromiumos-build": "/chromiumos-build.git",
 
@@ -107,9 +110,11 @@ deps = {
 
     # chrome-base
     _third_party_base + "chrome/files/base":
-        "http://src.chromium.org/svn/trunk/src/base@33520",
+        "http://src.chromium.org/svn/trunk/src/base@" +
+        Var("chromium_revision"),
     _third_party_base + "chrome/files/build":
-        "http://src.chromium.org/svn/trunk/src/build@33520",
+        "http://src.chromium.org/svn/trunk/src/build@" +
+        Var("chromium_revision"),
 
     # kernel
     _third_party_base + "kernel/files": "/kernel.git",
