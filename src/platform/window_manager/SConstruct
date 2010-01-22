@@ -46,13 +46,16 @@ proto_builder = Builder(generator = ProtocolBufferGenerator,
 # to all of the objects in this directory. We pull in overrides from the
 # environment to enable cross-compile.
 base_env = Environment()
-for key in Split('CC CXX AR RANLIB LD NM CFLAGS CCFLAGS'):
+for key in Split('CC CXX AR RANLIB LD NM'):
   value = os.environ.get(key)
   if value != None:
     base_env[key] = value
+for key in Split('CFLAGS CCFLAGS CPPPATH LIBPATH'):
+  value = os.environ.get(key)
+  if value != None:
+    base_env[key] = Split(value)
 if not base_env.get('CCFLAGS'):
-  base_env['CCFLAGS'] = '-I.. -Wall -Werror -O3'
-base_env['LINKFLAGS'] = '-lgflags -lprotobuf'
+  base_env.Append(CCFLAGS=Split('-I.. -Wall -Werror -O3'))
 
 # Fix issue with scons not passing pkg-config vars through the environment.
 for key in Split('PKG_CONFIG_LIBDIR PKG_CONFIG_PATH'):
@@ -62,11 +65,11 @@ for key in Split('PKG_CONFIG_LIBDIR PKG_CONFIG_PATH'):
 # Unless we disable strict aliasing, we get warnings about some of the
 # program's command line flags processing code that look like:
 #   'dereferencing type-punned pointer will break strict-aliasing rules'
-base_env.Append(CCFLAGS=' -fno-strict-aliasing')
+base_env.Append(CCFLAGS=['-fno-strict-aliasing'])
 
 base_env.Append(CPPPATH=['..'])
 
-base_env['LIBS'] = ['base', 'chromeos', 'rt']
+base_env.Append(LIBS=Split('base chromeos gflags protobuf rt'))
 
 base_env.ParseConfig('pkg-config --cflags --libs x11')
 
@@ -153,7 +156,7 @@ srcs = Split('''\
 ''')
 libtest = wm_env.Library('test', Split(srcs))
 
-wm_env['LIBS'] += [libwm_core, libwm_ipc]
+wm_env.Append(LIBS=[libwm_core, libwm_ipc])
 if 'USE_BREAKPAD' in ARGUMENTS:
   wm_env.Append(CPPDEFINES=['USE_BREAKPAD'], LIBS=['libbreakpad'])
 
@@ -163,9 +166,9 @@ if no_clutter:
 wm_env.Program('wm', 'main.cc')
 
 test_env = wm_env.Clone()
-test_env['LINKFLAGS'].append('-lgtest')
+test_env.Append(LIBS=['gtest'])
 # libtest needs to be listed first since it depends on wm_core and wm_ipc.
-test_env['LIBS'].insert(0, libtest)
+test_env.Prepend(LIBS=[libtest])
 tests = []
 for test_src in Glob('*_test.cc', strings=True):
   if test_src == 'no_clutter_test.cc' and not no_clutter:
