@@ -161,6 +161,8 @@ vim-tiny.postinst b7f0095cde11c0c307d2e24b3967d9a7
 x11-common.postinst 6877408cbe66a065741be48876ce05cf
 x11-common.preinst 5b131bba7671ad4178cb77f19cd65ec0
 xserver-xorg-core.postinst 76c868d7a9d2207bedb1d9f89502986b
+xserver-xorg-core.postinst f841216c2ce30eeeee74609105f00345
+xserver-xorg-core.preinst 1dded00d198a127cdabeb0a242252239
 xserver-xorg-core.preinst 2329fcb84cc6a78902330caf77f28fce
 xserver-xorg-video-all.preinst fc175c0ed1caa82cd387efeae10593a4
 xserver-xorg.postinst 94fb1b5a98784369eb47e8c0cbbd3402
