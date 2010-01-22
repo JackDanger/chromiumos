@@ -27,11 +27,20 @@ test_sources = env.Split("""service_unittest.cc
 
 env.Append(
     CPPPATH=['.', '..'],
-    CPPFLAGS=['-pie', '-fstack-protector-all', '-m32',
+    CPPFLAGS=['-pie', '-fstack-protector-all',
               '-fno-exceptions', '-O2', '-Wall', '-Werror'],
-    LINKFLAGS=['-m32' ],
     LIBS = ['base', 'chromeos', 'rt'],
 )
+for key in Split('CC CXX AR RANLIB LD NM CFLAGS CCFLAGS'):
+  value = os.environ.get(key)
+  if value != None:
+    env[key] = value
+
+# Fix issue with scons not passing pkg-config vars through the environment.
+for key in Split('PKG_CONFIG_LIBDIR PKG_CONFIG_PATH'):
+  if os.environ.has_key(key):
+    env['ENV'][key] = os.environ[key]
+
 env.ParseConfig('pkg-config --cflags --libs gobject-2.0 dbus-1 dbus-glib-1')
 
 env_serverlib = env.Clone()

@@ -11,7 +11,7 @@ Section: libs
 
 Package: chromeos-cryptohome
 Section: libs
-Architecture: all
+Architecture: any
 Depends: bash, libpam-mount, e4fsprogs-git, dmsetup, openssl, mount, libdbus-glib-1-2, libglib2.0-0, ${shlibs:Depends}, ${misc:Depends}
 Description: Helper scripts which smooth the integration of
  chromeos-pam-google and libpam-mount to provide automatic
