@@ -1,0 +1,31 @@
+#!/bin/bash
+
+# Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# linux-image-2.6.31.4-chromeos-intel-menlow.postinst
+
+set -e
+
+VERSION=`basename $0 .postinst | sed -e "s/^linux-image-//"`
+
+rm "${ROOT}/lib/modules/${VERSION}/source"
+ln -s "vmlinuz-${VERSION}" "${ROOT}/boot/vmlinuz"
+
+if [ "$ARCH" == "x86" ]; then
+  case `uname -m` in
+    i?86|x86_64)
+      ;;
+    *)
+      echo "Replacement maintainer script requires an x86 host"
+      exit 1
+      ;;
+  esac
+
+  chroot "${ROOT}" /usr/sbin/mkinitramfs -o "/boot/initrd.img-${VERSION}" \
+         $VERSION
+  
+  # Looks like we don't need /var/lib/initramfs-tools/version
+  ln -s "initrd.img-${VERSION}" "${ROOT}/boot/initrd.img"
+fi

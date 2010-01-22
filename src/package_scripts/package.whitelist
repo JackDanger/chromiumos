@@ -107,6 +107,8 @@ libssl0.9.8.postinst b038d7c782155204c8aec56920c03078
 libstdc++6.postinst f8b51eead56fd2dd36093c980d8a8b22
 libuuid1.postinst cda7f535f20095e2a57f0f2654fa75ec
 libxxf86vm1.postinst 5d0e769df33e016b3c52a0971e8d258c
+linux-image-2.6.31.4-chromeos-intel-menlow.postinst 6e7b2c99d525db44e962f56a46fa39ee
+linux-image-2.6.31.4-chromeos-intel-menlow.preinst af27f2445dde52d0c6daf29d65bc2db3
 linux-sound-base.postinst 5a50fd32c901c220edf595c416cc7bda
 login.postinst 41f8680e0cbb1d6445021e85ba01852b
 login.preinst b73598958015ddacf45fc349925aaced
