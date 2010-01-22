@@ -5,14 +5,14 @@
 CCC = g++
 CC = gcc
 
-INCLUDES = -I../.. -I../../third_party/chrome/files -I../../common
+INCLUDES = -I../..
 COPT = -g
 
 CCONFIG = $(shell pkg-config --cflags dbus-1 glib-2.0 dbus-glib-1)
 LDCONFIG = $(shell pkg-config --libs dbus-1 glib-2.0 gthread-2.0 dbus-glib-1)
 
 CFLAGS = $(COPT) -fno-exceptions -Wall -Werror $(INCLUDES) $(CCONFIG)
-LDFLAGS = -L../../third_party/chrome $(LDCONFIG) -lrt -lbase -lpthread -lgflags
+LDFLAGS = $(LDCONFIG) -lrt -lbase -lpthread -lgflags
 
 COMMONSRC = metrics_daemon.cc
 COMMONCSRC = marshal_void__string_boxed.c

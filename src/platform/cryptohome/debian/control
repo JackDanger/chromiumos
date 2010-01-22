@@ -5,7 +5,7 @@
 Source: chromeos-cryptohome
 Priority: extra
 Maintainer: The Chromium OS Authors <chromium-os-dev@googlegroups.com>
-Build-Depends: debhelper (>= 7.3.0), dh-chromeos, libdbus-glib-1-dev, libglib2.0-dev
+Build-Depends: debhelper (>= 7.3.0), dh-chromeos, libdbus-glib-1-dev, libglib2.0-dev, libchrome-dev, libchromeos-dev
 Standards-Version: 3.8.0
 Section: libs
 

@@ -11,12 +11,9 @@ env = Environment()
 driver_sources = env.Split("""microbenchmark.cc
                               main.cc""")
 
-# TODO: References to ../../third_party/chrome/ should be replaced by using
-# installed packages in the chroot.
 env.Append(
-    CPPPATH=['..', '../../third_party/chrome/files', '../../common'],
+    CPPPATH=['..'],
     CCFLAGS=['-g', '-fno-exceptions', '-Wall', '-Werror'],
-    LIBPATH=['../../third_party/chrome'],
     # These need to be included by anyone linking against _main.
     LIBS=['base', 'gtest', 'rt', 'pthread'],
 )

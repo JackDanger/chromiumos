@@ -1,3 +1,10 @@
+chromeos-metrics-daemon (1.1) UNRELEASED; urgency=low
+
+  * Build-depend on libchrome-dev rather than looking directly in ../common
+    and ../third_party/chrome/files.
+
+ -- Colin Watson <cjwatson@canonical.com>  Wed, 13 Jan 2010 22:28:16 +0000
+
 chromeos-metrics-daemon (1.0) unstable; urgency=low
 
   * Initial Release.

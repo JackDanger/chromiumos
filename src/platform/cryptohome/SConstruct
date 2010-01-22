@@ -26,12 +26,11 @@ test_sources = env.Split("""service_unittest.cc
 
 
 env.Append(
-    CPPPATH=[ '.', '../../common', '..', '../../third_party/chrome/files'],
+    CPPPATH=['.', '..'],
     CPPFLAGS=['-pie', '-fstack-protector-all', '-m32',
               '-fno-exceptions', '-O2', '-Wall', '-Werror'],
     LINKFLAGS=['-m32' ],
     LIBS = ['base', 'chromeos', 'rt'],
-    LIBPATH=['../../common', '../../third_party/chrome'],
 )
 env.ParseConfig('pkg-config --cflags --libs gobject-2.0 dbus-1 dbus-glib-1')
 
