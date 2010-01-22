@@ -216,6 +216,10 @@ libpango1.0-doc
 # Packages needed to build pam
 w3m
 
+# Packages needed to build libselinux
+python-all-dev
+ruby1.8-dev
+
 # Cross-compiler packages for ARM
 libmpfr-dev-armel-cross
 gfortran-4.4-arm-linux-gnueabi
