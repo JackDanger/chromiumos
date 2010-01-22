@@ -14,7 +14,7 @@
 xserver-xorg-input-kbd
 xserver-xorg-input-mouse
 xserver-xorg-input-synaptics
-xserver-xorg-video-intel
+xserver-xorg-video-intel [i386]
 
 # xserver
 xserver-xorg
@@ -43,7 +43,7 @@ ttf-droid
 ttf-sil-abyssinica
 
 # For power events (needed specifically to trap lid-close)
-acpid
+acpid [i386]
 
 # For power management (battery monitor)
 devicekit-power
@@ -77,7 +77,7 @@ libpam-mount
 e4fsprogs-git
 
 # Chrome OS packages; keep alphabetized
-chromeos-acpi
+chromeos-acpi [i386]
 chromeos-chrome
 chromeos-cryptohome
 chromeos-init
@@ -128,4 +128,4 @@ upstart
 # Listed as a recommendation rather than dependency by chromeos-chrome to
 # make it easier to replace it with different versions, but included here
 # to make sure that we always include it in images.
-flashplugin-installer
+flashplugin-installer [!armel]
