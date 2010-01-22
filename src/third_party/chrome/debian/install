@@ -10,13 +10,17 @@ files/base/command_line.h usr/include/base
 files/base/compiler_specific.h usr/include/base
 files/base/debug_util.h usr/include/base
 files/base/dynamic_annotations.h usr/include/base
+files/base/file_descriptor_posix.h usr/include/base
 files/base/file_path.h usr/include/base
 files/base/file_util.h usr/include/base
+files/base/hash_tables.h usr/include/base
 files/base/logging.h usr/include/base
+files/base/platform_file.h usr/include/base
 files/base/port.h usr/include/base
 files/base/safe_strerror_posix.h usr/include/base
 files/base/scoped_ptr.h usr/include/base
 files/base/setproctitle_linux.h usr/include/base
+files/base/stl_util-inl.h usr/include/base
 files/base/string16.h usr/include/base
 files/base/string_piece.h usr/include/base
 files/base/string_util.h usr/include/base

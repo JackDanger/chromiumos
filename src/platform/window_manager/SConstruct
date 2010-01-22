@@ -64,13 +64,7 @@ for key in Split('PKG_CONFIG_LIBDIR PKG_CONFIG_PATH'):
 #   'dereferencing type-punned pointer will break strict-aliasing rules'
 base_env.Append(CCFLAGS=' -fno-strict-aliasing')
 
-# We include files relative to the parent directory.  Let SCons know about
-# this so it'll recompile as needed when a header changes.
-base_env['CPPPATH'] = ['..',
-                       '../../third_party/chrome/files',
-                       '../../common']
-base_env['LIBPATH'] = ['../../third_party/chrome',
-                       '../../common']
+base_env.Append(CPPPATH=['..'])
 
 base_env['LIBS'] = ['base', 'chromeos', 'rt']
 
