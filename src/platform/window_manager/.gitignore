@@ -1,13 +1,8 @@
-.*.swp
-.sconsign.dblite
-*.a
-*.o
 wm
 test_clutter
 screenshot
 mock_app
 mock_chrome
-xtest
 *_test
 *.pb.h
 *.pb.cc

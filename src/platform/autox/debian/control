@@ -1,0 +1,13 @@
+Source: chromeos-autox
+Section: unknown
+Priority: extra
+Maintainer: The Chromium OS Authors <chromium-os-dev@googlegroups.com>
+Build-Depends: debhelper (>= 7.3.0), dh-chromeos, libx11-dev, libxtst-dev, libpcre3-dev
+Standards-Version: 3.8.0
+
+Package: chromeos-autox
+Architecture: any
+Depends: ${shlibs:Depends}
+Description: Automate interaction with X11 apps
+ This program reads a script containing a list of input events and injects
+ them into an X server using the XTEST extension.

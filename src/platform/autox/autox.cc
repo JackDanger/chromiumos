@@ -36,7 +36,7 @@ using std::vector;
 // be OO-ified.
 
 const static char* kUsage =
-    "Usage: xtest SCRIPT-FILE\n"
+    "Usage: autox SCRIPT-FILE\n"
     "\n"
     "SCRIPT-FILE is a JSON file (with trailing commas allowed) consisting\n"
     "of a list of input events that should be injected into the X server\n"
