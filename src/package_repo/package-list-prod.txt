@@ -77,6 +77,7 @@ libpam-mount
 e4fsprogs-git
 
 # Chrome OS packages; keep alphabetized
+# TODO: Remove armel restriction when chromeos-pam-offline is built.
 chromeos-acpi [i386]
 chromeos-chrome
 chromeos-cryptohome
@@ -90,8 +91,8 @@ chromeos-metrics-collection
 chromeos-metrics-daemon
 chromeos-monitor-reconfig
 chromeos-pam-google
-chromeos-pam-offline
-chromeos-ply-image
+chromeos-pam-offline [!armel]
+chromeos-ply-image [!armel]
 chromeos-screenlocker
 chromeos-theme
 chromeos-wm
