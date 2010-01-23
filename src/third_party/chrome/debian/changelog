@@ -1,3 +1,9 @@
+libchrome (0.3) unstable; urgency=low
+
+  * Export additional headers: json/json_reader.h and values.h.
+
+ -- The Chromium OS Authors <chromium-os-dev@googlegroups.com>  Fri, 22 Jan 2010 16:03:10 -0800
+
 libchrome (0.2) unstable; urgency=low
 
   * Export additional headers: file_descriptor_posix.h, hash_tables.h,
