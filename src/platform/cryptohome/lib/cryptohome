@@ -103,15 +103,16 @@ function cryptohome::maximize() {
     $resize2fs $mapperdev
   else
     # If we're online, we don't want to saturate the I/O and it's
-    # okay if it doesn't complete. So we add ten block groups at a time.
+    # okay if it doesn't complete. So we add a block group at a time.
     # With lazy inode tables, this isn't adding much data to disk, but
     # it will blast several megabytes directly to disk if the image is
     # quite large. For small images, the metadata needed is very little,
     # but this rate limited resize won't take long either.
     local next_blocks=$current
+    $sleep 3  # TODO(wad) make start delay configurable
     while [[ "$next_blocks" -lt "$blocks" ]]; do
-      $sleep 2  # TODO(wad) make configurable
-      next_blocks=$((next_blocks + (BLOCKS_IN_A_GROUP * 10)))
+      $sleep 0.3  # TODO(wad) make configurable
+      next_blocks=$((next_blocks + BLOCKS_IN_A_GROUP))
       $resize2fs -f $mapperdev ${next_blocks} || true
     done
   fi
