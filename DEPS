@@ -65,6 +65,9 @@ deps = {
     # IBus input method for many languages (e.g. Thai)
     _third_party_base + "ibus-m17n/files": "/ibus-m17n.git",
 
+    # multilingual support libraries
+    _third_party_base + "m17n-lib": "/m17n-lib.git",
+
     # gflags 1.1
     _third_party_base + "gflags/files":
         "http://google-gflags.googlecode.com/svn/trunk@31",
