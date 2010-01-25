@@ -11,6 +11,6 @@ COMMON_SH="$(dirname "$0")/../../scripts/common.sh"
 . "$COMMON_SH"
 
 # Make the package
-make_pkg_common "chromeos-microbenchmark" "$@"
+make_pkg_common "*chromeos-microbenchmark*" "$@"
 
-sudo -E dpkg -i "${OUT_DIR}/chromeos-microbenchmark"_*.deb
+sudo -E dpkg -i "${OUT_DIR}/libchromeos-microbenchmark-dev"_*.deb

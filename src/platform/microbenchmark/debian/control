@@ -9,10 +9,12 @@ Build-Depends: debhelper (>= 7.0.50), dh-chromeos, libgtest-dev, libchrome-dev
 Standards-Version: 3.8.0
 Section: libs
 
-Package: chromeos-microbenchmark
+Package: libchromeos-microbenchmark-dev
 Section: libs
 Architecture: any
 Depends: libc6, libgcc1, ${shlibs:Depends}, ${misc:Depends}
+Conflicts: chromeos-microbenchmark
+Replaces: chromeos-microbenchmark
 Description: A static microbenchmark file and headers
  A microbenchmarking framework which depends on libgtest and libbase
  to create simple, standalone microbenchmark binaries.
