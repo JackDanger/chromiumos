@@ -1,3 +1,15 @@
+chromeos-pam-offline (0.7) unstable; urgency=low
+
+  * Use dh(1) and dh-chromeos.
+  * Fix build-dependencies.
+  * Build-depend on libchrome-dev; stop looking directly in ../common and
+    ../third_party/chrome/files.
+  * Use cross-tools from environment if set.
+  * Link with -fPIC.
+  * Pass PKG_CONFIG_LIBDIR and PKG_CONFIG_PATH through to pkg-config.
+
+ -- Colin Watson <cjwatson@canonical.com>  Mon, 25 Jan 2010 14:42:48 +0000
+
 chromeos-pam-offline (0.6) unstable; urgency=low
 
   * Add depends to .deb, add libchromeos dep, code cleanup

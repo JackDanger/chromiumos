@@ -5,12 +5,12 @@
 Source: chromeos-pam-offline
 Priority: extra
 Maintainer: The Chromium OS Authors <chromium-os-dev@googlegroups.com>
-Build-Depends: libchromeos-dev, debhelper (>= 7)
+Build-Depends: debhelper (>= 7.3.0), dh-chromeos, scons, libchrome-dev, libchromeos-dev, libpam0g-dev, libssl-dev, libgflags-dev, libgtest-dev, libpcre3-dev, libcurl4-openssl-dev
 Standards-Version: 3.8.0
 Section: libs
 
 Package: chromeos-pam-offline
 Section: libs
 Architecture: any
-Depends: libpam0g, openssl, ${shlibs:Depends}, ${misc:Depends}
+Depends: openssl, ${shlibs:Depends}, ${misc:Depends}
 Description: Linux-PAM module to perform offline authentication in Chrome(ium)OS.
