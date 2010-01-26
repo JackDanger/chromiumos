@@ -34,7 +34,7 @@ rm -f "$OUT_DIR"/libbreakpad-dev_*.deb
 pushd "$TOP_SCRIPT_DIR/files"
 rm -rf debian
 ln -s ../debian debian
-dpkg-buildpackage -b -us -uc -j$NUM_JOBS
+dpkg-buildpackage -b -tc -us -uc -j$NUM_JOBS
 mv ../libbreakpad-dev_*.deb "$OUT_DIR"
 rm ../${PKG_BASE}_*.changes
 popd
