@@ -172,4 +172,7 @@ deps = {
 
     # dhcpcd-dbus
     _third_party_base + "dhcpcd/dhcpcd-dbus": "/dhcpcd-dbus.git",
+
+    # anthy - japanese input
+    _third_party_base + "anthy": "/anthy.git",
 }
