@@ -11,14 +11,14 @@ Section: libs
 
 Package: libgmock
 Section: libs
-Architecture: all
+Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, libgtest0 (<= 1.4.0)
 Description: Google's C++ Mocking framework
  Shared objects for Google's C++ Mocking framework.
 
 Package: libgmock-dev
 Section: libs
-Architecture: all
+Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, libgmock, libgtest-dev
 Description: Google's C++ Mocking framework
  Headers and static libraries as well as configuration binaries.
