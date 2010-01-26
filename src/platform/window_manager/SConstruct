@@ -79,11 +79,6 @@ screenshot_env = base_env.Clone()
 screenshot_env.ParseConfig('pkg-config --cflags --libs cairo')
 screenshot_env.Program('screenshot', 'screenshot.cc')
 
-xtest_env = base_env.Clone()
-xtest_env.ParseConfig('pkg-config --cflags --libs libpcrecpp')
-xtest_env.Append(LIBS=['Xtst'])
-xtest_env.Program('xtest', 'xtest.cc')
-
 # Check for NO_CLUTTER on the build line
 no_clutter = 'NO_CLUTTER' in ARGUMENTS
 
