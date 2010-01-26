@@ -108,12 +108,12 @@ function cryptohome::maximize() {
     # it will blast several megabytes directly to disk if the image is
     # quite large. For small images, the metadata needed is very little,
     # but this rate limited resize won't take long either.
-    local next_blocks=$current
+    local next_blocks=$((current + BLOCKS_IN_A_GROUP))
     $sleep 3  # TODO(wad) make start delay configurable
     while [[ "$next_blocks" -lt "$blocks" ]]; do
       $sleep 0.3  # TODO(wad) make configurable
-      next_blocks=$((next_blocks + BLOCKS_IN_A_GROUP))
       $resize2fs -f $mapperdev ${next_blocks} || true
+      next_blocks=$((next_blocks + BLOCKS_IN_A_GROUP))
     done
   fi
   cryptohome::log "maximize end"
