@@ -1,11 +1,11 @@
 # Makefile for monitor_reconfigure
 #######################################################
-CXX=/usr/bin/g++
-CC=/usr/bin/gcc
-CPPFLAGS=-I../..
-CFLAGS=-Wall -g -O2
+CXX ?= /usr/bin/g++
+CC ?= /usr/bin/gcc
+CPPFLAGS += -I../..
+CFLAGS += -Wall -g -O2
 CXXFLAGS=$(CFLAGS)
-LDFLAGS=-lX11 -lXrandr
+LDFLAGS += -lX11 -lXrandr
 #######################################################
 
 NAME=monitor_reconfigure
