@@ -106,6 +106,7 @@ linux-firmware
 # For 3g support
 ppp
 modemmanager
+eject
 
 # For IBus
 ibus

@@ -1,0 +1,18 @@
+# Action rules for USB 3G dongles
+#
+# These dongles present themselves as a USB CD-ROM so that users can
+# install drivers on windows machines.  On ChromeOS we just want to
+# see the device as a modem (ttyUSBx).  So eject the CD-ROM.
+#
+
+ACTION!="add", GOTO="mobile_action_end"
+
+SUBSYSTEM=="scsi-generic", SUBSYSTEMS=="usb", ATTRS{bDeviceClass}=="00|ff", ATTRS{bDeviceSubClass}=="00|ff", GOTO="mobile_action_switch"
+GOTO="mobile_action_end"
+
+LABEL="mobile_action_switch"
+
+# Novatel (numbers accurate for model U760)
+ATTRS{idVendor}=="1410", ATTRS{idProduct}=="5030|6000", RUN+="/usr/bin/eject %k"
+
+LABEL="mobile_action_end"
