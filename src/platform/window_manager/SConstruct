@@ -138,6 +138,7 @@ srcs = Split('''\
   motion_event_coalescer.cc
   panel.cc
   panel_bar.cc
+  panel_dock.cc
   panel_manager.cc
   shadow.cc
   stacking_manager.cc

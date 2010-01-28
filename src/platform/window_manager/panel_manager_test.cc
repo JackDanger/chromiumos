@@ -61,13 +61,18 @@ class PanelManagerTest : public BasicWindowManagerTest {
   PanelBar* panel_bar_;          // instance belonging to 'panel_manager_'
 };
 
-// Test dragging a panel around to detach it and reattach it to the panel bar.
+// Test dragging a panel around to detach it and reattach it to the panel
+// bar and panel docks.
 TEST_F(PanelManagerTest, AttachAndDetach) {
   const int titlebar_height = 20;
   XWindow titlebar_xid = CreatePanelTitlebarWindow(150, titlebar_height);
   SendInitialEventsForWindow(titlebar_xid);
 
-  const int content_width = 300;
+  XConnection::WindowGeometry root_geometry;
+  ASSERT_TRUE(
+      xconn_->GetWindowGeometry(xconn_->GetRootWindow(), &root_geometry));
+
+  const int content_width = 200;
   const int content_height = 400;
   XWindow content_xid = CreatePanelContentWindow(
       content_width, content_height, titlebar_xid, true);
@@ -80,39 +85,55 @@ TEST_F(PanelManagerTest, AttachAndDetach) {
   // Drag the panel to the left, keeping it in line with the panel bar.
   Panel* panel = panel_manager_->GetPanelByXid(content_xid);
   ASSERT_TRUE(panel != NULL);
-  SendPanelDraggedMessage(panel, 200, panel_y_in_bar);
-  EXPECT_EQ(200, panel->right());
+  SendPanelDraggedMessage(panel, 600, panel_y_in_bar);
+  EXPECT_EQ(600, panel->right());
   EXPECT_EQ(panel_y_in_bar, panel->titlebar_y());
 
   // Drag it up a bit, but not enough to detach it.
-  SendPanelDraggedMessage(panel, 200, panel_y_in_bar - 5);
-  EXPECT_EQ(200, panel->right());
+  SendPanelDraggedMessage(panel, 600, panel_y_in_bar - 5);
+  EXPECT_EQ(600, panel->right());
   EXPECT_EQ(panel_y_in_bar, panel->titlebar_y());
 
   // Now drag it up near the top of the screen.  It should get detached and
   // move to the same position as the mouse pointer.
-  SendPanelDraggedMessage(panel, 400, 50);
-  EXPECT_EQ(400, panel->right());
+  SendPanelDraggedMessage(panel, 500, 50);
+  EXPECT_EQ(500, panel->right());
   EXPECT_EQ(50, panel->titlebar_y());
 
   // Drag the panel to a different spot near the top of the screen.
-  SendPanelDraggedMessage(panel, 500, 25);
-  EXPECT_EQ(500, panel->right());
+  SendPanelDraggedMessage(panel, 700, 25);
+  EXPECT_EQ(700, panel->right());
   EXPECT_EQ(25, panel->titlebar_y());
 
   // Drag the panel all the way down to reattach it.
-  SendPanelDraggedMessage(panel, 30, panel_bar_->y());
-  EXPECT_EQ(30, panel->right());
+  SendPanelDraggedMessage(panel, 700, panel_bar_->y());
+  EXPECT_EQ(700, panel->right());
   EXPECT_EQ(panel_y_in_bar, panel->titlebar_y());
 
   // Detach the panel again.
-  SendPanelDraggedMessage(panel, 100, 20);
-  EXPECT_EQ(100, panel->right());
+  SendPanelDraggedMessage(panel, 700, 20);
+  EXPECT_EQ(700, panel->right());
   EXPECT_EQ(20, panel->titlebar_y());
+
+  // Move the panel to the right side of the screen so it gets attached to
+  // one of the panel docks.
+  SendPanelDraggedMessage(panel, root_geometry.width - 10, 200);
+  EXPECT_EQ(root_geometry.width, panel->right());
+  EXPECT_EQ(200, panel->titlebar_y());
+
+  // Move it left so it's attached to the other dock.
+  SendPanelDraggedMessage(panel, 10, 300);
+  EXPECT_EQ(panel->content_width(), panel->right());
+  EXPECT_EQ(300, panel->titlebar_y());
+
+  // Detach it again.
+  SendPanelDraggedMessage(panel, 700, 300);
+  EXPECT_EQ(700, panel->right());
+  EXPECT_EQ(300, panel->titlebar_y());
 
   // Now finish the drag and check that the panel ends up back in the bar.
   SendPanelDragCompleteMessage(panel);
-  EXPECT_EQ(100, panel->right());
+  EXPECT_EQ(700, panel->right());
   EXPECT_EQ(panel_y_in_bar, panel->titlebar_y());
 }
 

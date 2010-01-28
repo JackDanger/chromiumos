@@ -28,6 +28,7 @@ namespace window_manager {
 class MotionEventCoalescer;
 class Panel;
 class PanelBar;
+class PanelDock;
 class WindowManager;
 
 // Handles map/unmap events for panel windows, owns Panel and
@@ -181,6 +182,8 @@ class PanelManager : public EventConsumer {
   std::map<const Panel*, PanelContainer*> containers_by_panel_;
 
   scoped_ptr<PanelBar> panel_bar_;
+  scoped_ptr<PanelDock> left_panel_dock_;
+  scoped_ptr<PanelDock> right_panel_dock_;
 
   // Have we already seen a MapRequest event?
   bool saw_map_request_;

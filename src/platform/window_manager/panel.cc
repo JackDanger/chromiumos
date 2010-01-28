@@ -273,6 +273,11 @@ void Panel::SetTitlebarWidth(int width) {
       width, titlebar_win_->client_height(), Window::GRAVITY_NORTHEAST);
 }
 
+void Panel::ResizeContent(int width, int height) {
+  CHECK(width > 0 && height > 0);
+  content_win_->ResizeClient(width, height, Window::GRAVITY_NORTHEAST);
+}
+
 void Panel::SetContentShadowOpacity(double opacity, int anim_ms) {
   content_win_->SetShadowOpacity(opacity, anim_ms);
 }

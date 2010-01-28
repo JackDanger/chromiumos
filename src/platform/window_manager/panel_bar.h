@@ -16,9 +16,7 @@ extern "C" {
 #include "base/basictypes.h"
 #include "base/scoped_ptr.h"
 #include "window_manager/clutter_interface.h"
-#include "window_manager/event_consumer.h"
 #include "window_manager/panel_container.h"
-#include "window_manager/wm_ipc.h"
 
 typedef ::Window XWindow;
 
@@ -130,7 +128,7 @@ class PanelBar : public PanelContainer {
   // 'remove_pointer_grab' is true, removes the active pointer grab and
   // replays any grabbed events (this is used when the panel is being
   // focused in response to a grabbed click).
-  void FocusPanel(Panel* panel, bool remove_pointer_grab);
+  void FocusPanel(Panel* panel, bool remove_pointer_grab, Time timestamp);
 
   // Get the panel with the passed-in content or titlebar window.
   // Returns NULL for unknown windows.

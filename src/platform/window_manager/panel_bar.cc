@@ -168,7 +168,7 @@ void PanelBar::AddPanel(Panel* panel, PanelSource source, bool expanded) {
   // 'desired_panel_to_focus_'.
   if (expanded &&
       (source == PANEL_SOURCE_NEW || panel->content_win()->focused())) {
-    FocusPanel(panel, false);  // remove_pointer_grab=false
+    FocusPanel(panel, false, wm_->GetCurrentTimeFromServer());
   } else {
     panel->AddButtonGrab();
   }
@@ -261,7 +261,7 @@ void PanelBar::HandlePanelButtonPress(
           << "; giving it the focus";
   // Get rid of the passive button grab, and then ungrab the pointer
   // and replay events so the panel will get a copy of the click.
-  FocusPanel(panel, true);  // remove_pointer_grab=true
+  FocusPanel(panel, true, timestamp);  // remove_pointer_grab=true
 }
 
 void PanelBar::HandlePanelFocusChange(Panel* panel, bool focus_in) {
@@ -363,7 +363,7 @@ void PanelBar::HandleFocusPanelMessage(Panel* panel) {
   DCHECK(panel);
   if (!GetPanelInfoOrDie(panel)->is_expanded)
     ExpandPanel(panel, false, true, kPanelStateAnimMs);
-  FocusPanel(panel, false);  // remove_pointer_grab=false
+  FocusPanel(panel, false, wm_->GetCurrentTimeFromServer());
 }
 
 void PanelBar::MoveAndResize(int x, int y, int width, int height) {
@@ -399,9 +399,11 @@ void PanelBar::MoveAndResize(int x, int y, int width, int height) {
 }
 
 bool PanelBar::TakeFocus() {
+  Time timestamp = wm_->GetCurrentTimeFromServer();
+
   // If we already decided on a panel to focus, use it.
   if (desired_panel_to_focus_) {
-    FocusPanel(desired_panel_to_focus_, false);  // remove_pointer_grab=false
+    FocusPanel(desired_panel_to_focus_, false, timestamp);
     return true;
   }
 
@@ -409,7 +411,7 @@ bool PanelBar::TakeFocus() {
   if (expanded_panels_.empty()) {
     return false;
   }
-  FocusPanel(expanded_panels_[0], false);  // remove_pointer_grab=false
+  FocusPanel(expanded_panels_[0], false, timestamp);
   return true;
 }
 
@@ -503,11 +505,13 @@ void PanelBar::ConfigureCollapsedPanel(Panel* panel) {
   info->is_expanded = false;
 }
 
-void PanelBar::FocusPanel(Panel* panel, bool remove_pointer_grab) {
+void PanelBar::FocusPanel(Panel* panel,
+                          bool remove_pointer_grab,
+                          Time timestamp) {
   CHECK(panel);
   panel->RemoveButtonGrab(true);  // remove_pointer_grab
   wm_->SetActiveWindowProperty(panel->content_win()->xid());
-  panel->content_win()->TakeFocus(wm_->GetCurrentTimeFromServer());
+  panel->content_win()->TakeFocus(timestamp);
   panel->StackAtTopOfLayer(StackingManager::LAYER_EXPANDED_PANEL);
   desired_panel_to_focus_ = panel;
 }

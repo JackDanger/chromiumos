@@ -95,6 +95,9 @@ class Panel {
   // the content window).
   void SetTitlebarWidth(int width);
 
+  // Resize the content window.
+  void ResizeContent(int width, int height);
+
   // Set the opacity of the content window's drop shadow.
   void SetContentShadowOpacity(double opacity, int anim_ms);
 

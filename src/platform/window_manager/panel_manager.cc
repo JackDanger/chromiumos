@@ -8,6 +8,7 @@
 #include "window_manager/motion_event_coalescer.h"
 #include "window_manager/panel.h"
 #include "window_manager/panel_bar.h"
+#include "window_manager/panel_dock.h"
 #include "window_manager/panel_container.h"
 #include "window_manager/stacking_manager.h"
 #include "window_manager/window.h"
@@ -36,8 +37,12 @@ PanelManager::PanelManager(WindowManager* wm, int panel_bar_height)
               kDraggedPanelUpdateMs)),
       panel_bar_(new PanelBar(wm_, 0, wm_->height() - panel_bar_height,
                               wm_->width(), panel_bar_height)),
+      left_panel_dock_(new PanelDock(wm_, PanelDock::DOCK_POSITION_LEFT)),
+      right_panel_dock_(new PanelDock(wm_, PanelDock::DOCK_POSITION_RIGHT)),
       saw_map_request_(false) {
   RegisterContainer(panel_bar_.get());
+  RegisterContainer(left_panel_dock_.get());
+  RegisterContainer(right_panel_dock_.get());
 }
 
 PanelManager::~PanelManager() {
@@ -357,6 +362,7 @@ void PanelManager::HandleScreenResize() {
   panel_bar_->MoveAndResize(
       0, wm_->height() - panel_bar_->height(),
       wm_->width(), panel_bar_->height());
+  // TODO: Notify panel docks.
 }
 
 bool PanelManager::TakeFocus() {
@@ -412,7 +418,7 @@ void PanelManager::HandlePeriodicPanelDragMotion() {
       container_handled_drag = true;
     } else {
       VLOG(1) << "Container " << container << " told us to detach panel "
-              << dragged_panel_->xid_str();
+              << dragged_panel_->xid_str() << " at (" << x << ", " << y << ")";
       RemovePanelFromContainer(dragged_panel_, container);
       panel_was_detached = true;
     }
@@ -432,7 +438,8 @@ void PanelManager::HandlePeriodicPanelDragMotion() {
          it != containers_.end(); ++it) {
       if ((*it)->ShouldAddDraggedPanel(dragged_panel_, x, y)) {
         VLOG(1) << "Container " << *it << " told us to attach panel "
-                << dragged_panel_->xid_str();
+                << dragged_panel_->xid_str()
+                << " at (" << x << ", " << y << ")";
         AddPanelToContainer(dragged_panel_,
                             *it,
                             PanelContainer::PANEL_SOURCE_DRAGGED,

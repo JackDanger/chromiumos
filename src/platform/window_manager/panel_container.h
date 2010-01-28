@@ -8,6 +8,7 @@
 extern "C" {
 #include <X11/Xlib.h>
 }
+#include <vector>
 
 #include "base/basictypes.h"
 
