@@ -27,6 +27,7 @@
 /src/platform/login_manager/
 /src/platform/pam_google/
 /src/platform/text_input/
+/src/third_party/alsa-lib/
 /src/third_party/anthy/
 /src/third_party/autotest/files/
 /src/third_party/cairo/

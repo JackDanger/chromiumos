@@ -175,4 +175,7 @@ deps = {
 
     # anthy - japanese input
     _third_party_base + "anthy": "/anthy.git",
+
+    # alsa-lib
+    _third_party_base + "alsa-lib": "/alsa-lib.git",
 }
