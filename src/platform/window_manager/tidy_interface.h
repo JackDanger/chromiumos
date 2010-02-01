@@ -2,10 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef WINDOW_MANAGER_NO_CLUTTER_H_
-#define WINDOW_MANAGER_NO_CLUTTER_H_
+#ifndef WINDOW_MANAGER_TIDY_INTERFACE_H_
+#define WINDOW_MANAGER_TIDY_INTERFACE_H_
 
-#include <GL/glx.h>
 #include <math.h>
 
 #include <list>
@@ -17,42 +16,35 @@
 #include "base/logging.h"
 #include "base/scoped_ptr.h"
 #include "window_manager/clutter_interface.h"
-#include "window_manager/gl_interface.h"
 #include "window_manager/x_connection.h"
+#include "window_manager/gl_interface_base.h"
+
+#define TIDY_OPENGL 1
 
 namespace window_manager {
 
-class NoClutterInterface : public ClutterInterface {
+class OpenGlDrawVisitor;
+
+class TidyInterface : public ClutterInterface {
  public:
   class Actor;
   class AnimationBase;
   class ContainerActor;
+  class DrawingData;
+  class QuadActor;
+  class StageActor;
+  class TexturePixmapActor;
 
   typedef std::vector<Actor*> ActorVector;
   typedef std::list<std::tr1::shared_ptr<AnimationBase> > AnimationList;
+  typedef std::tr1::shared_ptr<DrawingData> DrawingDataPtr;
+  typedef std::map<int32, DrawingDataPtr> DrawingDataMap;
 
-  static const float kMinDepth;
-  static const float kMaxDepth;
-
-  struct TextureRep {
+  // Base class for memento storage on the actors.
+  class DrawingData {
    public:
-    TextureRep(GLInterface* new_gl_interface, GLuint new_texture)
-        : texture(new_texture),
-          gl_interface(new_gl_interface) {
-      // A zero texture id is not the end of the world, but might
-      // indicate a bug somewhere.  We use a NULL shared_ptr to
-      // indicate no texture in the Actor code.
-      DCHECK(texture != 0);
-    }
-
-    ~TextureRep() {
-      if (texture) {
-        gl_interface->DeleteTextures(1, &texture);
-      }
-    }
-
-    GLuint texture;
-    GLInterface* gl_interface;
+    DrawingData() {}
+    virtual ~DrawingData() {}
   };
 
   class AnimationBase {
@@ -103,10 +95,103 @@ class NoClutterInterface : public ClutterInterface {
     DISALLOW_COPY_AND_ASSIGN(IntAnimation);
   };
 
-  class Actor : virtual public ClutterInterface::Actor {
+  class ActorVisitor {
    public:
-    explicit Actor(NoClutterInterface* interface);
+    ActorVisitor() {}
+    virtual ~ActorVisitor() {}
+    virtual void VisitActor(Actor* actor) = 0;
+
+    // Default implementation visits container as an Actor, and then
+    // calls Visit on all the container's children.
+    virtual void VisitContainer(ContainerActor* actor);
+    virtual void VisitStage(StageActor* actor) {
+      VisitContainer(actor);
+    }
+    virtual void VisitTexturePixmap(TexturePixmapActor* actor) {
+      VisitActor(actor);
+    }
+    virtual void VisitQuad(QuadActor* actor) {
+      VisitActor(actor);
+    }
+   private:
+    DISALLOW_COPY_AND_ASSIGN(ActorVisitor);
+  };
+
+  class VisitorDestination {
+   public:
+    VisitorDestination() {}
+    virtual ~VisitorDestination() {}
+
+    // This function accepts a visitor into the destination to be
+    // visited.
+    virtual void Accept(ActorVisitor* visitor) = 0;
+   private:
+    DISALLOW_COPY_AND_ASSIGN(VisitorDestination);
+  };
+
+  // This class visits an actor tree and collects the actors that
+  // match the given criterion.  By default, finds all actors in the
+  // tree it is accepted into in a preorder traversal (container
+  // actors are traversed before their children).
+  class ActorCollector : virtual public ActorVisitor {
+   public:
+    ActorCollector();
+    virtual ~ActorCollector();
+
+    enum TriValue {
+      VALUE_FALSE = 0,
+      VALUE_TRUE = 1,
+      VALUE_EITHER = 2,
+    };
+
+    // Various filters that can be applied to collection criteria,
+    // which take effect the next time this visitor is accepted into a
+    // destination.
+
+    // Collect containers when encountered during traversal. Defaults
+    // to true.
+    void CollectBranches(bool branches) { branches_ = branches; }
+    // Collect non-containers when encountered during
+    // traversal. Defaults to true.
+    void CollectLeaves(bool leaves) { leaves_ = leaves; }
+    // Collect visible nodes among the nodes that are being collected
+    // (branches and/or leaves).  Defaults to VALUE_EITHER.
+    void CollectVisible(TriValue visible) { visible_ = visible; }
+    // Collect opaque nodes among the ones that are being collected,
+    // but only if they march the visible criterion above. Defaults to
+    // VALUE_EITHER.
+    void CollectOpaque(TriValue opaque) { opaque_ = opaque; }
+
+    // Returns the current list of results.
+    const ActorVector& results() const { return results_; }
+
+    // Clears all current results.
+    void clear() { results_.clear(); }
+    void VisitActor(Actor* actor);
+    void VisitContainer(ContainerActor* actor);
+
+   private:
+    ActorVector results_;
+    bool branches_;
+    bool leaves_;
+    TriValue opaque_;
+    TriValue visible_;
+
+    DISALLOW_COPY_AND_ASSIGN(ActorCollector);
+  };
+
+  class Actor : virtual public ClutterInterface::Actor,
+                public TidyInterface::VisitorDestination {
+   public:
+    explicit Actor(TidyInterface* interface);
     virtual ~Actor();
+
+    // Begin ClutterInterface::VisitorDestination methods
+    virtual void Accept(ActorVisitor* visitor) {
+      DCHECK(visitor);
+      visitor->VisitActor(this);
+    }
+    // End ClutterInterface::VisitorDestination methods
 
     // Begin ClutterInterface::Actor methods
     virtual Actor* Clone();
@@ -123,6 +208,7 @@ class NoClutterInterface : public ClutterInterface {
       set_dirty();
     }
     void SetName(const std::string& name) { name_ = name; }
+    const std::string& name() const { return name_; }
 
     void Move(int x, int y, int duration_ms);
     void MoveX(int x, int duration_ms);
@@ -139,39 +225,22 @@ class NoClutterInterface : public ClutterInterface {
 
     // Updates the actor in response to time passing, and counts the
     // number of actors as it goes.
-    virtual void Update(int* count, AnimationBase::AnimationTime now);
+    virtual void Update(int32* count, AnimationBase::AnimationTime now);
 
-    // Calcluates and sets the Z depth for the actor.  The actor is
-    // set to depth 'depth', and updates the parameter to contain the
-    // depth that should be used for the next actor by adding the
-    // layer_thickness.
-    virtual void ComputeDepth(float* depth, float layer_thickness);
+    // Regular actors have no children.
+    virtual const ActorVector& children() const {
+      static ActorVector kEmptyActorVector;
+      return kEmptyActorVector;
+    }
 
-    // Traverse the scene and add actors to the given display list.
-    // When opaque is true, only opaque actors are added, when opaque
-    // is false, only non-opaque actors are added.
-    void AddToDisplayList(NoClutterInterface::ActorVector* actors, bool opaque);
-
-    virtual void Draw() { }
     void set_parent(ContainerActor* parent) { parent_ = parent; }
     ContainerActor* parent() const { return parent_; }
-    float z() const { return z_; }
-    void set_z(float z) { z_ = z; }
-
-   protected:
-    NoClutterInterface* interface() { return interface_; }
-
-    virtual void SetSizeImpl(int width, int height) {}
-    virtual void AddToDisplayListImpl(NoClutterInterface::ActorVector* actors,
-                                      bool opaque) {}
-
-    void AnimateFloat(float* field, float value, int duration_ms);
-    void AnimateInt(int* field, int value, int duration_ms);
-
     int width() { return width_; }
     int height() { return height_; }
     int x() { return x_; }
     int y() { return y_; }
+    void set_z(float z) { z_ = z; }
+    float z() const { return z_; }
     bool is_opaque() { return opacity_ > 0.999f; }
     bool IsVisible() { return visible_ && opacity_ > 0.001; }
     float opacity() { return opacity_; }
@@ -179,85 +248,139 @@ class NoClutterInterface : public ClutterInterface {
     float scale_y() { return scale_y_; }
     void set_dirty() { interface_->dirty_ = true; }
 
+    // Sets the drawing data of the given type on this object.
+    void SetDrawingData(int32 id, DrawingDataPtr data) {
+      drawing_data_[id] = data;
+    }
+
+    // Gets the drawing data of the given type.
+    DrawingDataPtr GetDrawingData(int32 id) const;
+
+    // Erases the drawing data of the given type.
+    void EraseDrawingData(int32 id) { drawing_data_.erase(id); }
+
+   protected:
+    TidyInterface* interface() { return interface_; }
+
+    virtual void SetSizeImpl(int width, int height) {}
+    virtual void AddToDisplayListImpl(TidyInterface::ActorVector* actors,
+                                      bool opaque) {}
+
+    void AnimateFloat(float* field, float value, int duration_ms);
+    void AnimateInt(int* field, int value, int duration_ms);
+
    private:
-    NoClutterInterface* interface_;
+    TidyInterface* interface_;
+
+    // This points to the parent that has this actor as a child.
     ContainerActor* parent_;
+
+    // This is the x position on the screen.
     int x_;
+
+    // This is the y position on the screen.
     int y_;
+
+    // This is the width and height of the actor's bounding box.
     int width_;
     int height_;
+
+    // This is the z depth of this actor (which is set according to
+    // the layer this actor is on.
     float z_;
+
+    // This is the x and y scale of the actor.
     float scale_x_;
     float scale_y_;
+
+    // This is the opacity of the actor (0 = transparent, 1 = opaque)
     float opacity_;
+
+    // This says whether or not to show this actor.
     bool visible_;
+
+    // This is a name used for identifying the actor (most useful for
+    // debugging).
     std::string name_;
+
+    // This is a list of animations that are active on this actor.
     AnimationList animations_;
+
+    // This keeps a mapping of int32 id to drawing data pointer.
+    // The id space is maintained by the visitor implementation.
+    DrawingDataMap drawing_data_;
+
     DISALLOW_COPY_AND_ASSIGN(Actor);
   };
 
-  class ContainerActor : public NoClutterInterface::Actor,
+  class ContainerActor : public TidyInterface::Actor,
                          virtual public ClutterInterface::ContainerActor {
    public:
-    explicit ContainerActor(NoClutterInterface* interface)
-        : NoClutterInterface::Actor(interface) {
+    explicit ContainerActor(TidyInterface* interface)
+        : TidyInterface::Actor(interface) {
     }
+
+    // Implement VisitorDestination for visitor.
+    void Accept(ActorVisitor* visitor) {
+      CHECK(visitor);
+      visitor->VisitContainer(this);
+    }
+
+    virtual const ActorVector& children() const { return children_; }
+
     void AddActor(ClutterInterface::Actor* actor);
     void RemoveActor(ClutterInterface::Actor* actor);
-    virtual void Update(int* count, AnimationBase::AnimationTime now);
-    virtual void ComputeDepth(float* depth, float layer_thickness);
-    virtual void AddToDisplayListImpl(NoClutterInterface::ActorVector* actors,
-                                      bool opaque);
+    virtual void Update(int32* count, AnimationBase::AnimationTime now);
+
     // Raise one child over another.  Raise to top if "above" is NULL.
-    void RaiseChild(NoClutterInterface::Actor* child,
-                    NoClutterInterface::Actor* above);
+    void RaiseChild(TidyInterface::Actor* child,
+                    TidyInterface::Actor* above);
     // Lower one child under another.  Lower to bottom if "below" is NULL.
-    void LowerChild(NoClutterInterface::Actor* child,
-                    NoClutterInterface::Actor* below);
+    void LowerChild(TidyInterface::Actor* child,
+                    TidyInterface::Actor* below);
+
    private:
+    // The list of this container's children.
     ActorVector children_;
     DISALLOW_COPY_AND_ASSIGN(ContainerActor);
   };
 
-  class QuadActor : public NoClutterInterface::Actor {
+  // This class contains an actor that is a quadralateral.
+  class QuadActor : public TidyInterface::Actor {
    public:
-    explicit QuadActor(NoClutterInterface* interface);
+    explicit QuadActor(TidyInterface* interface);
+
     void SetColor(const ClutterInterface::Color& color) {
       color_ = color;
     }
+    const ClutterInterface::Color& color() const { return color_; }
 
-    virtual void AddToDisplayListImpl(NoClutterInterface::ActorVector* actors,
-                                      bool opaque);
-    virtual void Draw();
-
-    // We use reference counted textures here so that we can be sure
-    // that when we clone actors that they 1) share the same texture
-    // ID instead of copying the texture data, and 2) delete the
-    // textures properly when all actors using that texture go out of
-    // scope.
-    void set_texture(std::tr1::shared_ptr<TextureRep>& texture) {
-      texture_ = texture;
+    // Implement VisitorDestination for visitor.
+    void Accept(ActorVisitor* visitor) {
+      CHECK(visitor);
+      visitor->VisitQuad(this);
     }
-
-    GLuint texture_id() const {
-      return texture_.get() ? texture_->texture : 0;
-    }
-
-   protected:
-    ClutterInterface::Color color_;
 
    private:
-    std::tr1::shared_ptr<TextureRep> texture_;
+    ClutterInterface::Color color_;
 
     DISALLOW_COPY_AND_ASSIGN(QuadActor);
   };
 
-  class TexturePixmapActor : public NoClutterInterface::QuadActor,
+  class TexturePixmapActor : public TidyInterface::QuadActor,
                              public ClutterInterface::TexturePixmapActor {
    public:
-    explicit TexturePixmapActor(NoClutterInterface* interface);
+    explicit TexturePixmapActor(TidyInterface* interface);
     virtual ~TexturePixmapActor() { Reset(); }
+
+    // Implement VisitorDestination for visitor.
+    void Accept(ActorVisitor* visitor) {
+      CHECK(visitor);
+      visitor->VisitTexturePixmap(this);
+    }
+
     bool SetTexturePixmapWindow(XWindow xid);
+    XWindow texture_pixmap_window() const { return window_; }
     bool IsUsingTexturePixmapExtension() { return true; }
     bool SetAlphaMask(const unsigned char* bytes, int width, int height) {
       NOTIMPLEMENTED();
@@ -267,36 +390,30 @@ class NoClutterInterface : public ClutterInterface {
     void Refresh();
     void Reset();
 
-    virtual void Draw();
-
    private:
-    // Binds the window, the pixmap, the texture and the glx pixmap
-    // together.
-    bool Bind();
-
     // This is the XWindow that this actor is associated with.
     XWindow window_;
-
-    // This is the compositing pixmap associated with the window.
-    Pixmap pixmap_;
-
-    // This is the GLX pixmap we draw into, created from the pixmap above.
-    GLXPixmap glx_pixmap_;
-
-    // This is the id of the damage region.
-    XID damage_;
 
     DISALLOW_COPY_AND_ASSIGN(TexturePixmapActor);
   };
 
-  class StageActor : public NoClutterInterface::ContainerActor,
+  class StageActor : public TidyInterface::ContainerActor,
                      public ClutterInterface::StageActor {
    public:
-    StageActor(NoClutterInterface* interface, int width, int height);
+    StageActor(TidyInterface* interface, int width, int height);
     virtual ~StageActor();
-    XWindow GetStageXWindow() { return window_;}
+
+    // Implement VisitorDestination for visitor.
+    void Accept(ActorVisitor* visitor) {
+      CHECK(visitor);
+      visitor->VisitStage(this);
+    }
+
+    XWindow GetStageXWindow() { return window_; }
     void SetStageColor(const ClutterInterface::Color& color);
-    virtual void Draw();
+    const ClutterInterface::Color& stage_color() const {
+      return stage_color_;
+    }
     virtual std::string GetDebugString() {
       NOTIMPLEMENTED();
       return "";
@@ -313,8 +430,9 @@ class NoClutterInterface : public ClutterInterface {
     DISALLOW_COPY_AND_ASSIGN(StageActor);
   };
 
-  NoClutterInterface(XConnection* x_connection, GLInterface* gl_interface);
-  ~NoClutterInterface();
+  TidyInterface(XConnection* x_connection,
+                     GLInterfaceBase* gl_interface);
+  ~TidyInterface();
 
   // Begin ClutterInterface methods
   ContainerActor* CreateGroup();
@@ -335,29 +453,15 @@ class NoClutterInterface : public ClutterInterface {
 
   AnimationBase::AnimationTime GetCurrentTime() { return now_; }
   bool HandleEvent(XEvent* event);
-  GLuint vertex_buffer() { return vertex_buffer_; }
   int actor_count() { return actor_count_; }
 
   void Draw();
 
+  XConnection* x_conn() const { return xconn_; }
+
  private:
-  // These are friends so that they can get at the X connection and GL
-  // interface.
-  friend class StageActor;
-  friend class TexturePixmapActor;
-
-  XConnection* x_conn() const {
-    return xconn_;
-  }
-  GLInterface* gl_interface() const {
-    return gl_interface_;
-  }
-
   // Returns the real current time, for updating animation time.
   AnimationBase::AnimationTime GetCurrentRealTime();
-
-  // This draws a debugging "needle" in the upper left corner.
-  void DrawNeedle();
 
   // This is called when we start monitoring for changes, and sets up
   // redirection for the supplied window.
@@ -372,20 +476,6 @@ class NoClutterInterface : public ClutterInterface {
 
   // This is the X connection to use, and is not owned.
   XConnection* xconn_;
-
-  // This is the GL interface to use, and it is not owned.
-  GLInterface* gl_interface_;
-
-  // This is the 32-bit depth config that was found in the list of
-  // visuals (if any).
-  GLXFBConfig config_32_;
-
-  // This is the 24-bit depth config that was found in the list of
-  // visuals (if any).
-  GLXFBConfig config_24_;
-
-  // This is the current GLX context used for GL rendering.
-  GLXContext context_;
 
   // This is the list of actors to display.
   ActorVector actors_;
@@ -403,21 +493,18 @@ class NoClutterInterface : public ClutterInterface {
   // with an XWindow.
   XIDToTexturePixmapActorMap texture_pixmaps_;
 
-  // This keeps track of the number of frames drawn so we can draw the
-  // debugging needle.
-  int num_frames_drawn_;
-
-  // This is the vertex buffer that holds the rect we use for rendering stages.
-  GLuint vertex_buffer_;
-
   // This is the count of actors in the tree as of the last time
   // Update was called.  It is used to compute the depth delta for
   // layer depth calculations.
-  int actor_count_;
+  int32 actor_count_;
 
-  DISALLOW_COPY_AND_ASSIGN(NoClutterInterface);
+#ifdef TIDY_OPENGL
+  OpenGlDrawVisitor* draw_visitor_;
+#endif
+
+  DISALLOW_COPY_AND_ASSIGN(TidyInterface);
 };
 
 }  // namespace window_manager
 
-#endif  // WINDOW_MANAGER_NO_CLUTTER_H_
+#endif  // WINDOW_MANAGER_TIDY_INTERFACE_H_

@@ -12,14 +12,14 @@
 DEB_HOST_ARCH := $(shell dpkg-architecture -qDEB_HOST_ARCH)
 ifneq (,$(filter i386 amd64,$(DEB_HOST_ARCH)))
 	BREAKPAD := USE_BREAKPAD=1
-	NO_CLUTTER := NO_CLUTTER=1
+	USE_TIDY := USE_TIDY=1
 else
 	BREAKPAD :=
-	NO_CLUTTER :=
+	USE_TIDY :=
 endif
 
 override_dh_auto_build:
-	dh_auto_build -- $(BREAKPAD) $(NO_CLUTTER) wm screenshot
+	dh_auto_build -- $(BREAKPAD) $(USE_TIDY) wm screenshot
 
 override_dh_auto_install:
 	cp $(CURDIR)/wm $(CURDIR)/debian/chromeos-wm/usr/bin/chromeos-wm

@@ -79,8 +79,8 @@ screenshot_env = base_env.Clone()
 screenshot_env.ParseConfig('pkg-config --cflags --libs cairo')
 screenshot_env.Program('screenshot', 'screenshot.cc')
 
-# Check for NO_CLUTTER on the build line
-no_clutter = 'NO_CLUTTER' in ARGUMENTS
+# Check for USE_TIDY on the build line
+use_tidy = 'USE_TIDY' in ARGUMENTS
 
 # Start a new environment for the window manager.
 wm_env = base_env.Clone()
@@ -104,7 +104,7 @@ if os.system('pkg-config --exact-version=0.9.2 clutter-0.9') == 0:
 
 # This is needed so that glext headers include glBindBuffer and
 # related APIs.
-if no_clutter:
+if use_tidy:
   wm_env.Append(CPPDEFINES=['GL_GLEXT_PROTOTYPES'])
 
 wm_env.ProtocolBuffer('system_metrics.pb.cc', 'system_metrics.proto');
@@ -118,7 +118,7 @@ srcs = Split('''\
   wm_ipc.cc
   x_connection.cc
 ''')
-if no_clutter:
+if use_tidy:
   srcs.append(Split('''\
     real_gl_interface.cc
   '''))
@@ -136,6 +136,7 @@ srcs = Split('''\
   layout_manager.cc
   metrics_reporter.cc
   motion_event_coalescer.cc
+  tidy_interface.cc
   panel.cc
   panel_bar.cc
   panel_dock.cc
@@ -145,9 +146,9 @@ srcs = Split('''\
   window.cc
   window_manager.cc
 ''')
-if no_clutter:
+if use_tidy:
   srcs.append(Split('''\
-    no_clutter.cc
+    opengl_visitor.cc
   '''))
 libwm_core = wm_env.Library('wm_core', srcs)
 
@@ -163,8 +164,8 @@ wm_env.Append(LIBS=[libwm_core, libwm_ipc])
 if 'USE_BREAKPAD' in ARGUMENTS:
   wm_env.Append(CPPDEFINES=['USE_BREAKPAD'], LIBS=['libbreakpad'])
 
-if no_clutter:
-  wm_env.Append(CPPDEFINES=['NO_CLUTTER'])
+if use_tidy:
+  wm_env.Append(CPPDEFINES=['USE_TIDY'])
 
 wm_env.Program('wm', 'main.cc')
 
@@ -173,8 +174,13 @@ test_env.Append(LIBS=['gtest'])
 # libtest needs to be listed first since it depends on wm_core and wm_ipc.
 test_env.Prepend(LIBS=[libtest])
 tests = []
+
+# These are tests that only get built when we use tidy.
+tidy_tests = ['tidy_interface_test.cc',
+              'opengl_visitor_test.cc']
+
 for test_src in Glob('*_test.cc', strings=True):
-  if test_src == 'no_clutter_test.cc' and not no_clutter:
+  if test_src in tidy_tests and not use_tidy:
     continue
   tests += test_env.Program(test_src)
 # Create a 'tests' target that will build all tests.

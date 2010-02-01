@@ -31,4 +31,4 @@ echo "1..."
 sleep 1
 echo "Starting wm!"
 
-$script_dir/wm --logtostderr --nouse_clutter "$@"
+$script_dir/wm --logtostderr --wm_background_image ../assets/images/background_1024x600.png --use_tidy "$@"

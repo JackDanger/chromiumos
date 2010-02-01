@@ -11,11 +11,12 @@
 #include <GL/glxext.h>
 
 #include "window_manager/x_connection.h"
+#include "window_manager/gl_interface_base.h"
 
 namespace window_manager {
 
 // This is an abstract base class representing a GL interface.
-class GLInterface {
+class GLInterface : virtual public GLInterfaceBase {
  public:
   GLInterface() {}
   virtual ~GLInterface() {}
