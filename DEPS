@@ -56,6 +56,9 @@ deps = {
     # IBus input method for Traditional Chinese
     _third_party_base + "ibus-chewing/files": "/ibus-chewing.git",
 
+    # IBus input method for Simplified Chinese
+    _third_party_base + "ibus-pinyin/files": "/ibus-pinyin.git",
+
     # IBus input method for Japanese
     _third_party_base + "ibus-anthy/files": "/ibus-anthy.git",
 
