@@ -1,4 +1,4 @@
-# Copyright (c) 2010 The Chromium Authors. All rights reserved.
+# Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -18,7 +18,7 @@ _TEXT_FILES = (
 )
 
 _LICENSE_HEADER = (
-     r".*? Copyright \(c\) 20[0-9\-]{2,7} The Chromium Authors\. All rights "
+     r".*? Copyright \(c\) 20[-0-9]{2,7} The Chromium OS Authors\. All rights "
        r"reserved\." "\n"
      r".*? Use of this source code is governed by a BSD-style license that can "
        "be\n"
@@ -47,8 +47,13 @@ def _CommonChecks(input_api, output_api):
       input_api, output_api))
   results.extend(input_api.canned_checks.CheckChangeHasTestField(
       input_api, output_api))
-  results.extend(input_api.canned_checks.CheckLicense(
-      input_api, output_api, _LICENSE_HEADER, sources))
+  license_check = input_api.canned_checks.CheckLicense(
+    input_api, output_api, _LICENSE_HEADER, sources)
+  results.extend(license_check)
+  if license_check:
+    results.extend([output_api.PresubmitNotifyResult(
+      "License header should match the following:",
+      long_text=_LICENSE_HEADER)])
   return results
 
 
