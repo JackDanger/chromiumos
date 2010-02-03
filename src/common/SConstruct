@@ -13,12 +13,13 @@ SOURCES=['chromeos/dbus/abstract_dbus_service.cc',
 
 env = Environment(
     CPPPATH=[ '.', '../third_party/chrome/files' ],
-    CCFLAGS=['-fno-exceptions', '-fPIC'],
+    CCFLAGS=[ '-g' ],
 )
 for key in Split('CC CXX AR RANLIB LD NM CFLAGS CCFLAGS'):
   value = os.environ.get(key)
   if value != None:
     env[key] = value
+env['CCFLAGS'] += " -fPIC -fno-exceptions"
 
 # Fix issue with scons not passing pkg-config vars through the environment.
 for key in Split('PKG_CONFIG_LIBDIR PKG_CONFIG_PATH'):
@@ -54,4 +55,5 @@ unittest_cmd = env_test.Program('unittests',
 
 Clean(unittest_cmd, Glob('*.gcda') + Glob('*.gcno') + Glob('*.gcov') +
                     Split('html app.info'))
+
 
