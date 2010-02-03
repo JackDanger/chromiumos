@@ -24,4 +24,4 @@ for key in Split('PKG_CONFIG_LIBDIR PKG_CONFIG_PATH'):
 env.Append(CPPPATH=['..'])
 env.Append(LIBS=Split('base chromeos rt Xtst'))
 env.ParseConfig('pkg-config --cflags --libs libpcrecpp x11')
-env.Program('autox', 'autox.cc')
+env.Program('autox', Split('autox.cc script_runner.cc'))
