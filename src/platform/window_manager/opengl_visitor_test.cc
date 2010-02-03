@@ -93,23 +93,23 @@ class OpenGlVisitorTestTree : public OpenGlVisitorTest {
     rect2_->SetName("rect2");
     rect3_->SetName("rect3");
 
-    //     stage (-256)
+    //     stage (0)
     //     |          |
-    // group1(1024)  group3(0)
+    // group1(256)  group3(1024)
     //    |            |
-    // group2(1280)    group4(256)
+    // group2(512)    group4(1280)
     //   |              |      |
-    // rect1(1536)  rect2(768) rect3(512)
+    // rect1(768)  rect2(1536) rect3(1792)
 
     // depth order (furthest to nearest) should be:
-    //   1536 on actor rect1
-    //   1280 on actor group2
-    //   1024 on actor group1
-    //   768 on actor rect2
-    //   512 on actor rect3
-    //   256 on actor group4
-    //   0 on actor group3
-    //   -256 on actor stage
+    // rect3 = 1792
+    // rect2 = 1536
+    // group4 = 1280
+    // group3 = 1024
+    // rect1 = 768
+    // group2 = 512
+    // group1 = 256
+    // stage = 0
 
     stage_->AddActor(group1_.get());
     stage_->AddActor(group3_.get());
@@ -163,6 +163,22 @@ TEST_F(OpenGlVisitorTestTree, LayerDepth) {
 
   EXPECT_FLOAT_EQ(
       depth,
+      dynamic_cast<TidyInterface::QuadActor*>(rect3_.get())->z());
+  depth += thickness;
+  EXPECT_FLOAT_EQ(
+      depth,
+      dynamic_cast<TidyInterface::QuadActor*>(rect2_.get())->z());
+  depth += thickness;
+  EXPECT_FLOAT_EQ(
+      depth,
+      dynamic_cast<TidyInterface::ContainerActor*>(group4_.get())->z());
+  depth += thickness;
+  EXPECT_FLOAT_EQ(
+      depth,
+      dynamic_cast<TidyInterface::ContainerActor*>(group3_.get())->z());
+  depth += thickness;
+  EXPECT_FLOAT_EQ(
+      depth,
       dynamic_cast<TidyInterface::QuadActor*>(rect1_.get())->z());
   depth += thickness;
   EXPECT_FLOAT_EQ(
@@ -172,22 +188,6 @@ TEST_F(OpenGlVisitorTestTree, LayerDepth) {
   EXPECT_FLOAT_EQ(
       depth,
       dynamic_cast<TidyInterface::ContainerActor*>(group1_.get())->z());
-  depth += thickness;
-  EXPECT_FLOAT_EQ(
-      depth,
-      dynamic_cast<TidyInterface::QuadActor*>(rect2_.get())->z());
-  depth += thickness;
-  EXPECT_FLOAT_EQ(
-      depth,
-      dynamic_cast<TidyInterface::QuadActor*>(rect3_.get())->z());
-  depth += thickness;
-  EXPECT_FLOAT_EQ(
-      depth,
-      dynamic_cast<TidyInterface::ContainerActor*>(group4_.get())->z());
-  depth += thickness;
-  EXPECT_FLOAT_EQ(
-      depth,
-      dynamic_cast<TidyInterface::ContainerActor*>(group3_.get())->z());
 
   // Now we test higher-level layer depth results.
   depth = OpenGlLayerVisitor::kMaxDepth + thickness;
@@ -196,6 +196,22 @@ TEST_F(OpenGlVisitorTestTree, LayerDepth) {
 
   EXPECT_FLOAT_EQ(
       depth,
+      dynamic_cast<TidyInterface::QuadActor*>(rect3_.get())->z());
+  depth += thickness;
+  EXPECT_FLOAT_EQ(
+      depth,
+      dynamic_cast<TidyInterface::QuadActor*>(rect2_.get())->z());
+  depth += thickness;
+  EXPECT_FLOAT_EQ(
+      depth,
+      dynamic_cast<TidyInterface::ContainerActor*>(group4_.get())->z());
+  depth += thickness;
+  EXPECT_FLOAT_EQ(
+      depth,
+      dynamic_cast<TidyInterface::ContainerActor*>(group3_.get())->z());
+  depth += thickness;
+  EXPECT_FLOAT_EQ(
+      depth,
       dynamic_cast<TidyInterface::QuadActor*>(rect1_.get())->z());
   depth += thickness;
   EXPECT_FLOAT_EQ(
@@ -205,22 +221,6 @@ TEST_F(OpenGlVisitorTestTree, LayerDepth) {
   EXPECT_FLOAT_EQ(
       depth,
       dynamic_cast<TidyInterface::ContainerActor*>(group1_.get())->z());
-  depth += thickness;
-  EXPECT_FLOAT_EQ(
-      depth,
-      dynamic_cast<TidyInterface::QuadActor*>(rect2_.get())->z());
-  depth += thickness;
-  EXPECT_FLOAT_EQ(
-      depth,
-      dynamic_cast<TidyInterface::QuadActor*>(rect3_.get())->z());
-  depth += thickness;
-  EXPECT_FLOAT_EQ(
-      depth,
-      dynamic_cast<TidyInterface::ContainerActor*>(group4_.get())->z());
-  depth += thickness;
-  EXPECT_FLOAT_EQ(
-      depth,
-      dynamic_cast<TidyInterface::ContainerActor*>(group3_.get())->z());
 }
 
 TEST_F(OpenGlVisitorTestTree, LayerDepthWithOpacity) {
@@ -246,6 +246,22 @@ TEST_F(OpenGlVisitorTestTree, LayerDepthWithOpacity) {
 
   EXPECT_FLOAT_EQ(
       depth,
+      dynamic_cast<TidyInterface::QuadActor*>(rect3_.get())->z());
+  depth += thickness;
+  EXPECT_FLOAT_EQ(
+      depth,
+      dynamic_cast<TidyInterface::QuadActor*>(rect2_.get())->z());
+  depth += thickness;
+  EXPECT_FLOAT_EQ(
+      depth,
+      dynamic_cast<TidyInterface::ContainerActor*>(group4_.get())->z());
+  depth += thickness;
+  EXPECT_FLOAT_EQ(
+      depth,
+      dynamic_cast<TidyInterface::ContainerActor*>(group3_.get())->z());
+  depth += thickness;
+  EXPECT_FLOAT_EQ(
+      depth,
       dynamic_cast<TidyInterface::QuadActor*>(rect1_.get())->z());
   depth += thickness;
   EXPECT_FLOAT_EQ(
@@ -255,22 +271,6 @@ TEST_F(OpenGlVisitorTestTree, LayerDepthWithOpacity) {
   EXPECT_FLOAT_EQ(
       depth,
       dynamic_cast<TidyInterface::ContainerActor*>(group1_.get())->z());
-  depth += thickness;
-  EXPECT_FLOAT_EQ(
-      depth,
-      dynamic_cast<TidyInterface::QuadActor*>(rect2_.get())->z());
-  depth += thickness;
-  EXPECT_FLOAT_EQ(
-      depth,
-      dynamic_cast<TidyInterface::QuadActor*>(rect3_.get())->z());
-  depth += thickness;
-  EXPECT_FLOAT_EQ(
-      depth,
-      dynamic_cast<TidyInterface::ContainerActor*>(group4_.get())->z());
-  depth += thickness;
-  EXPECT_FLOAT_EQ(
-      depth,
-      dynamic_cast<TidyInterface::ContainerActor*>(group3_.get())->z());
 
   // Now we test higher-level layer depth results.
   depth = OpenGlLayerVisitor::kMaxDepth + thickness;
@@ -279,6 +279,22 @@ TEST_F(OpenGlVisitorTestTree, LayerDepthWithOpacity) {
 
   EXPECT_FLOAT_EQ(
       depth,
+      dynamic_cast<TidyInterface::QuadActor*>(rect3_.get())->z());
+  depth += thickness;
+  EXPECT_FLOAT_EQ(
+      depth,
+      dynamic_cast<TidyInterface::QuadActor*>(rect2_.get())->z());
+  depth += thickness;
+  EXPECT_FLOAT_EQ(
+      depth,
+      dynamic_cast<TidyInterface::ContainerActor*>(group4_.get())->z());
+  depth += thickness;
+  EXPECT_FLOAT_EQ(
+      depth,
+      dynamic_cast<TidyInterface::ContainerActor*>(group3_.get())->z());
+  depth += thickness;
+  EXPECT_FLOAT_EQ(
+      depth,
       dynamic_cast<TidyInterface::QuadActor*>(rect1_.get())->z());
   depth += thickness;
   EXPECT_FLOAT_EQ(
@@ -288,22 +304,6 @@ TEST_F(OpenGlVisitorTestTree, LayerDepthWithOpacity) {
   EXPECT_FLOAT_EQ(
       depth,
       dynamic_cast<TidyInterface::ContainerActor*>(group1_.get())->z());
-  depth += thickness;
-  EXPECT_FLOAT_EQ(
-      depth,
-      dynamic_cast<TidyInterface::QuadActor*>(rect2_.get())->z());
-  depth += thickness;
-  EXPECT_FLOAT_EQ(
-      depth,
-      dynamic_cast<TidyInterface::QuadActor*>(rect3_.get())->z());
-  depth += thickness;
-  EXPECT_FLOAT_EQ(
-      depth,
-      dynamic_cast<TidyInterface::ContainerActor*>(group4_.get())->z());
-  depth += thickness;
-  EXPECT_FLOAT_EQ(
-      depth,
-      dynamic_cast<TidyInterface::ContainerActor*>(group3_.get())->z());
 }
 
 }  // end namespace window_manager

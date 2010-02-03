@@ -137,13 +137,13 @@ TEST_F(TidyTestTree, ActorVisitor) {
 
   vector<string> expected;
   expected.push_back("stage");
+  expected.push_back("group3");
+  expected.push_back("group4");
+  expected.push_back("rect3");
+  expected.push_back("rect2");
   expected.push_back("group1");
   expected.push_back("group2");
   expected.push_back("rect1");
-  expected.push_back("group3");
-  expected.push_back("group4");
-  expected.push_back("rect2");
-  expected.push_back("rect3");
 
   const vector<string>& results = visitor.results();
   EXPECT_EQ(expected.size(), results.size());
@@ -162,13 +162,13 @@ TEST_F(TidyTestTree, ActorVisitor) {
 TEST_F(TidyTestTree, ActorCollectorBasic) {
   vector<string> expected;
   expected.push_back("stage");
+  expected.push_back("group3");
+  expected.push_back("group4");
+  expected.push_back("rect3");
+  expected.push_back("rect2");
   expected.push_back("group1");
   expected.push_back("group2");
   expected.push_back("rect1");
-  expected.push_back("group3");
-  expected.push_back("group4");
-  expected.push_back("rect2");
-  expected.push_back("rect3");
 
   TidyInterface::ActorCollector collector;
   stage_->Accept(&collector);
@@ -187,10 +187,10 @@ TEST_F(TidyTestTree, ActorCollectorBasic) {
 TEST_F(TidyTestTree, ActorCollectorBranches) {
   vector<string> expected;
   expected.push_back("stage");
-  expected.push_back("group1");
-  expected.push_back("group2");
   expected.push_back("group3");
   expected.push_back("group4");
+  expected.push_back("group1");
+  expected.push_back("group2");
 
   TidyInterface::ActorCollector collector;
   collector.CollectLeaves(false);
@@ -208,9 +208,9 @@ TEST_F(TidyTestTree, ActorCollectorBranches) {
 
 TEST_F(TidyTestTree, ActorCollectorLeaves) {
   vector<string> expected;
-  expected.push_back("rect1");
-  expected.push_back("rect2");
   expected.push_back("rect3");
+  expected.push_back("rect2");
+  expected.push_back("rect1");
 
   TidyInterface::ActorCollector collector;
   collector.CollectLeaves(true);

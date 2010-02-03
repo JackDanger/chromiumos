@@ -204,7 +204,7 @@ void TidyInterface::Actor::Lower(ClutterInterface::Actor* other) {
   CHECK(parent_) << "Tried to lower an actor that has no parent.";
   TidyInterface::Actor* other_nc =
       dynamic_cast<TidyInterface::Actor*>(other);
-  CHECK(other_nc) << "Failed to cast to an Actor in Raise";
+  CHECK(other_nc) << "Failed to cast to an Actor in Lower";
   parent_->LowerChild(this, other_nc);
   set_dirty();
 }
@@ -276,7 +276,7 @@ void TidyInterface::ContainerActor::AddActor(
   TidyInterface::Actor* cast_actor = dynamic_cast<Actor*>(actor);
   CHECK(cast_actor) << "Unable to down-cast actor.";
   cast_actor->set_parent(this);
-  children_.push_back(cast_actor);
+  children_.insert(children_.begin(), cast_actor);
   set_dirty();
 }
 
@@ -345,7 +345,7 @@ void TidyInterface::ContainerActor::RaiseChild(
 
 void TidyInterface::ContainerActor::LowerChild(
     TidyInterface::Actor* child, TidyInterface::Actor* below) {
-  CHECK(child) << "Tried to raise a NULL child.";
+  CHECK(child) << "Tried to lower a NULL child.";
   if (child == below) {
     // Do nothing if we're lowering a child below itself,
     // or it's NULL.
