@@ -119,6 +119,24 @@ TEST_F(PanelTest, InputWindows) {
   EXPECT_EQ(content_info->height + titlebar_info->height +
               Panel::kResizeBorderWidth - Panel::kResizeCornerSize,
             right_info->height);
+
+  // Input windows need to get restacked even when the panel isn't
+  // resizable (so they'll be stacked correctly if it becomes resizable
+  // later).
+  panel.SetResizable(false);
+  panel.StackAtTopOfLayer(StackingManager::LAYER_FLOATING_TAB);
+  EXPECT_LT(xconn_->stacked_xids().GetIndex(titlebar_xid),
+            xconn_->stacked_xids().GetIndex(content_xid));
+  EXPECT_LT(xconn_->stacked_xids().GetIndex(content_xid),
+            xconn_->stacked_xids().GetIndex(panel.top_input_xid_));
+  EXPECT_LT(xconn_->stacked_xids().GetIndex(content_xid),
+            xconn_->stacked_xids().GetIndex(panel.top_left_input_xid_));
+  EXPECT_LT(xconn_->stacked_xids().GetIndex(content_xid),
+            xconn_->stacked_xids().GetIndex(panel.top_right_input_xid_));
+  EXPECT_LT(xconn_->stacked_xids().GetIndex(content_xid),
+            xconn_->stacked_xids().GetIndex(panel.left_input_xid_));
+  EXPECT_LT(xconn_->stacked_xids().GetIndex(content_xid),
+            xconn_->stacked_xids().GetIndex(panel.right_input_xid_));
 }
 
 TEST_F(PanelTest, Resize) {

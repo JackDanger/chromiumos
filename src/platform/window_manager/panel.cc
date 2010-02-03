@@ -296,16 +296,14 @@ void Panel::StackAtTopOfLayer(StackingManager::Layer layer) {
   wm_->stacking_manager()->StackWindowAtTopOfLayer(content_win_, layer);
   wm_->stacking_manager()->StackWindowAtTopOfLayer(titlebar_win_, layer);
 
-  if (resizable_) {
-    // Stack all of the input windows directly below the content window
-    // (which is stacked beneath the titlebar) -- we don't want the
-    // corner windows to occlude the titlebar.
-    wm_->xconn()->StackWindow(top_input_xid_, content_win_->xid(), false);
-    wm_->xconn()->StackWindow(top_left_input_xid_, content_win_->xid(), false);
-    wm_->xconn()->StackWindow(top_right_input_xid_, content_win_->xid(), false);
-    wm_->xconn()->StackWindow(left_input_xid_, content_win_->xid(), false);
-    wm_->xconn()->StackWindow(right_input_xid_, content_win_->xid(), false);
-  }
+  // Stack all of the input windows directly below the content window
+  // (which is stacked beneath the titlebar) -- we don't want the
+  // corner windows to occlude the titlebar.
+  wm_->xconn()->StackWindow(top_input_xid_, content_win_->xid(), false);
+  wm_->xconn()->StackWindow(top_left_input_xid_, content_win_->xid(), false);
+  wm_->xconn()->StackWindow(top_right_input_xid_, content_win_->xid(), false);
+  wm_->xconn()->StackWindow(left_input_xid_, content_win_->xid(), false);
+  wm_->xconn()->StackWindow(right_input_xid_, content_win_->xid(), false);
 }
 
 bool Panel::NotifyChromeAboutState(bool expanded) {
