@@ -96,8 +96,6 @@ class PanelManager : public EventConsumer {
 
   // Note: End overridden EventConsumer methods.
 
-  bool IsPanelBarVisible() const;
-
   // Handle the screen being resized.
   void HandleScreenResize();
 

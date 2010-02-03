@@ -35,8 +35,7 @@ PanelManager::PanelManager(WindowManager* wm, int panel_bar_height)
               NewPermanentCallback(
                   this, &PanelManager::HandlePeriodicPanelDragMotion),
               kDraggedPanelUpdateMs)),
-      panel_bar_(new PanelBar(wm_, 0, wm_->height() - panel_bar_height,
-                              wm_->width(), panel_bar_height)),
+      panel_bar_(new PanelBar(wm_)),
       left_panel_dock_(new PanelDock(wm_, PanelDock::DOCK_POSITION_LEFT)),
       right_panel_dock_(new PanelDock(wm_, PanelDock::DOCK_POSITION_RIGHT)),
       saw_map_request_(false) {
@@ -107,6 +106,7 @@ void PanelManager::HandleWindowMap(Window* win) {
               << " and titlebar window " << titlebar_win->xid_str();
 
       shared_ptr<Panel> panel(new Panel(wm_, win, titlebar_win));
+      panel->SetTitlebarWidth(panel->content_width());
 
       vector<XWindow> input_windows;
       panel->GetInputWindows(&input_windows);
@@ -354,15 +354,11 @@ bool PanelManager::HandleFocusChange(XWindow xid, bool focus_in) {
   return true;
 }
 
-bool PanelManager::IsPanelBarVisible() const {
-  return panel_bar_->is_visible();
-}
-
 void PanelManager::HandleScreenResize() {
-  panel_bar_->MoveAndResize(
-      0, wm_->height() - panel_bar_->height(),
-      wm_->width(), panel_bar_->height());
-  // TODO: Notify panel docks.
+  for (vector<PanelContainer*>::iterator it = containers_.begin();
+       it != containers_.end(); ++it) {
+    (*it)->HandleScreenResize();
+  }
 }
 
 bool PanelManager::TakeFocus() {
@@ -427,8 +423,7 @@ void PanelManager::HandlePeriodicPanelDragMotion() {
   if (!container_handled_drag) {
     if (panel_was_detached) {
       dragged_panel_->SetTitlebarWidth(dragged_panel_->content_width());
-      dragged_panel_->StackAtTopOfLayer(
-          StackingManager::LAYER_DRAGGED_EXPANDED_PANEL);
+      dragged_panel_->StackAtTopOfLayer(StackingManager::LAYER_DRAGGED_PANEL);
     }
 
     // Offer the panel to all of the containers.  If we find one that wants

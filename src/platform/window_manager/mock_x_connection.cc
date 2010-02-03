@@ -27,7 +27,9 @@ MockXConnection::MockXConnection()
       overlay_(CreateWindow(root_, 0, 0, 1024, 768, true, false, 0)),
       next_atom_(1000),
       focused_xid_(None),
-      pointer_grab_xid_(None) {
+      pointer_grab_xid_(None),
+      pointer_x_(0),
+      pointer_y_(0) {
   // Arbitrary large numbers unlikely to be used by other events.
   shape_event_base_ = 432432;
   randr_event_base_ = 543251;
@@ -428,6 +430,14 @@ bool MockXConnection::GrabKey(KeyCode keycode, uint32 modifiers) {
 
 bool MockXConnection::UngrabKey(KeyCode keycode, uint32 modifiers) {
   grabbed_keys_.erase(make_pair(keycode, modifiers));
+  return true;
+}
+
+bool MockXConnection::QueryPointerPosition(int* x_root, int* y_root) {
+  if (x_root)
+    *x_root = pointer_x_;
+  if (y_root)
+    *y_root = pointer_y_;
   return true;
 }
 

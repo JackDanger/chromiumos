@@ -79,8 +79,7 @@ TEST_F(PanelManagerTest, AttachAndDetach) {
   SendInitialEventsForWindow(content_xid);
 
   // Get the position of the top of the expanded panel when it's in the bar.
-  const int panel_y_in_bar =
-      panel_bar_->y() - content_height - titlebar_height;
+  const int panel_y_in_bar = wm_->height() - content_height - titlebar_height;
 
   // Drag the panel to the left, keeping it in line with the panel bar.
   Panel* panel = panel_manager_->GetPanelByXid(content_xid);
@@ -106,7 +105,7 @@ TEST_F(PanelManagerTest, AttachAndDetach) {
   EXPECT_EQ(25, panel->titlebar_y());
 
   // Drag the panel all the way down to reattach it.
-  SendPanelDraggedMessage(panel, 700, panel_bar_->y());
+  SendPanelDraggedMessage(panel, 700, wm_->height() - 1);
   EXPECT_EQ(700, panel->right());
   EXPECT_EQ(panel_y_in_bar, panel->titlebar_y());
 
@@ -133,7 +132,7 @@ TEST_F(PanelManagerTest, AttachAndDetach) {
 
   // Now finish the drag and check that the panel ends up back in the bar.
   SendPanelDragCompleteMessage(panel);
-  EXPECT_EQ(700, panel->right());
+  EXPECT_EQ(wm_->width() - PanelBar::kPixelsBetweenPanels, panel->right());
   EXPECT_EQ(panel_y_in_bar, panel->titlebar_y());
 }
 
@@ -169,7 +168,7 @@ TEST_F(PanelManagerTest, DragFocusedPanel) {
   EXPECT_EQ(content_xid, GetActiveWindowProperty());
 
   // Now reattach it and check that it still has the focus.
-  SendPanelDraggedMessage(panel, 400, panel_bar_->y());
+  SendPanelDraggedMessage(panel, 400, wm_->height() - 1);
   ASSERT_EQ(panel_manager_->GetContainerForPanel(*panel), panel_bar_);
   EXPECT_EQ(content_xid, xconn_->focused_xid());
   EXPECT_EQ(content_xid, GetActiveWindowProperty());

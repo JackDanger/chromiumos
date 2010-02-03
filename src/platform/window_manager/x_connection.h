@@ -397,6 +397,9 @@ class XConnection {
     return (states[keycode / 8] & (0x1 << (keycode % 8)));
   }
 
+  // Query the pointer's current position relative to the root window.
+  virtual bool QueryPointerPosition(int* x_root, int* y_root) = 0;
+
   // Value that should be used in event and property 'format' fields for
   // byte and long arguments.
   static const int kByteFormat;

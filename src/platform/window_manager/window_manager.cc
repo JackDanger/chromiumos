@@ -494,13 +494,6 @@ void WindowManager::TakeFocus() {
     xconn_->FocusWindow(root_, CurrentTime);
 }
 
-void WindowManager::HandlePanelBarVisibilityChange(bool visible) {
-  if (visible)
-    layout_manager_->Resize(width_, height_ - kPanelBarHeight);
-  else
-    layout_manager_->Resize(width_, height_);
-}
-
 bool WindowManager::SetActiveWindowProperty(XWindow xid) {
   VLOG(1) << "Setting active window to " << XidStr(xid);
   if (!xconn_->SetIntProperty(
@@ -1327,9 +1320,7 @@ bool WindowManager::HandleRRScreenChangeNotify(
   stage_->SetSize(width_, height_);
   if (background_.get())
     background_->SetSize(width_, height_);
-  layout_manager_->Resize(
-      width_,
-      height_ - (panel_manager_->IsPanelBarVisible() ? kPanelBarHeight : 0));
+  layout_manager_->Resize(width_, height_);
   panel_manager_->HandleScreenResize();
   hotkey_overlay_->group()->Move(width_ / 2, height_ / 2, 0);
   xconn_->ResizeWindow(background_xid_, width_, height_);

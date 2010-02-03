@@ -85,6 +85,7 @@ class RealXConnection : public XConnection {
 
   bool SetDetectableKeyboardAutoRepeat(bool detectable);
   bool QueryKeyboardState(std::vector<uint8_t>* keycodes_out);
+  bool QueryPointerPosition(int* x_root, int* y_root);
 
   // This convenience function is ONLY available for a real X
   // connection.  It is not part of the XConnection interface.  This

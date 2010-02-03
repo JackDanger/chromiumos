@@ -183,7 +183,7 @@ void Panel::HandleInputWindowButtonPress(
     resize_actor_->SetOpacity(0, 0);
     resize_actor_->SetOpacity(kResizeBoxOpacity, kResizeActorOpacityAnimMs);
     wm_->stacking_manager()->StackActorAtTopOfLayer(
-        resize_actor_.get(), StackingManager::LAYER_EXPANDED_PANEL);
+        resize_actor_.get(), StackingManager::LAYER_STATIONARY_PANEL);
     resize_actor_->SetVisibility(true);
   }
 }

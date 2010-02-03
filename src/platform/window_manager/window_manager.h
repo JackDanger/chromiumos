@@ -107,10 +107,6 @@ class WindowManager {
   // focus and aren't sure what to do with it.
   void TakeFocus();
 
-  // Adjust the size of the window layout when the panel bar is shown or
-  // hidden.
-  void HandlePanelBarVisibilityChange(bool visible);
-
   // Set the _NET_ACTIVE_WINDOW property, which contains the ID of the
   // currently-active window (in our case, this is the top-level window or
   // panel window that has the focus).

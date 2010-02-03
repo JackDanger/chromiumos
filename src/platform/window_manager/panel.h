@@ -61,8 +61,10 @@ class Panel {
 
   int titlebar_y() const { return titlebar_win_->composited_y(); }
 
+  // TODO: Remove content and titlebar width.
   int content_width() const { return content_win_->client_width(); }
   int titlebar_width() const { return titlebar_win_->client_width(); }
+  int width() const { return content_win_->client_width(); }
 
   int content_height() const { return content_win_->client_height(); }
   int titlebar_height() const { return titlebar_win_->client_height(); }

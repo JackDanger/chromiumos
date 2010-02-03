@@ -9,10 +9,10 @@
 
 namespace window_manager {
 
-// Distance between the panel and the edge of the dock at which we detach it.
+// Distance between the panel and the edge of the screen at which we detach it.
 static const int kDetachThresholdPixels = 50;
 
-// Distance between the panel and the edge of the dock at which we attach it.
+// Distance between the panel and the edge of the screen at which we attach it.
 static const int kAttachThresholdPixels = 20;
 
 PanelDock::PanelDock(WindowManager* wm, DockPosition position)
@@ -28,8 +28,8 @@ PanelDock::~PanelDock() {
 void PanelDock::AddPanel(Panel* panel, PanelSource source, bool expanded) {
   panel->StackAtTopOfLayer(
       source == PANEL_SOURCE_DRAGGED ?
-        StackingManager::LAYER_DRAGGED_EXPANDED_PANEL :
-        StackingManager::LAYER_EXPANDED_PANEL);
+        StackingManager::LAYER_DRAGGED_PANEL :
+        StackingManager::LAYER_STATIONARY_PANEL);
 
   if (panel->content_win()->focused()) {
     FocusPanel(panel, false, wm_->GetCurrentTimeFromServer());
@@ -86,7 +86,7 @@ bool PanelDock::HandleNotifyPanelDraggedMessage(Panel* panel,
 
   if (dragged_panel_ != panel) {
     dragged_panel_ = panel;
-    panel->StackAtTopOfLayer(StackingManager::LAYER_DRAGGED_EXPANDED_PANEL);
+    panel->StackAtTopOfLayer(StackingManager::LAYER_DRAGGED_PANEL);
   }
 
   if (position_ == DOCK_POSITION_LEFT) {
@@ -103,7 +103,7 @@ void PanelDock::HandleNotifyPanelDragCompleteMessage(Panel* panel) {
     return;
   // Move client windows.
   panel->Move(panel->right(), panel->titlebar_y(), true, 0);
-  panel->StackAtTopOfLayer(StackingManager::LAYER_EXPANDED_PANEL);
+  panel->StackAtTopOfLayer(StackingManager::LAYER_STATIONARY_PANEL);
   dragged_panel_ = NULL;
 }
 
@@ -117,7 +117,7 @@ void PanelDock::FocusPanel(Panel* panel,
   panel->RemoveButtonGrab(remove_pointer_grab);
   wm_->SetActiveWindowProperty(panel->content_win()->xid());
   panel->content_win()->TakeFocus(timestamp);
-  panel->StackAtTopOfLayer(StackingManager::LAYER_EXPANDED_PANEL);
+  panel->StackAtTopOfLayer(StackingManager::LAYER_STATIONARY_PANEL);
 }
 
 };  // namespace window_manager

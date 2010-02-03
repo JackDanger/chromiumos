@@ -95,6 +95,7 @@ class MockXConnection : public XConnection {
                                 XserverRegion parts) {}
   bool SetDetectableKeyboardAutoRepeat(bool detectable) { return true; }
   bool QueryKeyboardState(std::vector<uint8_t>* keycodes_out) { return true; }
+  bool QueryPointerPosition(int* x_root, int* y_root);
 
   // Testing-specific code.
   struct WindowInfo {
@@ -178,6 +179,12 @@ class MockXConnection : public XConnection {
     return *(stacked_xids_.get());
   }
 
+  // Set the pointer position for QueryPointerPosition().
+  void SetPointerPosition(int x, int y) {
+    pointer_x_ = x;
+    pointer_y_ = y;
+  }
+
   // Set a window as having an active pointer grab.  This is handy when
   // simulating a passive button grab being upgraded due to a button press.
   void set_pointer_grab_xid(XWindow xid) {
@@ -233,6 +240,10 @@ class MockXConnection : public XConnection {
 
   // Keys that have been grabbed (pairs are key codes and modifiers).
   std::set<std::pair<KeyCode, uint32> > grabbed_keys_;
+
+  // Current position of the mouse pointer for QueryPointerPosition().
+  int pointer_x_;
+  int pointer_y_;
 
   DISALLOW_COPY_AND_ASSIGN(MockXConnection);
 };

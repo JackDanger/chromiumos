@@ -42,22 +42,15 @@ class StackingManager {
     // Hotkey overlay images.
     LAYER_HOTKEY_OVERLAY,
 
-    // A collapsed panel as it's being dragged.  This is a separate layer so
-    // that the panel's shadow will be cast over stationary collapsed panels.
-    LAYER_DRAGGED_COLLAPSED_PANEL,
-
-    // Stationary collapsed panels (more specifically, their titlebars)
-    // across the bottom of the screen.
-    LAYER_COLLAPSED_PANEL,
-
     // The panel bar itself.
     LAYER_PANEL_BAR,
 
-    // An expanded panel as it's being dragged.
-    LAYER_DRAGGED_EXPANDED_PANEL,
+    // A panel as it's being dragged.  This is a separate layer so that the
+    // panel's shadow will be cast over stationary panels.
+    LAYER_DRAGGED_PANEL,
 
-    // Stationary expanded panels.
-    LAYER_EXPANDED_PANEL,
+    // A stationary panel.
+    LAYER_STATIONARY_PANEL,
 
     // Window representing a Chrome tab as it's being dragged out of the
     // tab summary window.

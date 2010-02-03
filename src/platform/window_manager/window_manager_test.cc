@@ -559,23 +559,10 @@ TEST_F(WindowManagerTest, RandR) {
   EXPECT_EQ(new_width, wm_->stage()->GetWidth());
   EXPECT_EQ(new_height, wm_->stage()->GetHeight());
 
-  // Check that the window manager passed the new dimensions to some of the
-  // objects that it owns.  The panel bar shouldn't be visible since there
-  // are no panels (and as a result, the layout manager should be taking up
-  // the entire screen).
-  EXPECT_FALSE(wm_->panel_manager_->IsPanelBarVisible());
-
   EXPECT_EQ(0, wm_->layout_manager_->x());
   EXPECT_EQ(0, wm_->layout_manager_->y());
   EXPECT_EQ(new_width, wm_->layout_manager_->width());
   EXPECT_EQ(new_height, wm_->layout_manager_->height());
-
-  EXPECT_EQ(0, wm_->panel_manager_->panel_bar_->x());
-  EXPECT_EQ(new_height - WindowManager::kPanelBarHeight,
-            wm_->panel_manager_->panel_bar_->y());
-  EXPECT_EQ(new_width, wm_->panel_manager_->panel_bar_->width());
-  EXPECT_EQ(WindowManager::kPanelBarHeight,
-            wm_->panel_manager_->panel_bar_->height());
 
   // EWMH properties on the root window should be updated as well.
   TestIntArrayProperty(root_xid, geometry_atom, 2, new_width, new_height);

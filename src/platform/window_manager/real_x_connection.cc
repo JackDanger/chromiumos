@@ -885,6 +885,23 @@ bool RealXConnection::QueryKeyboardState(vector<uint8_t>* keycodes_out) {
   return true;
 }
 
+bool RealXConnection::QueryPointerPosition(int* x_root, int* y_root) {
+  xcb_query_pointer_cookie_t cookie = xcb_query_pointer(xcb_conn_, root_);
+  xcb_generic_error_t* error = NULL;
+  scoped_ptr_malloc<xcb_query_pointer_reply_t> reply(
+      xcb_query_pointer_reply(xcb_conn_, cookie, &error));
+  scoped_ptr_malloc<xcb_generic_error_t> scoped_error(error);
+  if (error) {
+    LOG(WARNING) << "Querying pointer position failed";
+    return false;
+  }
+  if (x_root)
+    *x_root = reply->root_x;
+  if (y_root)
+    *y_root = reply->root_y;
+  return true;
+}
+
 bool RealXConnection::GrabServerImpl() {
   xcb_grab_server(xcb_conn_);
   return true;

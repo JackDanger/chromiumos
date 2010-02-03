@@ -221,9 +221,8 @@ TEST_F(PanelBarTest, FocusNewPanel) {
   EXPECT_EQ(content_xid, GetActiveWindowProperty());
 
   // The panel's address should be contained in 'desired_panel_to_focus_'.
-  ASSERT_EQ(1, panel_bar_->expanded_panels_.size());
-  EXPECT_EQ(panel_bar_->expanded_panels_[0],
-            panel_bar_->desired_panel_to_focus_);
+  ASSERT_EQ(1, panel_bar_->panels_.size());
+  EXPECT_EQ(panel_bar_->panels_[0], panel_bar_->desired_panel_to_focus_);
 
   // Now send an unmap event for the content window.  The panel object
   // should be destroyed, and 'desired_panel_to_focus_' shouldn't refer to
@@ -231,7 +230,7 @@ TEST_F(PanelBarTest, FocusNewPanel) {
   XEvent event;
   MockXConnection::InitUnmapEvent(&event, content_xid);
   EXPECT_TRUE(wm_->HandleEvent(&event));
-  EXPECT_TRUE(panel_bar_->expanded_panels_.empty());
+  EXPECT_TRUE(panel_bar_->panels_.empty());
   EXPECT_EQ(NULL, panel_bar_->desired_panel_to_focus_);
 }
 

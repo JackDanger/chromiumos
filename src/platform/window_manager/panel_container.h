@@ -22,6 +22,7 @@ class Panel;
 class PanelContainer {
  public:
   PanelContainer() {}
+  virtual ~PanelContainer() {}
 
   // Fill the passed-in vector with all of this container's input windows
   // (in an arbitrary order).  Input windows belonging to contained panels
@@ -99,6 +100,9 @@ class PanelContainer {
 
   // Handle a message asking us to focus one of our panels.
   virtual void HandleFocusPanelMessage(Panel* panel) = 0;
+
+  // Handle the screen being resized.
+  virtual void HandleScreenResize() = 0;
 
   DISALLOW_COPY_AND_ASSIGN(PanelContainer);
 };

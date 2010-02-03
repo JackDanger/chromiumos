@@ -53,7 +53,7 @@ TEST_F(PanelTest, InputWindows) {
   // Restack the panel and check that its titlebar is stacked above the
   // content window, and that the content window is above all of the input
   // windows used for resizing.
-  panel.StackAtTopOfLayer(StackingManager::LAYER_EXPANDED_PANEL);
+  panel.StackAtTopOfLayer(StackingManager::LAYER_STATIONARY_PANEL);
   EXPECT_LT(xconn_->stacked_xids().GetIndex(titlebar_xid),
             xconn_->stacked_xids().GetIndex(content_xid));
   EXPECT_LT(xconn_->stacked_xids().GetIndex(content_xid),
@@ -69,7 +69,7 @@ TEST_F(PanelTest, InputWindows) {
 
   // Now move the panel to a new location and check that all of the input
   // windows are moved correctly around it.
-  panel.MoveX(panel_bar_->x() + panel_bar_->width() - 35, true, 0);
+  panel.MoveX(wm_->width() - 35, true, 0);
 
   MockXConnection::WindowInfo* top_info =
       xconn_->GetWindowInfoOrDie(panel.top_input_xid_);
