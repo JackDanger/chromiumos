@@ -731,7 +731,7 @@ void WindowManager::HandleMappedWindow(Window* win) {
 
   // Redirect the window if we didn't already do it in response to a MapNotify
   // event (i.e. previously-existing or override-redirect).
-  if (!win->redirected())
+  if (FLAGS_wm_use_compositing && !win->redirected())
     win->Redirect();
   SetWmStateProperty(win->xid(), 1);  // NormalState
   for (std::set<EventConsumer*>::iterator it = event_consumers_.begin();
@@ -1189,7 +1189,8 @@ bool WindowManager::HandleMapRequest(const XMapRequestEvent& e) {
     return true;
   }
 
-  win->Redirect();
+  if (FLAGS_wm_use_compositing)
+    win->Redirect();
   if (win->override_redirect()) {
     LOG(WARNING) << "Huh?  Got a MapRequest event for override-redirect "
                  << "window " << XidStr(e.window);
@@ -1301,7 +1302,7 @@ bool WindowManager::HandleReparentNotify(const XReparentEvent& e) {
 
       // We're not going to be compositing the window anymore, so
       // unredirect it so it'll get drawn using the usual path.
-      if (was_mapped) {
+      if (FLAGS_wm_use_compositing && was_mapped) {
         // TODO: This is only an issue as long as we have Clutter using a
         // separate X connection -- see
         // http://code.google.com/p/chromium-os/issues/detail?id=1151 .
