@@ -7,7 +7,7 @@
 
 ACTION!="add", GOTO="mobile_action_end"
 
-SUBSYSTEM=="scsi-generic", SUBSYSTEMS=="usb", ATTRS{bDeviceClass}=="00|ff", ATTRS{bDeviceSubClass}=="00|ff", GOTO="mobile_action_switch"
+SUBSYSTEMS=="usb", ATTRS{bDeviceClass}=="00|ff", ATTRS{bDeviceSubClass}=="00|ff", GOTO="mobile_action_switch"
 GOTO="mobile_action_end"
 
 LABEL="mobile_action_switch"
