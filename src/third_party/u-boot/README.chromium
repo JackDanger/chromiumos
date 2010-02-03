@@ -1,0 +1,10 @@
+URL: http://www.denx.de/wiki/U-Boot
+Version: v2009.11
+License: GNU General Public License version 2
+License File: LICENSE
+
+Description:
+Das U-Boot -- the Universal Boot Loader
+
+Local Modifications:
+Add support for QSD8x50 based boards

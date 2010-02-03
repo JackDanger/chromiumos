@@ -181,4 +181,7 @@ deps = {
 
     # alsa-lib
     _third_party_base + "alsa-lib": "/alsa-lib.git",
+
+    # u-boot
+    _third_party_base + "u-boot/files": "/u-boot.git",
 }
