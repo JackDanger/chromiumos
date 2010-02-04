@@ -23,6 +23,8 @@ config.status: configure
 	dh_testdir
 	./configure --build $(DEB_BUILD_GNU_TYPE) --host $(DEB_HOST_GNU_TYPE) \
 		--without-xf86vmode-ext --without-xf86gamma-ext
+	mkdir utils/images
+	cp ../../../platform/assets/images/screenlocker.xpm utils/images
 
 build: build-stamp
 
@@ -36,6 +38,7 @@ clean:
 	rm -f build-stamp	
 	-$(MAKE) clean
 	rm -f $(CURDIR)/config.status
+	rm -rf $(CURDIR)/utils/images
 	dh_clean 
 
 install: build
