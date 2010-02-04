@@ -68,6 +68,7 @@
 /src/third_party/tpm-emulator/files/
 /src/third_party/trousers/
 /src/third_party/tzdata/
+/src/third_party/u-boot/files/
 /src/third_party/upstart/files/
 /src/third_party/vim/
 /src/third_party/wpa_supplicant/build/
