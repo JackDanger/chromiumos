@@ -18,8 +18,8 @@ env = Environment(
 for key in Split('CC CXX AR RANLIB LD NM CFLAGS CCFLAGS'):
   value = os.environ.get(key)
   if value != None:
-    env[key] = value
-env['CCFLAGS'] += " -fPIC -fno-exceptions"
+    env[key] = Split(value)
+env['CCFLAGS'] += ['-fPIC', '-fno-exceptions']
 
 # Fix issue with scons not passing pkg-config vars through the environment.
 for key in Split('PKG_CONFIG_LIBDIR PKG_CONFIG_PATH'):
@@ -45,8 +45,8 @@ env_test.Append(
   )
 for key in Split('CC CXX AR RANLIB LD NM CFLAGS CCFLAGS'):
   value = os.environ.get(key)
-  if value != None:
-    env_test[key] = value
+  if value:
+    env_test[key] = Split(value)
 
 unittest_sources =['chromeos/glib/object_unittest.cc']
 unittest_main = ['testrunner.cc']
