@@ -19,7 +19,9 @@
 #include "window_manager/x_connection.h"
 #include "window_manager/gl_interface_base.h"
 
+#ifdef USE_TIDY
 #define TIDY_OPENGL 1
+#endif
 
 namespace window_manager {
 

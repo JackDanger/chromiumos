@@ -13,7 +13,9 @@
 
 #include "base/logging.h"
 #include "window_manager/image_container.h"
+#ifdef TIDY_OPENGL
 #include "window_manager/opengl_visitor.h"
+#endif
 
 using std::tr1::shared_ptr;
 
@@ -483,7 +485,9 @@ TidyInterface::TidyInterface(XConnection* xconn,
 }
 
 TidyInterface::~TidyInterface() {
+#ifdef TIDY_OPENGL
   delete draw_visitor_;
+#endif
 }
 
 TidyInterface::ContainerActor* TidyInterface::CreateGroup() {
@@ -507,7 +511,9 @@ TidyInterface::Actor* TidyInterface::CreateImage(
       ImageContainer::CreateContainer(filename));
   if (container.get() &&
       container->LoadImage() == ImageContainer::IMAGE_LOAD_SUCCESS) {
+#ifdef TIDY_OPENGL
     draw_visitor_->BindImage(container.get(), actor);
+#endif
   } else {
     actor->SetColor(ClutterInterface::Color(1.f, 0.f, 1.f));
   }
@@ -601,7 +607,9 @@ void TidyInterface::Draw() {
   actor_count_ = 0;
   default_stage_->Update(&actor_count_, now_);
   if (dirty_) {
+#ifdef TIDY_OPENGL
     default_stage_->Accept(draw_visitor_);
+#endif
     dirty_ = false;
   }
 }
