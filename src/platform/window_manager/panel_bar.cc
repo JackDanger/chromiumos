@@ -11,6 +11,7 @@
 #include "base/logging.h"
 #include "window_manager/clutter_interface.h"
 #include "window_manager/panel.h"
+#include "window_manager/pointer_position_watcher.h"
 #include "window_manager/stacking_manager.h"
 #include "window_manager/util.h"
 #include "window_manager/window.h"
@@ -57,9 +58,7 @@ PanelBar::PanelBar(WindowManager* wm)
     : wm_(wm),
       total_panel_width_(0),
       dragged_panel_(NULL),
-      anchor_input_xid_(
-          wm_->CreateInputWindow(-1, -1, 1, 1,
-                                 ButtonPressMask | LeaveWindowMask)),
+      anchor_input_xid_(wm_->CreateInputWindow(-1, -1, 1, 1, ButtonPressMask)),
       anchor_panel_(NULL),
       anchor_actor_(wm_->clutter()->CreateImage(FLAGS_panel_anchor_image)),
       desired_panel_to_focus_(NULL) {
@@ -67,7 +66,9 @@ PanelBar::PanelBar(WindowManager* wm)
   anchor_actor_->SetOpacity(0, 0);
   wm_->stage()->AddActor(anchor_actor_.get());
   wm_->stacking_manager()->StackActorAtTopOfLayer(
-      anchor_actor_.get(), StackingManager::LAYER_PANEL_BAR);
+      anchor_actor_.get(), StackingManager::LAYER_PANEL_ANCHOR);
+  wm_->stacking_manager()->StackXidAtTopOfLayer(
+      anchor_input_xid_, StackingManager::LAYER_PANEL_ANCHOR);
 }
 
 PanelBar::~PanelBar() {
@@ -189,17 +190,6 @@ void PanelBar::HandleInputWindowButtonPress(XWindow xid,
     CollapsePanel(panel);
   else
     LOG(WARNING) << "Anchor panel no longer exists";
-}
-
-void PanelBar::HandleInputWindowPointerLeave(XWindow xid, Time timestamp) {
-  CHECK_EQ(xid, anchor_input_xid_);
-
-  // TODO: There appears to be a bit of a race condition here.  If the
-  // mouse cursor has already been moved away before the anchor input
-  // window gets created, the anchor never gets a mouse leave event.  Find
-  // some way to work around this.
-  VLOG(1) << "Got mouse leave in anchor window";
-  DestroyAnchor();
 }
 
 void PanelBar::HandlePanelButtonPress(
@@ -475,12 +465,28 @@ void PanelBar::CreateAnchor(Panel* panel) {
   anchor_panel_ = panel;
   anchor_actor_->Move(x, y, 0);
   anchor_actor_->SetOpacity(1, kAnchorFadeAnimMs);
+
+  // We might not get a LeaveNotify event*, so we also poll the pointer
+  // position.
+
+  // * If the mouse cursor has already been moved away before the anchor
+  // input window gets created, the anchor never gets a mouse leave event.
+  // Additionally, Chrome appears to be stacking its status bubble window
+  // above all other windows, so we sometimes get a leave event as soon as
+  // we slide a panel up.
+  anchor_pointer_watcher_.reset(
+      new PointerPositionWatcher(
+          wm_->xconn(),
+          NewPermanentCallback(this, &PanelBar::DestroyAnchor),
+          false,  // watch_for_entering_target=false
+          x, y, width, height));
 }
 
 void PanelBar::DestroyAnchor() {
   wm_->xconn()->ConfigureWindowOffscreen(anchor_input_xid_);
   anchor_actor_->SetOpacity(0, kAnchorFadeAnimMs);
   anchor_panel_ = NULL;
+  anchor_pointer_watcher_.reset();
 }
 
 Panel* PanelBar::GetNearestExpandedPanel(Panel* panel) {

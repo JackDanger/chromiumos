@@ -42,8 +42,8 @@ class StackingManager {
     // Hotkey overlay images.
     LAYER_HOTKEY_OVERLAY,
 
-    // The panel bar itself.
-    LAYER_PANEL_BAR,
+    // Anchor that's displayed when a panel is expanded in the panel bar.
+    LAYER_PANEL_ANCHOR,
 
     // A panel as it's being dragged.  This is a separate layer so that the
     // panel's shadow will be cast over stationary panels.

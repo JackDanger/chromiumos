@@ -23,6 +23,7 @@ typedef ::Window XWindow;
 namespace window_manager {
 
 class Panel;
+class PointerPositionWatcher;
 class Shadow;
 class Window;
 class WindowManager;
@@ -49,7 +50,7 @@ class PanelBar : public PanelContainer {
                                       int x_root, int y_root,
                                       int button,
                                       Time timestamp) {}
-  void HandleInputWindowPointerLeave(XWindow xid, Time timestamp);
+  void HandleInputWindowPointerLeave(XWindow xid, Time timestamp) {}
   void HandlePanelButtonPress(Panel* panel, int button, Time timestamp);
   void HandlePanelFocusChange(Panel* panel, bool focus_in);
   void HandleSetPanelStateMessage(Panel* panel, bool expand);
@@ -162,6 +163,9 @@ class PanelBar : public PanelContainer {
 
   // Textured actor used to draw the anchor.
   scoped_ptr<ClutterInterface::Actor> anchor_actor_;
+
+  // Watches the pointer's position so we know when to destroy the anchor.
+  scoped_ptr<PointerPositionWatcher> anchor_pointer_watcher_;
 
   // If we need to give the focus to a panel, we choose this one.
   Panel* desired_panel_to_focus_;

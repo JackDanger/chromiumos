@@ -7,8 +7,8 @@
 
 #include <glib.h>  // for gboolean and gint
 
-#include <chromeos/callback.h>
 #include "base/scoped_ptr.h"
+#include "chromeos/callback.h"
 
 namespace window_manager {
 
