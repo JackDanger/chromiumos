@@ -46,6 +46,7 @@ class PanelDock : public PanelContainer {
                                       int x_root, int y_root,
                                       int button,
                                       Time timestamp) {}
+  void HandleInputWindowPointerEnter(XWindow xid, Time timestamp) {}
   void HandleInputWindowPointerLeave(XWindow xid, Time timestamp) {}
   void HandlePanelButtonPress(Panel* panel, int button, Time timestamp);
   void HandlePanelFocusChange(Panel* panel, bool focus_in);

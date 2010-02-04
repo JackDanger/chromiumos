@@ -244,6 +244,16 @@ bool PanelManager::HandleButtonRelease(XWindow xid,
   return false;
 }
 
+bool PanelManager::HandlePointerEnter(XWindow xid, Time timestamp) {
+  PanelContainer* container = FindWithDefault(
+      container_input_xids_, xid, static_cast<PanelContainer*>(NULL));
+  if (container) {
+    container->HandleInputWindowPointerEnter(xid, timestamp);
+    return true;
+  }
+  return false;
+}
+
 bool PanelManager::HandlePointerLeave(XWindow xid, Time timestamp) {
   PanelContainer* container = FindWithDefault(
       container_input_xids_, xid, static_cast<PanelContainer*>(NULL));

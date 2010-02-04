@@ -54,6 +54,17 @@ static const int kPanelDetachThresholdPixels = 50;
 // How close does a panel need to get to the panel bar before it's attached?
 static const int kPanelAttachThresholdPixels = 20;
 
+// How close does the pointer need to get to the bottom of the screen
+// before we unhide collapsed panels?
+static const int kUnhideRegionHeightPixels = 30;
+
+// How much of the top of a collapsed panel's titlebar should peek up from
+// the bottom of the screen when it is hidden?
+static const int kHiddenCollapsedPanelHeightPixels = 3;
+
+// Amount of time to take when hiding or unhiding collapsed panels.
+static const int kHideCollapsedPanelsAnimMs = 100;
+
 PanelBar::PanelBar(WindowManager* wm)
     : wm_(wm),
       total_panel_width_(0),
@@ -61,24 +72,36 @@ PanelBar::PanelBar(WindowManager* wm)
       anchor_input_xid_(wm_->CreateInputWindow(-1, -1, 1, 1, ButtonPressMask)),
       anchor_panel_(NULL),
       anchor_actor_(wm_->clutter()->CreateImage(FLAGS_panel_anchor_image)),
-      desired_panel_to_focus_(NULL) {
+      desired_panel_to_focus_(NULL),
+      hide_collapsed_panels_(true),
+      deferred_hide_because_of_drag_(false),
+      unhide_input_xid_(wm_->CreateInputWindow(-1, -1, 1, 1, EnterWindowMask)) {
   anchor_actor_->SetName("panel anchor");
   anchor_actor_->SetOpacity(0, 0);
   wm_->stage()->AddActor(anchor_actor_.get());
   wm_->stacking_manager()->StackActorAtTopOfLayer(
-      anchor_actor_.get(), StackingManager::LAYER_PANEL_ANCHOR);
+      anchor_actor_.get(), StackingManager::LAYER_PANEL_BAR_INPUT_WINDOWS);
+
+  // Stack the anchor input window above the unhide one so we won't get
+  // spurious leave events in the former.
   wm_->stacking_manager()->StackXidAtTopOfLayer(
-      anchor_input_xid_, StackingManager::LAYER_PANEL_ANCHOR);
+      unhide_input_xid_, StackingManager::LAYER_PANEL_BAR_INPUT_WINDOWS);
+  wm_->stacking_manager()->StackXidAtTopOfLayer(
+      anchor_input_xid_, StackingManager::LAYER_PANEL_BAR_INPUT_WINDOWS);
 }
 
 PanelBar::~PanelBar() {
   wm_->xconn()->DestroyWindow(anchor_input_xid_);
+  anchor_input_xid_ = None;
+  wm_->xconn()->DestroyWindow(unhide_input_xid_);
+  unhide_input_xid_ = None;
 }
 
 void PanelBar::GetInputWindows(vector<XWindow>* windows_out) {
   CHECK(windows_out);
   windows_out->clear();
   windows_out->push_back(anchor_input_xid_);
+  windows_out->push_back(unhide_input_xid_);
 }
 
 void PanelBar::AddPanel(Panel* panel, PanelSource source, bool expanded) {
@@ -103,7 +126,11 @@ void PanelBar::AddPanel(Panel* panel, PanelSource source, bool expanded) {
                            StackingManager::LAYER_STATIONARY_PANEL);
 
   const int final_y = wm_->height() -
-      (expanded ? panel->total_height() : panel->titlebar_height());
+      (expanded ?
+       panel->total_height() :
+       (hide_collapsed_panels_ ?
+        kHiddenCollapsedPanelHeightPixels :
+        panel->titlebar_height()));
 
   // Now move the panel to its final position.
   switch (source) {
@@ -135,6 +162,11 @@ void PanelBar::AddPanel(Panel* panel, PanelSource source, bool expanded) {
   } else {
     panel->AddButtonGrab();
   }
+
+  // If this is the only collapsed panel, we need to configure the input
+  // window to watch for the pointer moving to the bottom of the screen.
+  if (!expanded && GetNumCollapsedPanels() == 1)
+    ConfigureUnhideInputWindow(true);
 }
 
 void PanelBar::RemovePanel(Panel* panel) {
@@ -149,6 +181,7 @@ void PanelBar::RemovePanel(Panel* panel) {
   if (desired_panel_to_focus_ == panel)
     desired_panel_to_focus_ = GetNearestExpandedPanel(panel);
 
+  bool was_collapsed = !GetPanelInfoOrDie(panel)->is_expanded;
   CHECK(panel_infos_.erase(panel) == 1);
   Panels::iterator it =
       FindPanelInVectorByWindow(panels_, *(panel->content_win()));
@@ -164,6 +197,11 @@ void PanelBar::RemovePanel(Panel* panel) {
   PackPanels(dragged_panel_);
   if (dragged_panel_)
     ReorderPanel(dragged_panel_);
+
+  // If this was the last collapsed panel, move the unhide input window
+  // offscreen.
+  if (was_collapsed && GetNumCollapsedPanels() == 0)
+    ConfigureUnhideInputWindow(false);
 }
 
 bool PanelBar::ShouldAddDraggedPanel(const Panel* panel,
@@ -190,6 +228,13 @@ void PanelBar::HandleInputWindowButtonPress(XWindow xid,
     CollapsePanel(panel);
   else
     LOG(WARNING) << "Anchor panel no longer exists";
+}
+
+void PanelBar::HandleInputWindowPointerEnter(XWindow xid, Time timestamp) {
+  if (xid == unhide_input_xid_) {
+    VLOG(1) << "Got mouse enter in unhide window";
+    ShowCollapsedPanels();
+  }
 }
 
 void PanelBar::HandlePanelButtonPress(
@@ -305,6 +350,14 @@ PanelBar::PanelInfo* PanelBar::GetPanelInfoOrDie(Panel* panel) {
   return info.get();
 }
 
+int PanelBar::GetNumCollapsedPanels() {
+  int count = 0;
+  for (Panels::const_iterator it = panels_.begin(); it != panels_.end(); ++it)
+    if (!GetPanelInfoOrDie(*it)->is_expanded)
+      count++;
+  return count;
+}
+
 void PanelBar::ExpandPanel(Panel* panel, bool create_anchor, int anim_ms) {
   CHECK(panel);
   PanelInfo* info = GetPanelInfoOrDie(panel);
@@ -320,6 +373,9 @@ void PanelBar::ExpandPanel(Panel* panel, bool create_anchor, int anim_ms) {
   info->is_expanded = true;
   if (create_anchor)
     CreateAnchor(panel);
+
+  if (GetNumCollapsedPanels() == 0)
+    ConfigureUnhideInputWindow(false);
 }
 
 void PanelBar::CollapsePanel(Panel* panel) {
@@ -338,7 +394,9 @@ void PanelBar::CollapsePanel(Panel* panel) {
   if (anchor_panel_ == panel)
     DestroyAnchor();
 
-  panel->MoveY(wm_->height() - panel->titlebar_height(),
+  panel->MoveY(wm_->height() - (hide_collapsed_panels_ ?
+                                kHiddenCollapsedPanelHeightPixels :
+                                panel->titlebar_height()),
                true, kPanelStateAnimMs);
   panel->SetResizable(false);
   panel->NotifyChromeAboutState(false);
@@ -352,6 +410,9 @@ void PanelBar::CollapsePanel(Panel* panel) {
       wm_->TakeFocus();
     }
   }
+
+  if (GetNumCollapsedPanels() == 1)
+    ConfigureUnhideInputWindow(true);
 }
 
 void PanelBar::FocusPanel(Panel* panel,
@@ -386,9 +447,14 @@ void PanelBar::HandlePanelDragComplete(Panel* panel) {
     return;
 
   panel->StackAtTopOfLayer(StackingManager::LAYER_STATIONARY_PANEL);
-  panel->MoveX(
-      GetPanelInfoOrDie(panel)->snapped_right, true, kPanelArrangeAnimMs);
+  panel->MoveX(GetPanelInfoOrDie(panel)->snapped_right,
+               true, kPanelArrangeAnimMs);
   dragged_panel_ = NULL;
+
+  if (deferred_hide_because_of_drag_) {
+    deferred_hide_because_of_drag_ = false;
+    HideCollapsedPanels();
+  }
 }
 
 void PanelBar::ReorderPanel(Panel* fixed_panel) {
@@ -513,6 +579,67 @@ Panel* PanelBar::GetNearestExpandedPanel(Panel* panel) {
     }
   }
   return nearest_panel;
+}
+
+void PanelBar::ConfigureUnhideInputWindow(bool move_onscreen) {
+  VLOG(1) << (move_onscreen ? "Showing" : "Hiding") << " input window "
+          << XidStr(unhide_input_xid_) << " for unhiding collapsed panels";
+  if (move_onscreen) {
+    wm_->ConfigureInputWindow(
+        unhide_input_xid_,
+        0, wm_->height() - kUnhideRegionHeightPixels,
+        wm_->width(), kUnhideRegionHeightPixels);
+  } else {
+    wm_->xconn()->ConfigureWindowOffscreen(unhide_input_xid_);
+  }
+}
+
+void PanelBar::ShowCollapsedPanels() {
+  VLOG(1) << "Showing collapsed panels";
+  hide_collapsed_panels_ = false;
+  deferred_hide_because_of_drag_ = false;
+
+  for (Panels::iterator it = panels_.begin(); it != panels_.end(); ++it) {
+    Panel* panel = *it;
+    if (GetPanelInfoOrDie(panel)->is_expanded)
+      continue;
+    panel->MoveY(wm_->height() - panel->titlebar_height(),
+                 true, kHideCollapsedPanelsAnimMs);
+  }
+
+  ConfigureUnhideInputWindow(false);
+  unhide_pointer_watcher_.reset(
+      new PointerPositionWatcher(
+          wm_->xconn(),
+          NewPermanentCallback(this, &PanelBar::HideCollapsedPanels),
+          false,  // watch_for_entering_target=false
+          0, wm_->height() - kUnhideRegionHeightPixels,
+          wm_->width(), kUnhideRegionHeightPixels));
+}
+
+void PanelBar::HideCollapsedPanels() {
+  VLOG(1) << "Hiding collapsed panels";
+  if (dragged_panel_ && !GetPanelInfoOrDie(dragged_panel_)->is_expanded) {
+    // Don't hide the panels in the middle of the drag -- we'll do it in
+    // HandlePanelDragComplete() instead.
+    VLOG(1) << "Deferring hiding collapsed panels since collapsed panel "
+            << dragged_panel_->xid_str() << " is currently being dragged";
+    deferred_hide_because_of_drag_ = true;
+    return;
+  }
+
+  hide_collapsed_panels_ = true;
+  for (Panels::iterator it = panels_.begin(); it != panels_.end(); ++it) {
+    Panel* panel = *it;
+    if (GetPanelInfoOrDie(panel)->is_expanded)
+      continue;
+    panel->MoveY(wm_->height() - kHiddenCollapsedPanelHeightPixels,
+                 true, kHideCollapsedPanelsAnimMs);
+  }
+
+  if (GetNumCollapsedPanels() > 0)
+    ConfigureUnhideInputWindow(true);
+  unhide_pointer_watcher_.reset();
 }
 
 }  // namespace window_manager

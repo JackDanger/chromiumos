@@ -84,6 +84,7 @@ class PanelManager : public EventConsumer {
                            int x_root, int y_root,
                            int button,
                            Time timestamp);
+  bool HandlePointerEnter(XWindow xid, Time timestamp);
   bool HandlePointerLeave(XWindow xid, Time timestamp);
   bool HandlePointerMotion(XWindow xid, int x, int y, Time timestamp);
 

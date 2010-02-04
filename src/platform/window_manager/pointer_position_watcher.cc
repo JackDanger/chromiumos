@@ -9,7 +9,7 @@
 namespace window_manager {
 
 // How frequently should we query the pointer position, in milliseconds?
-static const int kTimeoutMs = 500;
+static const int kTimeoutMs = 200;
 
 PointerPositionWatcher::PointerPositionWatcher(
     XConnection* xconn,

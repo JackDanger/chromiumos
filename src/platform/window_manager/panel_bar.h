@@ -50,6 +50,7 @@ class PanelBar : public PanelContainer {
                                       int x_root, int y_root,
                                       int button,
                                       Time timestamp) {}
+  void HandleInputWindowPointerEnter(XWindow xid, Time timestamp);
   void HandleInputWindowPointerLeave(XWindow xid, Time timestamp) {}
   void HandlePanelButtonPress(Panel* panel, int button, Time timestamp);
   void HandlePanelFocusChange(Panel* panel, bool focus_in);
@@ -91,6 +92,9 @@ class PanelBar : public PanelContainer {
 
   // Get the PanelInfo object for a panel, crashing if it's not present.
   PanelInfo* GetPanelInfoOrDie(Panel* panel);
+
+  // Get the current number of collapsed panels.
+  int GetNumCollapsedPanels();
 
   // Expand a panel.  If 'create_anchor' is true, we additionally create an
   // anchor for it.
@@ -139,6 +143,13 @@ class PanelBar : public PanelContainer {
   // other expanded panels (or if 'panel' isn't expanded).
   Panel* GetNearestExpandedPanel(Panel* panel);
 
+  // Move 'unhide_input_xid_' onscreen or offscreen.
+  void ConfigureUnhideInputWindow(bool move_onscreen);
+
+  // Show or hide all collapsed panels.
+  void ShowCollapsedPanels();
+  void HideCollapsedPanels();
+
   WindowManager* wm_;  // not owned
 
   // Total width of all panels (including padding between them).
@@ -169,6 +180,23 @@ class PanelBar : public PanelContainer {
 
   // If we need to give the focus to a panel, we choose this one.
   Panel* desired_panel_to_focus_;
+
+  // Are we currently hiding collapsed panels (i.e. making them just barely
+  // peek up from the bottom of the screen)?
+  bool hide_collapsed_panels_;
+
+  // True if we're deferring hiding collapsed panels because the dragged
+  // panel is collapsed.
+  bool deferred_hide_because_of_drag_;
+
+  // Input window used to detect when the mouse is at the bottom of the
+  // screen so that we can unhide collapsed panels.
+  XWindow unhide_input_xid_;
+
+  // Used to monitor the pointer position when we're showing collapsed
+  // panels so that we'll know to hide them when the pointer far enough
+  // away.
+  scoped_ptr<PointerPositionWatcher> unhide_pointer_watcher_;
 
   DISALLOW_COPY_AND_ASSIGN(PanelBar);
 };

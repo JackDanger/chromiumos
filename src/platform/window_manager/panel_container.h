@@ -73,6 +73,7 @@ class PanelContainer {
                                               int x_root, int y_root,
                                               int button,
                                               Time timestamp) = 0;
+  virtual void HandleInputWindowPointerEnter(XWindow xid, Time timestamp) = 0;
   virtual void HandleInputWindowPointerLeave(XWindow xid, Time timestamp) = 0;
 
   // Handle a button press in a panel.
