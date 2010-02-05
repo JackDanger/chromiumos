@@ -184,4 +184,10 @@ deps = {
 
     # u-boot
     _third_party_base + "u-boot/files": "/u-boot.git",
+
+    # portage
+    _third_party_base + "portage": "/portage.git",
+
+    # chromiumos-overlay
+    _third_party_base + "chromiumos-overlay": "/chromiumos-overlay.git",
 }
