@@ -36,18 +36,11 @@ fi
 
 # First find the root device that we are installing from and verify it.
 CMDLINE=`cat /proc/cmdline`
-LABEL=`echo "$CMDLINE" | sed \
-  's/.*root=LABEL=\([-\.[:alpha:][:digit:]]*\).*/\1/g'`
-if [ "$LABEL" = "$CMDLINE" ]
-then
-  echo "Error: Unable to find root by label. Are you booted off USB?"
-  exit 1
-fi
-echo "Using source USB device with label: $LABEL"
-SRC_PARTITION=`readlink -f /dev/disk/by-label/$LABEL`
+SRC_PARTITION=`echo "$CMDLINE" | sed \
+  's/.*root=\([-/=\.[:alpha:][:digit:]]*\).*/\1/g'`
 if [ ! -b "$SRC_PARTITION" ]
 then
-  echo "Error: Unable to find USB partition with label: $LABEL"
+  echo "Error: Unable to find USB partition: $SRC_PARTITION"
   exit 1
 fi
 SRC=`echo "$SRC_PARTITION" | sed 's/\(\/dev\/[[:alpha:]]*\)[[:digit:]]*/\1/g'`
@@ -82,7 +75,10 @@ then
   echo "Error: Attempt to install to a removeable device: $DST"
   exit 1
 fi
-
+if [ "$DST" = "$SRC" ]; then
+  echo "Error: src and dst the same: $SRC = $DST"
+  exit 1
+fi
 # Ask for root password to be sure.
 echo "This will install from '$SRC' to '$DST'. If you are sure this is "
 echo "what you want then feel free to enter the root password to proceed."
@@ -161,6 +157,8 @@ sync
 sudo dd if="$SRC_PARTITION" of="$DST_PARTITION" bs=1M seek=1 skip=1
 # Copy all but the first 2 kibibytes now
 sudo dd if="$SRC_PARTITION" of="$DST_PARTITION" bs=1024 seek=2 skip=2 count=1022
+
+LABEL=$(sudo /sbin/e2label "$SRC_PARTITION")
 
 # Check new file system label. We skip the first char and prefix with 'H'
 NEW_LABEL=`expr substr "$LABEL" 2 ${#LABEL}`
