@@ -158,66 +158,6 @@ void TidyInterface::LayerVisitor::VisitStage(TidyInterface::StageActor* actor) {
   VisitContainer(actor);
 }
 
-
-TidyInterface::ActorCollector::ActorCollector()
-    : branches_(true),
-      leaves_(true),
-      opaque_(TidyInterface::ActorCollector::VALUE_EITHER),
-      visible_(TidyInterface::ActorCollector::VALUE_EITHER) {
-}
-
-TidyInterface::ActorCollector::~ActorCollector() {
-}
-
-void TidyInterface::ActorCollector::VisitActor(Actor* actor) {
-  CHECK(actor);
-  bool is_container = dynamic_cast<ContainerActor*>(actor) != NULL;
-#ifdef EXTRA_LOGGING
-  LOG(INFO) << "Looking for "
-            << (leaves_ ? "leaves, " : "")
-            << (branches_ ? "branches, " : "")
-            << (visible_ == VALUE_FALSE ? "not visible, " : "")
-            << (visible_ == VALUE_TRUE ? "visible, " : "")
-            << (visible_ == VALUE_EITHER ? "either visible, " : "")
-            << (opaque_ == VALUE_FALSE ? "not opaque" : "")
-            << (opaque_ == VALUE_TRUE ? "opaque" : "")
-            << (opaque_ == VALUE_EITHER ? "either opaque" : "");
-#endif  // EXTRA_LOGGING
-  if ((!is_container && leaves_) || (is_container && branches_)) {
-    TriValue is_visible = actor->IsVisible() ? VALUE_TRUE : VALUE_FALSE;
-    TriValue is_opaque = actor->is_opaque() ? VALUE_TRUE : VALUE_FALSE;
-    if (is_visible == visible_ || visible_ == VALUE_EITHER ) {
-      if (is_opaque == opaque_ || opaque_ == VALUE_EITHER) {
-#ifdef EXTRA_LOGGING
-        LOG(INFO) << "Visiting an actor (" << actor->name() << ") that "
-                  << (is_container ? "is" : "is not") << " a container, "
-                  << (actor->IsVisible() ? "is" : "is not") << " visible and "
-                  << (actor->is_opaque() ? "is" : "is not") << " opaque.";
-#endif  // EXTRA_LOGGING
-        results_.push_back(actor);
-      }
-    }
-  }
-}
-
-void TidyInterface::ActorCollector::VisitContainer(
-    TidyInterface::ContainerActor* actor) {
-  CHECK(actor);
-  this->VisitActor(actor);
-  ActorVector children = actor->GetChildren();
-  ActorVector::const_iterator iterator = children.begin();
-  while (iterator != children.end()) {
-    if (*iterator) {
-      // Don't traverse actors that don't match visibility filter.
-      TriValue is_visible = actor->IsVisible() ? VALUE_TRUE : VALUE_FALSE;
-      if (is_visible == visible_ || visible_ == VALUE_EITHER ) {
-        (*iterator)->Accept(this);
-      }
-    }
-    ++iterator;
-  }
-}
-
 TidyInterface::Actor::~Actor() {
   if (parent_) {
     parent_->RemoveActor(this);

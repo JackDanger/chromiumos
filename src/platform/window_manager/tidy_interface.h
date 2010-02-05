@@ -12,6 +12,8 @@
 #include <tr1/memory>
 #include <vector>
 
+#include <gtest/gtest_prod.h>  // for FRIEND_TEST() macro
+
 #include "base/hash_tables.h"
 #include "base/logging.h"
 #include "base/scoped_ptr.h"
@@ -129,57 +131,6 @@ class TidyInterface : public ClutterInterface {
     virtual void Accept(ActorVisitor* visitor) = 0;
    private:
     DISALLOW_COPY_AND_ASSIGN(VisitorDestination);
-  };
-
-  // This class visits an actor tree and collects the actors that
-  // match the given criterion.  By default, finds all actors in the
-  // tree it is accepted into in a preorder traversal (container
-  // actors are traversed before their children).
-  class ActorCollector : virtual public ActorVisitor {
-   public:
-    ActorCollector();
-    virtual ~ActorCollector();
-
-    enum TriValue {
-      VALUE_FALSE = 0,
-      VALUE_TRUE = 1,
-      VALUE_EITHER = 2,
-    };
-
-    // Various filters that can be applied to collection criteria,
-    // which take effect the next time this visitor is accepted into a
-    // destination.
-
-    // Collect containers when encountered during traversal. Defaults
-    // to true.
-    void CollectBranches(bool branches) { branches_ = branches; }
-    // Collect non-containers when encountered during
-    // traversal. Defaults to true.
-    void CollectLeaves(bool leaves) { leaves_ = leaves; }
-    // Collect visible nodes among the nodes that are being collected
-    // (branches and/or leaves).  Defaults to VALUE_EITHER.
-    void CollectVisible(TriValue visible) { visible_ = visible; }
-    // Collect opaque nodes among the ones that are being collected,
-    // but only if they march the visible criterion above. Defaults to
-    // VALUE_EITHER.
-    void CollectOpaque(TriValue opaque) { opaque_ = opaque; }
-
-    // Returns the current list of results.
-    const ActorVector& results() const { return results_; }
-
-    // Clears all current results.
-    void clear() { results_.clear(); }
-    void VisitActor(Actor* actor);
-    void VisitContainer(ContainerActor* actor);
-
-   private:
-    ActorVector results_;
-    bool branches_;
-    bool leaves_;
-    TriValue opaque_;
-    TriValue visible_;
-
-    DISALLOW_COPY_AND_ASSIGN(ActorCollector);
   };
 
   class LayerVisitor
@@ -480,7 +431,7 @@ class TidyInterface : public ClutterInterface {
   };
 
   TidyInterface(XConnection* x_connection,
-                     GLInterfaceBase* gl_interface);
+                GLInterfaceBase* gl_interface);
   ~TidyInterface();
 
   // Begin ClutterInterface methods
@@ -509,6 +460,11 @@ class TidyInterface : public ClutterInterface {
   XConnection* x_conn() const { return xconn_; }
 
  private:
+  FRIEND_TEST(OpenGlVisitorTestTree, LayerDepth);  // sets actor count
+
+  // Used by tests.
+  void set_actor_count(int count) { actor_count_ = count; }
+
   // Returns the real current time, for updating animation time.
   AnimationBase::AnimationTime GetCurrentRealTime();
 

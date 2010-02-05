@@ -92,13 +92,23 @@ class TidyTestTree : public TidyTest {
     rect2_->SetName("rect2");
     rect3_->SetName("rect3");
 
-    //     stage
-    //     |   |
-    // group1  group3
-    //   |         |
-    // group2    group4
-    //   |       |    |
-    // rect1  rect2 rect3
+    //     stage (0)
+    //     |          |
+    // group1(256)  group3(1024)
+    //    |            |
+    // group2(512)    group4(1280)
+    //   |              |      |
+    // rect1(768)  rect2(1536) rect3(1792)
+
+    // depth order (furthest to nearest) should be:
+    // rect3 = 1792
+    // rect2 = 1536
+    // group4 = 1280
+    // group3 = 1024
+    // rect1 = 768
+    // group2 = 512
+    // group1 = 256
+    // stage = 0
 
     stage_->AddActor(group1_.get());
     stage_->AddActor(group3_.get());
@@ -131,6 +141,170 @@ class TidyTestTree : public TidyTest {
   scoped_ptr<TidyInterface::Actor> rect3_;
 };
 
+TEST_F(TidyTestTree, LayerDepth) {
+  // Test lower-level layer-setting routines
+  int32 count = 0;
+  stage_->Update(&count, 0LL);
+  EXPECT_EQ(8, count);
+  TidyInterface::ActorVector actors;
+
+  // Code uses a depth range of kMinDepth to kMaxDepth.  Layers are
+  // disributed evenly within that range, except we don't use the
+  // frontmost or backmost values in that range.
+  uint32 max_count = NextPowerOfTwo(static_cast<uint32>(count + 2));
+  float thickness = -(TidyInterface::LayerVisitor::kMaxDepth -
+                TidyInterface::LayerVisitor::kMinDepth) / max_count;
+  float depth = TidyInterface::LayerVisitor::kMaxDepth + thickness;
+
+  // First we test the layer visitor directly.
+  TidyInterface::LayerVisitor layer_visitor(count);
+  stage_->Accept(&layer_visitor);
+
+  EXPECT_FLOAT_EQ(
+      depth,
+      dynamic_cast<TidyInterface::QuadActor*>(rect3_.get())->z());
+  depth += thickness;
+  EXPECT_FLOAT_EQ(
+      depth,
+      dynamic_cast<TidyInterface::QuadActor*>(rect2_.get())->z());
+  depth += thickness;
+  EXPECT_FLOAT_EQ(
+      depth,
+      dynamic_cast<TidyInterface::ContainerActor*>(group4_.get())->z());
+  depth += thickness;
+  EXPECT_FLOAT_EQ(
+      depth,
+      dynamic_cast<TidyInterface::ContainerActor*>(group3_.get())->z());
+  depth += thickness;
+  EXPECT_FLOAT_EQ(
+      depth,
+      dynamic_cast<TidyInterface::QuadActor*>(rect1_.get())->z());
+  depth += thickness;
+  EXPECT_FLOAT_EQ(
+      depth,
+      dynamic_cast<TidyInterface::ContainerActor*>(group2_.get())->z());
+  depth += thickness;
+  EXPECT_FLOAT_EQ(
+      depth,
+      dynamic_cast<TidyInterface::ContainerActor*>(group1_.get())->z());
+
+  // Now we test higher-level layer depth results.
+  depth = TidyInterface::LayerVisitor::kMaxDepth + thickness;
+  interface()->Draw();
+  EXPECT_EQ(8, interface()->actor_count());
+
+  EXPECT_FLOAT_EQ(
+      depth,
+      dynamic_cast<TidyInterface::QuadActor*>(rect3_.get())->z());
+  depth += thickness;
+  EXPECT_FLOAT_EQ(
+      depth,
+      dynamic_cast<TidyInterface::QuadActor*>(rect2_.get())->z());
+  depth += thickness;
+  EXPECT_FLOAT_EQ(
+      depth,
+      dynamic_cast<TidyInterface::ContainerActor*>(group4_.get())->z());
+  depth += thickness;
+  EXPECT_FLOAT_EQ(
+      depth,
+      dynamic_cast<TidyInterface::ContainerActor*>(group3_.get())->z());
+  depth += thickness;
+  EXPECT_FLOAT_EQ(
+      depth,
+      dynamic_cast<TidyInterface::QuadActor*>(rect1_.get())->z());
+  depth += thickness;
+  EXPECT_FLOAT_EQ(
+      depth,
+      dynamic_cast<TidyInterface::ContainerActor*>(group2_.get())->z());
+  depth += thickness;
+  EXPECT_FLOAT_EQ(
+      depth,
+      dynamic_cast<TidyInterface::ContainerActor*>(group1_.get())->z());
+}
+
+TEST_F(TidyTestTree, LayerDepthWithOpacity) {
+  rect2_->SetOpacity(0.5f, 0);
+
+  // Test lower-level layer-setting routines
+  int32 count = 0;
+  stage_->Update(&count, 0LL);
+  EXPECT_EQ(8, count);
+  TidyInterface::ActorVector actors;
+
+  // Code uses a depth range of kMinDepth to kMaxDepth.  Layers are
+  // disributed evenly within that range, except we don't use the
+  // frontmost or backmost values in that range.
+  uint32 max_count = NextPowerOfTwo(static_cast<uint32>(count + 2));
+  float thickness = -(TidyInterface::LayerVisitor::kMaxDepth -
+                TidyInterface::LayerVisitor::kMinDepth) / max_count;
+  float depth = TidyInterface::LayerVisitor::kMaxDepth + thickness;
+
+  // First we test the layer visitor directly.
+  TidyInterface::LayerVisitor layer_visitor(count);
+  stage_->Accept(&layer_visitor);
+
+  EXPECT_FLOAT_EQ(
+      depth,
+      dynamic_cast<TidyInterface::QuadActor*>(rect3_.get())->z());
+  depth += thickness;
+  EXPECT_FLOAT_EQ(
+      depth,
+      dynamic_cast<TidyInterface::QuadActor*>(rect2_.get())->z());
+  depth += thickness;
+  EXPECT_FLOAT_EQ(
+      depth,
+      dynamic_cast<TidyInterface::ContainerActor*>(group4_.get())->z());
+  depth += thickness;
+  EXPECT_FLOAT_EQ(
+      depth,
+      dynamic_cast<TidyInterface::ContainerActor*>(group3_.get())->z());
+  depth += thickness;
+  EXPECT_FLOAT_EQ(
+      depth,
+      dynamic_cast<TidyInterface::QuadActor*>(rect1_.get())->z());
+  depth += thickness;
+  EXPECT_FLOAT_EQ(
+      depth,
+      dynamic_cast<TidyInterface::ContainerActor*>(group2_.get())->z());
+  depth += thickness;
+  EXPECT_FLOAT_EQ(
+      depth,
+      dynamic_cast<TidyInterface::ContainerActor*>(group1_.get())->z());
+
+  // Now we test higher-level layer depth results.
+  depth = TidyInterface::LayerVisitor::kMaxDepth + thickness;
+  interface()->Draw();
+  EXPECT_EQ(8, interface()->actor_count());
+
+  EXPECT_FLOAT_EQ(
+      depth,
+      dynamic_cast<TidyInterface::QuadActor*>(rect3_.get())->z());
+  depth += thickness;
+  EXPECT_FLOAT_EQ(
+      depth,
+      dynamic_cast<TidyInterface::QuadActor*>(rect2_.get())->z());
+  depth += thickness;
+  EXPECT_FLOAT_EQ(
+      depth,
+      dynamic_cast<TidyInterface::ContainerActor*>(group4_.get())->z());
+  depth += thickness;
+  EXPECT_FLOAT_EQ(
+      depth,
+      dynamic_cast<TidyInterface::ContainerActor*>(group3_.get())->z());
+  depth += thickness;
+  EXPECT_FLOAT_EQ(
+      depth,
+      dynamic_cast<TidyInterface::QuadActor*>(rect1_.get())->z());
+  depth += thickness;
+  EXPECT_FLOAT_EQ(
+      depth,
+      dynamic_cast<TidyInterface::ContainerActor*>(group2_.get())->z());
+  depth += thickness;
+  EXPECT_FLOAT_EQ(
+      depth,
+      dynamic_cast<TidyInterface::ContainerActor*>(group1_.get())->z());
+}
+
 TEST_F(TidyTestTree, ActorVisitor) {
   NameCheckVisitor visitor;
   stage_->Accept(&visitor);
@@ -157,115 +331,6 @@ TEST_F(TidyTestTree, ActorVisitor) {
   EXPECT_EQ(expected[5], results[5]);
   EXPECT_EQ(expected[6], results[6]);
   EXPECT_EQ(expected[7], results[7]);
-}
-
-TEST_F(TidyTestTree, ActorCollectorBasic) {
-  vector<string> expected;
-  expected.push_back("stage");
-  expected.push_back("group3");
-  expected.push_back("group4");
-  expected.push_back("rect3");
-  expected.push_back("rect2");
-  expected.push_back("group1");
-  expected.push_back("group2");
-  expected.push_back("rect1");
-
-  TidyInterface::ActorCollector collector;
-  stage_->Accept(&collector);
-  TidyInterface::ActorVector results = collector.results();
-  ASSERT_EQ(8, results.size());
-  EXPECT_STREQ(expected[0].c_str(), results[0]->name().c_str());
-  EXPECT_STREQ(expected[1].c_str(), results[1]->name().c_str());
-  EXPECT_STREQ(expected[2].c_str(), results[2]->name().c_str());
-  EXPECT_STREQ(expected[3].c_str(), results[3]->name().c_str());
-  EXPECT_STREQ(expected[4].c_str(), results[4]->name().c_str());
-  EXPECT_STREQ(expected[5].c_str(), results[5]->name().c_str());
-  EXPECT_STREQ(expected[6].c_str(), results[6]->name().c_str());
-  EXPECT_STREQ(expected[7].c_str(), results[7]->name().c_str());
-}
-
-TEST_F(TidyTestTree, ActorCollectorBranches) {
-  vector<string> expected;
-  expected.push_back("stage");
-  expected.push_back("group3");
-  expected.push_back("group4");
-  expected.push_back("group1");
-  expected.push_back("group2");
-
-  TidyInterface::ActorCollector collector;
-  collector.CollectLeaves(false);
-  collector.CollectBranches(true);
-  stage_->Accept(&collector);
-
-  TidyInterface::ActorVector results = collector.results();
-  ASSERT_EQ(5, results.size());
-  EXPECT_STREQ(expected[0].c_str(), results[0]->name().c_str());
-  EXPECT_STREQ(expected[1].c_str(), results[1]->name().c_str());
-  EXPECT_STREQ(expected[2].c_str(), results[2]->name().c_str());
-  EXPECT_STREQ(expected[3].c_str(), results[3]->name().c_str());
-  EXPECT_STREQ(expected[4].c_str(), results[4]->name().c_str());
-}
-
-TEST_F(TidyTestTree, ActorCollectorLeaves) {
-  vector<string> expected;
-  expected.push_back("rect3");
-  expected.push_back("rect2");
-  expected.push_back("rect1");
-
-  TidyInterface::ActorCollector collector;
-  collector.CollectLeaves(true);
-  collector.CollectBranches(false);
-  stage_->Accept(&collector);
-
-  TidyInterface::ActorVector results = collector.results();
-  ASSERT_EQ(3, results.size());
-  EXPECT_STREQ(expected[0].c_str(), results[0]->name().c_str());
-  EXPECT_STREQ(expected[1].c_str(), results[1]->name().c_str());
-  EXPECT_STREQ(expected[2].c_str(), results[2]->name().c_str());
-}
-
-TEST_F(TidyTestTree, ActorCollectorVisible) {
-  vector<string> expected;
-  expected.push_back("stage");
-  expected.push_back("group1");
-  expected.push_back("group2");
-  expected.push_back("rect1");
-
-  TidyInterface::ActorCollector collector;
-  collector.CollectLeaves(true);
-  collector.CollectBranches(true);
-  collector.CollectVisible(TidyInterface::ActorCollector::VALUE_TRUE);
-  group3_->SetVisibility(false);
-  stage_->Accept(&collector);
-
-  TidyInterface::ActorVector results = collector.results();
-  ASSERT_EQ(4, results.size());
-  EXPECT_STREQ(expected[0].c_str(), results[0]->name().c_str());
-  EXPECT_STREQ(expected[1].c_str(), results[1]->name().c_str());
-  EXPECT_STREQ(expected[2].c_str(), results[2]->name().c_str());
-  EXPECT_STREQ(expected[3].c_str(), results[3]->name().c_str());
-}
-
-TEST_F(TidyTestTree, ActorCollectorOpaque) {
-  vector<string> expected;
-  expected.push_back("group1");
-  expected.push_back("group2");
-  expected.push_back("rect1");
-
-  TidyInterface::ActorCollector collector;
-  collector.CollectLeaves(true);
-  collector.CollectBranches(true);
-  collector.CollectOpaque(TidyInterface::ActorCollector::VALUE_FALSE);
-  group1_->SetOpacity(0.5f, 0);
-  group2_->SetOpacity(0.5f, 0);
-  rect1_->SetOpacity(0.5f, 0);
-  stage_->Accept(&collector);
-
-  TidyInterface::ActorVector results = collector.results();
-  ASSERT_EQ(3, results.size());
-  EXPECT_STREQ(expected[0].c_str(), results[0]->name().c_str());
-  EXPECT_STREQ(expected[1].c_str(), results[1]->name().c_str());
-  EXPECT_STREQ(expected[2].c_str(), results[2]->name().c_str());
 }
 
 TEST_F(TidyTest, FloatAnimation) {

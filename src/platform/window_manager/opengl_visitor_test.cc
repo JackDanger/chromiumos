@@ -29,29 +29,17 @@ namespace window_manager {
 
 class TestInterface : virtual public TidyInterface {
  public:
-  TestInterface(XConnection* xconnection, GLInterface* gl_interface)
+  TestInterface(XConnection* xconnection, GLInterfaceBase* gl_interface)
       : TidyInterface(xconnection, gl_interface) {}
  private:
   DISALLOW_COPY_AND_ASSIGN(TestInterface);
 };
 
-class NameCheckVisitor : virtual public TidyInterface::ActorVisitor {
- public:
-  NameCheckVisitor() {}
-  virtual ~NameCheckVisitor() {}
-  virtual void VisitActor(TidyInterface::Actor* actor) {
-    results_.push_back(actor->name());
-  }
-  const vector<string>& results() { return results_; }
- private:
-  vector<string> results_;
-  DISALLOW_COPY_AND_ASSIGN(NameCheckVisitor);
-};
-
 class OpenGlVisitorTest : public ::testing::Test {
  public:
-  OpenGlVisitorTest() : interface_(NULL), gl_interface_(new MockGLInterface),
-                    x_connection_(new MockXConnection) {
+  OpenGlVisitorTest() : interface_(NULL),
+                        gl_interface_(new MockGLInterface),
+                        x_connection_(new MockXConnection) {
     interface_.reset(new TestInterface(x_connection_.get(),
                                        gl_interface_.get()));
   }
@@ -143,139 +131,21 @@ class OpenGlVisitorTestTree : public OpenGlVisitorTest {
 };
 
 TEST_F(OpenGlVisitorTestTree, LayerDepth) {
-  // Test lower-level layer-setting routines
   int32 count = 0;
   stage_->Update(&count, 0LL);
   EXPECT_EQ(8, count);
-  TidyInterface::ActorVector actors;
+  interface()->set_actor_count(count);
+
+  OpenGlDrawVisitor visitor(gl_interface(), interface(), stage_);
+  stage_->Accept(&visitor);
 
   // Code uses a depth range of kMinDepth to kMaxDepth.  Layers are
   // disributed evenly within that range, except we don't use the
   // frontmost or backmost values in that range.
-  uint32 max_count = NextPowerOfTwo(static_cast<uint32>(count + 2));
+  uint32 max_count = NextPowerOfTwo(static_cast<uint32>(8 + 2));
   float thickness = -(TidyInterface::LayerVisitor::kMaxDepth -
                 TidyInterface::LayerVisitor::kMinDepth) / max_count;
   float depth = TidyInterface::LayerVisitor::kMaxDepth + thickness;
-
-  // First we test the layer visitor directly.
-  TidyInterface::LayerVisitor layer_visitor(count);
-  stage_->Accept(&layer_visitor);
-
-  EXPECT_FLOAT_EQ(
-      depth,
-      dynamic_cast<TidyInterface::QuadActor*>(rect3_.get())->z());
-  depth += thickness;
-  EXPECT_FLOAT_EQ(
-      depth,
-      dynamic_cast<TidyInterface::QuadActor*>(rect2_.get())->z());
-  depth += thickness;
-  EXPECT_FLOAT_EQ(
-      depth,
-      dynamic_cast<TidyInterface::ContainerActor*>(group4_.get())->z());
-  depth += thickness;
-  EXPECT_FLOAT_EQ(
-      depth,
-      dynamic_cast<TidyInterface::ContainerActor*>(group3_.get())->z());
-  depth += thickness;
-  EXPECT_FLOAT_EQ(
-      depth,
-      dynamic_cast<TidyInterface::QuadActor*>(rect1_.get())->z());
-  depth += thickness;
-  EXPECT_FLOAT_EQ(
-      depth,
-      dynamic_cast<TidyInterface::ContainerActor*>(group2_.get())->z());
-  depth += thickness;
-  EXPECT_FLOAT_EQ(
-      depth,
-      dynamic_cast<TidyInterface::ContainerActor*>(group1_.get())->z());
-
-  // Now we test higher-level layer depth results.
-  depth = TidyInterface::LayerVisitor::kMaxDepth + thickness;
-  interface()->Draw();
-  EXPECT_EQ(8, interface()->actor_count());
-
-  EXPECT_FLOAT_EQ(
-      depth,
-      dynamic_cast<TidyInterface::QuadActor*>(rect3_.get())->z());
-  depth += thickness;
-  EXPECT_FLOAT_EQ(
-      depth,
-      dynamic_cast<TidyInterface::QuadActor*>(rect2_.get())->z());
-  depth += thickness;
-  EXPECT_FLOAT_EQ(
-      depth,
-      dynamic_cast<TidyInterface::ContainerActor*>(group4_.get())->z());
-  depth += thickness;
-  EXPECT_FLOAT_EQ(
-      depth,
-      dynamic_cast<TidyInterface::ContainerActor*>(group3_.get())->z());
-  depth += thickness;
-  EXPECT_FLOAT_EQ(
-      depth,
-      dynamic_cast<TidyInterface::QuadActor*>(rect1_.get())->z());
-  depth += thickness;
-  EXPECT_FLOAT_EQ(
-      depth,
-      dynamic_cast<TidyInterface::ContainerActor*>(group2_.get())->z());
-  depth += thickness;
-  EXPECT_FLOAT_EQ(
-      depth,
-      dynamic_cast<TidyInterface::ContainerActor*>(group1_.get())->z());
-}
-
-TEST_F(OpenGlVisitorTestTree, LayerDepthWithOpacity) {
-  rect2_->SetOpacity(0.5f, 0);
-
-  // Test lower-level layer-setting routines
-  int32 count = 0;
-  stage_->Update(&count, 0LL);
-  EXPECT_EQ(8, count);
-  TidyInterface::ActorVector actors;
-
-  // Code uses a depth range of kMinDepth to kMaxDepth.  Layers are
-  // disributed evenly within that range, except we don't use the
-  // frontmost or backmost values in that range.
-  uint32 max_count = NextPowerOfTwo(static_cast<uint32>(count + 2));
-  float thickness = -(TidyInterface::LayerVisitor::kMaxDepth -
-                TidyInterface::LayerVisitor::kMinDepth) / max_count;
-  float depth = TidyInterface::LayerVisitor::kMaxDepth + thickness;
-
-  // First we test the layer visitor directly.
-  TidyInterface::LayerVisitor layer_visitor(count);
-  stage_->Accept(&layer_visitor);
-
-  EXPECT_FLOAT_EQ(
-      depth,
-      dynamic_cast<TidyInterface::QuadActor*>(rect3_.get())->z());
-  depth += thickness;
-  EXPECT_FLOAT_EQ(
-      depth,
-      dynamic_cast<TidyInterface::QuadActor*>(rect2_.get())->z());
-  depth += thickness;
-  EXPECT_FLOAT_EQ(
-      depth,
-      dynamic_cast<TidyInterface::ContainerActor*>(group4_.get())->z());
-  depth += thickness;
-  EXPECT_FLOAT_EQ(
-      depth,
-      dynamic_cast<TidyInterface::ContainerActor*>(group3_.get())->z());
-  depth += thickness;
-  EXPECT_FLOAT_EQ(
-      depth,
-      dynamic_cast<TidyInterface::QuadActor*>(rect1_.get())->z());
-  depth += thickness;
-  EXPECT_FLOAT_EQ(
-      depth,
-      dynamic_cast<TidyInterface::ContainerActor*>(group2_.get())->z());
-  depth += thickness;
-  EXPECT_FLOAT_EQ(
-      depth,
-      dynamic_cast<TidyInterface::ContainerActor*>(group1_.get())->z());
-
-  // Now we test higher-level layer depth results.
-  depth = TidyInterface::LayerVisitor::kMaxDepth + thickness;
-  interface()->Draw();
-  EXPECT_EQ(8, interface()->actor_count());
 
   EXPECT_FLOAT_EQ(
       depth,
