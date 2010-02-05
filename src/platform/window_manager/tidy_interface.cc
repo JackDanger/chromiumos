@@ -16,6 +16,7 @@
 #ifdef TIDY_OPENGL
 #include "window_manager/opengl_visitor.h"
 #endif
+#include "window_manager/util.h"
 
 using std::tr1::shared_ptr;
 
@@ -23,6 +24,9 @@ using std::tr1::shared_ptr;
 #undef EXTRA_LOGGING
 
 namespace window_manager {
+
+const float TidyInterface::LayerVisitor::kMinDepth = -2048.0f;
+const float TidyInterface::LayerVisitor::kMaxDepth = 2048.0f;
 
 TidyInterface::AnimationBase::AnimationBase(AnimationTime start_time,
                                             AnimationTime end_time)
@@ -74,14 +78,86 @@ bool TidyInterface::IntAnimation::Eval(AnimationTime current_time) {
 void TidyInterface::ActorVisitor::VisitContainer(ContainerActor* actor) {
   CHECK(actor);
   this->VisitActor(actor);
-  ActorVector::const_iterator iterator = actor->children().begin();
-  while (iterator != actor->children().end()) {
+  ActorVector children = actor->GetChildren();
+  ActorVector::const_iterator iterator = children.begin();
+  while (iterator != children.end()) {
     if (*iterator) {
       (*iterator)->Accept(this);
     }
     ++iterator;
   }
 }
+
+void TidyInterface::LayerVisitor::VisitQuad(TidyInterface::QuadActor* actor) {
+  // Do all the regular actor stuff.
+  this->VisitActor(actor);
+
+#ifdef TIDY_OPENGL
+  OpenGlTextureData* data  = static_cast<OpenGlTextureData*>(
+      actor->GetDrawingData(OpenGlDrawVisitor::TEXTURE_DATA).get());
+  if (data) {
+    actor->set_is_opaque(actor->is_opaque() && !data->has_alpha());
+  }
+#endif
+}
+
+void TidyInterface::LayerVisitor::VisitTexturePixmap(
+    TidyInterface::TexturePixmapActor* actor) {
+  // Do all the regular Quad stuff.
+  this->VisitQuad(actor);
+
+#ifdef TIDY_OPENGL
+  OpenGlPixmapData* data  = static_cast<OpenGlPixmapData*>(
+      actor->GetDrawingData(OpenGlDrawVisitor::PIXMAP_DATA).get());
+  if (data) {
+    actor->set_is_opaque(actor->is_opaque() && !data->has_alpha());
+  }
+#endif
+}
+
+void TidyInterface::LayerVisitor::VisitActor(TidyInterface::Actor* actor) {
+  actor->set_z(depth_);
+  depth_ += layer_thickness_;
+  actor->set_is_opaque(actor->opacity() > 0.999f);
+}
+
+void TidyInterface::LayerVisitor::VisitContainer(
+    TidyInterface::ContainerActor* actor) {
+  CHECK(actor);
+  ActorVector children = actor->GetChildren();
+  TidyInterface::ActorVector::const_iterator iterator = children.begin();
+  while (iterator != children.end()) {
+    if (*iterator) {
+      (*iterator)->Accept(this);
+    }
+    ++iterator;
+  }
+
+  // The containers should be "closer" than all their children.
+  this->VisitActor(actor);
+}
+
+void TidyInterface::LayerVisitor::VisitStage(TidyInterface::StageActor* actor) {
+  // This calculates the next power of two for the actor count, so
+  // that we can avoid roundoff errors when computing the depth.
+  // Also, add two empty layers at the front and the back that we
+  // won't use in order to avoid issues at the extremes.  The eventual
+  // plan here is to have three depth ranges, one in the front that is
+  // 4096 deep, one in the back that is 4096 deep, and the remaining
+  // in the middle for drawing 3D UI elements.  Currently, this code
+  // represents just the front layer range.  Note that the number of
+  // layers is NOT limited to 4096 (this is an arbitrary value that is
+  // a power of two) -- the maximum number of layers depends on the
+  // number of actors and the bit-depth of the hardware's z-buffer.
+  uint32 count = NextPowerOfTwo(static_cast<uint32>(count_ + 2));
+  layer_thickness_ = -(kMaxDepth - kMinDepth) / count;
+
+  // Don't start at the very edge of the z-buffer depth.
+  depth_ = kMaxDepth + layer_thickness_;
+
+  VisitContainer(actor);
+}
+
 
 TidyInterface::ActorCollector::ActorCollector()
     : branches_(true),
@@ -128,8 +204,9 @@ void TidyInterface::ActorCollector::VisitContainer(
     TidyInterface::ContainerActor* actor) {
   CHECK(actor);
   this->VisitActor(actor);
-  ActorVector::const_iterator iterator = actor->children().begin();
-  while (iterator != actor->children().end()) {
+  ActorVector children = actor->GetChildren();
+  ActorVector::const_iterator iterator = children.begin();
+  while (iterator != children.end()) {
     if (*iterator) {
       // Don't traverse actors that don't match visibility filter.
       TriValue is_visible = actor->IsVisible() ? VALUE_TRUE : VALUE_FALSE;
@@ -159,6 +236,8 @@ TidyInterface::Actor::Actor(TidyInterface* interface)
       scale_x_(1.f),
       scale_y_(1.f),
       opacity_(1.f),
+      is_opaque_(true),
+      has_children_(false),
       visible_(true) {
   interface_->AddActor(this);
 }
@@ -279,6 +358,7 @@ void TidyInterface::ContainerActor::AddActor(
   CHECK(cast_actor) << "Unable to down-cast actor.";
   cast_actor->set_parent(this);
   children_.insert(children_.begin(), cast_actor);
+  set_has_children(true);
   set_dirty();
 }
 
@@ -291,6 +371,7 @@ void TidyInterface::ContainerActor::RemoveActor(
                                              actor);
   if (iterator != children_.end()) {
     children_.erase(iterator);
+    set_has_children(!children_.empty());
     set_dirty();
   }
 }

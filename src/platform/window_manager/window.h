@@ -82,10 +82,7 @@ class Window {
   double composited_opacity() const { return composited_opacity_; }
 
   const std::string& title() const { return title_; }
-  void set_title(const std::string& title) {
-    VLOG(1) << "Setting " << xid_str() << "'s title to \"" << title << "\"";
-    title_ = title;
-  }
+  void SetTitle(const std::string& title);
 
   bool wm_state_fullscreen() const { return wm_state_fullscreen_; }
   bool wm_state_modal() const { return wm_state_modal_; }

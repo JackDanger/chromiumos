@@ -182,6 +182,32 @@ class TidyInterface : public ClutterInterface {
     DISALLOW_COPY_AND_ASSIGN(ActorCollector);
   };
 
+  class LayerVisitor
+      : virtual public TidyInterface::ActorVisitor {
+   public:
+    static const float kMinDepth;
+    static const float kMaxDepth;
+
+    LayerVisitor(int32 count)
+        : depth_(0.0f),
+          layer_thickness_(0.0f),
+          count_(count) {}
+    virtual ~LayerVisitor() {}
+
+    virtual void VisitActor(TidyInterface::Actor* actor);
+    virtual void VisitStage(TidyInterface::StageActor* actor);
+    virtual void VisitContainer(TidyInterface::ContainerActor* actor);
+    virtual void VisitQuad(TidyInterface::QuadActor* actor);
+    virtual void VisitTexturePixmap(TidyInterface::TexturePixmapActor* actor);
+
+   private:
+    float depth_;
+    float layer_thickness_;
+    int32 count_;
+
+    DISALLOW_COPY_AND_ASSIGN(LayerVisitor);
+  };
+
   class Actor : virtual public ClutterInterface::Actor,
                 public TidyInterface::VisitorDestination {
    public:
@@ -229,25 +255,33 @@ class TidyInterface : public ClutterInterface {
     // number of actors as it goes.
     virtual void Update(int32* count, AnimationBase::AnimationTime now);
 
-    // Regular actors have no children.
-    virtual const ActorVector& children() const {
-      static ActorVector kEmptyActorVector;
-      return kEmptyActorVector;
+    // Regular actors have no children, but we want to be able to
+    // avoid a virtual function call to determine this while
+    // traversing.
+    bool has_children() const { return has_children_; }
+
+    virtual ActorVector GetChildren() {
+      return ActorVector();
     }
 
     void set_parent(ContainerActor* parent) { parent_ = parent; }
     ContainerActor* parent() const { return parent_; }
-    int width() { return width_; }
-    int height() { return height_; }
-    int x() { return x_; }
-    int y() { return y_; }
+    int width() const { return width_; }
+    int height() const { return height_; }
+    int x() const { return x_; }
+    int y() const { return y_; }
     void set_z(float z) { z_ = z; }
     float z() const { return z_; }
-    bool is_opaque() { return opacity_ > 0.999f; }
-    bool IsVisible() { return visible_ && opacity_ > 0.001; }
-    float opacity() { return opacity_; }
-    float scale_x() { return scale_x_; }
-    float scale_y() { return scale_y_; }
+
+    // Note that is_opaque isn't valid until after a LayerVisitor has
+    // been run over the tree -- that's what calculates the opacity
+    // flag.
+    bool is_opaque() const { return is_opaque_; }
+
+    bool IsVisible() const { return visible_ && opacity_ > 0.001; }
+    float opacity() const { return opacity_; }
+    float scale_x() const { return scale_x_; }
+    float scale_y() const { return scale_y_; }
     void set_dirty() { interface_->dirty_ = true; }
 
     // Sets the drawing data of the given type on this object.
@@ -262,14 +296,18 @@ class TidyInterface : public ClutterInterface {
     void EraseDrawingData(int32 id) { drawing_data_.erase(id); }
 
    protected:
+    // So it can update the opacity flag.
+    friend class TidyInterface::LayerVisitor;
+
     TidyInterface* interface() { return interface_; }
 
     virtual void SetSizeImpl(int width, int height) {}
-    virtual void AddToDisplayListImpl(TidyInterface::ActorVector* actors,
-                                      bool opaque) {}
 
     void AnimateFloat(float* field, float value, int duration_ms);
     void AnimateInt(int* field, int value, int duration_ms);
+
+    void set_has_children(bool has_children) { has_children_ = has_children; }
+    void set_is_opaque(bool opaque) { is_opaque_ = opaque; }
 
    private:
     TidyInterface* interface_;
@@ -297,6 +335,15 @@ class TidyInterface : public ClutterInterface {
 
     // This is the opacity of the actor (0 = transparent, 1 = opaque)
     float opacity_;
+
+    // Calculated during the layer visitor pass, and used to determine
+    // if this object is opaque for traversal purposes.
+    bool is_opaque_;
+
+    // This indicates if this actor has any children (false for all
+    // but containers).  This is here so we can avoid a virtual
+    // function call to determine this during the drawing traversal.
+    bool has_children_;
 
     // This says whether or not to show this actor.
     bool visible_;
@@ -328,7 +375,7 @@ class TidyInterface : public ClutterInterface {
       visitor->VisitContainer(this);
     }
 
-    virtual const ActorVector& children() const { return children_; }
+    virtual ActorVector GetChildren() { return children_; }
 
     void AddActor(ClutterInterface::Actor* actor);
     void RemoveActor(ClutterInterface::Actor* actor);

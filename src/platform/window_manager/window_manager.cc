@@ -1226,9 +1226,9 @@ bool WindowManager::HandlePropertyNotify(const XPropertyEvent& e) {
   if (e.atom == GetXAtom(ATOM_NET_WM_NAME)) {
     std::string title;
     if (deleted || !xconn_->GetStringProperty(win->xid(), e.atom, &title)) {
-      win->set_title("");
+      win->SetTitle("");
     } else {
-      win->set_title(title);
+      win->SetTitle(title);
     }
     return true;
   } else if (e.atom == GetXAtom(ATOM_WM_NORMAL_HINTS)) {

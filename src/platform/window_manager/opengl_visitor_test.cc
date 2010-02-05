@@ -153,12 +153,12 @@ TEST_F(OpenGlVisitorTestTree, LayerDepth) {
   // disributed evenly within that range, except we don't use the
   // frontmost or backmost values in that range.
   uint32 max_count = NextPowerOfTwo(static_cast<uint32>(count + 2));
-  float thickness = -(OpenGlLayerVisitor::kMaxDepth -
-                OpenGlLayerVisitor::kMinDepth) / max_count;
-  float depth = OpenGlLayerVisitor::kMaxDepth + thickness;
+  float thickness = -(TidyInterface::LayerVisitor::kMaxDepth -
+                TidyInterface::LayerVisitor::kMinDepth) / max_count;
+  float depth = TidyInterface::LayerVisitor::kMaxDepth + thickness;
 
   // First we test the layer visitor directly.
-  OpenGlLayerVisitor layer_visitor(count);
+  TidyInterface::LayerVisitor layer_visitor(count);
   stage_->Accept(&layer_visitor);
 
   EXPECT_FLOAT_EQ(
@@ -190,7 +190,7 @@ TEST_F(OpenGlVisitorTestTree, LayerDepth) {
       dynamic_cast<TidyInterface::ContainerActor*>(group1_.get())->z());
 
   // Now we test higher-level layer depth results.
-  depth = OpenGlLayerVisitor::kMaxDepth + thickness;
+  depth = TidyInterface::LayerVisitor::kMaxDepth + thickness;
   interface()->Draw();
   EXPECT_EQ(8, interface()->actor_count());
 
@@ -236,12 +236,12 @@ TEST_F(OpenGlVisitorTestTree, LayerDepthWithOpacity) {
   // disributed evenly within that range, except we don't use the
   // frontmost or backmost values in that range.
   uint32 max_count = NextPowerOfTwo(static_cast<uint32>(count + 2));
-  float thickness = -(OpenGlLayerVisitor::kMaxDepth -
-                OpenGlLayerVisitor::kMinDepth) / max_count;
-  float depth = OpenGlLayerVisitor::kMaxDepth + thickness;
+  float thickness = -(TidyInterface::LayerVisitor::kMaxDepth -
+                TidyInterface::LayerVisitor::kMinDepth) / max_count;
+  float depth = TidyInterface::LayerVisitor::kMaxDepth + thickness;
 
   // First we test the layer visitor directly.
-  OpenGlLayerVisitor layer_visitor(count);
+  TidyInterface::LayerVisitor layer_visitor(count);
   stage_->Accept(&layer_visitor);
 
   EXPECT_FLOAT_EQ(
@@ -273,7 +273,7 @@ TEST_F(OpenGlVisitorTestTree, LayerDepthWithOpacity) {
       dynamic_cast<TidyInterface::ContainerActor*>(group1_.get())->z());
 
   // Now we test higher-level layer depth results.
-  depth = OpenGlLayerVisitor::kMaxDepth + thickness;
+  depth = TidyInterface::LayerVisitor::kMaxDepth + thickness;
   interface()->Draw();
   EXPECT_EQ(8, interface()->actor_count());
 

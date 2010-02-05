@@ -23,7 +23,9 @@
 #include "base/logging.h"
 #include "window_manager/gl_interface.h"
 #include "window_manager/image_container.h"
-#include "window_manager/util.h"
+
+// Turn this on if you want to debug the visitor traversal.
+#undef EXTRA_LOGGING
 
 // #define GL_ERROR_DEBUGGING
 #ifdef GL_ERROR_DEBUGGING
@@ -36,46 +38,6 @@
 #endif  // GL_ERROR_DEBUGGING
 
 namespace window_manager {
-
-const float OpenGlLayerVisitor::kMinDepth = -2048.0f;
-const float OpenGlLayerVisitor::kMaxDepth = 2048.0f;
-
-void OpenGlLayerVisitor::VisitContainer(
-    TidyInterface::ContainerActor* actor) {
-  CHECK(actor);
-  TidyInterface::ActorVector::const_iterator iterator =
-      actor->children().begin();
-  while (iterator != actor->children().end()) {
-    if (*iterator) {
-      (*iterator)->Accept(this);
-    }
-    ++iterator;
-  }
-
-  // The containers should be "closer" than all their children.
-  this->VisitActor(actor);
-}
-
-void OpenGlLayerVisitor::VisitStage(TidyInterface::StageActor* actor) {
-  // This calculates the next power of two for the actor count, so
-  // that we can avoid roundoff errors when computing the depth.
-  // Also, add two empty layers at the front and the back that we
-  // won't use in order to avoid issues at the extremes.  The eventual
-  // plan here is to have three depth ranges, one in the front that is
-  // 4096 deep, one in the back that is 4096 deep, and the remaining
-  // in the middle for drawing 3D UI elements.  Currently, this code
-  // represents just the front layer range.  Note that the number of
-  // layers is NOT limited to 4096 (this is an arbitrary value that is
-  // a power of two) -- the maximum number of layers depends on the
-  // number of actors and the bit-depth of the hardware's z-buffer.
-  uint32 count = NextPowerOfTwo(static_cast<uint32>(count_ + 2));
-  layer_thickness_ = -(kMaxDepth - kMinDepth) / count;
-
-  // Don't start at the very edge of the z-buffer depth.
-  depth_ = kMaxDepth + layer_thickness_;
-
-  VisitContainer(actor);
-}
 
 OpenGlQuadDrawingData::OpenGlQuadDrawingData(GLInterface* gl_interface)
     : gl_interface_(gl_interface) {
@@ -112,7 +74,8 @@ OpenGlPixmapData::OpenGlPixmapData(GLInterface* gl_interface,
       texture_(0),
       pixmap_(XCB_NONE),
       glx_pixmap_(XCB_NONE),
-      damage_(XCB_NONE) {}
+      damage_(XCB_NONE),
+      has_alpha_(false) {}
 
 OpenGlPixmapData::~OpenGlPixmapData() {
   if (damage_) {
@@ -146,14 +109,16 @@ void OpenGlPixmapData::Refresh() {
   }
 }
 
-void OpenGlPixmapData::set_texture(GLuint texture) {
+void OpenGlPixmapData::SetTexture(GLuint texture, bool has_alpha) {
   if (texture_ && texture_ != texture) {
     gl_interface_->DeleteTextures(1, &texture_);
   }
   texture_ = texture;
+  has_alpha_ = has_alpha;
   Refresh();
 }
 
+// static
 bool OpenGlPixmapData::BindToPixmap(
     OpenGlDrawVisitor* visitor,
     TidyInterface::TexturePixmapActor* actor) {
@@ -161,11 +126,15 @@ bool OpenGlPixmapData::BindToPixmap(
   XConnection* x_conn = visitor->x_conn_;
 
   CHECK(actor);
-  CHECK(actor->texture_pixmap_window()) << "Missing window.";
+  if (!actor->texture_pixmap_window()) {
+    // This just means that the window hasn't been mapped yet, so
+    // we don't have a pixmap to bind to yet.
+    return false;
+  }
   CHECK(!actor->GetDrawingData(OpenGlDrawVisitor::PIXMAP_DATA))
       << "Pixmap data already exists.";
 
-  OpenGlPixmapData* data = new OpenGlPixmapData(gl_interface, x_conn);
+  scoped_ptr<OpenGlPixmapData> data(new OpenGlPixmapData(gl_interface, x_conn));
 
   data->pixmap_ = x_conn->GetCompositingPixmapForWindow(
       actor->texture_pixmap_window());
@@ -184,6 +153,7 @@ bool OpenGlPixmapData::BindToPixmap(
     GLX_TEXTURE_2D_EXT,
     0
   };
+  data->has_alpha_ = (geometry.depth == 32);
   GLXFBConfig config = geometry.depth == 32 ?
                        visitor->config_32_ :
                        visitor->config_24_;
@@ -199,14 +169,15 @@ bool OpenGlPixmapData::BindToPixmap(
   data->damage_ = x_conn->CreateDamage(actor->texture_pixmap_window(),
                                        XCB_DAMAGE_REPORT_LEVEL_NON_EMPTY);
   actor->SetDrawingData(OpenGlDrawVisitor::PIXMAP_DATA,
-                          TidyInterface::DrawingDataPtr(data));
+                        TidyInterface::DrawingDataPtr(data.release()));
   actor->set_dirty();
   return true;
 }
 
 OpenGlTextureData::OpenGlTextureData(GLInterface* gl_interface)
     : gl_interface_(gl_interface),
-      texture_(0) {}
+      texture_(0),
+      has_alpha_(false) {}
 
 OpenGlTextureData::~OpenGlTextureData() {
   if (texture_) {
@@ -214,11 +185,12 @@ OpenGlTextureData::~OpenGlTextureData() {
   }
 }
 
-void OpenGlTextureData::set_texture(GLuint texture) {
+void OpenGlTextureData::SetTexture(GLuint texture, bool has_alpha) {
   if (texture_ && texture_ != texture) {
     gl_interface_->DeleteTextures(1, &texture_);
   }
   texture_ = texture;
+  has_alpha_ = has_alpha;
 }
 
 OpenGlDrawVisitor::OpenGlDrawVisitor(GLInterfaceBase* gl_interface,
@@ -241,8 +213,8 @@ OpenGlDrawVisitor::OpenGlDrawVisitor(GLInterfaceBase* gl_interface,
   int visual_info_count = 0;
   XVisualInfo* visual_info_list =
       x_conn_->GetVisualInfo(VisualIDMask,
-                            &visual_info_template,
-                            &visual_info_count);
+                             &visual_info_template,
+                             &visual_info_count);
   CHECK(visual_info_list);
   CHECK(visual_info_count > 0);
   context_ = 0;
@@ -334,10 +306,6 @@ void OpenGlDrawVisitor::BindImage(const ImageContainer* container,
   GLuint new_texture;
   gl_interface_->Enable(GL_TEXTURE_2D);
   gl_interface_->GenTextures(1, &new_texture);
-  OpenGlTextureData* data = new OpenGlTextureData(gl_interface_);
-  data->set_texture(new_texture);
-  actor->SetDrawingData(OpenGlDrawVisitor::TEXTURE_DATA,
-                          TidyInterface::DrawingDataPtr(data));
   gl_interface_->BindTexture(GL_TEXTURE_2D, new_texture);
   gl_interface_->TexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
   gl_interface_->TexParameterf(GL_TEXTURE_2D,
@@ -356,6 +324,13 @@ void OpenGlDrawVisitor::BindImage(const ImageContainer* container,
                             container->width(), container->height(),
                             0, GL_RGBA, GL_UNSIGNED_BYTE,
                             container->data());
+  OpenGlTextureData* data = new OpenGlTextureData(gl_interface_);
+  // TODO: once ImageContainer supports non-alpha images, calculate
+  // whether or not this texture has alpha (instead of just passing
+  // 'true').
+  data->SetTexture(new_texture, true);
+  actor->SetDrawingData(OpenGlDrawVisitor::TEXTURE_DATA,
+                        TidyInterface::DrawingDataPtr(data));
   LOG(INFO) << "Binding image " << container->filename()
             << " to texture " << new_texture;
 }
@@ -367,10 +342,13 @@ void OpenGlDrawVisitor::VisitActor(TidyInterface::Actor* actor) {
 void OpenGlDrawVisitor::VisitTexturePixmap(
     TidyInterface::TexturePixmapActor* actor) {
   // Make sure there's a bound texture.
-  bool bound = true;
-  if (!actor->GetDrawingData(PIXMAP_DATA).get())
-    bound = OpenGlPixmapData::BindToPixmap(this, actor);
-  CHECK(bound);
+  if (!actor->GetDrawingData(PIXMAP_DATA).get()) {
+    if (!OpenGlPixmapData::BindToPixmap(this, actor)) {
+      // We didn't find a bound pixmap, so let's just skip drawing this
+      // actor.  (it's probably because it hasn't been mapped).
+      return;
+    }
+  }
 
   // All texture pixmaps are also QuadActors, and so we let the
   // QuadActor do all the actual drawing.
@@ -393,7 +371,7 @@ void OpenGlDrawVisitor::VisitQuad(TidyInterface::QuadActor* actor) {
   gl_interface_->Color4f(actor->color().red,
                          actor->color().green,
                          actor->color().blue,
-                         actor->opacity());
+                         actor->opacity() * ancestor_opacity_);
 
   // Find out if this quad has pixmap or texture data to bind.
   OpenGlPixmapData* pixmap_data = dynamic_cast<OpenGlPixmapData*>(
@@ -436,22 +414,10 @@ void OpenGlDrawVisitor::DrawNeedle() {
   gl_interface_->Translatef(30, 30, 0);
   gl_interface_->Rotatef(num_frames_drawn_, 0.f, 0.f, 1.f);
   gl_interface_->Scalef(30, 3, 1.f);
-  gl_interface_->Color4f(1.f, 0.f, 0.f, 1.f);
+  gl_interface_->Color4f(1.f, 0.f, 0.f, 0.8f);
   gl_interface_->DrawArrays(GL_TRIANGLE_STRIP, 0, 4);
   gl_interface_->Enable(GL_DEPTH_TEST);
   gl_interface_->PopMatrix();
-}
-
-static bool CompareFrontToBack(ClutterInterface::Actor* a,
-                               ClutterInterface::Actor* b) {
-  return dynamic_cast<TidyInterface::Actor*>(a)->z() <
-      dynamic_cast<TidyInterface::Actor*>(b)->z();
-}
-
-static bool CompareBackToFront(ClutterInterface::Actor* a,
-                               ClutterInterface::Actor* b) {
-  return dynamic_cast<TidyInterface::Actor*>(a)->z() >
-      dynamic_cast<TidyInterface::Actor*>(b)->z();
 }
 
 void OpenGlDrawVisitor::VisitStage(TidyInterface::StageActor* actor) {
@@ -461,8 +427,8 @@ void OpenGlDrawVisitor::VisitStage(TidyInterface::StageActor* actor) {
   gl_interface_->MatrixMode(GL_PROJECTION);
   gl_interface_->LoadIdentity();
   gl_interface_->Ortho(0, actor->width(), actor->height(), 0,
-                       OpenGlLayerVisitor::kMinDepth,
-                       OpenGlLayerVisitor::kMaxDepth);
+                       TidyInterface::LayerVisitor::kMinDepth,
+                       TidyInterface::LayerVisitor::kMaxDepth);
   gl_interface_->MatrixMode(GL_MODELVIEW);
   gl_interface_->LoadIdentity();
   gl_interface_->Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -474,40 +440,36 @@ void OpenGlDrawVisitor::VisitStage(TidyInterface::StageActor* actor) {
   gl_interface_->TexCoordPointer(2, GL_FLOAT, 0, NULL);
   CHECK_GL_ERROR();
 
-  OpenGlLayerVisitor layer_visitor(interface_->actor_count());
+  // Set the z-depths for the actors.
+  TidyInterface::LayerVisitor layer_visitor(interface_->actor_count());
   actor->Accept(&layer_visitor);
-  TidyInterface::ActorCollector collector;
-  collector.CollectVisible(TidyInterface::ActorCollector::VALUE_TRUE);
-  collector.CollectOpaque(TidyInterface::ActorCollector::VALUE_TRUE);
-  actor->Accept(&collector);
-  TidyInterface::ActorVector actors = collector.results();
-  if (!actors.empty()) {
-    gl_interface_->Disable(GL_BLEND);
-    std::sort(actors.begin(), actors.end(), CompareFrontToBack);
-    for (TidyInterface::ActorVector::iterator iterator = actors.begin();
-         iterator != actors.end(); ++iterator) {
-      if ((*iterator) != actor)
-        (*iterator)->Accept(this);
-      CHECK_GL_ERROR();
-    }
+
+  // For the first pass, we want to collect only opaque actors, in
+  // front to back order.
+  visit_opaque_ = true;
+
+  // Disable blending because these actors are all opaque, and we're
+  // drawing them front to back.  Z-buffer should already be enabled.
+  gl_interface_->Disable(GL_BLEND);
+  TidyInterface::ActorVector children = actor->GetChildren();
+  for (TidyInterface::ActorVector::const_iterator iterator = children.begin();
+       iterator != children.end(); ++iterator) {
+    (*iterator)->Accept(this);
+    CHECK_GL_ERROR();
   }
 
-  collector.clear();
-  collector.CollectOpaque(TidyInterface::ActorCollector::VALUE_FALSE);
-  actor->Accept(&collector);
-  actors = collector.results();
-  if (!actors.empty()) {
-    gl_interface_->DepthMask(GL_FALSE);
-    gl_interface_->Enable(GL_BLEND);
-    std::sort(actors.begin(), actors.end(), CompareBackToFront);
-    for (TidyInterface::ActorVector::iterator iterator = actors.begin();
-         iterator != actors.end(); ++iterator) {
-      if ((*iterator) != actor)
-        (*iterator)->Accept(this);
-      CHECK_GL_ERROR();
-    }
-    gl_interface_->DepthMask(GL_TRUE);
+  visit_opaque_ = false;
+  ancestor_opacity_ = actor->opacity();
+  gl_interface_->DepthMask(GL_FALSE);
+  gl_interface_->Enable(GL_BLEND);
+  // Visiting back to front now, with no z-buffer, but with blending.
+  for (TidyInterface::ActorVector::const_reverse_iterator iterator =
+           children.rbegin();
+       iterator != children.rend(); ++iterator) {
+    (*iterator)->Accept(this);
+    CHECK_GL_ERROR();
   }
+  gl_interface_->DepthMask(GL_TRUE);
   CHECK_GL_ERROR();
 
   DrawNeedle();
@@ -517,11 +479,58 @@ void OpenGlDrawVisitor::VisitStage(TidyInterface::StageActor* actor) {
 
 void OpenGlDrawVisitor::VisitContainer(
     TidyInterface::ContainerActor* actor) {
-  // Do nothing, for now.
-  // TODO: Implement group attribute propagation.  Right now, the
-  // opacity and transform of the group isn't added to the state
-  // anywhere.  We should be setting up the group's opacity and
-  // transform as we traverse.
+  gl_interface_->PushMatrix();
+  gl_interface_->Translatef(actor->x(), actor->y(), actor->z());
+  gl_interface_->Scalef(actor->width() * actor->scale_x(),
+                        actor->height() * actor->scale_y(), 1.f);
+
+#ifdef EXTRA_LOGGING
+  LOG(INFO) << "Drawing container " << actor->name() << ".";
+#endif
+  TidyInterface::ActorVector children = actor->GetChildren();
+  if (visit_opaque_) {
+    for (TidyInterface::ActorVector::const_iterator iterator = children.begin();
+         iterator != children.end(); ++iterator) {
+      TidyInterface::Actor* child =
+          dynamic_cast<TidyInterface::Actor*>(*iterator);
+      // Only traverse if the child is visible, and opaque.
+      if (child->IsVisible() && child->is_opaque()) {
+#ifdef EXTRA_LOGGING
+        LOG(INFO) << "Drawing opaque child " << child->name() << ".";
+#endif
+        (*iterator)->Accept(this);
+      }
+      CHECK_GL_ERROR();
+    }
+  } else {
+    float original_opacity = ancestor_opacity_;
+    ancestor_opacity_ *= actor->opacity();
+
+    // Walk backwards so we go back to front.
+    TidyInterface::ActorVector::const_reverse_iterator iterator;
+    for (iterator = children.rbegin(); iterator != children.rend();
+         ++iterator) {
+      TidyInterface::Actor* child =
+          dynamic_cast<TidyInterface::Actor*>(*iterator);
+      // Only traverse if child is visible, and either transparent or
+      // has children that might be transparent.
+      if (child->IsVisible() &&
+          (ancestor_opacity_ <= 0.999 || child->has_children() ||
+           !child->is_opaque())) {
+#ifdef EXTRA_LOGGING
+        LOG(INFO) << "Drawing transparent child " << child->name() << ".";
+#endif
+        (*iterator)->Accept(this);
+      }
+      CHECK_GL_ERROR();
+    }
+
+    // Reset ancestor opacity.
+    ancestor_opacity_ = original_opacity;
+  }
+
+  gl_interface_->PopMatrix();
+
 }
 
 }  // namespace window_manager

@@ -21,33 +21,6 @@ namespace window_manager {
 
 class OpenGlDrawVisitor;
 
-class OpenGlLayerVisitor
-    : virtual public TidyInterface::ActorVisitor {
- public:
-  static const float kMinDepth;
-  static const float kMaxDepth;
-
-  OpenGlLayerVisitor(int32 count)
-      : depth_(0.0f),
-        layer_thickness_(0.0f),
-        count_(count) {}
-  virtual ~OpenGlLayerVisitor() {}
-
-  virtual void VisitActor(TidyInterface::Actor* actor) {
-    actor->set_z(depth_);
-    depth_ += layer_thickness_;
-  }
-  virtual void VisitStage(TidyInterface::StageActor* actor);
-  virtual void VisitContainer(TidyInterface::ContainerActor* actor);
-
- private:
-  float depth_;
-  float layer_thickness_;
-  int32 count_;
-
-  DISALLOW_COPY_AND_ASSIGN(OpenGlLayerVisitor);
-};
-
 class OpenGlQuadDrawingData : public TidyInterface::DrawingData  {
  public:
   OpenGlQuadDrawingData(GLInterface* gl_interface);
@@ -79,9 +52,11 @@ class OpenGlPixmapData : public TidyInterface::DrawingData  {
   static bool BindToPixmap(OpenGlDrawVisitor* visitor,
                            TidyInterface::TexturePixmapActor* actor);
 
+  void SetTexture(GLuint texture, bool has_alpha);
+
   XPixmap pixmap() const { return pixmap_; }
   GLuint texture() const { return texture_; }
-  void set_texture(GLuint texture);
+  bool has_alpha() const { return has_alpha_; }
 
  private:
   // This is the gl interface to use for communicating with GL.
@@ -101,6 +76,9 @@ class OpenGlPixmapData : public TidyInterface::DrawingData  {
 
   // This is the id of the damage region.
   XID damage_;
+
+  // Whether or not this pixmap has an alpha channel.
+  bool has_alpha_;
 };
 
 class OpenGlTextureData : public TidyInterface::DrawingData  {
@@ -108,8 +86,10 @@ class OpenGlTextureData : public TidyInterface::DrawingData  {
   OpenGlTextureData(GLInterface* gl_interface);
   virtual ~OpenGlTextureData();
 
+  void SetTexture(GLuint texture, bool has_alpha);
+
   GLuint texture() const { return texture_; }
-  void set_texture(GLuint texture);
+  bool has_alpha() const { return has_alpha_; }
 
  private:
   // This is the gl interface to use for communicating with GL.
@@ -117,6 +97,9 @@ class OpenGlTextureData : public TidyInterface::DrawingData  {
 
   // This is the texture ID of the bound texture.
   GLuint texture_;
+
+  // True if associated texture has an alpha channel.
+  bool has_alpha_;
 };
 
 // This class visits an actor tree and draws it using OpenGL.
@@ -165,6 +148,16 @@ class OpenGlDrawVisitor
   GLXFBConfig config_24_;
   GLXFBConfig config_32_;
   GLXContext context_;
+
+  // If set to true, this indicates that we will be visiting only
+  // opaque actors (in front to back order), and if false, only (at
+  // least partially) transparent ones (in back to front order).
+  bool visit_opaque_;
+
+  // This is the cumulative opacity of all the ancestors of the
+  // currently visited node. It is recalculated each time we enter or
+  // leave a container node.
+  float ancestor_opacity_;
 
   // This keeps track of the number of frames drawn so we can draw the
   // debugging needle.

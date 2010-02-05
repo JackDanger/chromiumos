@@ -89,7 +89,8 @@ Window::Window(WindowManager* wm, XWindow xid, bool override_redirect)
   actor_->Move(composited_x_, composited_y_, 0);
   actor_->SetSize(client_width_, client_height_);
   actor_->SetVisibility(false);
-  actor_->SetName(std::string("window ") + xid_str());
+  // This will update the actor's name based on the current title and xid.
+  SetTitle(title_);
   wm_->stage()->AddActor(actor_.get());
 
   if (shadow_.get()) {
@@ -126,6 +127,19 @@ Window::Window(WindowManager* wm, XWindow xid, bool override_redirect)
 }
 
 Window::~Window() {
+}
+
+void Window::SetTitle(const std::string& title) {
+  VLOG(1) << "Setting " << xid_str() << "'s title to \"" << title << "\"";
+  title_ = title;
+  if (actor_.get() != NULL) {
+    if (title_.empty()) {
+      actor_->SetName(std::string("window ") + xid_str());
+    } else {
+      actor_->SetName(std::string("window '") + title_ +
+                      "' (" + xid_str() + ")");
+    }
+  }
 }
 
 void Window::Redirect() {
