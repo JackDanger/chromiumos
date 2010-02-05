@@ -14,8 +14,8 @@ MotionEventCoalescer::MotionEventCoalescer(Closure* cb, int timeout_ms)
     : timer_id_(0),
       timeout_ms_(timeout_ms),
       have_queued_position_(false),
-      x_(0),
-      y_(0),
+      x_(-1),
+      y_(-1),
       cb_(cb),
       synchronous_(false) {
   CHECK(cb);
@@ -36,6 +36,8 @@ void MotionEventCoalescer::Start() {
   if (!synchronous_)
     timer_id_ = g_timeout_add(timeout_ms_, &HandleTimerThunk, this);
   have_queued_position_ = false;
+  x_ = -1;
+  y_ = -1;
 }
 
 void MotionEventCoalescer::Stop() {

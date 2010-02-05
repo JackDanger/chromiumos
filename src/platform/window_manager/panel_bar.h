@@ -11,6 +11,7 @@ extern "C" {
 #include <map>
 #include <tr1/memory>
 
+#include <glib.h>  // for gboolean and gint
 #include <gtest/gtest_prod.h>  // for FRIEND_TEST() macro
 
 #include "base/basictypes.h"
@@ -51,8 +52,9 @@ class PanelBar : public PanelContainer {
                                       int button,
                                       Time timestamp) {}
   void HandleInputWindowPointerEnter(XWindow xid, Time timestamp);
-  void HandleInputWindowPointerLeave(XWindow xid, Time timestamp) {}
+  void HandleInputWindowPointerLeave(XWindow xid, Time timestamp);
   void HandlePanelButtonPress(Panel* panel, int button, Time timestamp);
+  void HandlePanelTitlebarPointerEnter(Panel* panel, Time timestamp);
   void HandlePanelFocusChange(Panel* panel, bool focus_in);
   void HandleSetPanelStateMessage(Panel* panel, bool expand);
   bool HandleNotifyPanelDraggedMessage(Panel* panel, int drag_x, int drag_y);
@@ -69,9 +71,23 @@ class PanelBar : public PanelContainer {
   // Amount of horizontal padding to place between panels, in pixels.
   static const int kPixelsBetweenPanels;
 
+  // How close does the pointer need to get to the bottom of the screen
+  // before we show hidden collapsed panels?
+  static const int kShowCollapsedPanelsDistancePixels;
+
+  // How far away from the bottom of the screen can the pointer get before
+  // we hide collapsed panels?
+  static const int kHideCollapsedPanelsDistancePixels;
+
+  // How much of the top of a collapsed panel's titlebar should peek up
+  // from the bottom of the screen when it is hidden?
+  static const int kHiddenCollapsedPanelHeightPixels;
+
  private:
   FRIEND_TEST(PanelBarTest, ActiveWindowMessage);
   FRIEND_TEST(PanelBarTest, FocusNewPanel);
+  FRIEND_TEST(PanelBarTest, HideCollapsedPanels);
+  FRIEND_TEST(PanelBarTest, DeferHidingDraggedCollapsedPanel);
 
   // PanelBar-specific information about a panel.
   struct PanelInfo {
@@ -86,6 +102,13 @@ class PanelBar : public PanelContainer {
     // panels to this position when the drag is complete.
     int snapped_right;
   };
+
+  // Is 'collapsed_panel_state_' such that collapsed panels are currently
+  // hidden offscreen?
+  bool CollapsedPanelsAreHidden() const {
+    return collapsed_panel_state_ == COLLAPSED_PANEL_STATE_HIDDEN ||
+           collapsed_panel_state_ == COLLAPSED_PANEL_STATE_WAITING_TO_SHOW;
+  }
 
   // Save some typing.
   typedef std::vector<Panel*> Panels;
@@ -143,12 +166,32 @@ class PanelBar : public PanelContainer {
   // other expanded panels (or if 'panel' isn't expanded).
   Panel* GetNearestExpandedPanel(Panel* panel);
 
-  // Move 'unhide_input_xid_' onscreen or offscreen.
-  void ConfigureUnhideInputWindow(bool move_onscreen);
+  // Move 'show_collapsed_panels_input_xid_' onscreen or offscreen.
+  void ConfigureShowCollapsedPanelsInputWindow(bool move_onscreen);
 
-  // Show or hide all collapsed panels.
+  // Initialize 'hide_collapsed_panels_pointer_watcher_' to call
+  // HideCollapsedPanels() as soon as it sees the pointer move too far away
+  // from the bottom of the screen.
+  void StartHideCollapsedPanelsWatcher();
+
+  // Show collapsed panels' full titlebars at the bottom of the screen.
   void ShowCollapsedPanels();
+
+  // Hide everything but the very top of collapsed panels' titlebars.  If a
+  // collapsed panel is being dragged, defers hiding them and sets
+  // 'collapsed_panel_state_' to COLLAPSED_PANEL_STATE_WAITING_TO_HIDE
+  // instead.
   void HideCollapsedPanels();
+
+  // If 'show_collapsed_panels_timer_id_' is set, disable the timer and
+  // clear the variable.
+  void DisableShowCollapsedPanelsTimer();
+
+  // Stop 'show_collapsed_panels_timer_id_' and invoke ShowCollapsedPanels().
+  static gboolean HandleShowCollapsedPanelsTimerThunk(gpointer self) {
+    return reinterpret_cast<PanelBar*>(self)->HandleShowCollapsedPanelsTimer();
+  }
+  gboolean HandleShowCollapsedPanelsTimer();
 
   WindowManager* wm_;  // not owned
 
@@ -181,22 +224,38 @@ class PanelBar : public PanelContainer {
   // If we need to give the focus to a panel, we choose this one.
   Panel* desired_panel_to_focus_;
 
-  // Are we currently hiding collapsed panels (i.e. making them just barely
-  // peek up from the bottom of the screen)?
-  bool hide_collapsed_panels_;
+  // Different states that we can be in with regard to showing collapsed
+  // panels at the bottom of the screen.
+  enum CollapsedPanelState {
+    // Showing the panels' full titlebars.
+    COLLAPSED_PANEL_STATE_SHOWN = 0,
 
-  // True if we're deferring hiding collapsed panels because the dragged
-  // panel is collapsed.
-  bool deferred_hide_because_of_drag_;
+    // Just showing the tops of the titlebars.
+    COLLAPSED_PANEL_STATE_HIDDEN,
+
+    // Hiding the titlebars, but we'll show them after
+    // 'show_collapsed_panels_timer_id_' fires.
+    COLLAPSED_PANEL_STATE_WAITING_TO_SHOW,
+
+    // Showing the titlebars, but the pointer has moved up from the bottom
+    // of the screen while dragging a collapsed panel and we'll hide the
+    // collapsed panels as soon as the drag finishes.
+    COLLAPSED_PANEL_STATE_WAITING_TO_HIDE,
+  };
+  CollapsedPanelState collapsed_panel_state_;
 
   // Input window used to detect when the mouse is at the bottom of the
-  // screen so that we can unhide collapsed panels.
-  XWindow unhide_input_xid_;
+  // screen so that we can show collapsed panels.
+  XWindow show_collapsed_panels_input_xid_;
+
+  // ID of a timer that we use to delay calling ShowCollapsedPanels() after
+  // the pointer enters 'show_collapsed_panels_input_xid_', or 0 if unset.
+  gint show_collapsed_panels_timer_id_;
 
   // Used to monitor the pointer position when we're showing collapsed
   // panels so that we'll know to hide them when the pointer far enough
   // away.
-  scoped_ptr<PointerPositionWatcher> unhide_pointer_watcher_;
+  scoped_ptr<PointerPositionWatcher> hide_collapsed_panels_pointer_watcher_;
 
   DISALLOW_COPY_AND_ASSIGN(PanelBar);
 };

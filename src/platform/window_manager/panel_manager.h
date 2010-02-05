@@ -106,8 +106,9 @@ class PanelManager : public EventConsumer {
   bool TakeFocus();
 
  private:
-  friend class PanelTest;                 // uses 'panel_bar_'
-  friend class PanelBarTest;              // uses 'panel_bar_'
+  friend class BasicWindowManagerTest;  // uses 'dragged_panel_event_coalescer_'
+  friend class PanelTest;               // uses 'panel_bar_'
+  friend class PanelBarTest;            // uses 'panel_bar_'
   friend class PanelManagerTest;
   FRIEND_TEST(PanelManagerTest, AttachAndDetach);
   FRIEND_TEST(PanelManagerTest, DragFocusedPanel);

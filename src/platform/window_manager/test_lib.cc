@@ -12,6 +12,9 @@
 #include "base/string_util.h"
 #include "window_manager/clutter_interface.h"
 #include "window_manager/mock_x_connection.h"
+#include "window_manager/motion_event_coalescer.h"
+#include "window_manager/panel.h"
+#include "window_manager/panel_manager.h"
 #include "window_manager/window_manager.h"
 #include "window_manager/wm_ipc.h"
 
@@ -68,6 +71,19 @@ void BasicWindowManagerTest::SetUp() {
   clutter_.reset(new MockClutterInterface(xconn_.get()));
   wm_.reset(new WindowManager(xconn_.get(), clutter_.get()));
   CHECK(wm_->Init());
+
+  // Tell the WM that we implement a recent-enough version of the IPC
+  // messages that we'll be giving it the position of the right-hand edge
+  // of panels in drag messages.
+  WmIpc::Message msg(WmIpc::Message::WM_NOTIFY_IPC_VERSION);
+  msg.set_param(0, 1);
+  XEvent event;
+  wm_->wm_ipc()->FillXEventFromMessage(&event, wm_->wm_xid(), msg);
+  CHECK(wm_->HandleEvent(&event));
+
+  // Make the PanelManager's event coalescer run in synchronous mode; its
+  // timer will never get triggered from within a test.
+  wm_->panel_manager_->dragged_panel_event_coalescer_->set_synchronous(true);
 }
 
 XWindow BasicWindowManagerTest::CreateToplevelWindow(
@@ -136,6 +152,25 @@ void BasicWindowManagerTest::SendFocusEvents(XWindow out_xid, XWindow in_xid) {
         (out_xid == root_xid) ? NotifyAncestor : NotifyNonlinear);
     EXPECT_TRUE(wm_->HandleEvent(&event));
   }
+}
+
+void BasicWindowManagerTest::SendPanelDraggedMessage(
+    Panel* panel, int x, int y) {
+  WmIpc::Message msg(WmIpc::Message::WM_NOTIFY_PANEL_DRAGGED);
+  msg.set_param(0, panel->content_xid());
+  msg.set_param(1, x);
+  msg.set_param(2, y);
+  XEvent event;
+  wm_->wm_ipc()->FillXEventFromMessage(&event, wm_->wm_xid(), msg);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+}
+
+void BasicWindowManagerTest::SendPanelDragCompleteMessage(Panel* panel) {
+  WmIpc::Message msg(WmIpc::Message::WM_NOTIFY_PANEL_DRAG_COMPLETE);
+  msg.set_param(0, panel->content_xid());
+  XEvent event;
+  wm_->wm_ipc()->FillXEventFromMessage(&event, wm_->wm_xid(), msg);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
 }
 
 XWindow BasicWindowManagerTest::GetActiveWindowProperty() {

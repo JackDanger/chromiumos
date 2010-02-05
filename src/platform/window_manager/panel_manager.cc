@@ -251,6 +251,19 @@ bool PanelManager::HandlePointerEnter(XWindow xid, Time timestamp) {
     container->HandleInputWindowPointerEnter(xid, timestamp);
     return true;
   }
+
+  // If it's a panel's titlebar window, notify the panel's container.
+  Window* win = wm_->GetWindow(xid);
+  if (win) {
+    Panel* panel = GetPanelByWindow(*win);
+    if (panel) {
+      container = GetContainerForPanel(*panel);
+      if (container && xid == panel->titlebar_xid())
+        container->HandlePanelTitlebarPointerEnter(panel, timestamp);
+      return true;
+    }
+  }
+
   return false;
 }
 

@@ -584,6 +584,16 @@ void MockXConnection::InitDestroyWindowEvent(XEvent* event, XWindow xid) {
 }
 
 // static
+void MockXConnection::InitEnterWindowEvent(XEvent* event, XWindow window) {
+  CHECK(event);
+  XEnterWindowEvent* enter_event = &(event->xcrossing);
+  memset(enter_event, 0, sizeof(*enter_event));
+  enter_event->type = EnterNotify;
+  enter_event->window = window;
+  // Leave everything else blank for now; we don't use it.
+}
+
+// static
 void MockXConnection::InitFocusInEvent(
     XEvent* event, XWindow xid, int mode, int detail) {
   CHECK(event);
@@ -605,6 +615,16 @@ void MockXConnection::InitFocusOutEvent(
   focus_event->window = xid;
   focus_event->mode = mode;
   focus_event->detail = detail;
+}
+
+// static
+void MockXConnection::InitLeaveWindowEvent(XEvent* event, XWindow window) {
+  CHECK(event);
+  XLeaveWindowEvent* leave_event = &(event->xcrossing);
+  memset(leave_event, 0, sizeof(*leave_event));
+  leave_event->type = LeaveNotify;
+  leave_event->window = window;
+  // Leave everything else blank for now; we don't use it.
 }
 
 // static

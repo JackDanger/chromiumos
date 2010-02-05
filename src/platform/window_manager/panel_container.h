@@ -76,10 +76,12 @@ class PanelContainer {
   virtual void HandleInputWindowPointerEnter(XWindow xid, Time timestamp) = 0;
   virtual void HandleInputWindowPointerLeave(XWindow xid, Time timestamp) = 0;
 
-  // Handle a button press in a panel.
+  // Handle a button press or pointer enter in a panel.
   virtual void HandlePanelButtonPress(Panel* panel,
                                       int button,
                                       Time timestamp) = 0;
+  virtual void HandlePanelTitlebarPointerEnter(Panel* panel,
+                                               Time timestamp) = 0;
 
   // Handle a panel gaining or losing the input focus.
   virtual void HandlePanelFocusChange(Panel* panel, bool focus_in) = 0;

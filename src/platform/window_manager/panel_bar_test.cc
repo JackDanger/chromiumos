@@ -12,6 +12,7 @@
 #include "window_manager/panel.h"
 #include "window_manager/panel_bar.h"
 #include "window_manager/panel_manager.h"
+#include "window_manager/pointer_position_watcher.h"
 #include "window_manager/shadow.h"
 #include "window_manager/test_lib.h"
 #include "window_manager/util.h"
@@ -232,6 +233,254 @@ TEST_F(PanelBarTest, FocusNewPanel) {
   EXPECT_TRUE(wm_->HandleEvent(&event));
   EXPECT_TRUE(panel_bar_->panels_.empty());
   EXPECT_EQ(NULL, panel_bar_->desired_panel_to_focus_);
+}
+
+// Basic tests of PanelBar's code for hiding all but the very top of
+// collapsed panels' titlebars.
+TEST_F(PanelBarTest, HideCollapsedPanels) {
+  // Move the pointer to the top of the screen and create a collapsed panel.
+  xconn_->SetPointerPosition(0, 0);
+  XWindow titlebar_xid = CreatePanelTitlebarWindow(200, 20);
+  SendInitialEventsForWindow(titlebar_xid);
+  XWindow content_xid = CreatePanelContentWindow(200, 400, titlebar_xid, false);
+  SendInitialEventsForWindow(content_xid);
+  Panel* panel = panel_bar_->GetPanelByWindow(*(wm_->GetWindow(content_xid)));
+  ASSERT_TRUE(panel != NULL);
+
+  // Check that some constants make sense in light of our titlebar's height.
+  ASSERT_LT(PanelBar::kHiddenCollapsedPanelHeightPixels,
+            panel->titlebar_height());
+  ASSERT_GT(PanelBar::kHideCollapsedPanelsDistancePixels,
+            panel->titlebar_height());
+
+  // Figure out where the top of hidden and shown panels should be.
+  const int hidden_panel_y =
+      wm_->height() - PanelBar::kHiddenCollapsedPanelHeightPixels;
+  const int shown_panel_y = wm_->height() - panel->titlebar_height();
+
+  // The panel should be initially hidden, and we shouldn't have a timer to
+  // show the panels or be monitoring the pointer to hide them.
+  EXPECT_EQ(hidden_panel_y, panel->titlebar_y());
+  EXPECT_EQ(PanelBar::COLLAPSED_PANEL_STATE_HIDDEN,
+            panel_bar_->collapsed_panel_state_);
+  EXPECT_TRUE(panel_bar_->show_collapsed_panels_timer_id_ == 0);
+  EXPECT_TRUE(!panel_bar_->hide_collapsed_panels_pointer_watcher_.get() ||
+              !panel_bar_->hide_collapsed_panels_pointer_watcher_->timer_id());
+
+  // Check that the show-collapsed-panels input window covers the bottom
+  // row of pixels.
+  MockXConnection::WindowInfo* input_info = xconn_->GetWindowInfoOrDie(
+      panel_bar_->show_collapsed_panels_input_xid_);
+  const int input_x = 0;
+  const int input_y =
+      wm_->height() - PanelBar::kShowCollapsedPanelsDistancePixels;
+  const int input_width = wm_->width();
+  const int input_height = PanelBar::kShowCollapsedPanelsDistancePixels;
+  EXPECT_EQ(input_x, input_info->x);
+  EXPECT_EQ(input_y, input_info->y);
+  EXPECT_EQ(input_width, input_info->width);
+  EXPECT_EQ(input_height, input_info->height);
+
+  // Move the pointer to the bottom of the screen and send an event saying
+  // that it's entered the input window.
+  xconn_->SetPointerPosition(0, wm_->height() - 1);
+  XEvent event;
+  xconn_->InitEnterWindowEvent(
+      &event, panel_bar_->show_collapsed_panels_input_xid_);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+
+  // The panel should still be hidden, but we should be waiting to show it.
+  EXPECT_EQ(PanelBar::COLLAPSED_PANEL_STATE_WAITING_TO_SHOW,
+            panel_bar_->collapsed_panel_state_);
+  EXPECT_EQ(hidden_panel_y, panel->titlebar_y());
+  // TODO: We don't have a good way to trigger a GLib timer, so just check
+  // that the timer has been set to show the panels.
+  EXPECT_TRUE(panel_bar_->show_collapsed_panels_timer_id_ != 0);
+  EXPECT_TRUE(!panel_bar_->hide_collapsed_panels_pointer_watcher_.get() ||
+              !panel_bar_->hide_collapsed_panels_pointer_watcher_->timer_id());
+
+  // The input window still be in the same place.
+  EXPECT_EQ(input_x, input_info->x);
+  EXPECT_EQ(input_y, input_info->y);
+  EXPECT_EQ(input_width, input_info->width);
+  EXPECT_EQ(input_height, input_info->height);
+
+  // Move the pointer back up immediately and send a leave notify event.
+  xconn_->SetPointerPosition(
+      0, wm_->height() - PanelBar::kShowCollapsedPanelsDistancePixels - 1);
+  xconn_->InitLeaveWindowEvent(
+      &event, panel_bar_->show_collapsed_panels_input_xid_);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+
+  // The timer should be cancelled.
+  EXPECT_EQ(PanelBar::COLLAPSED_PANEL_STATE_HIDDEN,
+            panel_bar_->collapsed_panel_state_);
+  EXPECT_EQ(hidden_panel_y, panel->titlebar_y());
+  EXPECT_TRUE(panel_bar_->show_collapsed_panels_timer_id_ == 0);
+  EXPECT_TRUE(!panel_bar_->hide_collapsed_panels_pointer_watcher_.get() ||
+              !panel_bar_->hide_collapsed_panels_pointer_watcher_->timer_id());
+
+  // The input window should also still be there.
+  EXPECT_EQ(input_x, input_info->x);
+  EXPECT_EQ(input_y, input_info->y);
+  EXPECT_EQ(input_width, input_info->width);
+  EXPECT_EQ(input_height, input_info->height);
+
+  // Now move the pointer into the panel's titlebar.
+  xconn_->SetPointerPosition(panel->titlebar_x(), panel->titlebar_y());
+  xconn_->InitEnterWindowEvent(&event, titlebar_xid);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+
+  // The panel should be shown immediately, and we should now be monitoring
+  // the pointer's position so we can hide the panel if the pointer moves up.
+  EXPECT_EQ(PanelBar::COLLAPSED_PANEL_STATE_SHOWN,
+            panel_bar_->collapsed_panel_state_);
+  EXPECT_EQ(shown_panel_y, panel->titlebar_y());
+  EXPECT_TRUE(panel_bar_->show_collapsed_panels_timer_id_ == 0);
+  ASSERT_TRUE(panel_bar_->hide_collapsed_panels_pointer_watcher_.get() != NULL);
+  ASSERT_NE(panel_bar_->hide_collapsed_panels_pointer_watcher_->timer_id(), 0);
+
+  // The input window should be offscreen.
+  EXPECT_EQ(-1, input_info->x);
+  EXPECT_EQ(-1, input_info->y);
+  EXPECT_EQ(1, input_info->width);
+  EXPECT_EQ(1, input_info->height);
+
+  // Move the pointer to the left of the panel and one pixel above it.
+  xconn_->SetPointerPosition(panel->titlebar_x() - 20, panel->titlebar_y() - 1);
+  panel_bar_->hide_collapsed_panels_pointer_watcher_->TriggerTimeout();
+
+  // We should still be showing the panel and watching the pointer's position.
+  EXPECT_EQ(PanelBar::COLLAPSED_PANEL_STATE_SHOWN,
+            panel_bar_->collapsed_panel_state_);
+  EXPECT_EQ(shown_panel_y, panel->titlebar_y());
+  EXPECT_TRUE(panel_bar_->show_collapsed_panels_timer_id_ == 0);
+  ASSERT_TRUE(panel_bar_->hide_collapsed_panels_pointer_watcher_.get() != NULL);
+  ASSERT_NE(panel_bar_->hide_collapsed_panels_pointer_watcher_->timer_id(), 0);
+
+  // Move the pointer further up.
+  xconn_->SetPointerPosition(
+      panel->titlebar_x() - 20,
+      wm_->height() - PanelBar::kHideCollapsedPanelsDistancePixels - 1);
+  panel_bar_->hide_collapsed_panels_pointer_watcher_->TriggerTimeout();
+
+  // The panel should be hidden now.
+  EXPECT_EQ(PanelBar::COLLAPSED_PANEL_STATE_HIDDEN,
+            panel_bar_->collapsed_panel_state_);
+  EXPECT_EQ(hidden_panel_y, panel->titlebar_y());
+  EXPECT_TRUE(panel_bar_->show_collapsed_panels_timer_id_ == 0);
+  EXPECT_TRUE(!panel_bar_->hide_collapsed_panels_pointer_watcher_.get() ||
+              !panel_bar_->hide_collapsed_panels_pointer_watcher_->timer_id());
+
+  // The input window should also be moved back.
+  EXPECT_EQ(input_x, input_info->x);
+  EXPECT_EQ(input_y, input_info->y);
+  EXPECT_EQ(input_width, input_info->width);
+  EXPECT_EQ(input_height, input_info->height);
+}
+
+// Test that we defer hiding collapsed panels if we're in the middle of a
+// drag.
+TEST_F(PanelBarTest, DeferHidingDraggedCollapsedPanel) {
+  XWindow titlebar_xid = CreatePanelTitlebarWindow(200, 20);
+  SendInitialEventsForWindow(titlebar_xid);
+  XWindow content_xid = CreatePanelContentWindow(200, 400, titlebar_xid, false);
+  SendInitialEventsForWindow(content_xid);
+
+  Panel* panel = panel_bar_->GetPanelByWindow(*(wm_->GetWindow(content_xid)));
+  ASSERT_TRUE(panel != NULL);
+
+  const int hidden_panel_y =
+      wm_->height() - PanelBar::kHiddenCollapsedPanelHeightPixels;
+  const int shown_panel_y = wm_->height() - panel->titlebar_height();
+
+  // Show the panel.
+  xconn_->SetPointerPosition(panel->titlebar_x(), panel->titlebar_y());
+  XEvent event;
+  xconn_->InitEnterWindowEvent(&event, titlebar_xid);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  EXPECT_EQ(PanelBar::COLLAPSED_PANEL_STATE_SHOWN,
+            panel_bar_->collapsed_panel_state_);
+  EXPECT_EQ(shown_panel_y, panel->titlebar_y());
+  ASSERT_TRUE(panel_bar_->hide_collapsed_panels_pointer_watcher_.get() != NULL);
+  ASSERT_NE(panel_bar_->hide_collapsed_panels_pointer_watcher_->timer_id(), 0);
+  panel_bar_->hide_collapsed_panels_pointer_watcher_->TriggerTimeout();
+
+  // Drag the panel to the left.
+  SendPanelDraggedMessage(panel, 300, shown_panel_y);
+  EXPECT_EQ(300, panel->right());
+
+  // We should still show the panel and be monitoring the pointer's position.
+  xconn_->SetPointerPosition(300, shown_panel_y);
+  ASSERT_TRUE(panel_bar_->hide_collapsed_panels_pointer_watcher_.get() != NULL);
+  ASSERT_NE(panel_bar_->hide_collapsed_panels_pointer_watcher_->timer_id(), 0);
+  panel_bar_->hide_collapsed_panels_pointer_watcher_->TriggerTimeout();
+  EXPECT_EQ(PanelBar::COLLAPSED_PANEL_STATE_SHOWN,
+            panel_bar_->collapsed_panel_state_);
+  EXPECT_EQ(shown_panel_y, panel->titlebar_y());
+
+  // Now drag up above the threshold to hide the panel.  We should still
+  // be showing it since we're in a drag, but we should be ready to hide it.
+  const int hide_pointer_y =
+      wm_->height() - PanelBar::kHideCollapsedPanelsDistancePixels - 1;
+  SendPanelDraggedMessage(panel, 300, hide_pointer_y);
+
+  // The watcher should run as soon as it sees the position, but we
+  // shouldn't hide the dragged panel yet.
+  xconn_->SetPointerPosition(300, hide_pointer_y);
+  ASSERT_TRUE(panel_bar_->hide_collapsed_panels_pointer_watcher_.get() != NULL);
+  ASSERT_NE(panel_bar_->hide_collapsed_panels_pointer_watcher_->timer_id(), 0);
+  panel_bar_->hide_collapsed_panels_pointer_watcher_->TriggerTimeout();
+  EXPECT_EQ(PanelBar::COLLAPSED_PANEL_STATE_WAITING_TO_HIDE,
+            panel_bar_->collapsed_panel_state_);
+  EXPECT_EQ(shown_panel_y, panel->titlebar_y());
+
+  // When we complete the drag, the panel should be hidden.
+  SendPanelDragCompleteMessage(panel);
+  EXPECT_EQ(PanelBar::COLLAPSED_PANEL_STATE_HIDDEN,
+            panel_bar_->collapsed_panel_state_);
+  EXPECT_EQ(hidden_panel_y, panel->titlebar_y());
+  EXPECT_TRUE(!panel_bar_->hide_collapsed_panels_pointer_watcher_.get() ||
+              !panel_bar_->hide_collapsed_panels_pointer_watcher_->timer_id());
+
+  // Show the panel again.
+  xconn_->SetPointerPosition(panel->titlebar_x(), panel->titlebar_y());
+  xconn_->InitEnterWindowEvent(&event, titlebar_xid);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  EXPECT_EQ(PanelBar::COLLAPSED_PANEL_STATE_SHOWN,
+            panel_bar_->collapsed_panel_state_);
+  EXPECT_EQ(shown_panel_y, panel->titlebar_y());
+
+  // Drag up again.
+  SendPanelDraggedMessage(panel, 300, hide_pointer_y);
+  xconn_->SetPointerPosition(300, hide_pointer_y);
+  ASSERT_TRUE(panel_bar_->hide_collapsed_panels_pointer_watcher_.get() != NULL);
+  ASSERT_NE(panel_bar_->hide_collapsed_panels_pointer_watcher_->timer_id(), 0);
+  panel_bar_->hide_collapsed_panels_pointer_watcher_->TriggerTimeout();
+  EXPECT_EQ(PanelBar::COLLAPSED_PANEL_STATE_WAITING_TO_HIDE,
+            panel_bar_->collapsed_panel_state_);
+  EXPECT_EQ(shown_panel_y, panel->titlebar_y());
+
+  // Now move the pointer back down before ending the drag.  The bar should
+  // see that the pointer is back within the threshold and avoid hiding the
+  // panel.  We should be monitoring the pointer position again.
+  xconn_->SetPointerPosition(300, shown_panel_y);
+  SendPanelDragCompleteMessage(panel);
+  EXPECT_EQ(PanelBar::COLLAPSED_PANEL_STATE_SHOWN,
+            panel_bar_->collapsed_panel_state_);
+  EXPECT_EQ(shown_panel_y, panel->titlebar_y());
+  ASSERT_TRUE(panel_bar_->hide_collapsed_panels_pointer_watcher_.get() != NULL);
+  ASSERT_NE(panel_bar_->hide_collapsed_panels_pointer_watcher_->timer_id(), 0);
+
+  // Move the pointer up again without dragging and check that the panel is
+  // hidden.
+  xconn_->SetPointerPosition(300, hide_pointer_y);
+  panel_bar_->hide_collapsed_panels_pointer_watcher_->TriggerTimeout();
+  EXPECT_EQ(PanelBar::COLLAPSED_PANEL_STATE_HIDDEN,
+            panel_bar_->collapsed_panel_state_);
+  EXPECT_EQ(hidden_panel_y, panel->titlebar_y());
+  EXPECT_TRUE(!panel_bar_->hide_collapsed_panels_pointer_watcher_.get() ||
+              !panel_bar_->hide_collapsed_panels_pointer_watcher_->timer_id());
 }
 
 }  // namespace window_manager

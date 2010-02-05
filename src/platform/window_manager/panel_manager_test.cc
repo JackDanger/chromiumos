@@ -26,35 +26,7 @@ class PanelManagerTest : public BasicWindowManagerTest {
   virtual void SetUp() {
     BasicWindowManagerTest::SetUp();
     panel_manager_ = wm_->panel_manager_.get();
-    panel_manager_->dragged_panel_event_coalescer_->set_synchronous(true);
     panel_bar_ = panel_manager_->panel_bar_.get();
-
-    // Tell the WM that we implement a recent-enough version of the IPC
-    // messages that we'll be giving it the position of the right-hand edge
-    // of panels in drag messages.
-    WmIpc::Message msg(WmIpc::Message::WM_NOTIFY_IPC_VERSION);
-    msg.set_param(0, 1);
-    XEvent event;
-    wm_->wm_ipc()->FillXEventFromMessage(&event, wm_->wm_xid(), msg);
-    EXPECT_TRUE(wm_->HandleEvent(&event));
-  }
-
-  virtual void SendPanelDraggedMessage(Panel* panel, int x, int y) {
-    WmIpc::Message msg(WmIpc::Message::WM_NOTIFY_PANEL_DRAGGED);
-    msg.set_param(0, panel->content_xid());
-    msg.set_param(1, x);
-    msg.set_param(2, y);
-    XEvent event;
-    wm_->wm_ipc()->FillXEventFromMessage(&event, wm_->wm_xid(), msg);
-    EXPECT_TRUE(wm_->HandleEvent(&event));
-  }
-
-  virtual void SendPanelDragCompleteMessage(Panel* panel) {
-    WmIpc::Message msg(WmIpc::Message::WM_NOTIFY_PANEL_DRAG_COMPLETE);
-    msg.set_param(0, panel->content_xid());
-    XEvent event;
-    wm_->wm_ipc()->FillXEventFromMessage(&event, wm_->wm_xid(), msg);
-    EXPECT_TRUE(wm_->HandleEvent(&event));
   }
 
   PanelManager* panel_manager_;  // instance belonging to 'wm_'

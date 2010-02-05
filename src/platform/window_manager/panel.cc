@@ -87,6 +87,10 @@ Panel::Panel(WindowManager* wm, Window* content_win, Window* titlebar_win)
   CHECK(content_win_);
   CHECK(titlebar_win_);
 
+  wm_->xconn()->SelectInputOnWindow(titlebar_win_->xid(),
+                                    EnterWindowMask,
+                                    true);  // preserve_existing
+
   // Install passive button grabs on all the resize handles, using
   // asynchronous mode so that we'll continue to receive mouse events while
   // the pointer grab is in effect.  (Note that these button grabs are
@@ -127,6 +131,7 @@ Panel::~Panel() {
     wm_->xconn()->RemovePointerGrab(false, CurrentTime);  // replay_events=false
     drag_xid_ = None;
   }
+  wm_->xconn()->DeselectInputOnWindow(titlebar_win_->xid(), EnterWindowMask);
   wm_->xconn()->DestroyWindow(top_input_xid_);
   wm_->xconn()->DestroyWindow(top_left_input_xid_);
   wm_->xconn()->DestroyWindow(top_right_input_xid_);

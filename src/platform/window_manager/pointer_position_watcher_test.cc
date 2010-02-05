@@ -22,18 +22,6 @@ using chromeos::NewPermanentCallback;
 class PointerPositionWatcherTest : public ::testing::Test {
 };
 
-class CallbackCounter {
- public:
-  CallbackCounter() : num_calls_(0) {}
-  int num_calls() const { return num_calls_; }
-  void Reset() { num_calls_ = 0; }
-  void Increment() { num_calls_++; }
-
- private:
-  // Number of times that Increment() has been invoked.
-  int num_calls_;
-};
-
 // Struct that contains a watcher and has a method to delete it.
 // Used by the DeleteFromCallback test.
 struct WatcherContainer {
@@ -48,11 +36,11 @@ TEST_F(PointerPositionWatcherTest, Basic) {
   xconn.SetPointerPosition(0, 0);
 
   // Watch for the pointer moving into a 20x30 rectangle at (50, 100).
-  CallbackCounter counter;
+  TestCallbackCounter counter;
   scoped_ptr<PointerPositionWatcher> watcher(
       new PointerPositionWatcher(
           &xconn,
-          NewPermanentCallback(&counter, &CallbackCounter::Increment),
+          NewPermanentCallback(&counter, &TestCallbackCounter::Increment),
           true,      // watch_for_entering_target
           50, 100,   // x, y
           20, 30));  // width, height
@@ -81,7 +69,7 @@ TEST_F(PointerPositionWatcherTest, Basic) {
   watcher.reset(
       new PointerPositionWatcher(
           &xconn,
-          NewPermanentCallback(&counter, &CallbackCounter::Increment),
+          NewPermanentCallback(&counter, &TestCallbackCounter::Increment),
           false,     // watch_for_entering_target=false
           50, 100,   // x, y
           20, 30));  // width, height

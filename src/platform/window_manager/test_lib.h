@@ -21,6 +21,7 @@ namespace window_manager {
 
 class MockXConnection;
 class MockClutterInterface;
+class Panel;
 class WindowManager;
 
 // Test that two bytes sequences are equal, pretty-printing the difference
@@ -72,6 +73,12 @@ class BasicWindowManagerTest : public ::testing::Test {
   // windows that are neither None nor the root window.
   void SendFocusEvents(XWindow out_xid, XWindow in_xid);
 
+  // Send a WM_NOTIFY_PANEL_DRAGGED message.
+  void SendPanelDraggedMessage(Panel* panel, int x, int y);
+
+  // Send a WM_NOTIFY_PANEL_DRAG_COMPLETE message.
+  void SendPanelDragCompleteMessage(Panel* panel);
+
   // Get the current value of the _NET_ACTIVE_WINDOW property on the root
   // window.
   XWindow GetActiveWindowProperty();
@@ -84,6 +91,18 @@ class BasicWindowManagerTest : public ::testing::Test {
   scoped_ptr<MockXConnection> xconn_;
   scoped_ptr<MockClutterInterface> clutter_;
   scoped_ptr<WindowManager> wm_;
+};
+
+// Simple class that can be used to test callback invocation.
+class TestCallbackCounter {
+ public:
+  TestCallbackCounter() : num_calls_(0) {}
+  int num_calls() const { return num_calls_; }
+  void Reset() { num_calls_ = 0; }
+  void Increment() { num_calls_++; }
+ private:
+  // Number of times that Increment() has been invoked.
+  int num_calls_;
 };
 
 }  // namespace window_manager

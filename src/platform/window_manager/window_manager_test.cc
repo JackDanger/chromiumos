@@ -675,6 +675,12 @@ TEST_F(WindowManagerTest, ClientListProperties) {
 }
 
 TEST_F(WindowManagerTest, WmIpcVersion) {
+  // BasicWindowManagerTest::SetUp() sends a WM_NOTIFY_IPC_VERSION message
+  // automatically, since most tests want something reasonable there.
+  // Create a new WindowManager object to work around this.
+  wm_.reset(new WindowManager(xconn_.get(), clutter_.get()));
+  ASSERT_TRUE(wm_->Init());
+
   // We should assume version 0 if we haven't received a message from Chrome.
   EXPECT_EQ(0, wm_->wm_ipc_version());
 

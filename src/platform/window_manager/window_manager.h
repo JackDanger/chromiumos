@@ -116,6 +116,7 @@ class WindowManager {
   // Height for the panel bar.
   static const int kPanelBarHeight;
 
+  friend class BasicWindowManagerTest;
   friend class LayoutManagerTest;         // uses 'layout_manager_'
   friend class PanelTest;                 // uses 'panel_manager_'
   friend class PanelBarTest;              // uses 'panel_manager_'
