@@ -1,3 +1,4 @@
 chromeos_startup sbin
 chromeos_shutdown sbin
+killers sbin
 *.conf etc/init.chromeos
