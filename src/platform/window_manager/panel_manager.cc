@@ -244,11 +244,15 @@ bool PanelManager::HandleButtonRelease(XWindow xid,
   return false;
 }
 
-bool PanelManager::HandlePointerEnter(XWindow xid, Time timestamp) {
+bool PanelManager::HandlePointerEnter(XWindow xid,
+                                      int x, int y,
+                                      int x_root, int y_root,
+                                      Time timestamp) {
   PanelContainer* container = FindWithDefault(
       container_input_xids_, xid, static_cast<PanelContainer*>(NULL));
   if (container) {
-    container->HandleInputWindowPointerEnter(xid, timestamp);
+    container->HandleInputWindowPointerEnter(
+        xid, x, y, x_root, y_root, timestamp);
     return true;
   }
 
@@ -267,18 +271,24 @@ bool PanelManager::HandlePointerEnter(XWindow xid, Time timestamp) {
   return false;
 }
 
-bool PanelManager::HandlePointerLeave(XWindow xid, Time timestamp) {
+bool PanelManager::HandlePointerLeave(XWindow xid,
+                                      int x, int y,
+                                      int x_root, int y_root,
+                                      Time timestamp) {
   PanelContainer* container = FindWithDefault(
       container_input_xids_, xid, static_cast<PanelContainer*>(NULL));
   if (container) {
-    container->HandleInputWindowPointerLeave(xid, timestamp);
+    container->HandleInputWindowPointerLeave(
+        xid, x, y, x_root, y_root, timestamp);
     return true;
   }
   return false;
 }
 
-bool PanelManager::HandlePointerMotion(
-    XWindow xid, int x, int y, Time timestamp) {
+bool PanelManager::HandlePointerMotion(XWindow xid,
+                                       int x, int y,
+                                       int x_root, int y_root,
+                                       Time timestamp) {
   Panel* panel = FindWithDefault(
       panel_input_xids_, xid, static_cast<Panel*>(NULL));
   if (panel) {

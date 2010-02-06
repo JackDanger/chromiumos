@@ -493,15 +493,17 @@ MockXConnection::WindowInfo* MockXConnection::GetWindowInfo(XWindow xid) {
 
 // static
 void MockXConnection::InitButtonPressEvent(XEvent* event,
-                                           XWindow xid,
+                                           const WindowInfo& info,
                                            int x, int y, int button) {
   CHECK(event);
   XButtonEvent* button_event = &(event->xbutton);
   memset(button_event, 0, sizeof(*button_event));
   button_event->type = ButtonPress;
-  button_event->window = xid;
+  button_event->window = info.xid;
   button_event->x = x;
   button_event->y = y;
+  button_event->x_root = info.x + x;
+  button_event->y_root = info.y + y;
   button_event->button = button;
 }
 
@@ -584,12 +586,18 @@ void MockXConnection::InitDestroyWindowEvent(XEvent* event, XWindow xid) {
 }
 
 // static
-void MockXConnection::InitEnterWindowEvent(XEvent* event, XWindow window) {
+void MockXConnection::InitEnterWindowEvent(XEvent* event,
+                                           const WindowInfo& info,
+                                           int x, int y) {
   CHECK(event);
   XEnterWindowEvent* enter_event = &(event->xcrossing);
   memset(enter_event, 0, sizeof(*enter_event));
   enter_event->type = EnterNotify;
-  enter_event->window = window;
+  enter_event->window = info.xid;
+  enter_event->x = x;
+  enter_event->y = y;
+  enter_event->x_root = info.x + x;
+  enter_event->y_root = info.y + y;
   // Leave everything else blank for now; we don't use it.
 }
 
@@ -618,12 +626,18 @@ void MockXConnection::InitFocusOutEvent(
 }
 
 // static
-void MockXConnection::InitLeaveWindowEvent(XEvent* event, XWindow window) {
+void MockXConnection::InitLeaveWindowEvent(XEvent* event,
+                                           const WindowInfo& info,
+                                           int x, int y) {
   CHECK(event);
   XLeaveWindowEvent* leave_event = &(event->xcrossing);
   memset(leave_event, 0, sizeof(*leave_event));
   leave_event->type = LeaveNotify;
-  leave_event->window = window;
+  leave_event->window = info.xid;
+  leave_event->x = x;
+  leave_event->y = y;
+  leave_event->x_root = info.x + x;
+  leave_event->y_root = info.y + y;
   // Leave everything else blank for now; we don't use it.
 }
 

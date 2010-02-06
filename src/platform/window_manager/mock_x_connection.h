@@ -192,7 +192,8 @@ class MockXConnection : public XConnection {
   }
 
   // Helper methods tests can use to initialize events.
-  static void InitButtonPressEvent(XEvent* event, XWindow xid,
+  // 'x' and 'y' are relative to the window.
+  static void InitButtonPressEvent(XEvent* event, const WindowInfo& info,
                                    int x, int y, int button);
   // This just creates a message with 32-bit values.
   static void InitClientMessageEvent(
@@ -203,7 +204,9 @@ class MockXConnection : public XConnection {
       XEvent* event, XWindow xid, int x, int y, int width, int height);
   static void InitCreateWindowEvent(XEvent* event, const WindowInfo& info);
   static void InitDestroyWindowEvent(XEvent* event, XWindow xid);
-  static void InitEnterWindowEvent(XEvent* event, XWindow window);
+  // 'x' and 'y' are relative to the window.
+  static void InitEnterWindowEvent(XEvent* event, const WindowInfo& info,
+                                   int x, int y);
   // The 'mode' parameter is e.g. NotifyNormal, NotifyGrab, etc., and
   // 'detail' is e.g. NotifyAncestor, NotifyVirtual, etc.  See
   // http://tronche.com/gui/x/xlib/events/input-focus/normal-and-grabbed.html
@@ -212,7 +215,9 @@ class MockXConnection : public XConnection {
       XEvent* event, XWindow xid, int mode, int detail);
   static void InitFocusOutEvent(
       XEvent* event, XWindow xid, int mode, int detail);
-  static void InitLeaveWindowEvent(XEvent* event, XWindow window);
+  // 'x' and 'y' are relative to the window.
+  static void InitLeaveWindowEvent(XEvent* event, const WindowInfo& info,
+                                   int x, int y);
   static void InitMapEvent(XEvent* event, XWindow xid);
   static void InitMapRequestEvent(XEvent* event, const WindowInfo& info);
   static void InitUnmapEvent(XEvent* event, XWindow xid);

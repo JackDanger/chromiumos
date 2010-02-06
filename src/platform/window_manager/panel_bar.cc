@@ -232,22 +232,38 @@ void PanelBar::HandleInputWindowButtonPress(XWindow xid,
     LOG(WARNING) << "Anchor panel no longer exists";
 }
 
-void PanelBar::HandleInputWindowPointerEnter(XWindow xid, Time timestamp) {
+void PanelBar::HandleInputWindowPointerEnter(XWindow xid,
+                                             int x, int y,
+                                             int x_root, int y_root,
+                                             Time timestamp) {
   if (xid == show_collapsed_panels_input_xid_) {
     VLOG(1) << "Got mouse enter in show-collapsed-panels window";
-    if (collapsed_panel_state_ != COLLAPSED_PANEL_STATE_SHOWN &&
-        collapsed_panel_state_ != COLLAPSED_PANEL_STATE_WAITING_TO_SHOW) {
-      collapsed_panel_state_ = COLLAPSED_PANEL_STATE_WAITING_TO_SHOW;
-      DCHECK(show_collapsed_panels_timer_id_ == 0);
-      show_collapsed_panels_timer_id_ =
-          g_timeout_add(kShowCollapsedPanelsDelayMs,
-                        &HandleShowCollapsedPanelsTimerThunk,
-                        this);
+    if (x_root >= wm_->width() - total_panel_width_) {
+      // If the user moves the pointer down quickly to the bottom of the
+      // screen, it's possible that it could end up below a collapsed panel
+      // without us having received an enter event in the panel's titlebar.
+      // Show the panels immediately in this case.
+      ShowCollapsedPanels();
+    } else {
+      // Otherwise, set up a timer to show the panels if we're not already
+      // doing so.
+      if (collapsed_panel_state_ != COLLAPSED_PANEL_STATE_SHOWN &&
+          collapsed_panel_state_ != COLLAPSED_PANEL_STATE_WAITING_TO_SHOW) {
+        collapsed_panel_state_ = COLLAPSED_PANEL_STATE_WAITING_TO_SHOW;
+        DCHECK(show_collapsed_panels_timer_id_ == 0);
+        show_collapsed_panels_timer_id_ =
+            g_timeout_add(kShowCollapsedPanelsDelayMs,
+                          &HandleShowCollapsedPanelsTimerThunk,
+                          this);
+      }
     }
   }
 }
 
-void PanelBar::HandleInputWindowPointerLeave(XWindow xid, Time timestamp) {
+void PanelBar::HandleInputWindowPointerLeave(XWindow xid,
+                                             int x, int y,
+                                             int x_root, int y_root,
+                                             Time timestamp) {
   if (xid == show_collapsed_panels_input_xid_) {
     VLOG(1) << "Got mouse leave in show-collapsed-panels window";
     if (collapsed_panel_state_ == COLLAPSED_PANEL_STATE_WAITING_TO_SHOW) {

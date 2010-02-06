@@ -51,8 +51,14 @@ class PanelBar : public PanelContainer {
                                       int x_root, int y_root,
                                       int button,
                                       Time timestamp) {}
-  void HandleInputWindowPointerEnter(XWindow xid, Time timestamp);
-  void HandleInputWindowPointerLeave(XWindow xid, Time timestamp);
+  void HandleInputWindowPointerEnter(XWindow xid,
+                                     int x, int y,
+                                     int x_root, int y_root,
+                                     Time timestamp);
+  void HandleInputWindowPointerLeave(XWindow xid,
+                                     int x, int y,
+                                     int x_root, int y_root,
+                                     Time timestamp);
   void HandlePanelButtonPress(Panel* panel, int button, Time timestamp);
   void HandlePanelTitlebarPointerEnter(Panel* panel, Time timestamp);
   void HandlePanelFocusChange(Panel* panel, bool focus_in);

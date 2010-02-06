@@ -316,7 +316,7 @@ TEST_F(WindowManagerTest, EventConsumer) {
   MockXConnection::InitMapEvent(&event, xid);
   EXPECT_TRUE(wm_->HandleEvent(&event));
 
-  MockXConnection::InitButtonPressEvent(&event, xid, 5, 5, 1);
+  MockXConnection::InitButtonPressEvent(&event, *info, 5, 5, 1);
   EXPECT_TRUE(wm_->HandleEvent(&event));
 
   MockXConnection::InitUnmapEvent(&event, xid);

@@ -540,7 +540,10 @@ bool LayoutManager::HandleButtonRelease(XWindow xid,
   return true;
 }
 
-bool LayoutManager::HandlePointerEnter(XWindow xid, Time timestamp) {
+bool LayoutManager::HandlePointerEnter(XWindow xid,
+                                       int x, int y,
+                                       int x_root, int y_root,
+                                       Time timestamp) {
   ToplevelWindow* toplevel = GetToplevelWindowByInputXid(xid);
   if (!toplevel)
     return false;
@@ -554,7 +557,10 @@ bool LayoutManager::HandlePointerEnter(XWindow xid, Time timestamp) {
   return true;
 }
 
-bool LayoutManager::HandlePointerLeave(XWindow xid, Time timestamp) {
+bool LayoutManager::HandlePointerLeave(XWindow xid,
+                                       int x, int y,
+                                       int x_root, int y_root,
+                                       Time timestamp) {
   // TODO: Decide if we want to unmagnify the window here or not.
   return (GetToplevelWindowByInputXid(xid) != NULL);
 }
@@ -583,8 +589,10 @@ bool LayoutManager::HandleFocusChange(XWindow xid, bool focus_in) {
   return true;
 }
 
-bool LayoutManager::HandlePointerMotion(
-    XWindow xid, int x, int y, Time timestamp) {
+bool LayoutManager::HandlePointerMotion(XWindow xid,
+                                        int x, int y,
+                                        int x_root, int y_root,
+                                        Time timestamp) {
   if (xid != wm_->background_xid())
     return false;
 

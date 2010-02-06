@@ -121,9 +121,18 @@ class LayoutManager : public EventConsumer {
                            int x_root, int y_root,
                            int button,
                            Time timestamp);
-  bool HandlePointerEnter(XWindow xid, Time timestamp);
-  bool HandlePointerLeave(XWindow xid, Time timestamp);
-  bool HandlePointerMotion(XWindow xid, int x, int y, Time timestamp);
+  bool HandlePointerEnter(XWindow xid,
+                          int x, int y,
+                          int x_root, int y_root,
+                          Time timestamp);
+  bool HandlePointerLeave(XWindow xid,
+                          int x, int y,
+                          int x_root, int y_root,
+                          Time timestamp);
+  bool HandlePointerMotion(XWindow xid,
+                           int x, int y,
+                           int x_root, int y_root,
+                           Time timestamp);
   bool HandleFocusChange(XWindow xid, bool focus_in);
 
   // Handle messages from client apps.

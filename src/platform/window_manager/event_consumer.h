@@ -75,10 +75,23 @@ class EventConsumer {
     return false;
   }
 
-  // Handle the pointer entering or leaving an input window.
-  virtual bool HandlePointerEnter(XWindow xid, Time timestamp) { return false; }
-  virtual bool HandlePointerLeave(XWindow xid, Time timestamp) { return false; }
-  virtual bool HandlePointerMotion(XWindow xid, int x, int y, Time timestamp) {
+  // Handle the pointer entering, leaving, or moving within an input window.
+  virtual bool HandlePointerEnter(XWindow xid,
+                                  int x, int y,
+                                  int x_root, int y_root,
+                                  Time timestamp) {
+    return false;
+  }
+  virtual bool HandlePointerLeave(XWindow xid,
+                                  int x, int y,
+                                  int x_root, int y_root,
+                                  Time timestamp) {
+    return false;
+  }
+  virtual bool HandlePointerMotion(XWindow xid,
+                                   int x, int y,
+                                   int x_root, int y_root,
+                                   Time timestamp) {
     return false;
   }
 

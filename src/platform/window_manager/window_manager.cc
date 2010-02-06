@@ -1087,7 +1087,8 @@ bool WindowManager::HandleEnterNotify(const XEnterWindowEvent& e) {
   VLOG(1) << "Handling enter notify for " << XidStr(e.window);
   for (std::set<EventConsumer*>::iterator it = event_consumers_.begin();
        it != event_consumers_.end(); ++it) {
-    if ((*it)->HandlePointerEnter(e.window, e.time))
+    if ((*it)->HandlePointerEnter(
+            e.window, e.x, e.y, e.x_root, e.y_root, e.time))
       return true;
   }
   return false;
@@ -1147,7 +1148,8 @@ bool WindowManager::HandleLeaveNotify(const XLeaveWindowEvent& e) {
   VLOG(1) << "Handling leave notify for " << XidStr(e.window);
   for (std::set<EventConsumer*>::iterator it = event_consumers_.begin();
        it != event_consumers_.end(); ++it) {
-    if ((*it)->HandlePointerLeave(e.window, e.time))
+    if ((*it)->HandlePointerLeave(
+            e.window, e.x, e.y, e.x_root, e.y_root, e.time))
       return true;
   }
   return false;
@@ -1208,7 +1210,8 @@ bool WindowManager::HandleMappingNotify(const XMappingEvent& e) {
 bool WindowManager::HandleMotionNotify(const XMotionEvent& e) {
   for (std::set<EventConsumer*>::iterator it = event_consumers_.begin();
        it != event_consumers_.end(); ++it) {
-    if ((*it)->HandlePointerMotion(e.window, e.x, e.y, e.time))
+    if ((*it)->HandlePointerMotion(
+            e.window, e.x, e.y, e.x_root, e.y_root, e.time))
       return true;
   }
   return false;

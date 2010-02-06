@@ -333,7 +333,8 @@ TEST_F(LayoutManagerTest, FocusTransient) {
 
   // Now simulate a button press on the owner window.
   xconn_->set_pointer_grab_xid(xid);
-  MockXConnection::InitButtonPressEvent(&event, xid, 0, 0, 1);  // x, y, button
+  MockXConnection::InitButtonPressEvent(
+      &event, *info, 0, 0, 1);  // x, y, button
   EXPECT_TRUE(wm_->HandleEvent(&event));
 
   // LayoutManager should remove the active pointer grab and try to focus
@@ -352,7 +353,7 @@ TEST_F(LayoutManagerTest, FocusTransient) {
 
   // Give the focus back to the transient window.
   xconn_->set_pointer_grab_xid(transient_xid);
-  MockXConnection::InitButtonPressEvent(&event, transient_xid, 0, 0, 1);
+  MockXConnection::InitButtonPressEvent(&event, *transient_info, 0, 0, 1);
   EXPECT_TRUE(wm_->HandleEvent(&event));
   EXPECT_EQ(transient_xid, xconn_->focused_xid());
   SendFocusEvents(xid, transient_xid);
@@ -369,7 +370,7 @@ TEST_F(LayoutManagerTest, FocusTransient) {
   // Since it's modal, the transient window should still keep the focus
   // after a button press in the owner window.
   xconn_->set_pointer_grab_xid(xid);
-  MockXConnection::InitButtonPressEvent(&event, xid, 0, 0, 1);
+  MockXConnection::InitButtonPressEvent(&event, *info, 0, 0, 1);
   EXPECT_TRUE(wm_->HandleEvent(&event));
   EXPECT_EQ(transient_xid, xconn_->focused_xid());
   EXPECT_EQ(transient_xid, GetActiveWindowProperty());
@@ -506,7 +507,7 @@ TEST_F(LayoutManagerTest, MultipleTransients) {
   // Click on the first transient.  It should get the focused and be moved to
   // the top of the stack.
   xconn_->set_pointer_grab_xid(first_transient_xid);
-  MockXConnection::InitButtonPressEvent(&event, first_transient_xid, 0, 0, 1);
+  MockXConnection::InitButtonPressEvent(&event, *first_transient_info, 0, 0, 1);
   EXPECT_TRUE(wm_->HandleEvent(&event));
   EXPECT_EQ(first_transient_xid, xconn_->focused_xid());
   SendFocusEvents(second_transient_xid, first_transient_xid);
@@ -671,9 +672,8 @@ TEST_F(LayoutManagerTest, OverviewFocus) {
 
   // Click on the first window's input window.
   XWindow input_xid = lm_->GetInputXidForWindow(*(wm_->GetWindow(xid)));
-  EXPECT_TRUE(input_xid != None);
   MockXConnection::InitButtonPressEvent(
-      &event, input_xid, 0, 0, 1);  // x, y, button
+      &event, *xconn_->GetWindowInfoOrDie(input_xid), 0, 0, 1);  // x, y, button
   EXPECT_TRUE(wm_->HandleEvent(&event));
 
   // The first window should be focused and set as the active window, and
