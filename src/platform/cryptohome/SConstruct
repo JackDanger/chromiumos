@@ -36,8 +36,8 @@ for key in Split('CC CXX AR RANLIB LD NM CFLAGS CCFLAGS'):
   if value != None:
     env[key] = value
 
-# Fix issue with scons not passing pkg-config vars through the environment.
-for key in Split('PKG_CONFIG_LIBDIR PKG_CONFIG_PATH'):
+# Fix issue with scons not passing some vars through the environment.
+for key in Split('PKG_CONFIG_LIBDIR PKG_CONFIG_PATH SYSROOT'):
   if os.environ.has_key(key):
     env['ENV'][key] = os.environ[key]
 

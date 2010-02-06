@@ -57,4 +57,9 @@ for key in Split('CC CXX AR RANLIB LD NM CFLAGS CCFLAGS'):
     
 env['CCFLAGS'] += ['-fPIC', '-fno-exceptions', '-Wall', '-Werror']
 
+# Fix issue with scons not passing some vars through the environment.
+for key in Split('PKG_CONFIG_LIBDIR PKG_CONFIG_PATH SYSROOT'):
+  if os.environ.has_key(key):
+    env['ENV'][key] = os.environ[key]
+
 env.StaticLibrary('base', sources)

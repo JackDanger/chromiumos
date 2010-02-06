@@ -57,8 +57,8 @@ for key in Split('CFLAGS CCFLAGS CPPPATH LIBPATH'):
 if not base_env.get('CCFLAGS'):
   base_env.Append(CCFLAGS=Split('-I.. -Wall -Werror -O3'))
 
-# Fix issue with scons not passing pkg-config vars through the environment.
-for key in Split('PKG_CONFIG_LIBDIR PKG_CONFIG_PATH'):
+# Fix issue with scons not passing some vars through the environment.
+for key in Split('PKG_CONFIG_LIBDIR PKG_CONFIG_PATH SYSROOT'):
   if os.environ.has_key(key):
     base_env['ENV'][key] = os.environ[key]
 
