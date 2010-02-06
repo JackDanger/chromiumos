@@ -1038,8 +1038,12 @@ void LayoutManager::ToplevelWindow::ConfigureForOverviewMode(
             input_xid_, StackingManager::LAYER_TOPLEVEL_WINDOW);
       }
 
-      win_->ScaleComposited(overview_scale_, overview_scale_, kOverviewAnimMs);
-      win_->SetCompositedOpacity(1.0, kOverviewAnimMs);
+      // We want to get new windows into their starting state immediately;
+      // we animate other windows smoothly.
+      const int anim_ms = (state_ == STATE_NEW) ? 0 : kOverviewAnimMs;
+
+      win_->ScaleComposited(overview_scale_, overview_scale_, anim_ms);
+      win_->SetCompositedOpacity(1.0, anim_ms);
       win_->MoveClientOffscreen();
       wm()->ConfigureInputWindow(input_xid_,
                                  GetAbsoluteOverviewX(), GetAbsoluteOverviewY(),
@@ -1050,8 +1054,15 @@ void LayoutManager::ToplevelWindow::ConfigureForOverviewMode(
           !stacked_transients_->items().empty() ?
             stacked_transients_->items().front()->win->actor() :
             win_->actor());
-      gradient_actor_->SetOpacity(window_is_magnified ? 0 : 1, kOverviewAnimMs);
+      gradient_actor_->SetOpacity(window_is_magnified ? 0 : 1, anim_ms);
 
+      // Make new windows slide in from the right.
+      if (state_ == STATE_NEW) {
+        const int initial_x = layout_manager_->x() + layout_manager_->width();
+        const int initial_y = GetAbsoluteOverviewY();
+        win_->MoveComposited(initial_x, initial_y, 0);
+        gradient_actor_->Move(initial_x, initial_y, 0);
+      }
       state_ = window_is_magnified ?
           STATE_OVERVIEW_MODE_MAGNIFIED :
           STATE_OVERVIEW_MODE_NORMAL;
