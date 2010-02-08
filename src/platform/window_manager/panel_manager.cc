@@ -105,7 +105,7 @@ void PanelManager::HandleWindowMap(Window* win) {
               << " panel with content window " << win->xid_str()
               << " and titlebar window " << titlebar_win->xid_str();
 
-      shared_ptr<Panel> panel(new Panel(wm_, win, titlebar_win));
+      shared_ptr<Panel> panel(new Panel(this, win, titlebar_win));
       panel->SetTitlebarWidth(panel->content_width());
 
       vector<XWindow> input_windows;
@@ -387,6 +387,13 @@ bool PanelManager::HandleFocusChange(XWindow xid, bool focus_in) {
   return true;
 }
 
+void PanelManager::HandlePanelResize(Panel* panel) {
+  DCHECK(panel);
+  PanelContainer* container = GetContainerForPanel(*panel);
+  if (container)
+    container->HandlePanelResize(panel);
+}
+
 void PanelManager::HandleScreenResize() {
   for (vector<PanelContainer*>::iterator it = containers_.begin();
        it != containers_.end(); ++it) {
@@ -485,7 +492,7 @@ void PanelManager::HandlePeriodicPanelDragMotion() {
 }
 
 void PanelManager::HandlePanelDragComplete(Panel* panel, bool removed) {
-  CHECK(panel);
+  DCHECK(panel);
   DCHECK(dragged_panel_ == panel);
   if (dragged_panel_ != panel)
     return;

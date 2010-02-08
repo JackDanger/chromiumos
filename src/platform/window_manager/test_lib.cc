@@ -14,6 +14,7 @@
 #include "window_manager/mock_x_connection.h"
 #include "window_manager/motion_event_coalescer.h"
 #include "window_manager/panel.h"
+#include "window_manager/panel_bar.h"
 #include "window_manager/panel_manager.h"
 #include "window_manager/window_manager.h"
 #include "window_manager/wm_ipc.h"
@@ -118,6 +119,21 @@ XWindow BasicWindowManagerTest::CreatePanelContentWindow(
   wm_->wm_ipc()->SetWindowType(
       xid, WmIpc::WINDOW_TYPE_CHROME_PANEL_CONTENT, &params);
   return xid;
+}
+
+Panel* BasicWindowManagerTest::CreatePanel(int width,
+                                           int titlebar_height,
+                                           int content_height,
+                                           bool expanded) {
+  XWindow titlebar_xid = CreatePanelTitlebarWindow(width, titlebar_height);
+  SendInitialEventsForWindow(titlebar_xid);
+  XWindow content_xid = CreatePanelContentWindow(
+      width, content_height, titlebar_xid, expanded);
+  SendInitialEventsForWindow(content_xid);
+  Panel* panel = wm_->panel_manager_->panel_bar_->GetPanelByWindow(
+      *(wm_->GetWindow(content_xid)));
+  CHECK(panel);
+  return panel;
 }
 
 void BasicWindowManagerTest::SendInitialEventsForWindow(XWindow xid) {

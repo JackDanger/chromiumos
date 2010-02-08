@@ -24,6 +24,7 @@ typedef ::Window XWindow;
 
 namespace window_manager {
 
+class PanelManager;
 class WindowManager;
 
 // A panel, representing a pop-up window.  Each panel consists of a content
@@ -37,7 +38,7 @@ class Panel {
   // (PanelManager would have previously moved the client windows offscreen
   // in response to their map requests, and Window's c'tor makes composited
   // windows invisible.)
-  Panel(WindowManager* wm, Window* content_win, Window* titlebar_win);
+  Panel(PanelManager* panel_manager, Window* content_win, Window* titlebar_win);
   ~Panel();
 
   const Window* const_content_win() const { return content_win_; }
@@ -123,8 +124,11 @@ class Panel {
   void RemoveButtonGrab(bool remove_pointer_grab);
 
  private:
+  FRIEND_TEST(PanelBarTest, PackPanelsAfterPanelResize);
   FRIEND_TEST(PanelTest, InputWindows);  // uses '*_input_xid_'
   FRIEND_TEST(PanelTest, Resize);        // uses '*_input_xid_'
+
+  WindowManager* wm();
 
   // Resize the content window to the passed-in dimensions.  The titlebar
   // window is moved above the content window if necessary and resized to
@@ -139,9 +143,9 @@ class Panel {
   // Called periodically by 'resize_event_coalescer_'.
   void ApplyResize();
 
-  WindowManager* wm_;     // not owned
-  Window* content_win_;   // not owned
-  Window* titlebar_win_;  // not owned
+  PanelManager* panel_manager_;  // not owned
+  Window* content_win_;          // not owned
+  Window* titlebar_win_;         // not owned
 
   // Translucent resize box used when opaque resizing is disabled.
   scoped_ptr<ClutterInterface::Actor> resize_actor_;

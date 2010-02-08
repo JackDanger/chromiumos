@@ -61,6 +61,7 @@ class PanelDock : public PanelContainer {
   bool HandleNotifyPanelDraggedMessage(Panel* panel, int drag_x, int drag_y);
   void HandleNotifyPanelDragCompleteMessage(Panel* panel);
   void HandleFocusPanelMessage(Panel* panel);
+  void HandlePanelResize(Panel* panel) {}
   void HandleScreenResize() {}
   // End overridden PanelContainer methods.
 

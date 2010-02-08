@@ -25,6 +25,7 @@ DEFINE_string(panel_anchor_image, "../assets/images/panel_anchor.png",
 namespace window_manager {
 
 using chromeos::NewPermanentCallback;
+using std::find;
 using std::make_pair;
 using std::map;
 using std::max;
@@ -353,6 +354,11 @@ void PanelBar::HandleFocusPanelMessage(Panel* panel) {
   FocusPanel(panel, false, wm_->GetCurrentTimeFromServer());
 }
 
+void PanelBar::HandlePanelResize(Panel* panel) {
+  DCHECK(panel);
+  PackPanels(NULL);
+}
+
 void PanelBar::HandleScreenResize() {
   // Make all of the panels jump to their new Y positions first and then
   // repack them to animate them sliding to their new X positions.
@@ -515,40 +521,40 @@ void PanelBar::HandlePanelDragComplete(Panel* panel) {
 }
 
 void PanelBar::ReorderPanel(Panel* fixed_panel) {
-  CHECK(fixed_panel);
+  DCHECK(fixed_panel);
 
-  // First, find the position of the dragged panel.
-  Panels::iterator fixed_it = FindPanelInVectorByWindow(
-      panels_, *(fixed_panel->content_win()));
-  CHECK(fixed_it != panels_.end());
-
-  // Next, check if the center of the panel has moved over another panel.
-  const int center_x = (wm_->wm_ipc_version() >= 1) ?
-                       fixed_panel->right() - 0.5 * fixed_panel->width() :
-                       fixed_panel->right() + 0.5 * fixed_panel->width();
-  Panels::iterator it = panels_.begin();
-  for (; it != panels_.end(); ++it) {
-    int snapped_left = 0, snapped_right = 0;
-    if (*it == fixed_panel) {
-      // If we're comparing against ourselves, use our original position
-      // rather than wherever we've currently been dragged by the user.
-      PanelInfo* info = GetPanelInfoOrDie(fixed_panel);
-      snapped_left = info->snapped_right - fixed_panel->width();
-      snapped_right = info->snapped_right;
-    } else {
-      snapped_left = (*it)->content_x();
-      snapped_right = (*it)->right();
-    }
-    if (center_x >= snapped_left && center_x < snapped_right)
+  // Check if the center of the panel has moved into the rightmost
+  // 'fixed_panel->width()' portion of another panel.
+  // TODO: This isn't ideal when dragging a small panel to the right over a
+  // large panel or a large panel to the left over a small panel, but it'll
+  // at least give us consistent results instead of panels that jump around
+  // wildly as they're being dragged.  The UI folks are trying to come up
+  // with a better solution for differently-sized panels.
+  const int center_x = fixed_panel->right() - 0.5 * fixed_panel->width();
+  Panels::iterator dest_it = panels_.begin();
+  for (Panels::iterator it = panels_.begin(); it != panels_.end(); ++it) {
+    Panel* panel = *it;
+    // If we're comparing against ourselves, use our original position
+    // rather than wherever we've currently been dragged by the user.
+    const int right_edge = (panel == fixed_panel) ?
+                           GetPanelInfoOrDie(panel)->snapped_right :
+                           panel->right();
+    if (center_x > right_edge - fixed_panel->width())
+      dest_it = it;
+    else
       break;
   }
 
   // If it has, then we reorder the panels.
-  if (it != panels_.end() && *it != fixed_panel) {
-    if (it > fixed_it)
-      rotate(fixed_it, fixed_it + 1, it + 1);
+  DCHECK(dest_it != panels_.end());
+  if (*dest_it != fixed_panel) {
+    Panels::iterator fixed_it =
+        find(panels_.begin(), panels_.end(), fixed_panel);
+    DCHECK(fixed_it != panels_.end());
+    if (dest_it > fixed_it)
+      rotate(fixed_it, fixed_it + 1, dest_it + 1);
     else
-      rotate(it, fixed_it, fixed_it + 1);
+      rotate(dest_it, fixed_it, fixed_it + 1);
     PackPanels(fixed_panel);
   }
 }

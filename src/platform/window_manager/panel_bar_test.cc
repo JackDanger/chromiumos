@@ -176,18 +176,11 @@ TEST_F(PanelBarTest, Basic) {
 // client messages.
 TEST_F(PanelBarTest, ActiveWindowMessage) {
   // Create a collapsed panel.
-  XWindow titlebar_xid = CreatePanelTitlebarWindow(200, 20);
-  SendInitialEventsForWindow(titlebar_xid);
-  XWindow content_xid = CreatePanelContentWindow(200, 400, titlebar_xid, false);
-  SendInitialEventsForWindow(content_xid);
+  Panel* panel = CreatePanel(200, 20, 400, false);
 
   // Make sure that it starts out collapsed.
-  Window* content_win = wm_->GetWindow(content_xid);
-  ASSERT_TRUE(content_win != NULL);
-  Panel* panel = panel_bar_->GetPanelByWindow(*content_win);
-  ASSERT_TRUE(panel != NULL);
   EXPECT_FALSE(panel_bar_->GetPanelInfoOrDie(panel)->is_expanded);
-  EXPECT_NE(content_xid, xconn_->focused_xid());
+  EXPECT_NE(panel->content_xid(), xconn_->focused_xid());
 
   // After sending a _NET_ACTIVE_WINDOW message asking the window manager
   // to focus the panel, it should be expanded and get the focus, and the
@@ -195,16 +188,16 @@ TEST_F(PanelBarTest, ActiveWindowMessage) {
   XEvent event;
   MockXConnection::InitClientMessageEvent(
       &event,
-      content_xid,  // window to focus
+      panel->content_xid(),  // window to focus
       wm_->GetXAtom(ATOM_NET_ACTIVE_WINDOW),
-      1,          // source indication: client app
+      1,                     // source indication: client app
       CurrentTime,
-      None,       // currently-active window
+      None,                  // currently-active window
       None);
   EXPECT_TRUE(wm_->HandleEvent(&event));
   EXPECT_TRUE(panel_bar_->GetPanelInfoOrDie(panel)->is_expanded);
-  EXPECT_EQ(content_xid, xconn_->focused_xid());
-  EXPECT_EQ(content_xid, GetActiveWindowProperty());
+  EXPECT_EQ(panel->content_xid(), xconn_->focused_xid());
+  EXPECT_EQ(panel->content_xid(), GetActiveWindowProperty());
 }
 
 // Regression test for bug 540, a crash caused by PanelBar's window-unmap
@@ -242,14 +235,9 @@ TEST_F(PanelBarTest, FocusNewPanel) {
 TEST_F(PanelBarTest, HideCollapsedPanels) {
   // Move the pointer to the top of the screen and create a collapsed panel.
   xconn_->SetPointerPosition(0, 0);
-  XWindow titlebar_xid = CreatePanelTitlebarWindow(200, 20);
+  Panel* panel = CreatePanel(200, 20, 400, false);
   MockXConnection::WindowInfo* titlebar_info =
-      xconn_->GetWindowInfoOrDie(titlebar_xid);
-  SendInitialEventsForWindow(titlebar_xid);
-  XWindow content_xid = CreatePanelContentWindow(200, 400, titlebar_xid, false);
-  SendInitialEventsForWindow(content_xid);
-  Panel* panel = panel_bar_->GetPanelByWindow(*(wm_->GetWindow(content_xid)));
-  ASSERT_TRUE(panel != NULL);
+      xconn_->GetWindowInfoOrDie(panel->titlebar_xid());
 
   // Check that some constants make sense in light of our titlebar's height.
   ASSERT_LT(PanelBar::kHiddenCollapsedPanelHeightPixels,
@@ -399,15 +387,9 @@ TEST_F(PanelBarTest, HideCollapsedPanels) {
 // Test that we defer hiding collapsed panels if we're in the middle of a
 // drag.
 TEST_F(PanelBarTest, DeferHidingDraggedCollapsedPanel) {
-  XWindow titlebar_xid = CreatePanelTitlebarWindow(200, 20);
+  Panel* panel = CreatePanel(200, 20, 400, false);
   MockXConnection::WindowInfo* titlebar_info =
-      xconn_->GetWindowInfoOrDie(titlebar_xid);
-  SendInitialEventsForWindow(titlebar_xid);
-  XWindow content_xid = CreatePanelContentWindow(200, 400, titlebar_xid, false);
-  SendInitialEventsForWindow(content_xid);
-
-  Panel* panel = panel_bar_->GetPanelByWindow(*(wm_->GetWindow(content_xid)));
-  ASSERT_TRUE(panel != NULL);
+      xconn_->GetWindowInfoOrDie(panel->titlebar_xid());
 
   const int hidden_panel_y =
       wm_->height() - PanelBar::kHiddenCollapsedPanelHeightPixels;
@@ -500,6 +482,169 @@ TEST_F(PanelBarTest, DeferHidingDraggedCollapsedPanel) {
   EXPECT_EQ(hidden_panel_y, panel->titlebar_y());
   EXPECT_TRUE(!panel_bar_->hide_collapsed_panels_pointer_watcher_.get() ||
               !panel_bar_->hide_collapsed_panels_pointer_watcher_->timer_id());
+}
+
+TEST_F(PanelBarTest, ReorderPanels) {
+  // Create two 200-pixel-wide panels.
+  const int width = 200;
+  Panel* panel1 = CreatePanel(width, 20, 400, false);
+  Panel* panel2 = CreatePanel(width, 20, 400, false);
+
+  // Initially, panel1 should be on the right and panel2 to its left.
+  const int rightmost_right_edge =
+      wm_->width() - PanelBar::kPixelsBetweenPanels;
+  const int leftmost_right_edge =
+      wm_->width() - 2 * PanelBar::kPixelsBetweenPanels - width;
+  EXPECT_EQ(rightmost_right_edge, panel1->right());
+  EXPECT_EQ(leftmost_right_edge, panel2->right());
+
+  // Drag panel1 to the right and check that nothing happens to panel2.
+  const int drag_y = wm_->height() - 1;
+  SendPanelDraggedMessage(panel1, rightmost_right_edge + width, drag_y);
+  EXPECT_EQ(rightmost_right_edge + width, panel1->right());
+  EXPECT_EQ(leftmost_right_edge, panel2->right());
+
+  // Drag panel1 almost far enough to displace panel2, which should remain
+  // in the leftmost position.
+  SendPanelDraggedMessage(
+      panel1, rightmost_right_edge - 0.5 * width + 1, drag_y);
+  EXPECT_EQ(rightmost_right_edge - 0.5 * width + 1, panel1->right());
+  EXPECT_EQ(leftmost_right_edge, panel2->right());
+
+  // If we drag it one pixel further, panel2 should snap over to the
+  // rightmost position.
+  SendPanelDraggedMessage(panel1, rightmost_right_edge - 0.5 * width, drag_y);
+  EXPECT_EQ(rightmost_right_edge - 0.5 * width, panel1->right());
+  EXPECT_EQ(rightmost_right_edge, panel2->right());
+
+  // It should stay there if we drag panel1 way over to the left.
+  SendPanelDraggedMessage(panel1, 40, drag_y);
+  EXPECT_EQ(40, panel1->right());
+  EXPECT_EQ(rightmost_right_edge, panel2->right());
+
+  // Now end the drag and check that panel1 snaps to the leftmost position.
+  SendPanelDragCompleteMessage(panel1);
+  EXPECT_EQ(leftmost_right_edge, panel1->right());
+  EXPECT_EQ(rightmost_right_edge, panel2->right());
+}
+
+// Check that we do something at least halfway reasonable when reordering
+// differently-sized panels.
+TEST_F(PanelBarTest, ReorderDifferentlySizedPanels) {
+  const int small_width = 200;
+  Panel* small_panel = CreatePanel(small_width, 20, 400, false);
+  const int big_width = 500;
+  Panel* big_panel = CreatePanel(big_width, 20, 400, false);
+
+  const int rightmost_right_edge =
+      wm_->width() - PanelBar::kPixelsBetweenPanels;
+  const int leftmost_right_edge_for_small =
+      wm_->width() - 2 * PanelBar::kPixelsBetweenPanels - big_width;
+  const int leftmost_right_edge_for_big =
+      wm_->width() - 2 * PanelBar::kPixelsBetweenPanels - small_width;
+  EXPECT_EQ(rightmost_right_edge, small_panel->right());
+  EXPECT_EQ(leftmost_right_edge_for_big, big_panel->right());
+
+  // Drag the small panel partway to the left, but not enough to swap it
+  // with the big panel.
+  const int drag_y = wm_->height() - 1;
+  SendPanelDraggedMessage(small_panel,
+                          rightmost_right_edge - 0.5 * small_width + 1, drag_y);
+  EXPECT_EQ(rightmost_right_edge - 0.5 * small_width + 1, small_panel->right());
+  EXPECT_EQ(leftmost_right_edge_for_big, big_panel->right());
+
+  // If we drag it one pixel further, the big panel should move to the right.
+  SendPanelDraggedMessage(small_panel,
+                          rightmost_right_edge - 0.5 * small_width, drag_y);
+  EXPECT_EQ(rightmost_right_edge - 0.5 * small_width, small_panel->right());
+  EXPECT_EQ(rightmost_right_edge, big_panel->right());
+
+  // Drag it one pixel further to make sure that nothing funny happens (in
+  // a previous implementation, the reordering code was unstable in some
+  // cases and could make the big panel jump back here).
+  SendPanelDraggedMessage(small_panel,
+                          rightmost_right_edge - 0.5 * small_width - 1, drag_y);
+  EXPECT_EQ(rightmost_right_edge - 0.5 * small_width - 1, small_panel->right());
+  EXPECT_EQ(rightmost_right_edge, big_panel->right());
+
+  // If we drag it back to the right, the big panel should move back to the
+  // left.
+  SendPanelDraggedMessage(small_panel,
+                          rightmost_right_edge - 0.5 * small_width + 1, drag_y);
+  EXPECT_EQ(rightmost_right_edge - 0.5 * small_width + 1, small_panel->right());
+  EXPECT_EQ(leftmost_right_edge_for_big, big_panel->right());
+
+  // Drag it far to the left and check that the big panel moves to the right.
+  SendPanelDraggedMessage(small_panel, 10, drag_y);
+  EXPECT_EQ(10, small_panel->right());
+  EXPECT_EQ(rightmost_right_edge, big_panel->right());
+
+  // After ending the drag, the small panel should jump to the leftmost
+  // position.
+  SendPanelDragCompleteMessage(small_panel);
+  EXPECT_EQ(leftmost_right_edge_for_small, small_panel->right());
+  EXPECT_EQ(rightmost_right_edge, big_panel->right());
+
+  // Now drag the big panel to the left, but not far enough to displace the
+  // small panel.
+  SendPanelDraggedMessage(big_panel,
+                          rightmost_right_edge - 0.5 * big_width + 1, drag_y);
+  EXPECT_EQ(leftmost_right_edge_for_small, small_panel->right());
+  EXPECT_EQ(rightmost_right_edge - 0.5 * big_width + 1, big_panel->right());
+
+  // The small panel should jump to the right after we drag another pixel.
+  SendPanelDraggedMessage(big_panel,
+                          rightmost_right_edge - 0.5 * big_width, drag_y);
+  EXPECT_EQ(rightmost_right_edge, small_panel->right());
+  EXPECT_EQ(rightmost_right_edge - 0.5 * big_width, big_panel->right());
+
+  // It should go back to the left if we drag back.
+  SendPanelDraggedMessage(big_panel,
+                          rightmost_right_edge - 0.5 * big_width + 1, drag_y);
+  EXPECT_EQ(leftmost_right_edge_for_small, small_panel->right());
+  EXPECT_EQ(rightmost_right_edge - 0.5 * big_width + 1, big_panel->right());
+
+  // The big panel should snap to the right after the drag ends.
+  SendPanelDragCompleteMessage(big_panel);
+  EXPECT_EQ(leftmost_right_edge_for_small, small_panel->right());
+  EXPECT_EQ(rightmost_right_edge, big_panel->right());
+}
+
+TEST_F(PanelBarTest, PackPanelsAfterPanelResize) {
+  // Create three 200-pixel-wide panels.
+  Panel* panel1 = CreatePanel(200, 20, 400, false);
+  Panel* panel2 = CreatePanel(200, 20, 400, false);
+  Panel* panel3 = CreatePanel(200, 20, 400, false);
+
+  // The panels should be crammed together on the right initially.
+  EXPECT_EQ(wm_->width() - PanelBar::kPixelsBetweenPanels, panel1->right());
+  EXPECT_EQ(wm_->width() - 2 * PanelBar::kPixelsBetweenPanels - 200,
+            panel2->right());
+  EXPECT_EQ(wm_->width() - 3 * PanelBar::kPixelsBetweenPanels - 2 * 200,
+            panel3->right());
+
+  // Drag the middle window's upper-left resize handle to resize it to
+  // (400, 600).
+  XWindow input_xid = panel2->top_left_input_xid_;
+  MockXConnection::WindowInfo* input_info =
+      xconn_->GetWindowInfoOrDie(input_xid);
+  XEvent event;
+  MockXConnection::InitButtonPressEvent(&event, *input_info, 0, 0, 1);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  MockXConnection::InitMotionNotifyEvent(&event, *input_info, -200, -200);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  MockXConnection::InitButtonReleaseEvent(&event, *input_info, -200, -200, 1);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  EXPECT_EQ(400, panel2->width());
+  EXPECT_EQ(600, panel2->content_height());
+
+  // The right edges of panel1 and panel2 should be in the same place as
+  // before, but panel3 should be pushed to the left to make room for panel2.
+  EXPECT_EQ(wm_->width() - PanelBar::kPixelsBetweenPanels, panel1->right());
+  EXPECT_EQ(wm_->width() - 2 * PanelBar::kPixelsBetweenPanels - 200,
+            panel2->right());
+  EXPECT_EQ(wm_->width() - 3 * PanelBar::kPixelsBetweenPanels - 200 - 400,
+            panel3->right());
 }
 
 }  // namespace window_manager

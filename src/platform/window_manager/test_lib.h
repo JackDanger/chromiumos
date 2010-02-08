@@ -63,6 +63,13 @@ class BasicWindowManagerTest : public ::testing::Test {
   XWindow CreatePanelContentWindow(
       int width, int height, XWindow titlebar_xid, bool expanded);
 
+  // Create titlebar and content windows for a panel, show them, and return
+  // a pointer to the Panel object.
+  Panel* CreatePanel(int width,
+                     int titlebar_height,
+                     int content_height,
+                     bool expanded);
+
   // Make the window manager handle a CreateNotify event and, if the window
   // isn't override-redirect, a MapRequest.  If it's mapped after this
   // (expected if we sent a MapRequest), send a MapNotify event.

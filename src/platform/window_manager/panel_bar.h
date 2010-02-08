@@ -66,6 +66,7 @@ class PanelBar : public PanelContainer {
   bool HandleNotifyPanelDraggedMessage(Panel* panel, int drag_x, int drag_y);
   void HandleNotifyPanelDragCompleteMessage(Panel* panel);
   void HandleFocusPanelMessage(Panel* panel);
+  void HandlePanelResize(Panel* panel);
   void HandleScreenResize();
   // End overridden PanelContainer methods.
 
@@ -90,6 +91,7 @@ class PanelBar : public PanelContainer {
   static const int kHiddenCollapsedPanelHeightPixels;
 
  private:
+  friend class BasicWindowManagerTest;
   FRIEND_TEST(PanelBarTest, ActiveWindowMessage);
   FRIEND_TEST(PanelBarTest, FocusNewPanel);
   FRIEND_TEST(PanelBarTest, HideCollapsedPanels);

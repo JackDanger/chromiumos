@@ -12,6 +12,7 @@ extern "C" {
 #include "chromeos/obsolete_logging.h"
 
 #include "window_manager/atom_cache.h"
+#include "window_manager/panel_manager.h"
 #include "window_manager/util.h"
 #include "window_manager/window.h"
 #include "window_manager/window_manager.h"
@@ -59,8 +60,10 @@ static const double kResizeBoxOpacity = 0.3;
 const int Panel::kResizeBorderWidth = 5;
 const int Panel::kResizeCornerSize = 25;
 
-Panel::Panel(WindowManager* wm, Window* content_win, Window* titlebar_win)
-    : wm_(wm),
+Panel::Panel(PanelManager* panel_manager,
+             Window* content_win,
+             Window* titlebar_win)
+    : panel_manager_(panel_manager),
       content_win_(content_win),
       titlebar_win_(titlebar_win),
       resize_actor_(NULL),
@@ -69,11 +72,11 @@ Panel::Panel(WindowManager* wm, Window* content_win, Window* titlebar_win)
           kResizeUpdateMs),
       // We don't need to select events on any of the drag borders; we'll
       // just install button grabs later.
-      top_input_xid_(wm_->CreateInputWindow(-1, -1, 1, 1, 0)),
-      top_left_input_xid_(wm_->CreateInputWindow(-1, -1, 1, 1, 0)),
-      top_right_input_xid_(wm_->CreateInputWindow(-1, -1, 1, 1, 0)),
-      left_input_xid_(wm_->CreateInputWindow(-1, -1, 1, 1, 0)),
-      right_input_xid_(wm_->CreateInputWindow(-1, -1, 1, 1, 0)),
+      top_input_xid_(wm()->CreateInputWindow(-1, -1, 1, 1, 0)),
+      top_left_input_xid_(wm()->CreateInputWindow(-1, -1, 1, 1, 0)),
+      top_right_input_xid_(wm()->CreateInputWindow(-1, -1, 1, 1, 0)),
+      left_input_xid_(wm()->CreateInputWindow(-1, -1, 1, 1, 0)),
+      right_input_xid_(wm()->CreateInputWindow(-1, -1, 1, 1, 0)),
       resizable_(false),
       composited_windows_set_up_(false),
       drag_xid_(0),
@@ -83,13 +86,12 @@ Panel::Panel(WindowManager* wm, Window* content_win, Window* titlebar_win)
       drag_orig_height_(1),
       drag_last_width_(1),
       drag_last_height_(1) {
-  CHECK(wm_);
   CHECK(content_win_);
   CHECK(titlebar_win_);
 
-  wm_->xconn()->SelectInputOnWindow(titlebar_win_->xid(),
-                                    EnterWindowMask,
-                                    true);  // preserve_existing
+  wm()->xconn()->SelectInputOnWindow(titlebar_win_->xid(),
+                                     EnterWindowMask,
+                                     true);  // preserve_existing
 
   // Install passive button grabs on all the resize handles, using
   // asynchronous mode so that we'll continue to receive mouse events while
@@ -98,13 +100,13 @@ Panel::Panel(WindowManager* wm, Window* content_win, Window* titlebar_win)
   // active grab when seeing a button press, the button might already be
   // released by the time that the grab is installed.)
   int event_mask = ButtonPressMask | ButtonReleaseMask | PointerMotionMask;
-  wm_->xconn()->AddButtonGrabOnWindow(top_input_xid_, 1, event_mask, false);
-  wm_->xconn()->AddButtonGrabOnWindow(
+  wm()->xconn()->AddButtonGrabOnWindow(top_input_xid_, 1, event_mask, false);
+  wm()->xconn()->AddButtonGrabOnWindow(
       top_left_input_xid_, 1, event_mask, false);
-  wm_->xconn()->AddButtonGrabOnWindow(
+  wm()->xconn()->AddButtonGrabOnWindow(
       top_right_input_xid_, 1, event_mask, false);
-  wm_->xconn()->AddButtonGrabOnWindow(left_input_xid_, 1, event_mask, false);
-  wm_->xconn()->AddButtonGrabOnWindow(right_input_xid_, 1, event_mask, false);
+  wm()->xconn()->AddButtonGrabOnWindow(left_input_xid_, 1, event_mask, false);
+  wm()->xconn()->AddButtonGrabOnWindow(right_input_xid_, 1, event_mask, false);
 
   // Constrain the size of the content if we've been requested to do so.
   int capped_width = (FLAGS_panel_max_width > 0) ?
@@ -119,26 +121,26 @@ Panel::Panel(WindowManager* wm, Window* content_win, Window* titlebar_win)
         capped_width, capped_height, Window::GRAVITY_NORTHWEST);
   }
 
-  wm_->xconn()->SetWindowCursor(top_input_xid_, XC_top_side);
-  wm_->xconn()->SetWindowCursor(top_left_input_xid_, XC_top_left_corner);
-  wm_->xconn()->SetWindowCursor(top_right_input_xid_, XC_top_right_corner);
-  wm_->xconn()->SetWindowCursor(left_input_xid_, XC_left_side);
-  wm_->xconn()->SetWindowCursor(right_input_xid_, XC_right_side);
+  wm()->xconn()->SetWindowCursor(top_input_xid_, XC_top_side);
+  wm()->xconn()->SetWindowCursor(top_left_input_xid_, XC_top_left_corner);
+  wm()->xconn()->SetWindowCursor(top_right_input_xid_, XC_top_right_corner);
+  wm()->xconn()->SetWindowCursor(left_input_xid_, XC_left_side);
+  wm()->xconn()->SetWindowCursor(right_input_xid_, XC_right_side);
 }
 
 Panel::~Panel() {
   if (drag_xid_) {
-    wm_->xconn()->RemovePointerGrab(false, CurrentTime);  // replay_events=false
+    wm()->xconn()->RemovePointerGrab(false, CurrentTime);
     drag_xid_ = None;
   }
-  wm_->xconn()->DeselectInputOnWindow(titlebar_win_->xid(), EnterWindowMask);
-  wm_->xconn()->DestroyWindow(top_input_xid_);
-  wm_->xconn()->DestroyWindow(top_left_input_xid_);
-  wm_->xconn()->DestroyWindow(top_right_input_xid_);
-  wm_->xconn()->DestroyWindow(left_input_xid_);
-  wm_->xconn()->DestroyWindow(right_input_xid_);
+  wm()->xconn()->DeselectInputOnWindow(titlebar_win_->xid(), EnterWindowMask);
+  wm()->xconn()->DestroyWindow(top_input_xid_);
+  wm()->xconn()->DestroyWindow(top_left_input_xid_);
+  wm()->xconn()->DestroyWindow(top_right_input_xid_);
+  wm()->xconn()->DestroyWindow(left_input_xid_);
+  wm()->xconn()->DestroyWindow(right_input_xid_);
   content_win_->RemoveButtonGrab();
-  wm_ = NULL;
+  panel_manager_ = NULL;
   content_win_ = NULL;
   titlebar_win_ = NULL;
   top_input_xid_ = None;
@@ -176,10 +178,10 @@ void Panel::HandleInputWindowButtonPress(
 
   if (!FLAGS_panel_opaque_resize) {
     DCHECK(!resize_actor_.get());
-    resize_actor_.reset(wm_->clutter()->CreateRectangle(kResizeBoxBgColor,
-                                                        kResizeBoxBorderColor,
-                                                        1));  // border_width
-    wm_->stage()->AddActor(resize_actor_.get());
+    resize_actor_.reset(wm()->clutter()->CreateRectangle(kResizeBoxBgColor,
+                                                         kResizeBoxBorderColor,
+                                                         1));  // border_width
+    wm()->stage()->AddActor(resize_actor_.get());
     resize_actor_->Move(
         titlebar_win_->client_x(), titlebar_win_->client_y(), 0);
     resize_actor_->SetSize(
@@ -187,7 +189,7 @@ void Panel::HandleInputWindowButtonPress(
         content_win_->client_height() + titlebar_win_->client_height());
     resize_actor_->SetOpacity(0, 0);
     resize_actor_->SetOpacity(kResizeBoxOpacity, kResizeActorOpacityAnimMs);
-    wm_->stacking_manager()->StackActorAtTopOfLayer(
+    wm()->stacking_manager()->StackActorAtTopOfLayer(
         resize_actor_.get(), StackingManager::LAYER_STATIONARY_PANEL);
     resize_actor_->SetVisibility(true);
   }
@@ -298,25 +300,25 @@ void Panel::StackAtTopOfLayer(StackingManager::Layer layer) {
   // Put the titlebar and content in the same layer, but stack the titlebar
   // higher (the stacking between the two is arbitrary but needs to stay in
   // sync with the input window code below).
-  wm_->stacking_manager()->StackWindowAtTopOfLayer(content_win_, layer);
-  wm_->stacking_manager()->StackWindowAtTopOfLayer(titlebar_win_, layer);
+  wm()->stacking_manager()->StackWindowAtTopOfLayer(content_win_, layer);
+  wm()->stacking_manager()->StackWindowAtTopOfLayer(titlebar_win_, layer);
 
   // Stack all of the input windows directly below the content window
   // (which is stacked beneath the titlebar) -- we don't want the
   // corner windows to occlude the titlebar.
-  wm_->xconn()->StackWindow(top_input_xid_, content_win_->xid(), false);
-  wm_->xconn()->StackWindow(top_left_input_xid_, content_win_->xid(), false);
-  wm_->xconn()->StackWindow(top_right_input_xid_, content_win_->xid(), false);
-  wm_->xconn()->StackWindow(left_input_xid_, content_win_->xid(), false);
-  wm_->xconn()->StackWindow(right_input_xid_, content_win_->xid(), false);
+  wm()->xconn()->StackWindow(top_input_xid_, content_win_->xid(), false);
+  wm()->xconn()->StackWindow(top_left_input_xid_, content_win_->xid(), false);
+  wm()->xconn()->StackWindow(top_right_input_xid_, content_win_->xid(), false);
+  wm()->xconn()->StackWindow(left_input_xid_, content_win_->xid(), false);
+  wm()->xconn()->StackWindow(right_input_xid_, content_win_->xid(), false);
 }
 
 bool Panel::NotifyChromeAboutState(bool expanded) {
   WmIpc::Message msg(WmIpc::Message::CHROME_NOTIFY_PANEL_STATE);
   msg.set_param(0, expanded);
-  bool success = wm_->wm_ipc()->SendMessage(content_win_->xid(), msg);
+  bool success = wm()->wm_ipc()->SendMessage(content_win_->xid(), msg);
 
-  XAtom atom = wm_->GetXAtom(ATOM_CHROME_STATE_COLLAPSED_PANEL);
+  XAtom atom = wm()->GetXAtom(ATOM_CHROME_STATE_COLLAPSED_PANEL);
   vector<pair<XAtom, bool> > states;
   states.push_back(make_pair(atom, expanded ? false : true));
   success &= content_win_->ChangeChromeState(states);
@@ -335,7 +337,11 @@ void Panel::AddButtonGrab() {
 void Panel::RemoveButtonGrab(bool remove_pointer_grab) {
   content_win_->RemoveButtonGrab();
   if (remove_pointer_grab)
-    wm_->xconn()->RemovePointerGrab(true, CurrentTime);  // replay_events
+    wm()->xconn()->RemovePointerGrab(true, CurrentTime);  // replay_events
+}
+
+WindowManager* Panel::wm() {
+  return panel_manager_->wm();
 }
 
 void Panel::Resize(int width, int height, Window::Gravity gravity) {
@@ -354,22 +360,24 @@ void Panel::Resize(int width, int height, Window::Gravity gravity) {
         content_win_->composited_y() - titlebar_win_->client_height(), 0);
     titlebar_win_->MoveClientToComposited();
   }
+
+  panel_manager_->HandlePanelResize(this);
 }
 
 void Panel::ConfigureInputWindows() {
   if (!resizable_) {
-    wm_->xconn()->ConfigureWindowOffscreen(top_input_xid_);
-    wm_->xconn()->ConfigureWindowOffscreen(top_left_input_xid_);
-    wm_->xconn()->ConfigureWindowOffscreen(top_right_input_xid_);
-    wm_->xconn()->ConfigureWindowOffscreen(left_input_xid_);
-    wm_->xconn()->ConfigureWindowOffscreen(right_input_xid_);
+    wm()->xconn()->ConfigureWindowOffscreen(top_input_xid_);
+    wm()->xconn()->ConfigureWindowOffscreen(top_left_input_xid_);
+    wm()->xconn()->ConfigureWindowOffscreen(top_right_input_xid_);
+    wm()->xconn()->ConfigureWindowOffscreen(left_input_xid_);
+    wm()->xconn()->ConfigureWindowOffscreen(right_input_xid_);
     return;
   }
 
   if (content_width() + 2 * (kResizeBorderWidth - kResizeCornerSize) <= 0) {
-    wm_->xconn()->ConfigureWindowOffscreen(top_input_xid_);
+    wm()->xconn()->ConfigureWindowOffscreen(top_input_xid_);
   } else {
-    wm_->xconn()->ConfigureWindow(
+    wm()->xconn()->ConfigureWindow(
         top_input_xid_,
         content_x() - kResizeBorderWidth + kResizeCornerSize,
         titlebar_win_->client_y() - kResizeBorderWidth,
@@ -377,13 +385,13 @@ void Panel::ConfigureInputWindows() {
         kResizeBorderWidth);
   }
 
-  wm_->xconn()->ConfigureWindow(
+  wm()->xconn()->ConfigureWindow(
       top_left_input_xid_,
       content_x() - kResizeBorderWidth,
       titlebar_win_->client_y() - kResizeBorderWidth,
       kResizeCornerSize,
       kResizeCornerSize);
-  wm_->xconn()->ConfigureWindow(
+  wm()->xconn()->ConfigureWindow(
       top_right_input_xid_,
       right() + kResizeBorderWidth - kResizeCornerSize,
       titlebar_win_->client_y() - kResizeBorderWidth,
@@ -395,16 +403,16 @@ void Panel::ConfigureInputWindows() {
   int resize_edge_height =
       total_height + kResizeBorderWidth - kResizeCornerSize;
   if (resize_edge_height <= 0) {
-    wm_->xconn()->ConfigureWindowOffscreen(left_input_xid_);
-    wm_->xconn()->ConfigureWindowOffscreen(right_input_xid_);
+    wm()->xconn()->ConfigureWindowOffscreen(left_input_xid_);
+    wm()->xconn()->ConfigureWindowOffscreen(right_input_xid_);
   } else {
-    wm_->xconn()->ConfigureWindow(
+    wm()->xconn()->ConfigureWindow(
         left_input_xid_,
         content_x() - kResizeBorderWidth,
         titlebar_win_->client_y() - kResizeBorderWidth + kResizeCornerSize,
         kResizeBorderWidth,
         resize_edge_height);
-    wm_->xconn()->ConfigureWindow(
+    wm()->xconn()->ConfigureWindow(
         right_input_xid_,
         right(),
         titlebar_win_->client_y() - kResizeBorderWidth + kResizeCornerSize,

@@ -36,26 +36,20 @@ class PanelManagerTest : public BasicWindowManagerTest {
 // Test dragging a panel around to detach it and reattach it to the panel
 // bar and panel docks.
 TEST_F(PanelManagerTest, AttachAndDetach) {
-  const int titlebar_height = 20;
-  XWindow titlebar_xid = CreatePanelTitlebarWindow(150, titlebar_height);
-  SendInitialEventsForWindow(titlebar_xid);
-
   XConnection::WindowGeometry root_geometry;
   ASSERT_TRUE(
       xconn_->GetWindowGeometry(xconn_->GetRootWindow(), &root_geometry));
 
+  const int titlebar_height = 20;
   const int content_width = 200;
   const int content_height = 400;
-  XWindow content_xid = CreatePanelContentWindow(
-      content_width, content_height, titlebar_xid, true);
-  SendInitialEventsForWindow(content_xid);
+  Panel* panel =
+      CreatePanel(content_width, titlebar_height, content_height, true);
 
   // Get the position of the top of the expanded panel when it's in the bar.
   const int panel_y_in_bar = wm_->height() - content_height - titlebar_height;
 
   // Drag the panel to the left, keeping it in line with the panel bar.
-  Panel* panel = panel_manager_->GetPanelByXid(content_xid);
-  ASSERT_TRUE(panel != NULL);
   SendPanelDraggedMessage(panel, 600, panel_y_in_bar);
   EXPECT_EQ(600, panel->right());
   EXPECT_EQ(panel_y_in_bar, panel->titlebar_y());

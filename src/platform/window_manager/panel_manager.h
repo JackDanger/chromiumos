@@ -106,6 +106,10 @@ class PanelManager : public EventConsumer {
 
   // Note: End overridden EventConsumer methods.
 
+  // Handle notification from a panel that it's been resized.  We just
+  // forward this through to its container, if any.
+  void HandlePanelResize(Panel* panel);
+
   // Handle the screen being resized.
   void HandleScreenResize();
 

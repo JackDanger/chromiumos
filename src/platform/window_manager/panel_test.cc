@@ -28,10 +28,12 @@ class PanelTest : public BasicWindowManagerTest {
  protected:
   virtual void SetUp() {
     BasicWindowManagerTest::SetUp();
-    panel_bar_ = wm_->panel_manager_->panel_bar_.get();
+    panel_manager_ = wm_->panel_manager_.get();
+    panel_bar_ = panel_manager_->panel_bar_.get();
   }
 
-  PanelBar* panel_bar_;  // instance belonging to wm_->panel_manager_
+  PanelManager* panel_manager_;  // instance belonging to 'wm_'
+  PanelBar* panel_bar_;          // instance belonging to 'panel_manager_'
 };
 
 TEST_F(PanelTest, InputWindows) {
@@ -46,7 +48,7 @@ TEST_F(PanelTest, InputWindows) {
       xconn_->GetWindowInfoOrDie(content_xid);
 
   // Create a panel.
-  Panel panel(wm_.get(), &content_win, &titlebar_win);
+  Panel panel(panel_manager_, &content_win, &titlebar_win);
   panel.SetResizable(true);
   panel.Move(0, 0, true, 0);
 
@@ -156,7 +158,7 @@ TEST_F(PanelTest, Resize) {
       xconn_->GetWindowInfoOrDie(content_xid);
 
   // Create a panel.
-  Panel panel(wm_.get(), &content_win, &titlebar_win);
+  Panel panel(panel_manager_, &content_win, &titlebar_win);
   panel.SetResizable(true);
   panel.Move(0, 0, true, 0);
 
@@ -233,7 +235,7 @@ TEST_F(PanelTest, ChromeState) {
   Window titlebar_win(wm_.get(), titlebar_xid, false);
   XWindow content_xid = CreatePanelContentWindow(200, 400, titlebar_xid, false);
   Window content_win(wm_.get(), content_xid, false);
-  Panel panel(wm_.get(), &content_win, &titlebar_win);
+  Panel panel(panel_manager_, &content_win, &titlebar_win);
   panel.Move(0, 0, true, 0);
 
   // The panel's content window should have have a collapsed state in
@@ -260,7 +262,7 @@ TEST_F(PanelTest, Shadows) {
   Window titlebar_win(wm_.get(), titlebar_xid, false);
   XWindow content_xid = CreatePanelContentWindow(200, 400, titlebar_xid, false);
   Window content_win(wm_.get(), content_xid, false);
-  Panel panel(wm_.get(), &content_win, &titlebar_win);
+  Panel panel(panel_manager_, &content_win, &titlebar_win);
   panel.Move(0, 0, true, 0);
 
   // Both the titlebar and content windows' shadows should be visible

@@ -492,13 +492,14 @@ MockXConnection::WindowInfo* MockXConnection::GetWindowInfo(XWindow xid) {
 }
 
 // static
-void MockXConnection::InitButtonPressEvent(XEvent* event,
-                                           const WindowInfo& info,
-                                           int x, int y, int button) {
+void MockXConnection::InitButtonEvent(XEvent* event,
+                                      const WindowInfo& info,
+                                      int x, int y, int button,
+                                      bool press) {
   CHECK(event);
   XButtonEvent* button_event = &(event->xbutton);
   memset(button_event, 0, sizeof(*button_event));
-  button_event->type = ButtonPress;
+  button_event->type = press ? ButtonPress : ButtonRelease;
   button_event->window = info.xid;
   button_event->x = x;
   button_event->y = y;
@@ -586,13 +587,13 @@ void MockXConnection::InitDestroyWindowEvent(XEvent* event, XWindow xid) {
 }
 
 // static
-void MockXConnection::InitEnterWindowEvent(XEvent* event,
-                                           const WindowInfo& info,
-                                           int x, int y) {
+void MockXConnection::InitEnterOrLeaveWindowEvent(XEvent* event,
+                                                  const WindowInfo& info,
+                                                  int x, int y, bool enter) {
   CHECK(event);
   XEnterWindowEvent* enter_event = &(event->xcrossing);
   memset(enter_event, 0, sizeof(*enter_event));
-  enter_event->type = EnterNotify;
+  enter_event->type = enter ? EnterNotify : LeaveNotify;
   enter_event->window = info.xid;
   enter_event->x = x;
   enter_event->y = y;
@@ -602,43 +603,15 @@ void MockXConnection::InitEnterWindowEvent(XEvent* event,
 }
 
 // static
-void MockXConnection::InitFocusInEvent(
-    XEvent* event, XWindow xid, int mode, int detail) {
+void MockXConnection::InitFocusEvent(
+    XEvent* event, XWindow xid, int mode, int detail, bool focus_in) {
   CHECK(event);
   XFocusChangeEvent* focus_event = &(event->xfocus);
   memset(focus_event, 0, sizeof(*focus_event));
-  focus_event->type = FocusIn;
+  focus_event->type = focus_in ? FocusIn : FocusOut;
   focus_event->window = xid;
   focus_event->mode = mode;
   focus_event->detail = detail;
-}
-
-// static
-void MockXConnection::InitFocusOutEvent(
-    XEvent* event, XWindow xid, int mode, int detail) {
-  CHECK(event);
-  XFocusChangeEvent* focus_event = &(event->xfocus);
-  memset(focus_event, 0, sizeof(*focus_event));
-  focus_event->type = FocusOut;
-  focus_event->window = xid;
-  focus_event->mode = mode;
-  focus_event->detail = detail;
-}
-
-// static
-void MockXConnection::InitLeaveWindowEvent(XEvent* event,
-                                           const WindowInfo& info,
-                                           int x, int y) {
-  CHECK(event);
-  XLeaveWindowEvent* leave_event = &(event->xcrossing);
-  memset(leave_event, 0, sizeof(*leave_event));
-  leave_event->type = LeaveNotify;
-  leave_event->window = info.xid;
-  leave_event->x = x;
-  leave_event->y = y;
-  leave_event->x_root = info.x + x;
-  leave_event->y_root = info.y + y;
-  // Leave everything else blank for now; we don't use it.
 }
 
 // static
@@ -659,6 +632,22 @@ void MockXConnection::InitMapRequestEvent(XEvent* event,
   req_event->type = MapRequest;
   req_event->window = info.xid;
   req_event->parent = info.parent;
+}
+
+// static
+void MockXConnection::InitMotionNotifyEvent(XEvent* event,
+                                            const WindowInfo& info,
+                                            int x, int y) {
+  CHECK(event);
+  XMotionEvent* motion_event = &(event->xmotion);
+  memset(motion_event, 0, sizeof(*motion_event));
+  motion_event->type = MotionNotify;
+  motion_event->window = info.xid;
+  motion_event->x = x;
+  motion_event->y = y;
+  motion_event->x_root = info.x + x;
+  motion_event->y_root = info.y + y;
+  // Leave everything else blank for now; we don't use it.
 }
 
 // static

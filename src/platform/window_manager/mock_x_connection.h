@@ -193,8 +193,16 @@ class MockXConnection : public XConnection {
 
   // Helper methods tests can use to initialize events.
   // 'x' and 'y' are relative to the window.
+  static void InitButtonEvent(XEvent* event, const WindowInfo& info,
+                              int x, int y, int button, bool press);
   static void InitButtonPressEvent(XEvent* event, const WindowInfo& info,
-                                   int x, int y, int button);
+                                   int x, int y, int button) {
+    InitButtonEvent(event, info, x, y, button, true);
+  }
+  static void InitButtonReleaseEvent(XEvent* event, const WindowInfo& info,
+                                     int x, int y, int button) {
+    InitButtonEvent(event, info, x, y, button, false);
+  }
   // This just creates a message with 32-bit values.
   static void InitClientMessageEvent(
       XEvent* event, XWindow xid, XAtom type,
@@ -205,21 +213,34 @@ class MockXConnection : public XConnection {
   static void InitCreateWindowEvent(XEvent* event, const WindowInfo& info);
   static void InitDestroyWindowEvent(XEvent* event, XWindow xid);
   // 'x' and 'y' are relative to the window.
+  static void InitEnterOrLeaveWindowEvent(XEvent* event, const WindowInfo& info,
+                                          int x, int y, bool enter);
   static void InitEnterWindowEvent(XEvent* event, const WindowInfo& info,
-                                   int x, int y);
+                                   int x, int y) {
+    InitEnterOrLeaveWindowEvent(event, info, x, y, true);
+  }
   // The 'mode' parameter is e.g. NotifyNormal, NotifyGrab, etc., and
   // 'detail' is e.g. NotifyAncestor, NotifyVirtual, etc.  See
   // http://tronche.com/gui/x/xlib/events/input-focus/normal-and-grabbed.html
   // for more information about this.
+  static void InitFocusEvent(
+      XEvent* event, XWindow xid, int mode, int detail, bool focus_in);
   static void InitFocusInEvent(
-      XEvent* event, XWindow xid, int mode, int detail);
+      XEvent* event, XWindow xid, int mode, int detail) {
+    InitFocusEvent(event, xid, mode, detail, true);
+  }
   static void InitFocusOutEvent(
-      XEvent* event, XWindow xid, int mode, int detail);
-  // 'x' and 'y' are relative to the window.
+      XEvent* event, XWindow xid, int mode, int detail) {
+    InitFocusEvent(event, xid, mode, detail, false);
+  }
   static void InitLeaveWindowEvent(XEvent* event, const WindowInfo& info,
-                                   int x, int y);
+                                   int x, int y) {
+    InitEnterOrLeaveWindowEvent(event, info, x, y, false);
+  }
   static void InitMapEvent(XEvent* event, XWindow xid);
   static void InitMapRequestEvent(XEvent* event, const WindowInfo& info);
+  static void InitMotionNotifyEvent(XEvent* event, const WindowInfo& info,
+                                    int x, int y);
   static void InitUnmapEvent(XEvent* event, XWindow xid);
 
  private:
