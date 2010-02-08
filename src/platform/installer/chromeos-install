@@ -40,6 +40,19 @@ SRC_PARTITION=`echo "$CMDLINE" | sed \
   's/.*root=\([-/=\.[:alpha:][:digit:]]*\).*/\1/g'`
 if [ ! -b "$SRC_PARTITION" ]
 then
+  # Try looking up by label
+  LABEL=`echo "$CMDLINE" | sed \
+    's/.*root=LABEL=\([-\.[:alpha:][:digit:]]*\).*/\1/g'`
+  if [ "$LABEL" = "$CMDLINE" ]
+  then
+    echo "Error: Unable to find root."
+    exit 1
+  fi
+  echo "Using source USB device with label: $LABEL"
+  SRC_PARTITION=`readlink -f /dev/disk/by-label/$LABEL`
+fi
+if [ ! -b "$SRC_PARTITION" ]
+then
   echo "Error: Unable to find USB partition: $SRC_PARTITION"
   exit 1
 fi
