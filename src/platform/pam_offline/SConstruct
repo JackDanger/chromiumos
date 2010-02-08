@@ -41,6 +41,14 @@ for key in Split('PKG_CONFIG_LIBDIR PKG_CONFIG_PATH SYSROOT'):
   if os.environ.has_key(key):
     env['ENV'][key] = os.environ[key]
 
+# Enable local account only if user has specified one
+if os.path.exists('pam_localaccount.h'):
+  print """
+WARNING: pam local account is enabled!  If you don't want this, remove
+pam_localaccount.h.
+"""
+  env.Append(CPPDEFINES=['CHROMEOS_PAM_LOCALACCOUNT'])
+
 env_lib = env.Clone()
 env_lib.SharedLibrary('chromeos_pam_offline', pam_sources)
 

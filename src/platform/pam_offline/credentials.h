@@ -34,6 +34,12 @@ class Credentials {
   //
   virtual void GetPartialUsername(char *name_buffer, int length) const = 0;
 
+#ifdef CHROMEOS_PAM_LOCALACCOUNT
+  // returns true if we're willing to accept these credentials without
+  // talking to Google.
+  virtual bool IsLocalAccount() const = 0;
+#endif
+
   // Returns the obfuscated username, used as the name of the directory
   // containing the user's stateful data (and maybe used for other reasons
   // at some point.)

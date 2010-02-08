@@ -171,6 +171,13 @@ bool Authenticator::TestOneMasterKey(const string &master_key_file,
 }
 
 bool Authenticator::TestAllMasterKeys(const Credentials &credentials) const {
+#ifdef CHROMEOS_PAM_LOCALACCOUNT
+  if (credentials.IsLocalAccount()) {
+    LOG(WARNING) << "Logging in with local account credentials.";
+    return true;
+  }
+#endif
+
   if (system_salt_.empty()) {
     LOG(ERROR) << "System salt not loaded.";
     return false;

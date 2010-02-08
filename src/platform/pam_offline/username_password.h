@@ -15,6 +15,11 @@
 #include "base/basictypes.h"
 #include "gtest/gtest.h"
 
+// Enable local account only if user has specifically requested it
+#ifdef CHROMEOS_PAM_LOCALACCOUNT
+#include "pam_offline/pam_localaccount.h"
+#endif
+
 namespace pam_offline {
 
 class UsernamePassword : public Credentials {
@@ -28,6 +33,11 @@ class UsernamePassword : public Credentials {
   void GetPartialUsername(char *name_buffer, int length) const;
   std::string GetObfuscatedUsername(const Blob &system_salt) const;
   std::string GetPasswordWeakHash(const Blob &system_salt) const;
+
+#ifdef CHROMEOS_PAM_LOCALACCOUNT
+  // returns true if username_ is the local account (if set up)
+  bool IsLocalAccount() const;
+#endif
 
  private:
   // ONLY FOR TESTING.  Allows the caller to tell us not to free the

@@ -52,6 +52,12 @@ void UsernamePassword::Init(const char *username,
   username_[username_length] = password_[password_length] = 0;
 }
 
+#ifdef CHROMEOS_PAM_LOCALACCOUNT
+bool UsernamePassword::IsLocalAccount() const {
+  return 0 == strncmp(username_, kLocalAccount, strlen(kLocalAccount));
+}
+#endif
+
 void UsernamePassword::GetFullUsername(char *name_buffer, int length) const {
   strncpy(name_buffer, username_, length);
 }
