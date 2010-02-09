@@ -159,6 +159,76 @@ TEST_F(PanelManagerTest, DragFocusedPanel) {
   EXPECT_EQ(old_content_xid, GetActiveWindowProperty());
 }
 
+TEST_F(PanelManagerTest, ChromeInitiatedPanelResize) {
+  // Create a panel with a 200x400 content window.
+  Panel* panel = CreatePanel(200, 20, 400, true);
+  EXPECT_EQ(200, panel->width());
+  EXPECT_EQ(20, panel->titlebar_height());
+  EXPECT_EQ(400, panel->content_height());
+  const int initial_right = panel->right();
+  const int initial_titlebar_y = panel->titlebar_y();
+
+  // We should ignore requests to resize the titlebar.
+  XEvent event;
+  MockXConnection::InitConfigureRequestEvent(
+      &event, panel->titlebar_xid(), 0, 0, 300, 30);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  EXPECT_EQ(200, panel->width());
+  EXPECT_EQ(20, panel->titlebar_height());
+  EXPECT_EQ(400, panel->content_height());
+  EXPECT_EQ(initial_right, panel->right());
+  EXPECT_EQ(initial_titlebar_y, panel->titlebar_y());
+
+  // A request to resize the content to 300x500 should be honored, though.
+  MockXConnection::InitConfigureRequestEvent(
+      &event, panel->content_xid(), 0, 0, 300, 500);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  EXPECT_EQ(300, panel->width());
+  EXPECT_EQ(20, panel->titlebar_height());
+  EXPECT_EQ(500, panel->content_height());
+  // The panel should grow up and to the left.
+  EXPECT_EQ(initial_right, panel->right());
+  EXPECT_EQ(initial_titlebar_y - 100, panel->titlebar_y());
+
+  // Test that shrinking the content works too.
+  MockXConnection::InitConfigureRequestEvent(
+      &event, panel->content_xid(), 0, 0, 100, 300);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  EXPECT_EQ(100, panel->width());
+  EXPECT_EQ(20, panel->titlebar_height());
+  EXPECT_EQ(300, panel->content_height());
+  EXPECT_EQ(initial_right, panel->right());
+  EXPECT_EQ(initial_titlebar_y + 100, panel->titlebar_y());
+
+  // We should ignore requests if the user is already resizing the panel.
+  XWindow input_xid = panel->top_left_input_xid_;
+  MockXConnection::WindowInfo* input_info =
+      xconn_->GetWindowInfoOrDie(input_xid);
+  MockXConnection::InitButtonPressEvent(&event, *input_info, 0, 0, 1);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  MockXConnection::InitMotionNotifyEvent(&event, *input_info, -200, -200);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+
+  // We should have the same values as before.
+  MockXConnection::InitConfigureRequestEvent(
+      &event, panel->content_xid(), 0, 0, 200, 400);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  EXPECT_EQ(100, panel->width());
+  EXPECT_EQ(20, panel->titlebar_height());
+  EXPECT_EQ(300, panel->content_height());
+  EXPECT_EQ(initial_right, panel->right());
+  EXPECT_EQ(initial_titlebar_y + 100, panel->titlebar_y());
+
+  // Finish the user-initiated resize and check that it's applied.
+  MockXConnection::InitButtonReleaseEvent(&event, *input_info, -200, -200, 1);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  EXPECT_EQ(300, panel->width());
+  EXPECT_EQ(20, panel->titlebar_height());
+  EXPECT_EQ(500, panel->content_height());
+  EXPECT_EQ(initial_right, panel->right());
+  EXPECT_EQ(initial_titlebar_y - 100, panel->titlebar_y());
+}
+
 }  // namespace window_manager
 
 int main(int argc, char **argv) {

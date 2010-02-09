@@ -4,6 +4,8 @@
 
 #include "window_manager/mock_chrome.h"
 
+#include <algorithm>
+
 #include <cairomm/context.h>
 
 #include "base/command_line.h"
@@ -36,7 +38,7 @@ DEFINE_int32(window_height, 640, "Window height");
 DEFINE_int32(window_width, 920, "Window width");
 
 using chromeos::SplitStringUsing;
-
+using std::max;
 using window_manager::AtomCache;
 using window_manager::GetCurrentTime;
 using window_manager::RealXConnection;
@@ -846,7 +848,17 @@ bool Panel::on_button_press_event(GdkEventButton* event) {
 }
 
 bool Panel::on_key_press_event(GdkEventKey* event) {
-  VLOG(1) << "Panel " << xid_ << " got key press " << event->string;
+  if (strcmp(event->string, "+") == 0) {
+    width_ += 10;
+    height_ += 10;
+    resize(width_, height_);
+  } else if (strcmp(event->string, "-") == 0) {
+    width_ = max(width_ - 10, 1);
+    height_ = max(height_ - 10, 1);
+    resize(width_, height_);
+  } else {
+    VLOG(1) << "Panel " << xid_ << " got key press " << event->string;
+  }
   return true;
 }
 

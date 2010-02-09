@@ -230,6 +230,27 @@ void Panel::HandleInputWindowPointerMotion(XWindow xid, int x, int y) {
   resize_event_coalescer_.StorePosition(x, y);
 }
 
+void Panel::HandleWindowConfigureRequest(
+    Window* win, int req_x, int req_y, int req_width, int req_height) {
+  DCHECK(win);
+  if (drag_xid_ != None) {
+    VLOG(1) << "Ignoring configure request for " << win->xid_str()
+            << " in panel " << xid_str() << " because the panel is being "
+            << "resized by the user";
+    return;
+  }
+  if (win != content_win_) {
+    LOG(WARNING) << "Ignoring configure request for non-content window "
+                 << win->xid_str() << " in panel " << xid_str();
+    return;
+  }
+
+  if (req_width != content_win_->client_width() ||
+      req_height != content_win_->client_height()) {
+    Resize(req_width, req_height, Window::GRAVITY_SOUTHEAST);
+  }
+}
+
 void Panel::Move(int right, int y, bool move_client_windows, int anim_ms) {
   titlebar_win_->MoveComposited(right - titlebar_width(), y, anim_ms);
   content_win_->MoveComposited(
@@ -278,11 +299,6 @@ void Panel::SetTitlebarWidth(int width) {
   CHECK(width > 0);
   titlebar_win_->ResizeClient(
       width, titlebar_win_->client_height(), Window::GRAVITY_NORTHEAST);
-}
-
-void Panel::ResizeContent(int width, int height) {
-  CHECK(width > 0 && height > 0);
-  content_win_->ResizeClient(width, height, Window::GRAVITY_NORTHEAST);
 }
 
 void Panel::SetContentShadowOpacity(double opacity, int anim_ms) {
@@ -345,8 +361,8 @@ WindowManager* Panel::wm() {
 }
 
 void Panel::Resize(int width, int height, Window::Gravity gravity) {
-  CHECK_GT(width, 0);
-  CHECK_GT(height, 0);
+  DCHECK_GT(width, 0);
+  DCHECK_GT(height, 0);
 
   bool changing_height = (height != content_win_->client_height());
 
@@ -354,7 +370,6 @@ void Panel::Resize(int width, int height, Window::Gravity gravity) {
   titlebar_win_->ResizeClient(width, titlebar_win_->client_height(), gravity);
 
   // TODO: This is broken if we start resizing scaled windows.
-  // Is this a concern?
   if (changing_height) {
     titlebar_win_->MoveCompositedY(
         content_win_->composited_y() - titlebar_win_->client_height(), 0);

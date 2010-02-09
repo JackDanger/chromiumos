@@ -985,7 +985,7 @@ bool WindowManager::HandleConfigureRequest(const XConfigureRequestEvent& e) {
                   StringPrintf("%d", e.height) : std::string(" undef"));
   if (win->override_redirect()) {
     LOG(WARNING) << "Huh?  Got a ConfigureRequest event for override-redirect "
-                 << "window " << XidStr(e.window);
+                 << "window " << win->xid_str();
   }
 
   const int req_x = (e.value_mask & CWX) ? e.x : win->client_x();
@@ -994,6 +994,14 @@ bool WindowManager::HandleConfigureRequest(const XConfigureRequestEvent& e) {
       (e.value_mask & CWWidth) ? e.width : win->client_width();
   const int req_height =
       (e.value_mask & CWHeight) ? e.height : win->client_height();
+
+  // The X server should reject bogus requests before they get to us, but
+  // just in case...
+  if (req_width <= 0 || req_height <= 0) {
+    LOG(WARNING) << "Ignoring request to resize window " << win->xid_str()
+                 << " to " << req_width << "x" << req_height;
+    return false;
+  }
 
   if (!win->mapped()) {
     // If the window is unmapped, it's unlikely that any event consumers

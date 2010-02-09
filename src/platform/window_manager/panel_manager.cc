@@ -165,13 +165,7 @@ bool PanelManager::HandleWindowConfigureRequest(
   Panel* panel = GetPanelByWindow(*win);
   if (!panel)
     return false;
-
-  // Ignore the request (we'll get strange behavior if we honor a resize
-  // request from the client while the user is manually resizing the
-  // panel).
-  // TODO: This means that panels can't resize themselves, which isn't what
-  // we want.  If the user is currently resizing the window, we might want
-  // to save the panel's resize request and apply it afterwards.
+  panel->HandleWindowConfigureRequest(win, req_x, req_y, req_width, req_height);
   return true;
 }
 

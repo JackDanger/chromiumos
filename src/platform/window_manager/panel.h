@@ -75,12 +75,16 @@ class Panel {
   // arbitrary order).
   void GetInputWindows(std::vector<XWindow>* windows_out);
 
-  // Handle events occurring in on one of our input windows.
+  // Handle events occurring in one of our input windows.
   void HandleInputWindowButtonPress(
       XWindow xid, int x, int y, int button, Time timestamp);
   void HandleInputWindowButtonRelease(
       XWindow xid, int x, int y, int button, Time timestamp);
   void HandleInputWindowPointerMotion(XWindow xid, int x, int y);
+
+  // Handle a configure request for the titlebar or content window.
+  void HandleWindowConfigureRequest(
+      Window* win, int req_x, int req_y, int req_width, int req_height);
 
   // Move the panel.  'right' is given in terms of one pixel beyond
   // the panel's right edge (since content and titlebar windows share a
@@ -97,9 +101,6 @@ class Panel {
   // Set the titlebar window's width (while keeping it right-aligned with
   // the content window).
   void SetTitlebarWidth(int width);
-
-  // Resize the content window.
-  void ResizeContent(int width, int height);
 
   // Set the opacity of the content window's drop shadow.
   void SetContentShadowOpacity(double opacity, int anim_ms);
@@ -125,6 +126,7 @@ class Panel {
 
  private:
   FRIEND_TEST(PanelBarTest, PackPanelsAfterPanelResize);
+  FRIEND_TEST(PanelManagerTest, ChromeInitiatedPanelResize);
   FRIEND_TEST(PanelTest, InputWindows);  // uses '*_input_xid_'
   FRIEND_TEST(PanelTest, Resize);        // uses '*_input_xid_'
 
