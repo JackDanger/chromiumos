@@ -15,6 +15,10 @@ fi
 cut -f 1 -d ' ' /proc/uptime > /var/log/metrics/uptime_shutdown_start
 cat /sys/block/sda/stat > /var/log/metrics/disk_shutdown_start
 
+# Sync the system clock to the hardware clock.
+HWCLOCK=/sbin/hwclock
+${HWCLOCK} --systohc --utc --noadjfile &
+
 . /sbin/killers
 
 # Remount root in case a developer has remounted it rw for some reason.
@@ -33,6 +37,11 @@ kill_with_open_files_on /mnt/stateful_partition /home/chronos
 if [ $? -ne 0 ] ; then
   mount > /var/log/shutdown_cryptohome_umount_failure
 fi
+
+# join hwclock setting, already in progress.  If the job has already been
+# finished and reaped, we need to suppress error output.  It seems that anything
+# on stderr will make the shutdown appear "unclean" from the POV of upstart.
+(fg ${HWCLOCK} || /bin/true) 2> /dev/null
 
 # Measure shutdown time
 cut -f 1 -d ' ' /proc/uptime > /var/log/metrics/uptime_shutdown_stop
