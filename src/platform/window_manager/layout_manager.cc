@@ -687,12 +687,17 @@ bool LayoutManager::HandleClientMessage(const XClientMessageEvent& e) {
     if (!toplevel)
       return false;
 
-    if (toplevel != active_toplevel_) {
-      SetActiveToplevelWindow(toplevel,
-                              ToplevelWindow::STATE_ACTIVE_MODE_IN_FADE,
-                              ToplevelWindow::STATE_ACTIVE_MODE_OUT_FADE);
+    if (mode_ == MODE_ACTIVE) {
+      if (toplevel != active_toplevel_) {
+        SetActiveToplevelWindow(toplevel,
+                                ToplevelWindow::STATE_ACTIVE_MODE_IN_FADE,
+                                ToplevelWindow::STATE_ACTIVE_MODE_OUT_FADE);
+      } else {
+        toplevel->TakeFocus(e.data.l[1]);
+      }
     } else {
-      toplevel->TakeFocus(e.data.l[1]);
+      active_toplevel_ = toplevel;
+      SetMode(MODE_ACTIVE);
     }
     return true;
   }
