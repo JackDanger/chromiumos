@@ -500,21 +500,23 @@ TEST_F(PanelBarTest, ReorderPanels) {
 
   // Drag panel1 to the right and check that nothing happens to panel2.
   const int drag_y = wm_->height() - 1;
-  SendPanelDraggedMessage(panel1, rightmost_right_edge + width, drag_y);
-  EXPECT_EQ(rightmost_right_edge + width, panel1->right());
+  int drag_x = rightmost_right_edge + width;
+  SendPanelDraggedMessage(panel1, drag_x, drag_y);
+  EXPECT_EQ(drag_x, panel1->right());
   EXPECT_EQ(leftmost_right_edge, panel2->right());
 
   // Drag panel1 almost far enough to displace panel2, which should remain
   // in the leftmost position.
-  SendPanelDraggedMessage(
-      panel1, rightmost_right_edge - 0.5 * width + 1, drag_y);
-  EXPECT_EQ(rightmost_right_edge - 0.5 * width + 1, panel1->right());
+  drag_x = leftmost_right_edge + 0.5 * width + 1;
+  SendPanelDraggedMessage(panel1, drag_x, drag_y);
+  EXPECT_EQ(drag_x, panel1->right());
   EXPECT_EQ(leftmost_right_edge, panel2->right());
 
   // If we drag it one pixel further, panel2 should snap over to the
   // rightmost position.
-  SendPanelDraggedMessage(panel1, rightmost_right_edge - 0.5 * width, drag_y);
-  EXPECT_EQ(rightmost_right_edge - 0.5 * width, panel1->right());
+  drag_x -= 1;
+  SendPanelDraggedMessage(panel1, drag_x, drag_y);
+  EXPECT_EQ(drag_x, panel1->right());
   EXPECT_EQ(rightmost_right_edge, panel2->right());
 
   // It should stay there if we drag panel1 way over to the left.
@@ -548,30 +550,32 @@ TEST_F(PanelBarTest, ReorderDifferentlySizedPanels) {
   // Drag the small panel partway to the left, but not enough to swap it
   // with the big panel.
   const int drag_y = wm_->height() - 1;
-  SendPanelDraggedMessage(small_panel,
-                          rightmost_right_edge - 0.5 * small_width + 1, drag_y);
-  EXPECT_EQ(rightmost_right_edge - 0.5 * small_width + 1, small_panel->right());
+  int drag_x = leftmost_right_edge_for_big - 0.5 * big_width + small_width + 1;
+  SendPanelDraggedMessage(small_panel, drag_x, drag_y);
+  EXPECT_EQ(drag_x, small_panel->right());
   EXPECT_EQ(leftmost_right_edge_for_big, big_panel->right());
 
   // If we drag it one pixel further, the big panel should move to the right.
-  SendPanelDraggedMessage(small_panel,
-                          rightmost_right_edge - 0.5 * small_width, drag_y);
-  EXPECT_EQ(rightmost_right_edge - 0.5 * small_width, small_panel->right());
+  drag_x -= 1;
+  SendPanelDraggedMessage(small_panel, drag_x, drag_y);
+  EXPECT_EQ(drag_x, small_panel->right());
   EXPECT_EQ(rightmost_right_edge, big_panel->right());
 
   // Drag it one pixel further to make sure that nothing funny happens (in
   // a previous implementation, the reordering code was unstable in some
   // cases and could make the big panel jump back here).
-  SendPanelDraggedMessage(small_panel,
-                          rightmost_right_edge - 0.5 * small_width - 1, drag_y);
-  EXPECT_EQ(rightmost_right_edge - 0.5 * small_width - 1, small_panel->right());
+  drag_x -= 1;
+  SendPanelDraggedMessage(small_panel, drag_x, drag_y);
+  EXPECT_EQ(drag_x, small_panel->right());
   EXPECT_EQ(rightmost_right_edge, big_panel->right());
 
   // If we drag it back to the right, the big panel should move back to the
-  // left.
-  SendPanelDraggedMessage(small_panel,
-                          rightmost_right_edge - 0.5 * small_width + 1, drag_y);
-  EXPECT_EQ(rightmost_right_edge - 0.5 * small_width + 1, small_panel->right());
+  // left (we need to move it further back to account for the additional
+  // padding that's introduced due to the big panel's current position on
+  // the right).
+  drag_x = rightmost_right_edge - 0.5 * big_width + 1;
+  SendPanelDraggedMessage(small_panel, drag_x, drag_y);
+  EXPECT_EQ(drag_x, small_panel->right());
   EXPECT_EQ(leftmost_right_edge_for_big, big_panel->right());
 
   // Drag it far to the left and check that the big panel moves to the right.
@@ -587,22 +591,22 @@ TEST_F(PanelBarTest, ReorderDifferentlySizedPanels) {
 
   // Now drag the big panel to the left, but not far enough to displace the
   // small panel.
-  SendPanelDraggedMessage(big_panel,
-                          rightmost_right_edge - 0.5 * big_width + 1, drag_y);
+  drag_x = leftmost_right_edge_for_small - 0.5 * small_width + big_width + 1;
+  SendPanelDraggedMessage(big_panel, drag_x, drag_y);
   EXPECT_EQ(leftmost_right_edge_for_small, small_panel->right());
-  EXPECT_EQ(rightmost_right_edge - 0.5 * big_width + 1, big_panel->right());
+  EXPECT_EQ(drag_x, big_panel->right());
 
   // The small panel should jump to the right after we drag another pixel.
-  SendPanelDraggedMessage(big_panel,
-                          rightmost_right_edge - 0.5 * big_width, drag_y);
+  drag_x -= 1;
+  SendPanelDraggedMessage(big_panel, drag_x, drag_y);
   EXPECT_EQ(rightmost_right_edge, small_panel->right());
-  EXPECT_EQ(rightmost_right_edge - 0.5 * big_width, big_panel->right());
+  EXPECT_EQ(drag_x, big_panel->right());
 
   // It should go back to the left if we drag back.
-  SendPanelDraggedMessage(big_panel,
-                          rightmost_right_edge - 0.5 * big_width + 1, drag_y);
+  drag_x = rightmost_right_edge - 0.5 * small_width + 1;
+  SendPanelDraggedMessage(big_panel, drag_x, drag_y);
   EXPECT_EQ(leftmost_right_edge_for_small, small_panel->right());
-  EXPECT_EQ(rightmost_right_edge - 0.5 * big_width + 1, big_panel->right());
+  EXPECT_EQ(drag_x, big_panel->right());
 
   // The big panel should snap to the right after the drag ends.
   SendPanelDragCompleteMessage(big_panel);

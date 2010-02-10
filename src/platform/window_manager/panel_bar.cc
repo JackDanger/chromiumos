@@ -523,38 +523,38 @@ void PanelBar::HandlePanelDragComplete(Panel* panel) {
 void PanelBar::ReorderPanel(Panel* fixed_panel) {
   DCHECK(fixed_panel);
 
-  // Check if the center of the panel has moved into the rightmost
-  // 'fixed_panel->width()' portion of another panel.
-  // TODO: This isn't ideal when dragging a small panel to the right over a
-  // large panel or a large panel to the left over a small panel, but it'll
-  // at least give us consistent results instead of panels that jump around
-  // wildly as they're being dragged.  The UI folks are trying to come up
-  // with a better solution for differently-sized panels.
-  const int center_x = fixed_panel->right() - 0.5 * fixed_panel->width();
-  Panels::iterator dest_it = panels_.begin();
-  for (Panels::iterator it = panels_.begin(); it != panels_.end(); ++it) {
-    Panel* panel = *it;
-    // If we're comparing against ourselves, use our original position
-    // rather than wherever we've currently been dragged by the user.
-    const int right_edge = (panel == fixed_panel) ?
-                           GetPanelInfoOrDie(panel)->snapped_right :
-                           panel->right();
-    if (center_x > right_edge - fixed_panel->width())
-      dest_it = it;
-    else
-      break;
+  Panels::iterator src_it = find(panels_.begin(), panels_.end(), fixed_panel);
+  DCHECK(src_it != panels_.end());
+  const int src_position = src_it - panels_.begin();
+
+  int dest_position = src_position;
+  if (fixed_panel->right() < GetPanelInfoOrDie(fixed_panel)->snapped_right) {
+    // If we're to the left of our snapped position, look for the furthest
+    // panel whose midpoint has been passed by our left edge.
+    for (int i = src_position - 1; i >= 0; --i) {
+      Panel* panel = panels_[i];
+      if (fixed_panel->content_x() <= panel->content_center())
+        dest_position = i;
+      else
+        break;
+    }
+  } else {
+    // Otherwise, do the same check with our right edge to the right.
+    for (int i = src_position + 1; i < static_cast<int>(panels_.size()); ++i) {
+      Panel* panel = panels_[i];
+      if (fixed_panel->right() >= panel->content_center())
+        dest_position = i;
+      else
+        break;
+    }
   }
 
-  // If it has, then we reorder the panels.
-  DCHECK(dest_it != panels_.end());
-  if (*dest_it != fixed_panel) {
-    Panels::iterator fixed_it =
-        find(panels_.begin(), panels_.end(), fixed_panel);
-    DCHECK(fixed_it != panels_.end());
-    if (dest_it > fixed_it)
-      rotate(fixed_it, fixed_it + 1, dest_it + 1);
+  if (dest_position != src_position) {
+    Panels::iterator dest_it = panels_.begin() + dest_position;
+    if (dest_it > src_it)
+      rotate(src_it, src_it + 1, dest_it + 1);
     else
-      rotate(dest_it, fixed_it, fixed_it + 1);
+      rotate(dest_it, src_it, src_it + 1);
     PackPanels(fixed_panel);
   }
 }
@@ -565,10 +565,6 @@ void PanelBar::PackPanels(Panel* fixed_panel) {
   for (Panels::reverse_iterator it = panels_.rbegin();
        it != panels_.rend(); ++it) {
     Panel* panel = *it;
-    // TODO: PackPanels() gets called in response to every move message
-    // that we receive about a dragged panel.  Check that it's not too
-    // inefficient to do all of these lookups vs. storing the panel info
-    // alongside the Panel pointer in 'panels_'.
     PanelInfo* info = GetPanelInfoOrDie(panel);
 
     info->snapped_right =
