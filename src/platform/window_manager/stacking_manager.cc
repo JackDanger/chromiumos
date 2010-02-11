@@ -86,8 +86,9 @@ const char* StackingManager::LayerToName(Layer layer) {
   switch (layer) {
     case LAYER_DEBUGGING:               return "debugging layer";
     case LAYER_HOTKEY_OVERLAY:          return "hotkey overlay layer";
-    case LAYER_PANEL_BAR_INPUT_WINDOWS: return "panel bar input windows layer";
     case LAYER_DRAGGED_PANEL:           return "dragged panel layer";
+    case LAYER_ACTIVE_TRANSIENT_WINDOW: return "active transient window layer";
+    case LAYER_PANEL_BAR_INPUT_WINDOW:  return "panel bar input window layer";
     case LAYER_STATIONARY_PANEL:        return "stationary panel layer";
     case LAYER_FLOATING_TAB:            return "floating tab layer";
     case LAYER_TAB_SUMMARY:             return "tab summary layer";

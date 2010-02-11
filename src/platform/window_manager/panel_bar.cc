@@ -82,15 +82,15 @@ PanelBar::PanelBar(WindowManager* wm)
   anchor_actor_->SetOpacity(0, 0);
   wm_->stage()->AddActor(anchor_actor_.get());
   wm_->stacking_manager()->StackActorAtTopOfLayer(
-      anchor_actor_.get(), StackingManager::LAYER_PANEL_BAR_INPUT_WINDOWS);
+      anchor_actor_.get(), StackingManager::LAYER_PANEL_BAR_INPUT_WINDOW);
 
   // Stack the anchor input window above the show-collapsed-panels one so
   // we won't get spurious leave events in the former.
   wm_->stacking_manager()->StackXidAtTopOfLayer(
       show_collapsed_panels_input_xid_,
-      StackingManager::LAYER_PANEL_BAR_INPUT_WINDOWS);
+      StackingManager::LAYER_PANEL_BAR_INPUT_WINDOW);
   wm_->stacking_manager()->StackXidAtTopOfLayer(
-      anchor_input_xid_, StackingManager::LAYER_PANEL_BAR_INPUT_WINDOWS);
+      anchor_input_xid_, StackingManager::LAYER_PANEL_BAR_INPUT_WINDOW);
 }
 
 PanelBar::~PanelBar() {

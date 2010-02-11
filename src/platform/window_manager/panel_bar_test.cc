@@ -97,12 +97,9 @@ TEST_F(PanelBarTest, Basic) {
   EXPECT_LT(xconn_->stacked_xids().GetIndex(content_xid),
             xconn_->stacked_xids().GetIndex(toplevel_xid));
 
-  Window* toplevel_win = wm_->GetWindow(toplevel_xid);
-  ASSERT_TRUE(toplevel_win != NULL);
-  Window* titlebar_win = wm_->GetWindow(titlebar_xid);
-  ASSERT_TRUE(titlebar_win != NULL);
-  Window* content_win = wm_->GetWindow(content_xid);
-  ASSERT_TRUE(content_win != NULL);
+  Window* toplevel_win = wm_->GetWindowOrDie(toplevel_xid);
+  Window* titlebar_win = wm_->GetWindowOrDie(titlebar_xid);
+  Window* content_win = wm_->GetWindowOrDie(content_xid);
 
   // The titlebar and content actors and their shadows should all be stacked
   // on top of the toplevel window's actor.
@@ -140,8 +137,7 @@ TEST_F(PanelBarTest, Basic) {
   // Create a second toplevel window.
   XWindow toplevel_xid2 = CreateSimpleWindow();
   SendInitialEventsForWindow(toplevel_xid2);
-  Window* toplevel_win2 = wm_->GetWindow(toplevel_xid2);
-  ASSERT_TRUE(toplevel_win2 != NULL);
+  Window* toplevel_win2 = wm_->GetWindowOrDie(toplevel_xid2);
 
   // Check that the new toplevel window takes the focus (note that this is
   // testing LayoutManager code).

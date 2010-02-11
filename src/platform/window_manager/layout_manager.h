@@ -162,6 +162,7 @@ class LayoutManager : public EventConsumer {
   FRIEND_TEST(LayoutManagerTest, Focus);
   FRIEND_TEST(LayoutManagerTest, FocusTransient);
   FRIEND_TEST(LayoutManagerTest, OverviewFocus);
+  FRIEND_TEST(LayoutManagerTest, StackTransientsAbovePanels);
 
   // A toplevel window that we're managing.
   // TODO: This class is getting large.  It should probably be moved to a
@@ -282,8 +283,13 @@ class LayoutManager : public EventConsumer {
     bool IsWindowOrTransientFocused() const;
 
     // Add a transient window.  Called in response to the window being
-    // mapped.
-    void AddTransientWindow(Window* transient_win);
+    // mapped.  The transient will typically be stacked above any other
+    // existing transients (unless an existing transient is modal), but if
+    // this is the only transient, it will be stacked above the toplevel if
+    // 'stack_directly_above_toplevel' is true and in
+    // StackingManager::LAYER_ACTIVE_TRANSIENT_WINDOW otherwise.
+    void AddTransientWindow(Window* transient_win,
+                            bool stack_directly_above_toplevel);
 
     // Remove a transient window.  Called in response to the window being
     // unmapped.
@@ -358,14 +364,20 @@ class LayoutManager : public EventConsumer {
     // windows.
     void MoveAndScaleAllTransientWindows(int anim_ms);
 
-    // Stack a transient window's composited and client windows on top of
-    // another window.
-    static void ApplyStackingForTransientWindowAboveWindow(
+    // Stack a transient window's composited and client windows.  If
+    // 'other_win' is non-NULL, we stack 'transient' above it; otherwise,
+    // we stack 'transient' at the top of
+    // StackingManager::LAYER_ACTIVE_TRANSIENT_WINDOW.
+    void ApplyStackingForTransientWindow(
         TransientWindow* transient, Window* other_win);
 
-    // Restack all transient windows' composited and client windows on top
-    // of 'win_' in the order dictated by 'stacked_transients_'.
-    void ApplyStackingForAllTransientWindows();
+    // Restack all transient windows' composited and client windows in the
+    // order dictated by 'stacked_transients_'.  If
+    // 'stack_directly_above_toplevel' is false, then we stack the
+    // transients at StackingManager::LAYER_ACTIVE_TRANSIENT_WINDOW instead
+    // of directly above 'win_'.
+    void ApplyStackingForAllTransientWindows(
+        bool stack_directly_above_toplevel);
 
     // Choose a new transient window to focus.  We choose the topmost modal
     // window if there is one; otherwise we just return the topmost

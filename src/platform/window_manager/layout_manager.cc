@@ -336,7 +336,7 @@ void LayoutManager::HandleWindowMap(Window* win) {
             GetToplevelWindowByXid(win->transient_for_xid());
         if (toplevel_owner) {
           transient_to_toplevel_[win->xid()] = toplevel_owner;
-          toplevel_owner->AddTransientWindow(win);
+          toplevel_owner->AddTransientWindow(win, mode_ == MODE_OVERVIEW);
 
           if (mode_ == MODE_ACTIVE &&
               active_toplevel_ != NULL &&
@@ -1024,7 +1024,7 @@ void LayoutManager::ToplevelWindow::ConfigureForActiveMode(
     win_->MoveClientOffscreen();
   }
 
-  ApplyStackingForAllTransientWindows();
+  ApplyStackingForAllTransientWindows(false);  // stack in upper layer
   MoveAndScaleAllTransientWindows(kWindowAnimMs);
 
   // TODO: Maybe just unmap input windows.
@@ -1061,7 +1061,7 @@ void LayoutManager::ToplevelWindow::ConfigureForOverviewMode(
       wm()->ConfigureInputWindow(input_xid_,
                                  GetAbsoluteOverviewX(), GetAbsoluteOverviewY(),
                                  overview_width_, overview_height_);
-      ApplyStackingForAllTransientWindows();
+      ApplyStackingForAllTransientWindows(true);  // stack above toplevel
 
       gradient_actor_->Raise(
           !stacked_transients_->items().empty() ?
@@ -1111,7 +1111,7 @@ void LayoutManager::ToplevelWindow::ConfigureForOverviewMode(
     else
       win_->SetCompositedOpacity(1.0, kOverviewAnimMs);
 
-    ApplyStackingForAllTransientWindows();
+    ApplyStackingForAllTransientWindows(true);  // stack above toplevel
     MoveAndScaleAllTransientWindows(kOverviewAnimMs);
 
     state_ = window_is_magnified ?
@@ -1177,7 +1177,8 @@ bool LayoutManager::ToplevelWindow::IsWindowOrTransientFocused() const {
   return false;
 }
 
-void LayoutManager::ToplevelWindow::AddTransientWindow(Window* transient_win) {
+void LayoutManager::ToplevelWindow::AddTransientWindow(
+    Window* transient_win, bool stack_directly_above_toplevel) {
   CHECK(transient_win);
   if (transients_.find(transient_win->xid()) != transients_.end()) {
     LOG(ERROR) << "Got request to add already-present transient window "
@@ -1218,9 +1219,11 @@ void LayoutManager::ToplevelWindow::AddTransientWindow(Window* transient_win) {
   SetPreferredTransientWindowToFocus(transient_win);
 
   MoveAndScaleTransientWindow(transient.get(), 0);
-  ApplyStackingForTransientWindowAboveWindow(
+  ApplyStackingForTransientWindow(
       transient.get(),
-      transient_to_stack_above ? transient_to_stack_above->win : win_);
+      transient_to_stack_above ?
+        transient_to_stack_above->win :
+        (stack_directly_above_toplevel ? win_ : NULL));
 
   transient_win->ShowComposited();
   transient_win->AddButtonGrab();
@@ -1337,23 +1340,27 @@ void LayoutManager::ToplevelWindow::MoveAndScaleAllTransientWindows(
   }
 }
 
-// static
-void LayoutManager::ToplevelWindow::ApplyStackingForTransientWindowAboveWindow(
+void LayoutManager::ToplevelWindow::ApplyStackingForTransientWindow(
     TransientWindow* transient, Window* other_win) {
-  CHECK(transient);
-  CHECK(other_win);
-  transient->win->StackClientAbove(other_win->xid());
-  transient->win->StackCompositedAbove(other_win->actor(), NULL, false);
+  DCHECK(transient);
+  if (other_win) {
+    transient->win->StackClientAbove(other_win->xid());
+    transient->win->StackCompositedAbove(other_win->actor(), NULL, false);
+  } else {
+    wm()->stacking_manager()->StackWindowAtTopOfLayer(
+        transient->win, StackingManager::LAYER_ACTIVE_TRANSIENT_WINDOW);
+  }
 }
 
-void LayoutManager::ToplevelWindow::ApplyStackingForAllTransientWindows() {
-  Window* prev_win = win_;
+void LayoutManager::ToplevelWindow::ApplyStackingForAllTransientWindows(
+    bool stack_directly_above_toplevel) {
+  Window* prev_win = stack_directly_above_toplevel ? win_ : NULL;
   for (list<TransientWindow*>::const_reverse_iterator it =
            stacked_transients_->items().rbegin();
        it != stacked_transients_->items().rend();
        ++it) {
     TransientWindow* transient = *it;
-    ApplyStackingForTransientWindowAboveWindow(transient, prev_win);
+    ApplyStackingForTransientWindow(transient, prev_win);
     prev_win = transient->win;
   }
 }
@@ -1384,8 +1391,7 @@ void LayoutManager::ToplevelWindow::RestackTransientWindowOnTop(
       stacked_transients_->items().front();
   stacked_transients_->Remove(transient);
   stacked_transients_->AddOnTop(transient);
-  ApplyStackingForTransientWindowAboveWindow(
-      transient, transient_to_stack_above->win);
+  ApplyStackingForTransientWindow(transient, transient_to_stack_above->win);
 }
 
 

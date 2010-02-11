@@ -42,12 +42,18 @@ class StackingManager {
     // Hotkey overlay images.
     LAYER_HOTKEY_OVERLAY,
 
-    // Panel bar's input windows.
-    LAYER_PANEL_BAR_INPUT_WINDOWS,
-
     // A panel as it's being dragged.  This is a separate layer so that the
     // panel's shadow will be cast over stationary panels.
     LAYER_DRAGGED_PANEL,
+
+    // A transient window belonging to the currently-active toplevel
+    // window.  Transients are stacked here when in active mode so that
+    // they'll obscure panels.  (In overview mode, they're stacked directly
+    // above their owners.)
+    LAYER_ACTIVE_TRANSIENT_WINDOW,
+
+    // Panel bar's input windows.
+    LAYER_PANEL_BAR_INPUT_WINDOW,
 
     // A stationary panel.
     LAYER_STATIONARY_PANEL,

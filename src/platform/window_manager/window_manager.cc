@@ -474,6 +474,12 @@ Window* WindowManager::GetWindow(XWindow xid) {
                          std::tr1::shared_ptr<Window>()).get();
 }
 
+Window* WindowManager::GetWindowOrDie(XWindow xid) {
+  Window* win = GetWindow(xid);
+  CHECK(win) << "Unable to find window " << xid;
+  return win;
+}
+
 void WindowManager::LockScreen() {
   LOG(INFO) << "Locking screen via: " << FLAGS_wm_lock_screen_command;
   if (system(FLAGS_wm_lock_screen_command.c_str()) < 0)

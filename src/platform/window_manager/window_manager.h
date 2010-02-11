@@ -92,9 +92,10 @@ class WindowManager {
   // event that doesn't contain a timestamp.
   Time GetCurrentTimeFromServer();
 
-  // Look up a window in 'client_windows_', returning NULL if it isn't
-  // present.
+  // Look up a window in 'client_windows_'.  The first version returns NULL
+  // if the window doesn't exist, while the second crashes.
   Window* GetWindow(XWindow xid);
+  Window* GetWindowOrDie(XWindow xid);
 
   // Locks the screen by calling xscreensaver-command.
   void LockScreen();

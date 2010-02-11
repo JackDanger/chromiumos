@@ -113,8 +113,7 @@ TEST_F(WindowManagerTest, ExistingWindows) {
 
   wm_.reset(new WindowManager(xconn_.get(), clutter_.get()));
   CHECK(wm_->Init());
-  Window* win = wm_->GetWindow(xid);
-  ASSERT_TRUE(win != NULL);
+  Window* win = wm_->GetWindowOrDie(xid);
   EXPECT_TRUE(win->mapped());
   EXPECT_TRUE(dynamic_cast<const MockClutterInterface::Actor*>(
                   win->actor())->visible());
@@ -131,8 +130,7 @@ TEST_F(WindowManagerTest, ExistingWindows) {
   wm_.reset(new WindowManager(xconn_.get(), clutter_.get()));
   CHECK(wm_->Init());
   EXPECT_FALSE(info->mapped);
-  win = wm_->GetWindow(xid);
-  ASSERT_TRUE(win != NULL);
+  win = wm_->GetWindowOrDie(xid);
   EXPECT_FALSE(win->mapped());
   EXPECT_FALSE(dynamic_cast<const MockClutterInterface::Actor*>(
                    win->actor())->visible());
@@ -161,8 +159,7 @@ TEST_F(WindowManagerTest, ExistingWindows) {
   wm_.reset(new WindowManager(xconn_.get(), clutter_.get()));
   CHECK(wm_->Init());
   EXPECT_FALSE(info->mapped);
-  win = wm_->GetWindow(xid);
-  ASSERT_TRUE(win != NULL);
+  win = wm_->GetWindowOrDie(xid);
   EXPECT_FALSE(win->mapped());
   EXPECT_FALSE(dynamic_cast<const MockClutterInterface::Actor*>(
                    win->actor())->visible());
@@ -197,8 +194,7 @@ TEST_F(WindowManagerTest, ExistingWindows) {
   MockXConnection::InitCreateWindowEvent(&event, *info);
   EXPECT_TRUE(wm_->HandleEvent(&event));
   EXPECT_FALSE(info->mapped);
-  win = wm_->GetWindow(xid);
-  ASSERT_TRUE(win != NULL);
+  win = wm_->GetWindowOrDie(xid);
   EXPECT_FALSE(win->mapped());
   EXPECT_FALSE(dynamic_cast<const MockClutterInterface::Actor*>(
                    win->actor())->visible());
@@ -241,8 +237,7 @@ TEST_F(WindowManagerTest, OverrideRedirectMapping) {
 
   // Now test the other possibility, where the window isn't mapped on the X
   // server yet when we receive the CreateNotify event.
-  Window* win = wm_->GetWindow(xid);
-  ASSERT_TRUE(win != NULL);
+  Window* win = wm_->GetWindowOrDie(xid);
   EXPECT_TRUE(dynamic_cast<const MockClutterInterface::Actor*>(
                   win->actor())->visible());
 
@@ -262,8 +257,7 @@ TEST_F(WindowManagerTest, OverrideRedirectMapping) {
   MockXConnection::InitMapEvent(&event, xid2);
   EXPECT_TRUE(wm_->HandleEvent(&event));
 
-  Window* win2 = wm_->GetWindow(xid2);
-  ASSERT_TRUE(win2 != NULL);
+  Window* win2 = wm_->GetWindowOrDie(xid2);
   EXPECT_TRUE(dynamic_cast<const MockClutterInterface::Actor*>(
                   win2->actor())->visible());
 }
@@ -376,8 +370,7 @@ TEST_F(WindowManagerTest, IgnoreGrabFocusEvents) {
   XWindow xid = CreateSimpleWindow();
   SendInitialEventsForWindow(xid);
 
-  Window* win = wm_->GetWindow(xid);
-  ASSERT_TRUE(win != NULL);
+  Window* win = wm_->GetWindowOrDie(xid);
   EXPECT_TRUE(win->focused());
 
   // We should ignore a focus-out event caused by a grab...
@@ -438,8 +431,7 @@ TEST_F(WindowManagerTest, RestackOverrideRedirectWindows) {
   xconn_->MapWindow(xid);
   MockXConnection::InitMapEvent(&event, xid);
   EXPECT_TRUE(wm_->HandleEvent(&event));
-  Window* win = wm_->GetWindow(xid);
-  ASSERT_TRUE(win != NULL);
+  Window* win = wm_->GetWindowOrDie(xid);
 
   XWindow xid2 = xconn_->CreateWindow(
       xconn_->GetRootWindow(),
@@ -454,8 +446,7 @@ TEST_F(WindowManagerTest, RestackOverrideRedirectWindows) {
   xconn_->MapWindow(xid2);
   MockXConnection::InitMapEvent(&event, xid2);
   EXPECT_TRUE(wm_->HandleEvent(&event));
-  Window* win2 = wm_->GetWindow(xid2);
-  ASSERT_TRUE(win2 != NULL);
+  Window* win2 = wm_->GetWindowOrDie(xid2);
 
   // Send a ConfigureNotify saying that the second window has been stacked
   // on top of the first and then make sure that the Clutter actors are
@@ -711,8 +702,7 @@ TEST_F(WindowManagerTest, DeferRedirection) {
 
   // Check that the window manager redirected it.
   EXPECT_TRUE(existing_info->redirected);
-  Window* existing_win = wm_->GetWindow(existing_xid);
-  ASSERT_TRUE(existing_win != NULL);
+  Window* existing_win = wm_->GetWindowOrDie(existing_xid);
   EXPECT_TRUE(existing_win->redirected());
   MockClutterInterface::TexturePixmapActor* existing_mock_actor =
       dynamic_cast<MockClutterInterface::TexturePixmapActor*>(
@@ -729,8 +719,7 @@ TEST_F(WindowManagerTest, DeferRedirection) {
 
   // The window shouldn't be redirected initially.
   EXPECT_FALSE(info->redirected);
-  Window* win = wm_->GetWindow(xid);
-  ASSERT_TRUE(win != NULL);
+  Window* win = wm_->GetWindowOrDie(xid);
   EXPECT_FALSE(win->redirected());
   MockClutterInterface::TexturePixmapActor* mock_actor =
       dynamic_cast<MockClutterInterface::TexturePixmapActor*>(win->actor());
@@ -772,8 +761,7 @@ TEST_F(WindowManagerTest, DeferRedirection) {
 
   // Now check that it's redirected.
   EXPECT_TRUE(override_redirect_info->redirected);
-  Window* override_redirect_win = wm_->GetWindow(override_redirect_xid);
-  ASSERT_TRUE(override_redirect_win != NULL);
+  Window* override_redirect_win = wm_->GetWindowOrDie(override_redirect_xid);
   EXPECT_TRUE(override_redirect_win->redirected());
   MockClutterInterface::TexturePixmapActor* override_redirect_mock_actor =
       dynamic_cast<MockClutterInterface::TexturePixmapActor*>(

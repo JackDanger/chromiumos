@@ -10,6 +10,7 @@
 #include "window_manager/clutter_interface.h"
 #include "window_manager/layout_manager.h"
 #include "window_manager/mock_x_connection.h"
+#include "window_manager/panel.h"
 #include "window_manager/stacking_manager.h"
 #include "window_manager/test_lib.h"
 #include "window_manager/util.h"
@@ -42,8 +43,7 @@ TEST_F(LayoutManagerTest, Basic) {
       0);        // event mask
   wm_->TrackWindow(xid1, false);  // override_redirect=false
 
-  Window* win1 = wm_->GetWindow(xid1);
-  CHECK(win1);
+  Window* win1 = wm_->GetWindowOrDie(xid1);
   win1->MapClient();
 
   lm_->SetMode(LayoutManager::MODE_ACTIVE);
@@ -67,8 +67,7 @@ TEST_F(LayoutManagerTest, Basic) {
       false,     // input only
       0);        // event mask
   wm_->TrackWindow(xid2, false);  // override_redirect=false
-  Window* win2 = wm_->GetWindow(xid2);
-  CHECK(win2);
+  Window* win2 = wm_->GetWindowOrDie(xid2);
   win2->MapClient();
   lm_->HandleWindowMap(win2);
 
@@ -80,8 +79,7 @@ TEST_F(LayoutManagerTest, Basic) {
       false,     // input only
       0);        // event mask
   wm_->TrackWindow(xid3, false);  // override_redirect=false
-  Window* win3 = wm_->GetWindow(xid3);
-  CHECK(win3);
+  Window* win3 = wm_->GetWindowOrDie(xid3);
   win3->MapClient();
   lm_->HandleWindowMap(win3);
 
@@ -304,7 +302,7 @@ TEST_F(LayoutManagerTest, FocusTransient) {
   SendFocusEvents(xconn_->GetRootWindow(), xid);
   EXPECT_FALSE(info->button_is_grabbed(AnyButton));
   EXPECT_EQ(xid, GetActiveWindowProperty());
-  EXPECT_TRUE(wm_->GetWindow(xid)->focused());
+  EXPECT_TRUE(wm_->GetWindowOrDie(xid)->focused());
 
   // Now create a transient window.
   XWindow transient_xid = CreateSimpleWindow();
@@ -324,8 +322,8 @@ TEST_F(LayoutManagerTest, FocusTransient) {
   SendFocusEvents(xid, transient_xid);
   EXPECT_TRUE(info->button_is_grabbed(AnyButton));
   EXPECT_FALSE(transient_info->button_is_grabbed(AnyButton));
-  EXPECT_FALSE(wm_->GetWindow(xid)->focused());
-  EXPECT_TRUE(wm_->GetWindow(transient_xid)->focused());
+  EXPECT_FALSE(wm_->GetWindowOrDie(xid)->focused());
+  EXPECT_TRUE(wm_->GetWindowOrDie(transient_xid)->focused());
 
   // _NET_ACTIVE_WINDOW should also be set to the transient window (EWMH is
   // vague about this, but it seems to match what other WMs do).
@@ -348,8 +346,8 @@ TEST_F(LayoutManagerTest, FocusTransient) {
   EXPECT_FALSE(info->button_is_grabbed(AnyButton));
   EXPECT_TRUE(transient_info->button_is_grabbed(AnyButton));
   EXPECT_EQ(xid, GetActiveWindowProperty());
-  EXPECT_TRUE(wm_->GetWindow(xid)->focused());
-  EXPECT_FALSE(wm_->GetWindow(transient_xid)->focused());
+  EXPECT_TRUE(wm_->GetWindowOrDie(xid)->focused());
+  EXPECT_FALSE(wm_->GetWindowOrDie(transient_xid)->focused());
 
   // Give the focus back to the transient window.
   xconn_->set_pointer_grab_xid(transient_xid);
@@ -358,8 +356,8 @@ TEST_F(LayoutManagerTest, FocusTransient) {
   EXPECT_EQ(transient_xid, xconn_->focused_xid());
   SendFocusEvents(xid, transient_xid);
   EXPECT_EQ(transient_xid, GetActiveWindowProperty());
-  EXPECT_FALSE(wm_->GetWindow(xid)->focused());
-  EXPECT_TRUE(wm_->GetWindow(transient_xid)->focused());
+  EXPECT_FALSE(wm_->GetWindowOrDie(xid)->focused());
+  EXPECT_TRUE(wm_->GetWindowOrDie(transient_xid)->focused());
 
   // Set the transient window as modal.
   MockXConnection::InitClientMessageEvent(
@@ -374,8 +372,8 @@ TEST_F(LayoutManagerTest, FocusTransient) {
   EXPECT_TRUE(wm_->HandleEvent(&event));
   EXPECT_EQ(transient_xid, xconn_->focused_xid());
   EXPECT_EQ(transient_xid, GetActiveWindowProperty());
-  EXPECT_FALSE(wm_->GetWindow(xid)->focused());
-  EXPECT_TRUE(wm_->GetWindow(transient_xid)->focused());
+  EXPECT_FALSE(wm_->GetWindowOrDie(xid)->focused());
+  EXPECT_TRUE(wm_->GetWindowOrDie(transient_xid)->focused());
 
   // Now create another toplevel window, which we'll switch to
   // automatically.
@@ -384,9 +382,9 @@ TEST_F(LayoutManagerTest, FocusTransient) {
   EXPECT_EQ(xid2, xconn_->focused_xid());
   SendFocusEvents(transient_xid, xid2);
   EXPECT_EQ(xid2, GetActiveWindowProperty());
-  EXPECT_FALSE(wm_->GetWindow(xid)->focused());
-  EXPECT_FALSE(wm_->GetWindow(transient_xid)->focused());
-  EXPECT_TRUE(wm_->GetWindow(xid2)->focused());
+  EXPECT_FALSE(wm_->GetWindowOrDie(xid)->focused());
+  EXPECT_FALSE(wm_->GetWindowOrDie(transient_xid)->focused());
+  EXPECT_TRUE(wm_->GetWindowOrDie(xid2)->focused());
 
   // When we cycle to the first toplevel window, its modal transient
   // window, rather than the toplevel itself, should get the focus.
@@ -394,18 +392,18 @@ TEST_F(LayoutManagerTest, FocusTransient) {
   EXPECT_EQ(transient_xid, xconn_->focused_xid());
   SendFocusEvents(xid2, transient_xid);
   EXPECT_EQ(transient_xid, GetActiveWindowProperty());
-  EXPECT_FALSE(wm_->GetWindow(xid)->focused());
-  EXPECT_TRUE(wm_->GetWindow(transient_xid)->focused());
-  EXPECT_FALSE(wm_->GetWindow(xid2)->focused());
+  EXPECT_FALSE(wm_->GetWindowOrDie(xid)->focused());
+  EXPECT_TRUE(wm_->GetWindowOrDie(transient_xid)->focused());
+  EXPECT_FALSE(wm_->GetWindowOrDie(xid2)->focused());
 
   // Switch back to the second toplevel window.
   lm_->CycleActiveToplevelWindow(false);
   EXPECT_EQ(xid2, xconn_->focused_xid());
   SendFocusEvents(transient_xid, xid2);
   EXPECT_EQ(xid2, GetActiveWindowProperty());
-  EXPECT_FALSE(wm_->GetWindow(xid)->focused());
-  EXPECT_FALSE(wm_->GetWindow(transient_xid)->focused());
-  EXPECT_TRUE(wm_->GetWindow(xid2)->focused());
+  EXPECT_FALSE(wm_->GetWindowOrDie(xid)->focused());
+  EXPECT_FALSE(wm_->GetWindowOrDie(transient_xid)->focused());
+  EXPECT_TRUE(wm_->GetWindowOrDie(xid2)->focused());
 
   // Make the transient window non-modal.
   MockXConnection::InitClientMessageEvent(
@@ -428,9 +426,9 @@ TEST_F(LayoutManagerTest, FocusTransient) {
       &event, transient_xid, NotifyNormal, NotifyNonlinear);
   EXPECT_TRUE(wm_->HandleEvent(&event));
   EXPECT_EQ(transient_xid, GetActiveWindowProperty());
-  EXPECT_FALSE(wm_->GetWindow(xid)->focused());
-  EXPECT_TRUE(wm_->GetWindow(transient_xid)->focused());
-  EXPECT_FALSE(wm_->GetWindow(xid2)->focused());
+  EXPECT_FALSE(wm_->GetWindowOrDie(xid)->focused());
+  EXPECT_TRUE(wm_->GetWindowOrDie(transient_xid)->focused());
+  EXPECT_FALSE(wm_->GetWindowOrDie(xid2)->focused());
 
   // Switch to overview mode.  We should give the focus back to the root
   // window (we don't want the transient to receive keypresses at this
@@ -444,9 +442,9 @@ TEST_F(LayoutManagerTest, FocusTransient) {
       &event, transient_xid, NotifyWhileGrabbed, NotifyPointer);
   EXPECT_FALSE(wm_->HandleEvent(&event));
   EXPECT_EQ(None, GetActiveWindowProperty());
-  EXPECT_FALSE(wm_->GetWindow(xid)->focused());
-  EXPECT_FALSE(wm_->GetWindow(transient_xid)->focused());
-  EXPECT_FALSE(wm_->GetWindow(xid2)->focused());
+  EXPECT_FALSE(wm_->GetWindowOrDie(xid)->focused());
+  EXPECT_FALSE(wm_->GetWindowOrDie(transient_xid)->focused());
+  EXPECT_FALSE(wm_->GetWindowOrDie(xid2)->focused());
 }
 
 TEST_F(LayoutManagerTest, MultipleTransients) {
@@ -469,12 +467,10 @@ TEST_F(LayoutManagerTest, MultipleTransients) {
   EXPECT_EQ(first_transient_xid, xconn_->focused_xid());
   SendFocusEvents(owner_xid, first_transient_xid);
 
-  // The transient window should be stacked on top of its actor (in terms
+  // The transient window should be stacked on top of its owner (in terms
   // of both its composited and client windows).
-  Window* owner_win = wm_->GetWindow(owner_xid);
-  ASSERT_TRUE(owner_win != NULL);
-  Window* first_transient_win = wm_->GetWindow(first_transient_xid);
-  ASSERT_TRUE(first_transient_win != NULL);
+  Window* owner_win = wm_->GetWindowOrDie(owner_xid);
+  Window* first_transient_win = wm_->GetWindowOrDie(first_transient_xid);
   MockClutterInterface::StageActor* stage = clutter_->GetDefaultStage();
   EXPECT_LT(stage->GetStackingIndex(first_transient_win->actor()),
             stage->GetStackingIndex(owner_win->actor()));
@@ -493,8 +489,7 @@ TEST_F(LayoutManagerTest, MultipleTransients) {
 
   // The second transient should be on top of the first, which should be on
   // top of the owner.
-  Window* second_transient_win = wm_->GetWindow(second_transient_xid);
-  ASSERT_TRUE(second_transient_win != NULL);
+  Window* second_transient_win = wm_->GetWindowOrDie(second_transient_xid);
   EXPECT_LT(stage->GetStackingIndex(second_transient_win->actor()),
             stage->GetStackingIndex(first_transient_win->actor()));
   EXPECT_LT(stage->GetStackingIndex(first_transient_win->actor()),
@@ -564,8 +559,7 @@ TEST_F(LayoutManagerTest, Resize) {
   MockXConnection::WindowInfo* info = xconn_->GetWindowInfoOrDie(xid);
   SendInitialEventsForWindow(xid);
 
-  Window* win = wm_->GetWindow(xid);
-  ASSERT_TRUE(win != NULL);
+  Window* win = wm_->GetWindowOrDie(xid);
 
   // The client window and its composited counterpart should be resized to
   // take up all the space available to the layout manager.
@@ -671,7 +665,7 @@ TEST_F(LayoutManagerTest, OverviewFocus) {
   EXPECT_TRUE(info2->button_is_grabbed(AnyButton));
 
   // Click on the first window's input window.
-  XWindow input_xid = lm_->GetInputXidForWindow(*(wm_->GetWindow(xid)));
+  XWindow input_xid = lm_->GetInputXidForWindow(*(wm_->GetWindowOrDie(xid)));
   MockXConnection::InitButtonPressEvent(
       &event, *xconn_->GetWindowInfoOrDie(input_xid), 0, 0, 1);  // x, y, button
   EXPECT_TRUE(wm_->HandleEvent(&event));
@@ -736,12 +730,61 @@ TEST_F(LayoutManagerTest, InitialWindowStacking) {
             xconn_->stacked_xids().GetIndex(lower_stacking_xid));
 
   MockClutterInterface::StageActor* stage = clutter_->GetDefaultStage();
-  Window* win = wm_->GetWindow(xid);
-  ASSERT_TRUE(win != NULL);
+  Window* win = wm_->GetWindowOrDie(xid);
   EXPECT_LT(stage->GetStackingIndex(toplevel_stacking_actor),
             stage->GetStackingIndex(win->actor()));
   EXPECT_LT(stage->GetStackingIndex(win->actor()),
             stage->GetStackingIndex(lower_stacking_actor));
+}
+
+TEST_F(LayoutManagerTest, StackTransientsAbovePanels) {
+  // Create a toplevel window and two transient windows.
+  XWindow toplevel_xid = CreateSimpleWindow();
+  SendInitialEventsForWindow(toplevel_xid);
+  Window* toplevel_win = wm_->GetWindowOrDie(toplevel_xid);
+
+  XWindow first_transient_xid = CreateSimpleWindow();
+  xconn_->GetWindowInfoOrDie(first_transient_xid)->transient_for = toplevel_xid;
+  SendInitialEventsForWindow(first_transient_xid);
+  Window* first_transient_win = wm_->GetWindowOrDie(first_transient_xid);
+
+  XWindow second_transient_xid = CreateSimpleWindow();
+  xconn_->GetWindowInfoOrDie(second_transient_xid)->transient_for =
+      toplevel_xid;
+  SendInitialEventsForWindow(second_transient_xid);
+  Window* second_transient_win = wm_->GetWindowOrDie(second_transient_xid);
+
+  // Open a panel.  The transient windows should be stacked above the
+  // panel, but the panel should be stacked above the toplevel.
+  Panel* panel = CreatePanel(200, 20, 400, true);
+  MockClutterInterface::StageActor* stage = clutter_->GetDefaultStage();
+  EXPECT_LT(stage->GetStackingIndex(second_transient_win->actor()),
+            stage->GetStackingIndex(first_transient_win->actor()));
+  EXPECT_LT(stage->GetStackingIndex(first_transient_win->actor()),
+            stage->GetStackingIndex(panel->content_win()->actor()));
+  EXPECT_LT(stage->GetStackingIndex(panel->content_win()->actor()),
+            stage->GetStackingIndex(toplevel_win->actor()));
+  EXPECT_LT(xconn_->stacked_xids().GetIndex(second_transient_xid),
+            xconn_->stacked_xids().GetIndex(first_transient_xid));
+  EXPECT_LT(xconn_->stacked_xids().GetIndex(first_transient_xid),
+            xconn_->stacked_xids().GetIndex(panel->content_xid()));
+  EXPECT_LT(xconn_->stacked_xids().GetIndex(panel->content_xid()),
+            xconn_->stacked_xids().GetIndex(toplevel_xid));
+
+  // After switching to overview mode, the panel should be above the transients.
+  lm_->SetMode(LayoutManager::MODE_OVERVIEW);
+  EXPECT_LT(stage->GetStackingIndex(panel->content_win()->actor()),
+            stage->GetStackingIndex(second_transient_win->actor()));
+  EXPECT_LT(stage->GetStackingIndex(second_transient_win->actor()),
+            stage->GetStackingIndex(first_transient_win->actor()));
+  EXPECT_LT(stage->GetStackingIndex(first_transient_win->actor()),
+            stage->GetStackingIndex(toplevel_win->actor()));
+  EXPECT_LT(xconn_->stacked_xids().GetIndex(panel->content_xid()),
+            xconn_->stacked_xids().GetIndex(second_transient_xid));
+  EXPECT_LT(xconn_->stacked_xids().GetIndex(second_transient_xid),
+            xconn_->stacked_xids().GetIndex(first_transient_xid));
+  EXPECT_LT(xconn_->stacked_xids().GetIndex(first_transient_xid),
+            xconn_->stacked_xids().GetIndex(toplevel_xid));
 }
 
 }  // namespace window_manager
