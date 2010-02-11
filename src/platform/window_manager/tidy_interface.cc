@@ -170,8 +170,8 @@ TidyInterface::Actor::Actor(TidyInterface* interface)
       parent_(NULL),
       x_(0),
       y_(0),
-      width_(0),
-      height_(0),
+      width_(1),
+      height_(1),
       z_(0.f),
       scale_x_(1.f),
       scale_y_(1.f),
@@ -183,10 +183,29 @@ TidyInterface::Actor::Actor(TidyInterface* interface)
 }
 
 TidyInterface::Actor* TidyInterface::Actor::Clone() {
-  // TODO: This doesn't do a "real" clone at all.  Determine if we
-  // need it to or not, and either remove it or implement a real
-  // clone.
-  return new Actor(interface_);
+  Actor* new_instance = new Actor(interface_);
+  CloneImpl(new_instance);
+  return new_instance;
+}
+
+void TidyInterface::Actor::CloneImpl(TidyInterface::Actor* clone) {
+  clone->x_ = x_;
+  clone->y_ = y_;
+  clone->width_ = width_;
+  clone->height_ = height_;
+  clone->parent_ = NULL;
+  clone->z_ = 0.0f;
+  clone->scale_x_ = scale_x_;
+  clone->scale_y_ = scale_y_;
+  clone->opacity_ = opacity_;
+  clone->is_opaque_ = is_opaque_;
+  clone->has_children_ = has_children_;
+  clone->visible_ = visible_;
+  clone->name_ = name_;
+
+  // This copies all the drawing data, but they're all tr1::shared_ptr's,
+  // so it all works out great.
+  clone->drawing_data_ = drawing_data_;
 }
 
 void TidyInterface::Actor::Move(int x, int y, int duration_ms) {
@@ -414,6 +433,17 @@ TidyInterface::QuadActor::QuadActor(TidyInterface* interface)
       color_(1.f, 1.f, 1.f) {
 }
 
+TidyInterface::Actor* TidyInterface::QuadActor::Clone() {
+  QuadActor* new_instance = new QuadActor(interface());
+  CloneImpl(new_instance);
+  return static_cast<Actor*>(new_instance);
+}
+
+void TidyInterface::QuadActor::CloneImpl(QuadActor* clone) {
+  Actor::CloneImpl(static_cast<TidyInterface::Actor*>(clone));
+  clone->color_ = color_;
+}
+
 TidyInterface::TexturePixmapActor::TexturePixmapActor(
     TidyInterface* interface)
     : TidyInterface::QuadActor(interface),
@@ -437,6 +467,17 @@ void TidyInterface::TexturePixmapActor::Reset() {
 #ifdef TIDY_OPENGL
   EraseDrawingData(OpenGlDrawVisitor::PIXMAP_DATA);
 #endif
+}
+
+TidyInterface::Actor* TidyInterface::TexturePixmapActor::Clone() {
+  TexturePixmapActor* new_instance = new TexturePixmapActor(interface());
+  CloneImpl(new_instance);
+  return static_cast<Actor*>(new_instance);
+}
+
+void TidyInterface::TexturePixmapActor::CloneImpl(TexturePixmapActor* clone) {
+  QuadActor::CloneImpl(static_cast<TidyInterface::QuadActor*>(clone));
+  clone->window_ = window_;
 }
 
 void TidyInterface::TexturePixmapActor::Refresh() {
@@ -468,10 +509,10 @@ void TidyInterface::StageActor::SetStageColor(
   stage_color_ = color;
 }
 
-void TidyInterface::StageActor::SetSizeImpl(int width, int height) {
+void TidyInterface::StageActor::SetSizeImpl(int* width, int* height) {
   // Have to resize the window to match the stage.
   CHECK(window_) << "Missing window in StageActor::SetSizeImpl.";
-  interface()->x_conn()->ResizeWindow(window_, width, height);
+  interface()->x_conn()->ResizeWindow(window_, *width, *height);
 }
 
 static gboolean DrawInterface(void* data) {
@@ -560,7 +601,7 @@ TidyInterface::Actor* TidyInterface::CreateText(
 
 TidyInterface::Actor* TidyInterface::CloneActor(
     ClutterInterface::Actor* orig) {
-  Actor* actor = dynamic_cast<Actor*>(orig);
+  TidyInterface::Actor* actor = dynamic_cast<TidyInterface::Actor*>(orig);
   CHECK(actor);
   return actor->Clone();
 }
@@ -593,9 +634,9 @@ bool TidyInterface::HandleEvent(XEvent* xevent) {
   TexturePixmapActor* actor = iterator->second;
   if (!actor)
     return false;
-  if (xevent->type == DestroyNotify) {
+  if (xevent->type == DestroyNotify || xevent->type == ConfigureNotify) {
     actor->Reset();
-    return false;  // Let the window manager continue to receive DestroyNotify.
+    return false;  // Let the window manager continue to receive these events.
   } else {  // This must be an XDamageNotify event.
     actor->Refresh();
     return true;

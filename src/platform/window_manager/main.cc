@@ -45,10 +45,8 @@ DEFINE_bool(logtostderr, false,
 DEFINE_string(minidump_dir, ".",
               "Directory where crash minidumps should be written; created if "
               "it doesn't exist.");
-#ifdef USE_TIDY
 DEFINE_bool(use_tidy, false,
             "Specify this to turn off clutter and use GL (via tidy) directly.");
-#endif
 DEFINE_int32(pause_at_start, 0,
              "Specify this to pause for N seconds at startup.");
 

@@ -61,6 +61,15 @@ Shadow::Shadow(ClutterInterface* clutter)
   bl_actor_->SetName("shadow bl");
   br_actor_->SetName("shadow br");
 
+  top_actor_->SetVisibility(true);
+  bottom_actor_->SetVisibility(true);
+  left_actor_->SetVisibility(true);
+  right_actor_->SetVisibility(true);
+  tl_actor_->SetVisibility(true);
+  tr_actor_->SetVisibility(true);
+  bl_actor_->SetVisibility(true);
+  br_actor_->SetVisibility(true);
+
   // Resize the shadow arbitrarily to initialize the positions of the actors.
   Resize(10, 10, 0);
   SetOpacity(1.0, 0);

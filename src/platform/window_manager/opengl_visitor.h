@@ -139,6 +139,7 @@ class OpenGlDrawVisitor
   GLInterface* gl_interface_;  // Not owned.
   TidyInterface* interface_;  // Not owned.
   XConnection* x_conn_;  // Not owned.
+  TidyInterface::StageActor* stage_; // Not owned.
 
   // This holds the drawing data used for quads.  Note that only
   // QuadActors use this drawing data, and they all share the same

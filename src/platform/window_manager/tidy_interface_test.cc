@@ -333,6 +333,133 @@ TEST_F(TidyTestTree, ActorVisitor) {
   EXPECT_EQ(expected[7], results[7]);
 }
 
+TEST_F(TidyTestTree, ActorAttributes) {
+  TidyInterface::LayerVisitor layer_visitor(interface()->actor_count());
+  stage_->Accept(&layer_visitor);
+
+  // Make sure width and height set the right parameters.
+  rect1_->SetSize(12, 13);
+  EXPECT_EQ(12, rect1_->width());
+  EXPECT_EQ(13, rect1_->height());
+
+  // Make sure scale is independent of width and height.
+  rect1_->Scale(2.0f, 3.0f, 0);
+  EXPECT_EQ(2.0f, rect1_->scale_x());
+  EXPECT_EQ(3.0f, rect1_->scale_y());
+  EXPECT_EQ(12, rect1_->width());
+  EXPECT_EQ(13, rect1_->height());
+
+  // Make sure Move isn't relative, and works on both axes.
+  rect1_->MoveX(2, 0);
+  rect1_->MoveX(2, 0);
+  rect1_->MoveY(2, 0);
+  rect1_->MoveY(2, 0);
+  EXPECT_EQ(2, rect1_->x());
+  EXPECT_EQ(2, rect1_->y());
+  EXPECT_EQ(12, rect1_->width());
+  EXPECT_EQ(13, rect1_->height());
+  rect1_->Move(4, 4, 0);
+  rect1_->Move(4, 4, 0);
+  EXPECT_EQ(4, rect1_->x());
+  EXPECT_EQ(4, rect1_->y());
+
+  // Test depth setting.
+  rect1_->set_z(14.0f);
+  EXPECT_EQ(14.0f, rect1_->z());
+
+  // Test opacity setting.
+  rect1_->SetOpacity(0.6f, 0);
+  // Have to traverse the tree to update is_opaque.
+  stage_->Accept(&layer_visitor);
+  EXPECT_EQ(0.6f, rect1_->opacity());
+  EXPECT_FALSE(rect1_->is_opaque());
+  rect1_->SetOpacity(1.0f, 0);
+  stage_->Accept(&layer_visitor);
+  EXPECT_EQ(1.0f, rect1_->opacity());
+  EXPECT_TRUE(rect1_->is_opaque());
+
+  // Test visibility setting.
+  rect1_->SetVisibility(true);
+  stage_->Accept(&layer_visitor);
+  EXPECT_TRUE(rect1_->IsVisible());
+  EXPECT_TRUE(rect1_->is_opaque());
+  rect1_->SetVisibility(false);
+  stage_->Accept(&layer_visitor);
+  EXPECT_FALSE(rect1_->IsVisible());
+  rect1_->SetVisibility(true);
+  rect1_->SetOpacity(0.00001f, 0);
+  stage_->Accept(&layer_visitor);
+  EXPECT_FALSE(rect1_->IsVisible());
+  EXPECT_FALSE(rect1_->is_opaque());
+}
+
+TEST_F(TidyTestTree, ContainerActorAttributes) {
+  TidyInterface::LayerVisitor layer_visitor(interface()->actor_count());
+  stage_->Accept(&layer_visitor);
+  rect1_->SetSize(10, 5);
+  // Make sure width and height set the right parameters.
+  group1_->SetSize(12, 13);
+  // Groups ignore SetSize.
+  EXPECT_EQ(1, group1_->width());
+  EXPECT_EQ(1, group1_->height());
+  EXPECT_EQ(10, rect1_->width());
+  EXPECT_EQ(5, rect1_->height());
+
+  // Make sure scale is independent of width and height.
+  group1_->Scale(2.0f, 3.0f, 0);
+  EXPECT_EQ(2.0f, group1_->scale_x());
+  EXPECT_EQ(3.0f, group1_->scale_y());
+  EXPECT_EQ(1, group1_->width());
+  EXPECT_EQ(1, group1_->height());
+  EXPECT_EQ(10, rect1_->width());
+  EXPECT_EQ(5, rect1_->height());
+  EXPECT_EQ(1.0f, rect1_->scale_x());
+  EXPECT_EQ(1.0f, rect1_->scale_y());
+
+  // Make sure Move isn't relative, and works on both axes.
+  group1_->MoveX(2, 0);
+  group1_->MoveX(2, 0);
+  group1_->MoveY(2, 0);
+  group1_->MoveY(2, 0);
+  EXPECT_EQ(2, group1_->x());
+  EXPECT_EQ(2, group1_->y());
+  group1_->Move(4, 4, 0);
+  group1_->Move(4, 4, 0);
+  EXPECT_EQ(4, group1_->x());
+  EXPECT_EQ(4, group1_->y());
+
+  // Test depth setting.
+  group1_->set_z(14.0f);
+  EXPECT_EQ(14.0f, group1_->z());
+
+  // Test opacity setting.
+  group1_->SetOpacity(0.6f, 0);
+  stage_->Accept(&layer_visitor);
+  EXPECT_EQ(0.6f, group1_->opacity());
+  EXPECT_FALSE(group1_->is_opaque());
+  group1_->SetOpacity(1.0f, 0);
+  stage_->Accept(&layer_visitor);
+  EXPECT_EQ(1.0f, group1_->opacity());
+  EXPECT_TRUE(group1_->is_opaque());
+
+  // Test visibility setting.
+  group1_->SetVisibility(true);
+  stage_->Accept(&layer_visitor);
+  EXPECT_TRUE(group1_->IsVisible());
+  EXPECT_TRUE(group1_->is_opaque());
+  EXPECT_TRUE(rect1_->is_opaque());
+  group1_->SetVisibility(false);
+  stage_->Accept(&layer_visitor);
+  EXPECT_FALSE(group1_->IsVisible());
+  EXPECT_TRUE(rect1_->IsVisible());
+  group1_->SetVisibility(true);
+  group1_->SetOpacity(0.00001f, 0);
+  stage_->Accept(&layer_visitor);
+  EXPECT_FALSE(group1_->IsVisible());
+  EXPECT_FALSE(group1_->is_opaque());
+  EXPECT_TRUE(rect1_->IsVisible());
+}
+
 TEST_F(TidyTest, FloatAnimation) {
   float value = -10.0f;
   TidyInterface::FloatAnimation anim(&value, 10.0f, 0, 20);
@@ -364,6 +491,16 @@ TEST_F(TidyTest, IntAnimation) {
   EXPECT_EQ(7, value);
   EXPECT_TRUE(anim.Eval(20));
   EXPECT_EQ(10, value);
+}
+
+TEST_F(TidyTestTree, CloneTest) {
+  rect1_->Move(10, 20, 0);
+  rect1_->SetSize(100, 200);
+  TidyInterface::Actor* clone = rect1_->Clone();
+  EXPECT_EQ(10, clone->x());
+  EXPECT_EQ(20, clone->y());
+  EXPECT_EQ(100, clone->width());
+  EXPECT_EQ(200, clone->height());
 }
 
 }  // end namespace window_manager

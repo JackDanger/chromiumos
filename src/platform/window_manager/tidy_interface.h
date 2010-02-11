@@ -176,14 +176,18 @@ class TidyInterface : public ClutterInterface {
     virtual Actor* Clone();
     int GetWidth() { return width_; }
     int GetHeight() { return height_; }
+    int GetX() { return x_; }
+    int GetY() { return y_; }
+    int GetXScale() { return scale_x_; }
+    int GetYScale() { return scale_y_; }
     void SetVisibility(bool visible) {
       visible_ = visible;
       set_dirty();
     }
     void SetSize(int width, int height) {
-      SetSizeImpl(width, height);
       width_ = width;
       height_ = height;
+      SetSizeImpl(&width_, &height_);
       set_dirty();
     }
     void SetName(const std::string& name) { name_ = name; }
@@ -252,7 +256,8 @@ class TidyInterface : public ClutterInterface {
 
     TidyInterface* interface() { return interface_; }
 
-    virtual void SetSizeImpl(int width, int height) {}
+    void CloneImpl(Actor* clone);
+    virtual void SetSizeImpl(int* width, int* height) {}
 
     void AnimateFloat(float* field, float value, int duration_ms);
     void AnimateInt(int* field, int value, int duration_ms);
@@ -326,6 +331,7 @@ class TidyInterface : public ClutterInterface {
       visitor->VisitContainer(this);
     }
 
+    virtual Actor* Clone() { NOTIMPLEMENTED(); return NULL; }
     virtual ActorVector GetChildren() { return children_; }
 
     void AddActor(ClutterInterface::Actor* actor);
@@ -339,6 +345,13 @@ class TidyInterface : public ClutterInterface {
     void LowerChild(TidyInterface::Actor* child,
                     TidyInterface::Actor* below);
 
+   protected:
+    virtual void SetSizeImpl(int* width, int* height) {
+      // For containers, the size is always 1x1.
+      // TODO: Implement a more complete story for setting sizes of containers.
+      *width = 1;
+      *height = 1;
+    }
    private:
     // The list of this container's children.
     ActorVector children_;
@@ -361,6 +374,9 @@ class TidyInterface : public ClutterInterface {
       visitor->VisitQuad(this);
     }
 
+    virtual Actor* Clone();
+   protected:
+    void CloneImpl(QuadActor* clone);
    private:
     ClutterInterface::Color color_;
 
@@ -390,6 +406,9 @@ class TidyInterface : public ClutterInterface {
     void Refresh();
     void Reset();
 
+    virtual Actor* Clone();
+   protected:
+    void CloneImpl(TexturePixmapActor* clone);
    private:
     // This is the XWindow that this actor is associated with.
     XWindow window_;
@@ -409,6 +428,8 @@ class TidyInterface : public ClutterInterface {
       visitor->VisitStage(this);
     }
 
+    virtual Actor* Clone() { NOTIMPLEMENTED(); return NULL; }
+
     XWindow GetStageXWindow() { return window_; }
     void SetStageColor(const ClutterInterface::Color& color);
     const ClutterInterface::Color& stage_color() const {
@@ -420,7 +441,7 @@ class TidyInterface : public ClutterInterface {
     }
 
    protected:
-    virtual void SetSizeImpl(int width, int height);
+    virtual void SetSizeImpl(int* width, int* height);
 
    private:
     // This is the XWindow associated with the stage.  Owned by this class.

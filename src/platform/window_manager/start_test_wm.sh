@@ -19,6 +19,7 @@ script_dir=$PWD/$(dirname $0)
 
 export LD_LIBRARY_PATH=/lib32:/usr/lib32:$script_dir/../../../chroot/usr/lib:$LD_LIBRARY_PATH
 export DISPLAY=:1.0
+export IMAGES=$script_dir/../assets/images
 
 echo "Switch to the X Server running on display $DISPLAY NOW!"
 echo "4..."
@@ -31,4 +32,8 @@ echo "1..."
 sleep 1
 echo "Starting wm!"
 
-$script_dir/wm --logtostderr --wm_background_image ../assets/images/background_1024x600.png --use_tidy "$@"
+$script_dir/wm --logtostderr                                            \
+  --wm_background_image="${IMAGES}/background_1024x600.png"             \
+  --lm_new_overview_mode=true                                           \
+  --lm_overview_gradient_image="${IMAGES}/window_overview_gradient.png" \
+  --use_tidy "$@"

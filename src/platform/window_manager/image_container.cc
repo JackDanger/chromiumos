@@ -126,9 +126,11 @@ ImageContainer::Result PngImageContainer::LoadImage() {
   }
 
   // Add an opaque alpha channel if there isn't one already.
-  png_set_filler(read_obj, 0xff, PNG_FILLER_AFTER);
+  if (!(color_type & PNG_COLOR_MASK_ALPHA)) {
+    png_set_filler(read_obj, 0xff, PNG_FILLER_AFTER);
+  }
 
-  // If the image has a transperancy color set, convert it to an alpha
+  // If the image has a transparancy color set, convert it to an alpha
   // channel.
   if (png_get_valid(read_obj, info_obj, PNG_INFO_tRNS)) {
     png_set_tRNS_to_alpha(read_obj);
@@ -144,7 +146,7 @@ ImageContainer::Result PngImageContainer::LoadImage() {
   set_data(new char[height() * stride()]);
 
   for (int i = 0; i < height(); i++) {
-    uint32 position = (height() - i - 1) * stride();
+    uint32 position = i * stride();
     row_pointers[i] = data() + position;
   }
 

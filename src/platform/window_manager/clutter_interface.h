@@ -60,6 +60,10 @@ class ClutterInterface {
     virtual void SetName(const std::string& name) = 0;
     virtual int GetWidth() = 0;
     virtual int GetHeight() = 0;
+    virtual int GetX() = 0;
+    virtual int GetY() = 0;
+    virtual int GetXScale() = 0;
+    virtual int GetYScale() = 0;
 
     virtual void SetVisibility(bool visible) = 0;
     virtual void SetSize(int width, int height) = 0;
@@ -182,6 +186,10 @@ class RealClutterInterface : public ClutterInterface {
     void SetName(const std::string& name);
     int GetWidth();
     int GetHeight();
+    int GetX();
+    int GetY();
+    int GetXScale();
+    int GetYScale();
     void SetVisibility(bool visible);
     void SetSize(int width, int height);
     void Move(int x, int y, int anim_ms);
@@ -326,6 +334,10 @@ class MockClutterInterface : public ClutterInterface {
     void SetName(const std::string& name) {}
     int GetWidth() { return width_; }
     int GetHeight() { return height_; };
+    int GetX() { return x_; }
+    int GetY() { return y_; };
+    int GetXScale() { return scale_x_; }
+    int GetYScale() { return scale_y_; }
     void SetVisibility(bool visible) { visible_ = visible; }
     void SetSize(int width, int height) {
       width_ = width;

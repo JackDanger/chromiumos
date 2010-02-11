@@ -866,6 +866,7 @@ LayoutManager::ToplevelWindow::ToplevelWindow(Window* win,
     static_gradient_texture_ = wm()->clutter()->CreateImage(
         FLAGS_lm_overview_gradient_image);
     static_gradient_texture_->SetVisibility(false);
+    static_gradient_texture_->SetName("static gradient screen");
     wm()->stage()->AddActor(static_gradient_texture_);
   }
 
@@ -897,6 +898,7 @@ LayoutManager::ToplevelWindow::ToplevelWindow(Window* win,
         wm()->clutter()->CloneActor(static_gradient_texture_));
     gradient_actor_->SetOpacity(0, 0);
     gradient_actor_->SetVisibility(true);
+    gradient_actor_->SetName("gradient screen");
     wm()->stage()->AddActor(gradient_actor_.get());
   }
 }

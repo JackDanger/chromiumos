@@ -24,7 +24,7 @@
 #include "window_manager/gl_interface.h"
 #include "window_manager/image_container.h"
 
-// Turn this on if you want to debug the visitor traversal.
+// Turn this on if you want to debug something in this file in depth.
 #undef EXTRA_LOGGING
 
 // #define GL_ERROR_DEBUGGING
@@ -329,6 +329,7 @@ void OpenGlDrawVisitor::BindImage(const ImageContainer* container,
   // whether or not this texture has alpha (instead of just passing
   // 'true').
   data->SetTexture(new_texture, true);
+  actor->SetSize(container->width(), container->height());
   actor->SetDrawingData(OpenGlDrawVisitor::TEXTURE_DATA,
                         TidyInterface::DrawingDataPtr(data));
   LOG(INFO) << "Binding image " << container->filename()
@@ -341,6 +342,7 @@ void OpenGlDrawVisitor::VisitActor(TidyInterface::Actor* actor) {
 
 void OpenGlDrawVisitor::VisitTexturePixmap(
     TidyInterface::TexturePixmapActor* actor) {
+  if (!actor->IsVisible()) return;
   // Make sure there's a bound texture.
   if (!actor->GetDrawingData(PIXMAP_DATA).get()) {
     if (!OpenGlPixmapData::BindToPixmap(this, actor)) {
@@ -356,6 +358,10 @@ void OpenGlDrawVisitor::VisitTexturePixmap(
 }
 
 void OpenGlDrawVisitor::VisitQuad(TidyInterface::QuadActor* actor) {
+  if (!actor->IsVisible()) return;
+#ifdef EXTRA_LOGGING
+  LOG(INFO) << "Drawing quad " << actor->name() << ".";
+#endif
   OpenGlQuadDrawingData* draw_data = dynamic_cast<OpenGlQuadDrawingData*>(
       actor->GetDrawingData(DRAWING_DATA).get());
 
@@ -396,6 +402,13 @@ void OpenGlDrawVisitor::VisitQuad(TidyInterface::QuadActor* actor) {
   gl_interface_->Translatef(actor->x(), actor->y(), actor->z());
   gl_interface_->Scalef(actor->width() * actor->scale_x(),
                         actor->height() * actor->scale_y(), 1.f);
+#ifdef EXTRA_LOGGING
+  LOG(INFO) << "  at: (" << actor->x() << ", "  << actor->y()
+            << ", " << actor->z() << ") with scale: ("
+            << actor->scale_x() << ", "  << actor->scale_y() << ") at size ("
+            << actor->width() << "x"  << actor->height()
+            << ") and opacity " << actor->opacity() * ancestor_opacity_;
+#endif
   gl_interface_->DrawArrays(GL_TRIANGLE_STRIP, 0, 4);
   gl_interface_->PopMatrix();
   CHECK_GL_ERROR();
@@ -406,7 +419,7 @@ void OpenGlDrawVisitor::DrawNeedle() {
       quad_drawing_data_.get());
   gl_interface_->BindBuffer(GL_ARRAY_BUFFER, draw_data->vertex_buffer());
   gl_interface_->EnableClientState(GL_VERTEX_ARRAY);
-  gl_interface_->VertexPointer(2, GL_FLOAT, 0, NULL);
+  gl_interface_->VertexPointer(2, GL_FLOAT, 0, 0);
   gl_interface_->DisableClientState(GL_TEXTURE_COORD_ARRAY);
   gl_interface_->Disable(GL_TEXTURE_2D);
   gl_interface_->PushMatrix();
@@ -421,6 +434,9 @@ void OpenGlDrawVisitor::DrawNeedle() {
 }
 
 void OpenGlDrawVisitor::VisitStage(TidyInterface::StageActor* actor) {
+  if (!actor->IsVisible()) return;
+
+  stage_ = actor;
   OpenGlQuadDrawingData* draw_data = dynamic_cast<OpenGlQuadDrawingData*>(
       quad_drawing_data_.get());
 
@@ -435,57 +451,71 @@ void OpenGlDrawVisitor::VisitStage(TidyInterface::StageActor* actor) {
   gl_interface_->BindBuffer(GL_ARRAY_BUFFER,
                             draw_data->vertex_buffer());
   gl_interface_->EnableClientState(GL_VERTEX_ARRAY);
-  gl_interface_->VertexPointer(2, GL_FLOAT, 0, NULL);
+  gl_interface_->VertexPointer(2, GL_FLOAT, 0, 0);
   gl_interface_->EnableClientState(GL_TEXTURE_COORD_ARRAY);
-  gl_interface_->TexCoordPointer(2, GL_FLOAT, 0, NULL);
+  gl_interface_->TexCoordPointer(2, GL_FLOAT, 0, 0);
   CHECK_GL_ERROR();
 
-  // Set the z-depths for the actors.
+  // Set the z-depths for the actors, update is_opaque.
   TidyInterface::LayerVisitor layer_visitor(interface_->actor_count());
   actor->Accept(&layer_visitor);
+
+#ifdef EXTRA_LOGGING
+  LOG(INFO) << "Starting OPAQUE pass.";
+#endif
+  // Disable blending because these actors are all opaque, and we're
+  // drawing them front to back.
+  gl_interface_->Disable(GL_BLEND);
 
   // For the first pass, we want to collect only opaque actors, in
   // front to back order.
   visit_opaque_ = true;
+  VisitContainer(actor);
 
-  // Disable blending because these actors are all opaque, and we're
-  // drawing them front to back.  Z-buffer should already be enabled.
-  gl_interface_->Disable(GL_BLEND);
-  TidyInterface::ActorVector children = actor->GetChildren();
-  for (TidyInterface::ActorVector::const_iterator iterator = children.begin();
-       iterator != children.end(); ++iterator) {
-    (*iterator)->Accept(this);
-    CHECK_GL_ERROR();
-  }
-
-  visit_opaque_ = false;
+#ifdef EXTRA_LOGGING
+  LOG(INFO) << "Ending OPAQUE pass.";
+  LOG(INFO) << "Starting TRANSPARENT pass.";
+#endif
   ancestor_opacity_ = actor->opacity();
   gl_interface_->DepthMask(GL_FALSE);
   gl_interface_->Enable(GL_BLEND);
+
   // Visiting back to front now, with no z-buffer, but with blending.
-  for (TidyInterface::ActorVector::const_reverse_iterator iterator =
-           children.rbegin();
-       iterator != children.rend(); ++iterator) {
-    (*iterator)->Accept(this);
-    CHECK_GL_ERROR();
-  }
+  visit_opaque_ = false;
+  VisitContainer(actor);
   gl_interface_->DepthMask(GL_TRUE);
   CHECK_GL_ERROR();
 
   DrawNeedle();
   gl_interface_->SwapGlxBuffers(actor->GetStageXWindow());
   ++num_frames_drawn_;
+#ifdef EXTRA_LOGGING
+  LOG(INFO) << "Ending TRANSPARENT pass.";
+#endif
+  stage_ = NULL;
 }
 
 void OpenGlDrawVisitor::VisitContainer(
     TidyInterface::ContainerActor* actor) {
-  gl_interface_->PushMatrix();
-  gl_interface_->Translatef(actor->x(), actor->y(), actor->z());
-  gl_interface_->Scalef(actor->width() * actor->scale_x(),
-                        actor->height() * actor->scale_y(), 1.f);
+  if (!actor->IsVisible()) {
+    return;
+  }
+
+  if (actor != stage_) {
+    gl_interface_->PushMatrix();
+    // Don't translate by Z because the actors already have their
+    // absolute Z values from the layer calculation.
+    gl_interface_->Translatef(actor->x(), actor->y(), 0.0f);
+    gl_interface_->Scalef(actor->width() * actor->scale_x(),
+                          actor->height() * actor->scale_y(), 1.f);
+  }
 
 #ifdef EXTRA_LOGGING
   LOG(INFO) << "Drawing container " << actor->name() << ".";
+  LOG(INFO) << "  at: (" << actor->x() << ", "  << actor->y()
+            << ", " << actor->z() << ") with scale: ("
+            << actor->scale_x() << ", "  << actor->scale_y() << ") at size ("
+            << actor->width() << "x"  << actor->height() << ")";
 #endif
   TidyInterface::ActorVector children = actor->GetChildren();
   if (visit_opaque_) {
@@ -496,9 +526,17 @@ void OpenGlDrawVisitor::VisitContainer(
       // Only traverse if the child is visible, and opaque.
       if (child->IsVisible() && child->is_opaque()) {
 #ifdef EXTRA_LOGGING
-        LOG(INFO) << "Drawing opaque child " << child->name() << ".";
+        LOG(INFO) << "Drawing opaque child " << child->name()
+                  << " (visible: " << child->IsVisible()
+                  << ", is_opaque: " << child->is_opaque() << ")";
 #endif
         (*iterator)->Accept(this);
+      } else {
+#ifdef EXTRA_LOGGING
+        LOG(INFO) << "NOT drawing transparent child " << child->name()
+                  << " (visible: " << child->IsVisible()
+                  << ", is_opaque: " << child->is_opaque() << ")";
+#endif
       }
       CHECK_GL_ERROR();
     }
@@ -518,9 +556,21 @@ void OpenGlDrawVisitor::VisitContainer(
           (ancestor_opacity_ <= 0.999 || child->has_children() ||
            !child->is_opaque())) {
 #ifdef EXTRA_LOGGING
-        LOG(INFO) << "Drawing transparent child " << child->name() << ".";
+        LOG(INFO) << "Drawing transparent child " << child->name()
+                  << " (visible: " << child->IsVisible()
+                  << ", has_children: " << child->has_children()
+                  << ", ancestor_opacity: " << ancestor_opacity_
+                  << ", is_opaque: " << child->is_opaque() << ")";
 #endif
         (*iterator)->Accept(this);
+      } else {
+#ifdef EXTRA_LOGGING
+        LOG(INFO) << "NOT drawing opaque child " << child->name()
+                  << " (visible: " << child->IsVisible()
+                  << ", has_children: " << child->has_children()
+                  << ", ancestor_opacity: " << ancestor_opacity_
+                  << ", is_opaque: " << child->is_opaque() << ")";
+#endif
       }
       CHECK_GL_ERROR();
     }
@@ -529,8 +579,9 @@ void OpenGlDrawVisitor::VisitContainer(
     ancestor_opacity_ = original_opacity;
   }
 
-  gl_interface_->PopMatrix();
-
+  if (actor != stage_) {
+    gl_interface_->PopMatrix();
+  }
 }
 
 }  // namespace window_manager

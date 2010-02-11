@@ -47,6 +47,32 @@ int RealClutterInterface::Actor::GetHeight() {
   return clutter_actor_get_height(clutter_actor_);
 }
 
+int RealClutterInterface::Actor::GetX() {
+  CHECK(clutter_actor_);
+  return clutter_actor_get_x(clutter_actor_);
+}
+
+int RealClutterInterface::Actor::GetY() {
+  CHECK(clutter_actor_);
+  return clutter_actor_get_y(clutter_actor_);
+}
+
+int RealClutterInterface::Actor::GetXScale() {
+  CHECK(clutter_actor_);
+  gdouble x_scale;
+  gdouble y_scale;
+  clutter_actor_get_scale(clutter_actor_, &x_scale, &y_scale);
+  return x_scale;
+}
+
+int RealClutterInterface::Actor::GetYScale() {
+  CHECK(clutter_actor_);
+  gdouble x_scale;
+  gdouble y_scale;
+  clutter_actor_get_scale(clutter_actor_, &x_scale, &y_scale);
+  return y_scale;
+}
+
 void RealClutterInterface::Actor::SetVisibility(bool visible) {
   CHECK(clutter_actor_);
   if (visible) {
