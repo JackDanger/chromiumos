@@ -186,6 +186,10 @@ deps = {
     # u-boot
     _third_party_base + "u-boot/files": "/u-boot.git",
 
+    # vectormath from o3d
+    _third_party_base + "vectormath":
+        "http://o3d.googlecode.com/svn/trunk/googleclient/third_party/vectormath@166",
+
     # portage
     _third_party_base + "portage": "/portage.git",
 
