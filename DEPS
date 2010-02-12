@@ -193,6 +193,7 @@ deps = {
     _third_party_base + "chromiumos-overlay": "/chromiumos-overlay.git",
 
     # board overlays, please keep sorted alphabetically
-    _overlays_base + "overlay-x86-generic": "/overlay-x86-generic.git",
+    _overlays_base + "overlay-arm-generic": "/overlay-arm-generic.git",
     _overlays_base + "overlay-st1q":        "/overlay-st1q.git",
+    _overlays_base + "overlay-x86-generic": "/overlay-x86-generic.git",
 }
