@@ -26,6 +26,7 @@ use_relative_urls2=True
 # is trunk/src/DEPS.
 _third_party_base = "src/third_party/"
 _platform_base = "src/platform/"
+_overlays_base = "src/overlays/"
 
 vars = {
   "chromium_revision": "36775",
@@ -190,4 +191,8 @@ deps = {
 
     # chromiumos-overlay
     _third_party_base + "chromiumos-overlay": "/chromiumos-overlay.git",
+
+    # board overlays, please keep sorted alphabetically
+    _overlays_base + "overlay-x86-generic": "/overlay-x86-generic.git",
+    _overlays_base + "overlay-st1q":        "/overlay-st1q.git",
 }
