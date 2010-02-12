@@ -501,6 +501,9 @@ void WindowManager::TakeFocus() {
 }
 
 bool WindowManager::SetActiveWindowProperty(XWindow xid) {
+  if (active_window_xid_ == xid)
+    return true;
+
   VLOG(1) << "Setting active window to " << XidStr(xid);
   if (!xconn_->SetIntProperty(
           root_, GetXAtom(ATOM_NET_ACTIVE_WINDOW), XA_WINDOW, xid)) {

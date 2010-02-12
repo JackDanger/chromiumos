@@ -23,13 +23,14 @@ DEFINE_bool(logtostderr, false,
 
 namespace window_manager {
 
+using chromeos::NewPermanentCallback;
+
 class LayoutManagerTest : public BasicWindowManagerTest {
  protected:
   virtual void SetUp() {
     BasicWindowManagerTest::SetUp();
     lm_ = wm_->layout_manager_.get();
   }
-
   LayoutManager* lm_;  // points to wm_'s copy
 };
 
@@ -128,13 +129,12 @@ TEST_F(LayoutManagerTest, Focus) {
   EXPECT_EQ(xid, xconn_->focused_xid());
   ASSERT_TRUE(lm_->active_toplevel_ != NULL);
   EXPECT_EQ(xid, lm_->active_toplevel_->win()->xid());
-  EXPECT_EQ(None, GetActiveWindowProperty());
+  EXPECT_EQ(xid, GetActiveWindowProperty());
   EXPECT_TRUE(info->button_is_grabbed(AnyButton));
 
-  // We shouldn't actually update _NET_ACTIVE_WINDOW and remove the passive
-  // button grab until we get the FocusIn event.
+  // We shouldn't actually remove the passive button grab until we get the
+  // FocusIn event.
   SendFocusEvents(xconn_->GetRootWindow(), xid);
-  EXPECT_EQ(xid, GetActiveWindowProperty());
   EXPECT_FALSE(info->button_is_grabbed(AnyButton));
 
   // Now create a second window.
@@ -152,6 +152,7 @@ TEST_F(LayoutManagerTest, Focus) {
   MockXConnection::InitMapEvent(&event, xid2);
   EXPECT_TRUE(wm_->HandleEvent(&event));
   EXPECT_EQ(xid2, xconn_->focused_xid());
+  EXPECT_EQ(xid2, GetActiveWindowProperty());
   ASSERT_TRUE(lm_->active_toplevel_ != NULL);
   EXPECT_EQ(xid2, lm_->active_toplevel_->win()->xid());
   EXPECT_FALSE(info->button_is_grabbed(AnyButton));
@@ -159,7 +160,6 @@ TEST_F(LayoutManagerTest, Focus) {
 
   // Now send the appropriate FocusOut and FocusIn events.
   SendFocusEvents(xid, xid2);
-  EXPECT_EQ(xid2, GetActiveWindowProperty());
   EXPECT_TRUE(info->button_is_grabbed(AnyButton));
   EXPECT_FALSE(info2->button_is_grabbed(AnyButton));
 
@@ -785,6 +785,53 @@ TEST_F(LayoutManagerTest, StackTransientsAbovePanels) {
             xconn_->stacked_xids().GetIndex(first_transient_xid));
   EXPECT_LT(xconn_->stacked_xids().GetIndex(first_transient_xid),
             xconn_->stacked_xids().GetIndex(toplevel_xid));
+}
+
+// Test that when a transient window is unmapped, we immediately store its
+// owner's XID in the active window property, rather than storing any
+// intermediate values like None there.  (Otherwise, we'll see jitter in
+// toplevel Chrome windows' active window states.)
+TEST_F(LayoutManagerTest, ActiveWindowHintOnTransientUnmap) {
+  // Create a toplevel window.
+  XWindow toplevel_xid = CreateSimpleWindow();
+  SendInitialEventsForWindow(toplevel_xid);
+  EXPECT_EQ(toplevel_xid, xconn_->focused_xid());
+  SendFocusEvents(xconn_->GetRootWindow(), toplevel_xid);
+
+  // Create a transient window, which should take the focus.
+  XWindow transient_xid = CreateSimpleWindow();
+  SendInitialEventsForWindow(transient_xid);
+  EXPECT_EQ(transient_xid, xconn_->focused_xid());
+  EXPECT_EQ(transient_xid, GetActiveWindowProperty());
+  SendFocusEvents(toplevel_xid, transient_xid);
+
+  // Now register a callback to count how many times the active window
+  // property is changed.
+  TestCallbackCounter counter;
+  xconn_->RegisterPropertyCallback(
+      xconn_->GetRootWindow(),
+      wm_->GetXAtom(ATOM_NET_ACTIVE_WINDOW),
+      NewPermanentCallback(&counter, &TestCallbackCounter::Increment));
+
+  // Unmap the transient window and check that the toplevel window is
+  // focused.
+  XEvent event;
+  MockXConnection::InitUnmapEvent(&event, transient_xid);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+  EXPECT_EQ(toplevel_xid, xconn_->focused_xid());
+  EXPECT_EQ(toplevel_xid, GetActiveWindowProperty());
+
+  // We expect the window manager to ignore the transient window's FocusOut
+  // event since the window has already been unmapped.
+  MockXConnection::InitFocusOutEvent(
+      &event, transient_xid, NotifyNormal, NotifyNonlinear);
+  EXPECT_FALSE(wm_->HandleEvent(&event));
+  MockXConnection::InitFocusInEvent(
+      &event, toplevel_xid, NotifyNormal, NotifyNonlinear);
+  EXPECT_TRUE(wm_->HandleEvent(&event));
+
+  // The active window property should've only been updated once.
+  EXPECT_EQ(1, counter.num_calls());
 }
 
 }  // namespace window_manager

@@ -1134,11 +1134,18 @@ void LayoutManager::ToplevelWindow::UpdateOverviewScaling(int max_width,
 }
 
 void LayoutManager::ToplevelWindow::TakeFocus(Time timestamp) {
+  // We'll get an inactive/active flicker in the toplevel window if we let
+  // the window manager set the active window property to None when the
+  // transient is unmapped and we then set it back to another transient or
+  // to the toplevel window after we see the FocusIn notification, so we
+  // proactively set it to the window that we're focusing here.
   if (transient_to_focus_) {
     RestackTransientWindowOnTop(transient_to_focus_);
     transient_to_focus_->win->TakeFocus(timestamp);
+    wm()->SetActiveWindowProperty(transient_to_focus_->win->xid());
   } else {
     win_->TakeFocus(timestamp);
+    wm()->SetActiveWindowProperty(win_->xid());
   }
 }
 

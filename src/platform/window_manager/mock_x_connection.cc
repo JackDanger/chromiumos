@@ -10,6 +10,7 @@
 
 namespace window_manager {
 
+using chromeos::Closure;
 using std::list;
 using std::make_pair;
 using std::map;
@@ -354,6 +355,12 @@ bool MockXConnection::SetIntArrayProperty(
     return false;
   info->int_properties[xatom] = values;
   // TODO: Also save type.
+  Closure* cb =
+      FindWithDefault(property_callbacks_,
+                      make_pair(xid, xatom),
+                      shared_ptr<Closure>(static_cast<Closure*>(NULL))).get();
+  if (cb)
+    cb->Run();
   return true;
 }
 
@@ -374,6 +381,12 @@ bool MockXConnection::SetStringProperty(
   if (!info)
     return false;
   info->string_properties[xatom] = value;
+  Closure* cb =
+      FindWithDefault(property_callbacks_,
+                      make_pair(xid, xatom),
+                      shared_ptr<Closure>(static_cast<Closure*>(NULL))).get();
+  if (cb)
+    cb->Run();
   return true;
 }
 
@@ -489,6 +502,13 @@ MockXConnection::WindowInfo::~WindowInfo() {}
 MockXConnection::WindowInfo* MockXConnection::GetWindowInfo(XWindow xid) {
   map<XWindow, shared_ptr<WindowInfo> >::iterator it = windows_.find(xid);
   return (it != windows_.end()) ? it->second.get() : NULL;
+}
+
+void MockXConnection::RegisterPropertyCallback(
+    XWindow xid, XAtom xatom, Closure* cb) {
+  CHECK(cb);
+  CHECK(property_callbacks_.insert(
+            make_pair(make_pair(xid, xatom), shared_ptr<Closure>(cb))).second);
 }
 
 // static
