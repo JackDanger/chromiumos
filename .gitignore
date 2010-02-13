@@ -23,6 +23,7 @@
 /src/scripts/shared_user_passwd.txt
 
 # Ignore DEPS
+/src/overlays/
 /src/platform/cros/
 /src/platform/login_manager/
 /src/platform/pam_google/
@@ -32,6 +33,7 @@
 /src/third_party/autotest/files/
 /src/third_party/cairo/
 /src/third_party/chrome/files/
+/src/third_party/chromiumos-overlay/
 /src/third_party/connman/build/
 /src/third_party/connman/connman-0.42/
 /src/third_party/curl/
@@ -55,12 +57,14 @@
 /src/third_party/ibus-pinyin/files/
 /src/third_party/ibus/files/
 /src/third_party/kernel/files/
+/src/third_party/kernel-qualcomm/
 /src/third_party/m17n-lib/
 /src/third_party/openssh/
 /src/third_party/openssl/
 /src/third_party/pam-dev/
 /src/third_party/pango/
 /src/third_party/ply-image/src/
+/src/third_party/portage/
 /src/third_party/rsyslog/
 /src/third_party/shflags/files/
 /src/third_party/shunit2/files/
