@@ -11,7 +11,6 @@
 
 #include <base/command_line.h>
 #include <base/logging.h>
-#include <gflags/gflags.h>
 #include <security/_pam_macros.h>
 #include <security/pam_modules.h>
 #include <security/pam_ext.h>

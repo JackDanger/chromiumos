@@ -53,5 +53,5 @@ env_lib = env.Clone()
 env_lib.SharedLibrary('chromeos_pam_offline', pam_sources)
 
 env_test = env.Clone()
-env_test.Append(LIBS=['gflags', 'gtest', 'pcrecpp'])
+env_test.Append(LIBS=['gtest'])
 env_test.Program('pam_offline_unittests', pam_sources + test_sources)
