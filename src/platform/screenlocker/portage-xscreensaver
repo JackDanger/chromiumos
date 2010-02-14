@@ -1,0 +1,23 @@
+# Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# /etc/pam.d/xscreensaver
+#
+# Configure the pam modules that xscreensaver uses to authenticate the user.
+
+# We borrow from the system default in /etc/pam.d/common-*
+
+# from common-auth
+auth	[success=1 default=ignore]	chromeos_pam_offline.so
+auth	requisite			pam_deny.so
+auth	required			pam_permit.so
+
+# from common-account
+account	[success=1 new_authtok_reqd=done default=ignore]	pam_permit.so
+account	requisite			pam_deny.so
+account	required			pam_permit.so
+
+
+password include system-auth
+session include system-auth
