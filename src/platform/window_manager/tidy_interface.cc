@@ -5,6 +5,7 @@
 #include "window_manager/tidy_interface.h"
 
 #include <gdk/gdkx.h>
+#include <gflags/gflags.h>
 #include <sys/time.h>
 #include <time.h>
 
@@ -19,6 +20,10 @@
 #include "window_manager/util.h"
 
 using std::tr1::shared_ptr;
+
+DEFINE_bool(tidy_display_debug_needle, false,
+            "Specify this to turn on a debugging aid for seeing when "
+            "frames are being drawn.");
 
 // Turn this on if you want to debug the visitor traversal.
 #undef EXTRA_LOGGING

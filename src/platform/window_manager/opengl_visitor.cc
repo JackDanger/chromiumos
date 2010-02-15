@@ -10,6 +10,7 @@
 #include <X11/extensions/Xcomposite.h>
 #include <X11/extensions/Xdamage.h>
 #include <gdk/gdkx.h>
+#include <gflags/gflags.h>
 #include <sys/time.h>
 #include <time.h>
 #include <xcb/composite.h>
@@ -23,6 +24,8 @@
 #include "base/logging.h"
 #include "window_manager/gl_interface.h"
 #include "window_manager/image_container.h"
+
+DECLARE_bool(tidy_display_debug_needle);
 
 // Turn this on if you want to debug something in this file in depth.
 #undef EXTRA_LOGGING
@@ -486,7 +489,9 @@ void OpenGlDrawVisitor::VisitStage(TidyInterface::StageActor* actor) {
   gl_interface_->DepthMask(GL_TRUE);
   CHECK_GL_ERROR();
 
-  DrawNeedle();
+  if (FLAGS_tidy_display_debug_needle) {
+    DrawNeedle();
+  }
   gl_interface_->SwapGlxBuffers(actor->GetStageXWindow());
   ++num_frames_drawn_;
 #ifdef EXTRA_LOGGING
