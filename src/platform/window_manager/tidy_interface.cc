@@ -629,6 +629,7 @@ static GdkFilterReturn FilterEvent(GdkXEvent* xevent,
 
 bool TidyInterface::HandleEvent(XEvent* xevent) {
   if (xevent->type != DestroyNotify &&
+      xevent->type != ConfigureNotify &&
       xevent->type != x_conn()->damage_event_base() + XDamageNotify) {
     return false;
   }
