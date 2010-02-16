@@ -26,7 +26,11 @@ using std::vector;
 // Frequency with which we should update the position of dragged panels.
 static const int kDraggedPanelUpdateMs = 25;
 
+// How long should the animation when detaching panels from containers take?
 static const int kDetachPanelAnimMs = 100;
+
+// Width of panel docks, chosen because 1280 - 256 = 1024.
+static const int kPanelDockWidth = 256;
 
 PanelManager::PanelManager(WindowManager* wm, int panel_bar_height)
     : wm_(wm),
@@ -37,8 +41,10 @@ PanelManager::PanelManager(WindowManager* wm, int panel_bar_height)
                   this, &PanelManager::HandlePeriodicPanelDragMotion),
               kDraggedPanelUpdateMs)),
       panel_bar_(new PanelBar(wm_)),
-      left_panel_dock_(new PanelDock(wm_, PanelDock::DOCK_POSITION_LEFT)),
-      right_panel_dock_(new PanelDock(wm_, PanelDock::DOCK_POSITION_RIGHT)),
+      left_panel_dock_(
+          new PanelDock(this, PanelDock::DOCK_TYPE_LEFT, kPanelDockWidth)),
+      right_panel_dock_(
+          new PanelDock(this, PanelDock::DOCK_TYPE_RIGHT, kPanelDockWidth)),
       saw_map_request_(false) {
   RegisterContainer(panel_bar_.get());
   RegisterContainer(left_panel_dock_.get());
@@ -106,7 +112,7 @@ void PanelManager::HandleWindowMap(Window* win) {
               << " panel with content window " << win->xid_str()
               << " and titlebar window " << titlebar_win->xid_str();
 
-      shared_ptr<Panel> panel(new Panel(this, win, titlebar_win));
+      shared_ptr<Panel> panel(new Panel(this, win, titlebar_win, expanded));
       panel->SetTitlebarWidth(panel->content_width());
 
       vector<XWindow> input_windows;
@@ -122,8 +128,7 @@ void PanelManager::HandleWindowMap(Window* win) {
 
       AddPanelToContainer(panel.get(),
                           panel_bar_.get(),
-                          PanelContainer::PANEL_SOURCE_NEW,
-                          expanded);
+                          PanelContainer::PANEL_SOURCE_NEW);
 
       // Ask to get notified when the WM_HINTS property changes on the
       // content window; it's used to set the urgency hint.
@@ -410,11 +415,16 @@ void PanelManager::HandlePanelResize(Panel* panel) {
     container->HandlePanelResize(panel);
 }
 
+void PanelManager::HandleDockVisibilityChange(PanelDock* dock) {
+  UpdateAvailableArea();
+}
+
 void PanelManager::HandleScreenResize() {
   for (vector<PanelContainer*>::iterator it = containers_.begin();
        it != containers_.end(); ++it) {
     (*it)->HandleScreenResize();
   }
+  UpdateAvailableArea();
 }
 
 bool PanelManager::TakeFocus() {
@@ -493,8 +503,7 @@ void PanelManager::HandlePeriodicPanelDragMotion() {
                 << " at (" << x << ", " << y << ")";
         AddPanelToContainer(dragged_panel_,
                             *it,
-                            PanelContainer::PANEL_SOURCE_DRAGGED,
-                            true);
+                            PanelContainer::PANEL_SOURCE_DRAGGED);
         CHECK((*it)->HandleNotifyPanelDraggedMessage(dragged_panel_, x, y));
         panel_was_reattached = true;
         break;
@@ -526,19 +535,17 @@ void PanelManager::HandlePanelDragComplete(Panel* panel, bool removed) {
               << " to panel bar";
       AddPanelToContainer(panel,
                           panel_bar_.get(),
-                          PanelContainer::PANEL_SOURCE_DROPPED,
-                          true);
+                          PanelContainer::PANEL_SOURCE_DROPPED);
     }
   }
 }
 
 void PanelManager::AddPanelToContainer(Panel* panel,
                                        PanelContainer* container,
-                                       PanelContainer::PanelSource source,
-                                       bool expanded) {
+                                       PanelContainer::PanelSource source) {
   DCHECK(GetContainerForPanel(*panel) == NULL);
   CHECK(containers_by_panel_.insert(make_pair(panel, container)).second);
-  container->AddPanel(panel, source, expanded);
+  container->AddPanel(panel, source);
 }
 
 void PanelManager::RemovePanelFromContainer(Panel* panel,
@@ -547,6 +554,26 @@ void PanelManager::RemovePanelFromContainer(Panel* panel,
   CHECK_EQ(containers_by_panel_.erase(panel), static_cast<size_t>(1));
   container->RemovePanel(panel);
   panel->RemoveButtonGrab(false);  // remove_pointer_grab=false
+  panel->SetResizable(false);
+  panel->SetShadowOpacity(1.0, kDetachPanelAnimMs);
+  panel->SetExpandedState(true);
+}
+
+void PanelManager::UpdateAvailableArea() {
+  int avail_x = 0;
+  int avail_y = 0;
+  int avail_width = wm_->width();
+  int avail_height = wm_->height();
+
+  if (left_panel_dock_->IsVisible()) {
+    avail_x += left_panel_dock_->width();
+    avail_width -= left_panel_dock_->width();
+  }
+  if (right_panel_dock_->IsVisible())
+    avail_width -= right_panel_dock_->width();
+
+  wm_->HandleLayoutManagerAreaChange(
+      avail_x, avail_y, avail_width, avail_height);
 }
 
 }  // namespace window_manager

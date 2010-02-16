@@ -42,14 +42,14 @@ TEST_F(StackingManagerTest, StackXidAtTopOfLayer) {
           xid, StackingManager::LAYER_TOPLEVEL_WINDOW));
   EXPECT_TRUE(
       stacking_manager_->StackXidAtTopOfLayer(
-          xid2, StackingManager::LAYER_STATIONARY_PANEL));
+          xid2, StackingManager::LAYER_STATIONARY_PANEL_IN_BAR));
   EXPECT_LT(xconn_->stacked_xids().GetIndex(xid2),
             xconn_->stacked_xids().GetIndex(xid));
 
   // Now move the lower window to the top of the other window's layer.
   EXPECT_TRUE(
       stacking_manager_->StackXidAtTopOfLayer(
-          xid, StackingManager::LAYER_STATIONARY_PANEL));
+          xid, StackingManager::LAYER_STATIONARY_PANEL_IN_BAR));
   EXPECT_LT(xconn_->stacked_xids().GetIndex(xid),
             xconn_->stacked_xids().GetIndex(xid2));
 }
@@ -107,7 +107,7 @@ TEST_F(StackingManagerTest, StackWindowAtTopOfLayer) {
   // should be restacked as expected, and the first window's shadow should
   // be stacked above the second window.
   EXPECT_TRUE(stacking_manager_->StackWindowAtTopOfLayer(
-      &win, StackingManager::LAYER_STATIONARY_PANEL));
+      &win, StackingManager::LAYER_STATIONARY_PANEL_IN_BAR));
   EXPECT_LT(xconn_->stacked_xids().GetIndex(xid),
             xconn_->stacked_xids().GetIndex(xid2));
   EXPECT_LT(stage->GetStackingIndex(win.actor()),

@@ -122,7 +122,7 @@ LayoutManager::LayoutManager
               kOverviewDragUpdateMs)),
       overview_drag_last_x_(-1),
       saw_map_request_(false) {
-  Resize(width, height);
+  MoveAndResize(x, y, width, height);
 
   if (FLAGS_lm_new_overview_mode) {
     int event_mask = ButtonPressMask | ButtonReleaseMask | PointerMotionMask;
@@ -816,10 +816,20 @@ bool LayoutManager::TakeFocus() {
   return true;
 }
 
-void LayoutManager::Resize(int width, int height) {
-  if (width == width_ && height == height_)
+void LayoutManager::MoveAndResize(int x, int y, int width, int height) {
+  if (x == x_ && y == y_ && width == width_ && height == height_)
     return;
 
+  // If there's a larger difference between our new and old left edge than
+  // between the new and old right edge, then we keep the right sides of the
+  // windows fixed while resizing.
+  Window::Gravity resize_gravity =
+      abs(x - x_) > abs(x + width - (x_ + width_)) ?
+      Window::GRAVITY_NORTHEAST :
+      Window::GRAVITY_NORTHWEST;
+
+  x_ = x;
+  y_ = y;
   width_ = width;
   height_ = height;
   overview_height_ = kOverviewHeightFraction * height_;
@@ -830,7 +840,7 @@ void LayoutManager::Resize(int width, int height) {
     int height = height_;
     if (FLAGS_lm_honor_window_size_hints)
       (*it)->win()->GetMaxSize(width_, height_, &width, &height);
-    (*it)->win()->ResizeClient(width, height, Window::GRAVITY_NORTHWEST);
+    (*it)->win()->ResizeClient(width, height, resize_gravity);
   }
 
   switch (mode_) {
@@ -1004,9 +1014,10 @@ void LayoutManager::ToplevelWindow::ConfigureForActiveMode(
       // No need to move it; it was already moved offscreen.
     } else {
       if (FLAGS_lm_new_overview_mode) {
-        int x = to_left_of_active ?
-                layout_x - overview_width_ :
-                layout_x + layout_width;
+        // Move non-active windows offscreen instead of just outside of the
+        // layout manager area -- we don't want them to be briefly visible
+        // if space opens up on the side due to a panel dock being hidden.
+        int x = to_left_of_active ?  0 - overview_width_ : wm()->width();
         win_->MoveComposited(x, GetAbsoluteOverviewY(), kWindowAnimMs);
         gradient_actor_->Move(x, GetAbsoluteOverviewY(), kWindowAnimMs);
       } else {

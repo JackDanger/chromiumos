@@ -173,7 +173,11 @@ WindowManager::WindowManager(XConnection* xconn, ClutterInterface* clutter)
       active_window_xid_(None),
       query_keyboard_state_timer_(0),
       showing_hotkey_overlay_(false),
-      wm_ipc_version_(0) {
+      wm_ipc_version_(0),
+      layout_manager_x_(0),
+      layout_manager_y_(0),
+      layout_manager_width_(1),
+      layout_manager_height_(1) {
   CHECK(xconn_);
   CHECK(clutter_);
 }
@@ -247,7 +251,7 @@ bool WindowManager::Init() {
   if (!FLAGS_wm_xterm_command.empty()) {
     key_bindings_->AddAction(
         "launch-terminal",
-        NewPermanentCallback(this, &WindowManager::LaunchTerminalCallback),
+        NewPermanentCallback(this, &WindowManager::LaunchTerminal),
         NULL, NULL);
     key_bindings_->AddBinding(
         KeyBindings::KeyCombo(
@@ -306,7 +310,13 @@ bool WindowManager::Init() {
 
   // We need to create the layout manager after the stage so we can stack
   // its input windows correctly.
-  layout_manager_.reset(new LayoutManager(this, 0, 0, width_, height_));
+  layout_manager_x_ = 0;
+  layout_manager_y_ = 0;
+  layout_manager_width_ = width_;
+  layout_manager_height_ = height_;
+  layout_manager_.reset(
+      new LayoutManager(this, layout_manager_x_, layout_manager_y_,
+                        layout_manager_width_, layout_manager_height_));
   event_consumers_.insert(layout_manager_.get());
 
   panel_manager_.reset(new PanelManager(this, kPanelBarHeight));
@@ -486,21 +496,6 @@ Window* WindowManager::GetWindowOrDie(XWindow xid) {
   return win;
 }
 
-void WindowManager::LockScreen() {
-  LOG(INFO) << "Locking screen via: " << FLAGS_wm_lock_screen_command;
-  if (system(FLAGS_wm_lock_screen_command.c_str()) < 0)
-    LOG(WARNING) << "Unable to lock screen via: "
-                 << FLAGS_wm_lock_screen_command;
-}
-
-void WindowManager::ConfigureExternalMonitor() {
-  LOG(INFO) << "Configuring external monitor via: "
-            << FLAGS_wm_configure_monitor_command;
-  if (system(FLAGS_wm_configure_monitor_command.c_str()) < 0)
-    LOG(WARNING) << "Unable to configure the external monitor via: "
-                 << FLAGS_wm_configure_monitor_command;
-}
-
 void WindowManager::TakeFocus() {
   if (!layout_manager_->TakeFocus() && !panel_manager_->TakeFocus())
     xconn_->FocusWindow(root_, CurrentTime);
@@ -517,6 +512,15 @@ bool WindowManager::SetActiveWindowProperty(XWindow xid) {
   }
   active_window_xid_ = xid;
   return true;
+}
+
+void WindowManager::HandleLayoutManagerAreaChange(
+    int x, int y, int width, int height) {
+  layout_manager_x_ = x;
+  layout_manager_y_ = y;
+  layout_manager_width_ = width;
+  layout_manager_height_ = height;
+  layout_manager_->MoveAndResize(x, y, width, height);
 }
 
 void WindowManager::RegisterWindowPropertyListener(
@@ -1373,8 +1377,13 @@ bool WindowManager::HandleRRScreenChangeNotify(
   stage_->SetSize(width_, height_);
   if (background_.get())
     background_->SetSize(width_, height_);
-  layout_manager_->Resize(width_, height_);
   panel_manager_->HandleScreenResize();
+  // TODO: This is ugly.  PanelManager::HandleScreenResize() will recompute
+  // the area available for the layout manager and call
+  // HandleLayoutManagerAreaChange(), so the next call is essentially a
+  // no-op.  Safer to leave it in for now, though.
+  layout_manager_->MoveAndResize(layout_manager_x_, layout_manager_y_,
+                                 layout_manager_width_, layout_manager_height_);
   hotkey_overlay_->group()->Move(width_ / 2, height_ / 2, 0);
   xconn_->ResizeWindow(background_xid_, width_, height_);
 
@@ -1419,12 +1428,27 @@ bool WindowManager::HandleUnmapNotify(const XUnmapEvent& e) {
   return true;
 }
 
-void WindowManager::LaunchTerminalCallback() {
+void WindowManager::LaunchTerminal() {
   LOG(INFO) << "Launching xterm via: " << FLAGS_wm_xterm_command;
 
   const string command = StringPrintf("%s &", FLAGS_wm_xterm_command.c_str());
   if (system(command.c_str()) < 0)
     LOG(WARNING) << "Unable to launch xterm via: " << command;
+}
+
+void WindowManager::LockScreen() {
+  LOG(INFO) << "Locking screen via: " << FLAGS_wm_lock_screen_command;
+  if (system(FLAGS_wm_lock_screen_command.c_str()) < 0)
+    LOG(WARNING) << "Unable to lock screen via: "
+                 << FLAGS_wm_lock_screen_command;
+}
+
+void WindowManager::ConfigureExternalMonitor() {
+  LOG(INFO) << "Configuring external monitor via: "
+            << FLAGS_wm_configure_monitor_command;
+  if (system(FLAGS_wm_configure_monitor_command.c_str()) < 0)
+    LOG(WARNING) << "Unable to configure the external monitor via: "
+                 << FLAGS_wm_configure_monitor_command;
 }
 
 void WindowManager::ToggleClientWindowDebugging() {

@@ -55,8 +55,15 @@ class StackingManager {
     // Panel bar's input windows.
     LAYER_PANEL_BAR_INPUT_WINDOW,
 
-    // A stationary panel.
-    LAYER_STATIONARY_PANEL,
+    // A stationary panel in the panel bar.
+    LAYER_STATIONARY_PANEL_IN_BAR,
+
+    // A stationary panel in a panel dock.
+    LAYER_STATIONARY_PANEL_IN_DOCK,
+
+    // Panel docks along the sides of the screen (specifically, their
+    // backgrounds).
+    LAYER_PANEL_DOCK,
 
     // Window representing a Chrome tab as it's being dragged out of the
     // tab summary window.
@@ -95,11 +102,23 @@ class StackingManager {
   // Stack a Clutter actor at the top of the passed-in layer.
   void StackActorAtTopOfLayer(ClutterInterface::Actor* actor, Layer layer);
 
+  // Stack a window's client and composited windows directly above or below
+  // another window.  As in StackWindowAtTopOfLayer(), the window's shadow
+  // will be stacked at the bottom of 'layer'.  Make sure that 'sibling' is
+  // in 'layer' -- things will get confusing otherwise.
+  bool StackWindowRelativeToOtherWindow(
+      Window* win, Window* sibling, bool above, Layer layer);
+
  private:
   FRIEND_TEST(LayoutManagerTest, InitialWindowStacking);  // uses 'layer_to_*'
 
   // Get a layer's name.
   static const char* LayerToName(Layer layer);
+
+  // Get the actor or XID for a particular layer.  These crash if the layer
+  // is invalid.
+  ClutterInterface::Actor* GetActorForLayer(Layer layer);
+  XWindow GetXidForLayer(Layer layer);
 
   XConnection* xconn_;  // not owned
 

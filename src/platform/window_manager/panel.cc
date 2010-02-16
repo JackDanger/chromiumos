@@ -62,10 +62,12 @@ const int Panel::kResizeCornerSize = 25;
 
 Panel::Panel(PanelManager* panel_manager,
              Window* content_win,
-             Window* titlebar_win)
+             Window* titlebar_win,
+             bool is_expanded)
     : panel_manager_(panel_manager),
       content_win_(content_win),
       titlebar_win_(titlebar_win),
+      is_expanded_(is_expanded),
       resize_actor_(NULL),
       resize_event_coalescer_(
           NewPermanentCallback(this, &Panel::ApplyResize),
@@ -126,6 +128,8 @@ Panel::Panel(PanelManager* panel_manager,
   wm()->xconn()->SetWindowCursor(top_right_input_xid_, XC_top_right_corner);
   wm()->xconn()->SetWindowCursor(left_input_xid_, XC_left_side);
   wm()->xconn()->SetWindowCursor(right_input_xid_, XC_right_side);
+
+  UpdateChromeStateProperty();
 }
 
 Panel::~Panel() {
@@ -190,7 +194,7 @@ void Panel::HandleInputWindowButtonPress(
     resize_actor_->SetOpacity(0, 0);
     resize_actor_->SetOpacity(kResizeBoxOpacity, kResizeActorOpacityAnimMs);
     wm()->stacking_manager()->StackActorAtTopOfLayer(
-        resize_actor_.get(), StackingManager::LAYER_STATIONARY_PANEL);
+        resize_actor_.get(), StackingManager::LAYER_DRAGGED_PANEL);
     resize_actor_->SetVisibility(true);
   }
 }
@@ -214,10 +218,8 @@ void Panel::HandleInputWindowButtonRelease(
   if (!FLAGS_panel_opaque_resize) {
     DCHECK(resize_actor_.get());
     resize_actor_.reset(NULL);
-    Resize(drag_last_width_, drag_last_height_, drag_gravity_);
+    ResizeContent(drag_last_width_, drag_last_height_, drag_gravity_);
   }
-
-  ConfigureInputWindows();
 }
 
 void Panel::HandleInputWindowPointerMotion(XWindow xid, int x, int y) {
@@ -247,7 +249,7 @@ void Panel::HandleWindowConfigureRequest(
 
   if (req_width != content_win_->client_width() ||
       req_height != content_win_->client_height()) {
-    Resize(req_width, req_height, Window::GRAVITY_SOUTHEAST);
+    ResizeContent(req_width, req_height, Window::GRAVITY_SOUTHEAST);
   }
 }
 
@@ -301,7 +303,8 @@ void Panel::SetTitlebarWidth(int width) {
       width, titlebar_win_->client_height(), Window::GRAVITY_NORTHEAST);
 }
 
-void Panel::SetContentShadowOpacity(double opacity, int anim_ms) {
+void Panel::SetShadowOpacity(double opacity, int anim_ms) {
+  titlebar_win_->SetShadowOpacity(opacity, anim_ms);
   content_win_->SetShadowOpacity(opacity, anim_ms);
 }
 
@@ -315,29 +318,35 @@ void Panel::SetResizable(bool resizable) {
 void Panel::StackAtTopOfLayer(StackingManager::Layer layer) {
   // Put the titlebar and content in the same layer, but stack the titlebar
   // higher (the stacking between the two is arbitrary but needs to stay in
-  // sync with the input window code below).
+  // sync with the input window code in StackInputWindows()).
   wm()->stacking_manager()->StackWindowAtTopOfLayer(content_win_, layer);
   wm()->stacking_manager()->StackWindowAtTopOfLayer(titlebar_win_, layer);
-
-  // Stack all of the input windows directly below the content window
-  // (which is stacked beneath the titlebar) -- we don't want the
-  // corner windows to occlude the titlebar.
-  wm()->xconn()->StackWindow(top_input_xid_, content_win_->xid(), false);
-  wm()->xconn()->StackWindow(top_left_input_xid_, content_win_->xid(), false);
-  wm()->xconn()->StackWindow(top_right_input_xid_, content_win_->xid(), false);
-  wm()->xconn()->StackWindow(left_input_xid_, content_win_->xid(), false);
-  wm()->xconn()->StackWindow(right_input_xid_, content_win_->xid(), false);
+  StackInputWindows();
 }
 
-bool Panel::NotifyChromeAboutState(bool expanded) {
+void Panel::StackAbovePanel(Panel* sibling, StackingManager::Layer layer) {
+  DCHECK(sibling);
+  // Stack our titlebar window directly above the other panel's titlebar
+  // (its top window), then stack our content window directly below our
+  // titlebar, and then stack our input window directly below our content.
+  wm()->stacking_manager()->StackWindowRelativeToOtherWindow(
+      titlebar_win_, sibling->titlebar_win(), true, layer);
+  wm()->stacking_manager()->StackWindowRelativeToOtherWindow(
+      content_win_, titlebar_win_, false, layer);
+  StackInputWindows();
+}
+
+bool Panel::SetExpandedState(bool expanded) {
+  if (expanded == is_expanded_)
+    return true;
+
+  is_expanded_ = expanded;
+
   WmIpc::Message msg(WmIpc::Message::CHROME_NOTIFY_PANEL_STATE);
   msg.set_param(0, expanded);
   bool success = wm()->wm_ipc()->SendMessage(content_win_->xid(), msg);
 
-  XAtom atom = wm()->GetXAtom(ATOM_CHROME_STATE_COLLAPSED_PANEL);
-  vector<pair<XAtom, bool> > states;
-  states.push_back(make_pair(atom, expanded ? false : true));
-  success &= content_win_->ChangeChromeState(states);
+  success &= UpdateChromeStateProperty();
 
   return success;
 }
@@ -360,7 +369,7 @@ WindowManager* Panel::wm() {
   return panel_manager_->wm();
 }
 
-void Panel::Resize(int width, int height, Window::Gravity gravity) {
+void Panel::ResizeContent(int width, int height, Window::Gravity gravity) {
   DCHECK_GT(width, 0);
   DCHECK_GT(height, 0);
 
@@ -376,6 +385,7 @@ void Panel::Resize(int width, int height, Window::Gravity gravity) {
     titlebar_win_->MoveClientToComposited();
   }
 
+  ConfigureInputWindows();
   panel_manager_->HandlePanelResize(this);
 }
 
@@ -436,6 +446,17 @@ void Panel::ConfigureInputWindows() {
   }
 }
 
+void Panel::StackInputWindows() {
+  // Stack all of the input windows directly below the content window
+  // (which is stacked beneath the titlebar) -- we don't want the
+  // corner windows to occlude the titlebar.
+  wm()->xconn()->StackWindow(top_input_xid_, content_win_->xid(), false);
+  wm()->xconn()->StackWindow(top_left_input_xid_, content_win_->xid(), false);
+  wm()->xconn()->StackWindow(top_right_input_xid_, content_win_->xid(), false);
+  wm()->xconn()->StackWindow(left_input_xid_, content_win_->xid(), false);
+  wm()->xconn()->StackWindow(right_input_xid_, content_win_->xid(), false);
+}
+
 void Panel::ApplyResize() {
   int dx = resize_event_coalescer_.x() - drag_start_x_;
   int dy = resize_event_coalescer_.y() - drag_start_y_;
@@ -465,7 +486,11 @@ void Panel::ApplyResize() {
   drag_last_height_ = max(drag_orig_height_ + dy, kPanelMinHeight);
 
   if (FLAGS_panel_opaque_resize) {
-    Resize(drag_last_width_, drag_last_height_, drag_gravity_);
+    // TODO: We don't use opaque resizing currently, but if we ever start,
+    // we're doing extra configuration of the input windows during each
+    // step of the resize here that we don't really need to do until it's
+    // done.
+    ResizeContent(drag_last_width_, drag_last_height_, drag_gravity_);
   } else {
     if (resize_actor_.get()) {
       int actor_x = titlebar_win_->client_x();
@@ -483,6 +508,13 @@ void Panel::ApplyResize() {
           drag_last_width_, drag_last_height_ + titlebar_win_->client_height());
     }
   }
+}
+
+bool Panel::UpdateChromeStateProperty() {
+  XAtom atom = wm()->GetXAtom(ATOM_CHROME_STATE_COLLAPSED_PANEL);
+  vector<pair<XAtom, bool> > states;
+  states.push_back(make_pair(atom, is_expanded_ ? false : true));
+  return content_win_->ChangeChromeState(states);
 }
 
 }  // namespace window_manager

@@ -69,8 +69,13 @@ class WindowManager {
   // selections.  This is also used to name our log files.
   static const char* GetWmName() { return "chromeos-wm"; }
 
+  // Perform initial setup.  This must be called immediately after the
+  // WindowManager object is created.
   bool Init();
 
+  // Handle an event from the X server.  Returns true if the event was
+  // processed and should be removed from GDK's event stream or false
+  // otherwise.
   bool HandleEvent(XEvent* event);
 
   // Create a new X window for receiving input.
@@ -98,12 +103,6 @@ class WindowManager {
   Window* GetWindow(XWindow xid);
   Window* GetWindowOrDie(XWindow xid);
 
-  // Locks the screen by calling xscreensaver-command.
-  void LockScreen();
-
-  // Enables and configures an external monitor.
-  void ConfigureExternalMonitor();
-
   // Do something reasonable with the input focus.
   // This is intended to be called by EventConsumers when they give up the
   // focus and aren't sure what to do with it.
@@ -113,6 +112,10 @@ class WindowManager {
   // currently-active window (in our case, this is the top-level window or
   // panel window that has the focus).
   bool SetActiveWindowProperty(XWindow xid);
+
+  // Handle a change in the area available for the layout manager to use to
+  // display toplevel windows.
+  void HandleLayoutManagerAreaChange(int x, int y, int width, int height);
 
   // Register an event consumer as a listener for changes of a particular
   // property on a particular window.  The consumer's
@@ -222,7 +225,13 @@ class WindowManager {
   bool HandleUnmapNotify(const XUnmapEvent& e);
 
   // Callback when the hotkey for launching an xterm is pressed.
-  void LaunchTerminalCallback();
+  void LaunchTerminal();
+
+  // Locks the screen by calling xscreensaver-command.
+  void LockScreen();
+
+  // Enable and configure an external monitor.
+  void ConfigureExternalMonitor();
 
   // Callback to show or hide debugging information about client windows.
   void ToggleClientWindowDebugging();
@@ -325,6 +334,12 @@ class WindowManager {
   // Version of the IPC protocol that Chrome is currently using.  See
   // WM_NOTIFY_IPC_VERSION in wm_ipc.h for details.
   int wm_ipc_version_;
+
+  // Area currently available for the layout manager.
+  int layout_manager_x_;
+  int layout_manager_y_;
+  int layout_manager_width_;
+  int layout_manager_height_;
 
   DISALLOW_COPY_AND_ASSIGN(WindowManager);
 };

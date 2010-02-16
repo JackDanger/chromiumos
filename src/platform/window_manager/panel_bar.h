@@ -38,7 +38,7 @@ class PanelBar : public PanelContainer {
 
   // Begin overridden PanelContainer methods.
   void GetInputWindows(std::vector<XWindow>* windows_out);
-  void AddPanel(Panel* panel, PanelSource source, bool expanded);
+  void AddPanel(Panel* panel, PanelSource source);
   void RemovePanel(Panel* panel);
   bool ShouldAddDraggedPanel(const Panel* panel, int drag_x, int drag_y);
   void HandleInputWindowButtonPress(XWindow xid,
@@ -93,21 +93,13 @@ class PanelBar : public PanelContainer {
 
  private:
   friend class BasicWindowManagerTest;
-  FRIEND_TEST(PanelBarTest, ActiveWindowMessage);
   FRIEND_TEST(PanelBarTest, FocusNewPanel);
   FRIEND_TEST(PanelBarTest, HideCollapsedPanels);
   FRIEND_TEST(PanelBarTest, DeferHidingDraggedCollapsedPanel);
 
   // PanelBar-specific information about a panel.
   struct PanelInfo {
-    PanelInfo()
-        : is_expanded(false),
-          snapped_right(0),
-          is_urgent(false) {
-    }
-
-    // Is the panel currently expanded?
-    bool is_expanded;
+    PanelInfo() : snapped_right(0), is_urgent(false) {}
 
     // X position of the right edge of where the titlebar wants to be when
     // collapsed.  For collapsed panels that are being dragged, this may be

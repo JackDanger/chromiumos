@@ -175,7 +175,7 @@ TEST_F(PanelBarTest, ActiveWindowMessage) {
   Panel* panel = CreatePanel(200, 20, 400, false);
 
   // Make sure that it starts out collapsed.
-  EXPECT_FALSE(panel_bar_->GetPanelInfoOrDie(panel)->is_expanded);
+  EXPECT_FALSE((panel)->is_expanded());
   EXPECT_NE(panel->content_xid(), xconn_->focused_xid());
 
   // After sending a _NET_ACTIVE_WINDOW message asking the window manager
@@ -191,7 +191,7 @@ TEST_F(PanelBarTest, ActiveWindowMessage) {
       None,                  // currently-active window
       None);
   EXPECT_TRUE(wm_->HandleEvent(&event));
-  EXPECT_TRUE(panel_bar_->GetPanelInfoOrDie(panel)->is_expanded);
+  EXPECT_TRUE(panel->is_expanded());
   EXPECT_EQ(panel->content_xid(), xconn_->focused_xid());
   EXPECT_EQ(panel->content_xid(), GetActiveWindowProperty());
 }

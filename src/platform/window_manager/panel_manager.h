@@ -107,6 +107,11 @@ class PanelManager : public EventConsumer {
   // forward this through to its container, if any.
   void HandlePanelResize(Panel* panel);
 
+  // Handle notification from a dock that it has become visible or
+  // invisible.  We use this to notify the window manager so it can resize
+  // the area available for toplevel windows.
+  void HandleDockVisibilityChange(PanelDock* dock);
+
   // Handle the screen being resized.
   void HandleScreenResize();
 
@@ -156,17 +161,20 @@ class PanelManager : public EventConsumer {
   void HandlePanelDragComplete(Panel* panel, bool removed);
 
   // Helper method.  Calls the container's AddPanel() method with the
-  // passed in 'panel', 'source', and 'expanded' parameters and updates
+  // passed-in 'panel' and 'source' parameters and updates
   // 'containers_by_panel_'.
   void AddPanelToContainer(Panel* panel,
                            PanelContainer* container,
-                           PanelContainer::PanelSource source,
-                           bool expanded);
+                           PanelContainer::PanelSource source);
 
   // Helper method.  Calls the container's RemovePanel() method, updates
   // 'containers_by_panel_', and removes the panel's button grab (in case
   // the container had installed one).
   void RemovePanelFromContainer(Panel* panel, PanelContainer* container);
+
+  // Compute how much area is available (after subtracting space taken up
+  // by visible panel docks) and update the window manager.
+  void UpdateAvailableArea();
 
   WindowManager* wm_;  // not owned
 

@@ -50,7 +50,7 @@ class PanelContainer {
   // Add a panel to this container.  Ownership of the object's memory
   // remains with the caller.  The container should add a button grab on
   // the panel if it doesn't focus it.
-  virtual void AddPanel(Panel* panel, PanelSource source, bool expanded) = 0;
+  virtual void AddPanel(Panel* panel, PanelSource source) = 0;
 
   // Remove a panel from this container.  Ownership remains with the
   // caller.  Note that this may be a panel that's currently being dragged.

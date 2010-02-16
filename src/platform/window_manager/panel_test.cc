@@ -48,14 +48,14 @@ TEST_F(PanelTest, InputWindows) {
       xconn_->GetWindowInfoOrDie(content_xid);
 
   // Create a panel.
-  Panel panel(panel_manager_, &content_win, &titlebar_win);
+  Panel panel(panel_manager_, &content_win, &titlebar_win, true);
   panel.SetResizable(true);
   panel.Move(0, 0, true, 0);
 
   // Restack the panel and check that its titlebar is stacked above the
   // content window, and that the content window is above all of the input
   // windows used for resizing.
-  panel.StackAtTopOfLayer(StackingManager::LAYER_STATIONARY_PANEL);
+  panel.StackAtTopOfLayer(StackingManager::LAYER_STATIONARY_PANEL_IN_BAR);
   EXPECT_LT(xconn_->stacked_xids().GetIndex(titlebar_xid),
             xconn_->stacked_xids().GetIndex(content_xid));
   EXPECT_LT(xconn_->stacked_xids().GetIndex(content_xid),
@@ -158,7 +158,7 @@ TEST_F(PanelTest, Resize) {
       xconn_->GetWindowInfoOrDie(content_xid);
 
   // Create a panel.
-  Panel panel(panel_manager_, &content_win, &titlebar_win);
+  Panel panel(panel_manager_, &content_win, &titlebar_win, true);
   panel.SetResizable(true);
   panel.Move(0, 0, true, 0);
 
@@ -235,12 +235,12 @@ TEST_F(PanelTest, ChromeState) {
   Window titlebar_win(wm_.get(), titlebar_xid, false);
   XWindow content_xid = CreatePanelContentWindow(200, 400, titlebar_xid, false);
   Window content_win(wm_.get(), content_xid, false);
-  Panel panel(panel_manager_, &content_win, &titlebar_win);
+  Panel panel(panel_manager_, &content_win, &titlebar_win, false);
   panel.Move(0, 0, true, 0);
 
   // The panel's content window should have have a collapsed state in
-  // _CHROME_STATE initially.
-  panel.NotifyChromeAboutState(false);
+  // _CHROME_STATE initially (since we told it to start collapsed).
+  EXPECT_FALSE(panel.is_expanded());
   std::vector<int> values;
   ASSERT_TRUE(xconn_->GetIntArrayProperty(content_xid, state_atom, &values));
   ASSERT_EQ(1, values.size());
@@ -249,20 +249,26 @@ TEST_F(PanelTest, ChromeState) {
   // After we tell the panel to notify Chrome that it's been expanded, it
   // should remove the collapsed atom (and additionally, the entire
   // property).
-  panel.NotifyChromeAboutState(true);
+  panel.SetExpandedState(true);
+  EXPECT_TRUE(panel.is_expanded());
   EXPECT_FALSE(xconn_->GetIntArrayProperty(content_xid, state_atom, &values));
+
+  // Now tell it to notify Chrome that it's been collapsed again.
+  panel.SetExpandedState(false);
+  values.clear();
+  ASSERT_TRUE(xconn_->GetIntArrayProperty(content_xid, state_atom, &values));
+  ASSERT_EQ(1, values.size());
+  EXPECT_EQ(collapsed_atom, values[0]);
 }
 
-// Test that we're able to hide content windows' shadows (we do this when
-// panels are collapsed so they won't show up across the bottom of the
-// screen).
+// Test that we're able to hide panels' shadows.
 TEST_F(PanelTest, Shadows) {
   // Create a panel.
   XWindow titlebar_xid = CreatePanelTitlebarWindow(200, 20);
   Window titlebar_win(wm_.get(), titlebar_xid, false);
   XWindow content_xid = CreatePanelContentWindow(200, 400, titlebar_xid, false);
   Window content_win(wm_.get(), content_xid, false);
-  Panel panel(panel_manager_, &content_win, &titlebar_win);
+  Panel panel(panel_manager_, &content_win, &titlebar_win, true);
   panel.Move(0, 0, true, 0);
 
   // Both the titlebar and content windows' shadows should be visible
@@ -273,10 +279,10 @@ TEST_F(PanelTest, Shadows) {
   EXPECT_DOUBLE_EQ(1.0, content_win.shadow()->opacity());
 
   // Now tell the panel to hide the content shadow.
-  panel.SetContentShadowOpacity(0, 0);
+  panel.SetShadowOpacity(0, 0);
   EXPECT_TRUE(titlebar_win.shadow()->is_shown());
   EXPECT_TRUE(content_win.shadow()->is_shown());
-  EXPECT_DOUBLE_EQ(1.0, titlebar_win.shadow()->opacity());
+  EXPECT_DOUBLE_EQ(0.0, titlebar_win.shadow()->opacity());
   EXPECT_DOUBLE_EQ(0.0, content_win.shadow()->opacity());
 }
 

@@ -26,7 +26,7 @@ StackingManager::StackingManager(XConnection* xconn, ClutterInterface* clutter)
     xids_.insert(xid);
 
     shared_ptr<ClutterInterface::Actor> actor(clutter->CreateGroup());
-    actor->SetName(LayerToName(layer));
+    actor->SetName(StringPrintf("%s layer", LayerToName(layer)));
     actor->SetVisibility(false);
     clutter->GetDefaultStage()->AddActor(actor.get());
     actor->RaiseToTop();
@@ -40,62 +40,82 @@ StackingManager::~StackingManager() {
 }
 
 bool StackingManager::StackWindowAtTopOfLayer(Window* win, Layer layer) {
-  CHECK(win);
+  DCHECK(win);
 
-  XWindow layer_xid =
-      FindWithDefault(layer_to_xid_, layer, static_cast<XWindow>(None));
-  CHECK(layer_xid != None) << "Invalid layer " << layer;
-  bool result = win->StackClientBelow(layer_xid);
-
-  shared_ptr<ClutterInterface::Actor> layer_actor =
-      FindWithDefault(
-          layer_to_actor_, layer, shared_ptr<ClutterInterface::Actor>());
-  CHECK(layer_actor.get()) << "Invalid layer " << layer;
+  ClutterInterface::Actor* layer_actor = GetActorForLayer(layer);
 
   // Find the next-lowest layer so we can stack the window's shadow
   // directly above it.
   // TODO: This won't work for the bottom layer; write additional code to
   // handle it if it ever becomes necessary.
-  Layer lower_layer = static_cast<Layer>(layer + 1);
-  shared_ptr<ClutterInterface::Actor> lower_layer_actor =
-      FindWithDefault(
-          layer_to_actor_, lower_layer, shared_ptr<ClutterInterface::Actor>());
-  win->StackCompositedBelow(layer_actor.get(), lower_layer_actor.get(), true);
+  ClutterInterface::Actor* lower_layer_actor =
+      GetActorForLayer(static_cast<Layer>(layer + 1));
+  win->StackCompositedBelow(layer_actor, lower_layer_actor, true);
 
-  return result;
+  XWindow layer_xid = GetXidForLayer(layer);
+  return win->StackClientBelow(layer_xid);
 }
 
 bool StackingManager::StackXidAtTopOfLayer(XWindow xid, Layer layer) {
-  XWindow ref_xid = FindWithDefault(
-      layer_to_xid_, layer, static_cast<XWindow>(None));
-  CHECK(ref_xid != None) << "Invalid layer " << layer;
-  return xconn_->StackWindow(xid, ref_xid, false);  // above=false
+  XWindow layer_xid = GetXidForLayer(layer);
+  return xconn_->StackWindow(xid, layer_xid, false);  // above=false
 }
 
 void StackingManager::StackActorAtTopOfLayer(
     ClutterInterface::Actor* actor, Layer layer) {
-  shared_ptr<ClutterInterface::Actor> ref_actor =
-      FindWithDefault(
-          layer_to_actor_, layer, shared_ptr<ClutterInterface::Actor>());
-  CHECK(ref_actor.get()) << "Invalid layer " << layer;
-  actor->Lower(ref_actor.get());
+  DCHECK(actor);
+  ClutterInterface::Actor* layer_actor = GetActorForLayer(layer);
+  actor->Lower(layer_actor);
+}
+
+bool StackingManager::StackWindowRelativeToOtherWindow(
+    Window* win, Window* sibling, bool above, Layer layer) {
+  DCHECK(win);
+  DCHECK(sibling);
+
+  ClutterInterface::Actor* lower_layer_actor =
+      GetActorForLayer(static_cast<Layer>(layer + 1));
+  if (above)
+    win->StackCompositedAbove(sibling->actor(), lower_layer_actor, true);
+  else
+    win->StackCompositedBelow(sibling->actor(), lower_layer_actor, true);
+
+  return above ?
+         win->StackClientAbove(sibling->xid()) :
+         win->StackClientBelow(sibling->xid());
 }
 
 // static
 const char* StackingManager::LayerToName(Layer layer) {
   switch (layer) {
-    case LAYER_DEBUGGING:               return "debugging layer";
-    case LAYER_HOTKEY_OVERLAY:          return "hotkey overlay layer";
-    case LAYER_DRAGGED_PANEL:           return "dragged panel layer";
-    case LAYER_ACTIVE_TRANSIENT_WINDOW: return "active transient window layer";
-    case LAYER_PANEL_BAR_INPUT_WINDOW:  return "panel bar input window layer";
-    case LAYER_STATIONARY_PANEL:        return "stationary panel layer";
-    case LAYER_FLOATING_TAB:            return "floating tab layer";
-    case LAYER_TAB_SUMMARY:             return "tab summary layer";
-    case LAYER_TOPLEVEL_WINDOW:         return "toplevel window layer";
-    case LAYER_BACKGROUND:              return "background layer";
-    default:                            return "unknown layer";
+    case LAYER_DEBUGGING:                return "debugging";
+    case LAYER_HOTKEY_OVERLAY:           return "hotkey overlay";
+    case LAYER_DRAGGED_PANEL:            return "dragged panel";
+    case LAYER_ACTIVE_TRANSIENT_WINDOW:  return "active transient window";
+    case LAYER_PANEL_BAR_INPUT_WINDOW:   return "panel bar input window";
+    case LAYER_STATIONARY_PANEL_IN_BAR:  return "static panel in bar";
+    case LAYER_STATIONARY_PANEL_IN_DOCK: return "stationary panel in dock";
+    case LAYER_FLOATING_TAB:             return "floating tab";
+    case LAYER_TAB_SUMMARY:              return "tab summary";
+    case LAYER_TOPLEVEL_WINDOW:          return "toplevel window";
+    case LAYER_BACKGROUND:               return "background";
+    default:                             return "unknown";
   }
+}
+
+ClutterInterface::Actor* StackingManager::GetActorForLayer(Layer layer) {
+  shared_ptr<ClutterInterface::Actor> layer_actor =
+      FindWithDefault(
+          layer_to_actor_, layer, shared_ptr<ClutterInterface::Actor>());
+  CHECK(layer_actor.get()) << "Invalid layer " << layer;
+  return layer_actor.get();
+}
+
+XWindow StackingManager::GetXidForLayer(Layer layer) {
+  XWindow xid = FindWithDefault(
+      layer_to_xid_, layer, static_cast<XWindow>(None));
+  CHECK(xid != None) << "Invalid layer " << layer;
+  return xid;
 }
 
 }  // namespace window_manager

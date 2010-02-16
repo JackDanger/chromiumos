@@ -38,8 +38,13 @@ class Panel {
   // (PanelManager would have previously moved the client windows offscreen
   // in response to their map requests, and Window's c'tor makes composited
   // windows invisible.)
-  Panel(PanelManager* panel_manager, Window* content_win, Window* titlebar_win);
+  Panel(PanelManager* panel_manager,
+        Window* content_win,
+        Window* titlebar_win,
+        bool is_expanded);
   ~Panel();
+
+  bool is_expanded() const { return is_expanded_; }
 
   const Window* const_content_win() const { return content_win_; }
   Window* content_win() { return content_win_; }
@@ -102,8 +107,8 @@ class Panel {
   // the content window).
   void SetTitlebarWidth(int width);
 
-  // Set the opacity of the content window's drop shadow.
-  void SetContentShadowOpacity(double opacity, int anim_ms);
+  // Set the opacity of the titlebar and content windows' drop shadows.
+  void SetShadowOpacity(double opacity, int anim_ms);
 
   // Set whether the panel should be resizable by dragging its borders.
   void SetResizable(bool resizable);
@@ -112,9 +117,15 @@ class Panel {
   // passed-in layer.  Input windows are included.
   void StackAtTopOfLayer(StackingManager::Layer layer);
 
-  // Notify Chrome about the panel's current visibility state and update
-  // the content window's _CHROME_STATE property.
-  bool NotifyChromeAboutState(bool expanded);
+  // Stack the panel's client, composited, and input windows directly above
+  // another panel.
+  void StackAbovePanel(Panel* sibling, StackingManager::Layer layer);
+
+  // Update 'is_expanded_'.  If it has changed, also notify Chrome about the
+  // panel's current visibility state and update the content window's
+  // _CHROME_STATE property.  Returns false if notifying Chrome fails (but
+  // still updates the local variable).
+  bool SetExpandedState(bool expanded);
 
   // Add a button grab on the content window so we'll be notified when it
   // gets clicked.  This is done for unfocused panels.
@@ -124,6 +135,12 @@ class Panel {
   // pointer grab and replaying the click that triggered the pointer grab.
   void RemoveButtonGrab(bool remove_pointer_grab);
 
+  // Resize the content window to the passed-in dimensions.  The titlebar
+  // window is moved above the content window if necessary and resized to
+  // match the content window's width.  Additionally, the input windows are
+  // configured.
+  void ResizeContent(int width, int height, Window::Gravity gravity);
+
  private:
   FRIEND_TEST(PanelBarTest, PackPanelsAfterPanelResize);
   FRIEND_TEST(PanelManagerTest, ChromeInitiatedPanelResize);
@@ -132,22 +149,28 @@ class Panel {
 
   WindowManager* wm();
 
-  // Resize the content window to the passed-in dimensions.  The titlebar
-  // window is moved above the content window if necessary and resized to
-  // match the content window's width.  Note that the panel's input windows
-  // aren't configured; use ConfigureInputWindows() to do that.
-  void Resize(int width, int height, Window::Gravity gravity);
-
   // Move and resize the input windows appropriately for the panel's
   // current configuration.
   void ConfigureInputWindows();
 
+  // Stack the input windows directly below the content window.
+  void StackInputWindows();
+
   // Called periodically by 'resize_event_coalescer_'.
   void ApplyResize();
+
+  // Update the content window's _CHROME_STATE property according to the
+  // current value of 'is_expanded_'.
+  bool UpdateChromeStateProperty();
 
   PanelManager* panel_manager_;  // not owned
   Window* content_win_;          // not owned
   Window* titlebar_win_;         // not owned
+
+  // Is the panel currently expanded?  The Panel class does little itself
+  // with this information; most work is left to PanelContainer
+  // implementations.
+  bool is_expanded_;
 
   // Translucent resize box used when opaque resizing is disabled.
   scoped_ptr<ClutterInterface::Actor> resize_actor_;

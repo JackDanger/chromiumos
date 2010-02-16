@@ -576,7 +576,7 @@ TEST_F(LayoutManagerTest, Resize) {
   // should also be resized.
   int new_width = lm_->width() / 2;
   int new_height = lm_->height() / 2;
-  lm_->Resize(new_width, new_height);
+  lm_->MoveAndResize(0, 0, new_width, new_height);
   EXPECT_EQ(new_width, lm_->width());
   EXPECT_EQ(new_height, lm_->height());
   EXPECT_EQ(lm_->width(), info->width);

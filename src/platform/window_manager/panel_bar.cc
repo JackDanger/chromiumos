@@ -108,11 +108,10 @@ void PanelBar::GetInputWindows(vector<XWindow>* windows_out) {
   windows_out->push_back(show_collapsed_panels_input_xid_);
 }
 
-void PanelBar::AddPanel(Panel* panel, PanelSource source, bool expanded) {
+void PanelBar::AddPanel(Panel* panel, PanelSource source) {
   DCHECK(panel);
 
   shared_ptr<PanelInfo> info(new PanelInfo);
-  info->is_expanded = expanded;
   info->snapped_right =
       wm_->width() - total_panel_width_ - kPixelsBetweenPanels;
   info->is_urgent = panel->content_win()->wm_hint_urgent();
@@ -128,7 +127,7 @@ void PanelBar::AddPanel(Panel* panel, PanelSource source, bool expanded) {
 
   panel->StackAtTopOfLayer(source == PANEL_SOURCE_DRAGGED ?
                            StackingManager::LAYER_DRAGGED_PANEL :
-                           StackingManager::LAYER_STATIONARY_PANEL);
+                           StackingManager::LAYER_STATIONARY_PANEL_IN_BAR);
 
   const int final_y = ComputePanelY(*panel, *(info.get()));
 
@@ -149,14 +148,13 @@ void PanelBar::AddPanel(Panel* panel, PanelSource source, bool expanded) {
       NOTREACHED() << "Unknown panel source " << source;
   }
 
-  panel->SetResizable(expanded);
-  panel->NotifyChromeAboutState(expanded);
+  panel->SetResizable(panel->is_expanded());
 
   // If this is a new panel or it was already focused (e.g. it was
   // focused when it got detached, and now it's being reattached),
   // call FocusPanel() to focus it if needed and update
   // 'desired_panel_to_focus_'.
-  if (expanded &&
+  if (panel->is_expanded() &&
       (source == PANEL_SOURCE_NEW || panel->content_win()->focused())) {
     FocusPanel(panel, false, wm_->GetCurrentTimeFromServer());
   } else {
@@ -165,7 +163,7 @@ void PanelBar::AddPanel(Panel* panel, PanelSource source, bool expanded) {
 
   // If this is the only collapsed panel, we need to configure the input
   // window to watch for the pointer moving to the bottom of the screen.
-  if (!expanded && GetNumCollapsedPanels() == 1)
+  if (!panel->is_expanded() && GetNumCollapsedPanels() == 1)
     ConfigureShowCollapsedPanelsInputWindow(true);
 }
 
@@ -181,7 +179,7 @@ void PanelBar::RemovePanel(Panel* panel) {
   if (desired_panel_to_focus_ == panel)
     desired_panel_to_focus_ = GetNearestExpandedPanel(panel);
 
-  bool was_collapsed = !GetPanelInfoOrDie(panel)->is_expanded;
+  bool was_collapsed = !panel->is_expanded();
   CHECK(panel_infos_.erase(panel) == 1);
   Panels::iterator it =
       FindPanelInVectorByWindow(panels_, *(panel->content_win()));
@@ -284,7 +282,7 @@ void PanelBar::HandlePanelTitlebarPointerEnter(Panel* panel, Time timestamp) {
   DCHECK(panel);
   VLOG(1) << "Got pointer enter in panel " << panel->xid_str() << "'s titlebar";
   if (collapsed_panel_state_ != COLLAPSED_PANEL_STATE_SHOWN &&
-      !GetPanelInfoOrDie(panel)->is_expanded) {
+      !panel->is_expanded()) {
     ShowCollapsedPanels();
   }
 }
@@ -311,10 +309,9 @@ bool PanelBar::HandleNotifyPanelDraggedMessage(Panel* panel,
   VLOG(2) << "Notified about drag of panel " << panel->xid_str()
           << " to (" << drag_x << ", " << drag_y << ")";
 
-  PanelInfo* info = GetPanelInfoOrDie(panel);
   const int y_threshold =
       wm_->height() - panel->total_height() - kPanelDetachThresholdPixels;
-  if (info->is_expanded && drag_y <= y_threshold)
+  if (panel->is_expanded() && drag_y <= y_threshold)
     return false;
 
   if (dragged_panel_ != panel) {
@@ -345,7 +342,7 @@ void PanelBar::HandleNotifyPanelDragCompleteMessage(Panel* panel) {
 
 void PanelBar::HandleFocusPanelMessage(Panel* panel) {
   DCHECK(panel);
-  if (!GetPanelInfoOrDie(panel)->is_expanded)
+  if (!panel->is_expanded())
     ExpandPanel(panel, false, kPanelStateAnimMs);
   FocusPanel(panel, false, wm_->GetCurrentTimeFromServer());
 }
@@ -378,7 +375,7 @@ void PanelBar::HandlePanelUrgencyChange(Panel* panel) {
     return;
 
   info->is_urgent = urgent;
-  if (!info->is_expanded) {
+  if (!panel->is_expanded()) {
     const int computed_y = ComputePanelY(*panel, *info);
     if (panel->titlebar_y() != computed_y)
       panel->MoveY(computed_y, true, kHideCollapsedPanelsAnimMs);
@@ -396,7 +393,7 @@ bool PanelBar::TakeFocus() {
 
   // Just focus the first expanded panel.
   for (Panels::iterator it = panels_.begin(); it != panels_.end(); ++it) {
-    if (GetPanelInfoOrDie(*it)->is_expanded) {
+    if ((*it)->is_expanded()) {
       FocusPanel(*it, false, timestamp);  // remove_pointer_grab=false
       return true;
     }
@@ -415,13 +412,13 @@ PanelBar::PanelInfo* PanelBar::GetPanelInfoOrDie(Panel* panel) {
 int PanelBar::GetNumCollapsedPanels() {
   int count = 0;
   for (Panels::const_iterator it = panels_.begin(); it != panels_.end(); ++it)
-    if (!GetPanelInfoOrDie(*it)->is_expanded)
+    if (!(*it)->is_expanded())
       count++;
   return count;
 }
 
 int PanelBar::ComputePanelY(const Panel& panel, const PanelInfo& info) const {
-  if (info.is_expanded) {
+  if (panel.is_expanded()) {
     return wm_->height() - panel.total_height();
   } else {
     if (CollapsedPanelsAreHidden() && !info.is_urgent)
@@ -433,17 +430,16 @@ int PanelBar::ComputePanelY(const Panel& panel, const PanelInfo& info) const {
 
 void PanelBar::ExpandPanel(Panel* panel, bool create_anchor, int anim_ms) {
   CHECK(panel);
-  PanelInfo* info = GetPanelInfoOrDie(panel);
-  if (info->is_expanded) {
+  if (panel->is_expanded()) {
     LOG(WARNING) << "Ignoring request to expand already-expanded panel "
                  << panel->xid_str();
     return;
   }
 
-  info->is_expanded = true;
+  panel->SetExpandedState(true);
+  const PanelInfo* info = GetPanelInfoOrDie(panel);
   panel->MoveY(ComputePanelY(*panel, *info), true, anim_ms);
   panel->SetResizable(true);
-  panel->NotifyChromeAboutState(true);
   if (create_anchor)
     CreateAnchor(panel);
 
@@ -453,8 +449,7 @@ void PanelBar::ExpandPanel(Panel* panel, bool create_anchor, int anim_ms) {
 
 void PanelBar::CollapsePanel(Panel* panel) {
   CHECK(panel);
-  PanelInfo* info = GetPanelInfoOrDie(panel);
-  if (!info->is_expanded) {
+  if (!panel->is_expanded()) {
     LOG(WARNING) << "Ignoring request to collapse already-collapsed panel "
                  << panel->xid_str();
     return;
@@ -467,10 +462,10 @@ void PanelBar::CollapsePanel(Panel* panel) {
   if (anchor_panel_ == panel)
     DestroyAnchor();
 
-  info->is_expanded = false;
+  panel->SetExpandedState(false);
+  const PanelInfo* info = GetPanelInfoOrDie(panel);
   panel->MoveY(ComputePanelY(*panel, *info), true, kPanelStateAnimMs);
   panel->SetResizable(false);
-  panel->NotifyChromeAboutState(false);
 
   // Give up the focus if this panel had it.
   if (panel->content_win()->focused()) {
@@ -516,7 +511,7 @@ void PanelBar::HandlePanelDragComplete(Panel* panel) {
   if (dragged_panel_ != panel)
     return;
 
-  panel->StackAtTopOfLayer(StackingManager::LAYER_STATIONARY_PANEL);
+  panel->StackAtTopOfLayer(StackingManager::LAYER_STATIONARY_PANEL_IN_BAR);
   panel->MoveX(GetPanelInfoOrDie(panel)->snapped_right,
                true, kPanelArrangeAnimMs);
   dragged_panel_ = NULL;
@@ -634,13 +629,13 @@ void PanelBar::DestroyAnchor() {
 }
 
 Panel* PanelBar::GetNearestExpandedPanel(Panel* panel) {
-  if (!panel || !GetPanelInfoOrDie(panel)->is_expanded)
+  if (!panel || !panel->is_expanded())
     return NULL;
 
   Panel* nearest_panel = NULL;
   int best_distance = kint32max;
   for (Panels::iterator it = panels_.begin(); it != panels_.end(); ++it) {
-    if (*it == panel || !GetPanelInfoOrDie(*it)->is_expanded)
+    if (*it == panel || !(*it)->is_expanded())
       continue;
 
     int distance = kint32max;
@@ -690,9 +685,9 @@ void PanelBar::ShowCollapsedPanels() {
 
   for (Panels::iterator it = panels_.begin(); it != panels_.end(); ++it) {
     Panel* panel = *it;
-    const PanelInfo* info = GetPanelInfoOrDie(panel);
-    if (info->is_expanded)
+    if (panel->is_expanded())
       continue;
+    const PanelInfo* info = GetPanelInfoOrDie(panel);
     const int computed_y = ComputePanelY(*panel, *info);
     if (panel->titlebar_y() != computed_y)
       panel->MoveY(computed_y, true, kHideCollapsedPanelsAnimMs);
@@ -706,7 +701,7 @@ void PanelBar::HideCollapsedPanels() {
   VLOG(1) << "Hiding collapsed panels";
   DisableShowCollapsedPanelsTimer();
 
-  if (dragged_panel_ && !GetPanelInfoOrDie(dragged_panel_)->is_expanded) {
+  if (dragged_panel_ && !dragged_panel_->is_expanded()) {
     // Don't hide the panels in the middle of the drag -- we'll do it in
     // HandlePanelDragComplete() instead.
     VLOG(1) << "Deferring hiding collapsed panels since collapsed panel "
@@ -718,9 +713,9 @@ void PanelBar::HideCollapsedPanels() {
   collapsed_panel_state_ = COLLAPSED_PANEL_STATE_HIDDEN;
   for (Panels::iterator it = panels_.begin(); it != panels_.end(); ++it) {
     Panel* panel = *it;
-    const PanelInfo* info = GetPanelInfoOrDie(panel);
-    if (info->is_expanded)
+    if (panel->is_expanded())
       continue;
+    const PanelInfo* info = GetPanelInfoOrDie(panel);
     const int computed_y = ComputePanelY(*panel, *info);
     if (panel->titlebar_y() != computed_y)
       panel->MoveY(computed_y, true, kHideCollapsedPanelsAnimMs);

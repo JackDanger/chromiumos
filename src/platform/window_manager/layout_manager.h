@@ -154,8 +154,8 @@ class LayoutManager : public EventConsumer {
   // active mode but refuse to in overview mode).
   bool TakeFocus();
 
-  // Change the amount of space allocated to the layout manager.
-  void Resize(int width, int height);
+  // Change the area allocated to the layout manager.
+  void MoveAndResize(int x, int y, int width, int height);
 
  private:
   FRIEND_TEST(LayoutManagerTest, Basic);  // uses SetMode()
