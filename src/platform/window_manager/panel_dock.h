@@ -63,6 +63,7 @@ class PanelDock : public PanelContainer {
   void HandleFocusPanelMessage(Panel* panel);
   void HandlePanelResize(Panel* panel) {}
   void HandleScreenResize() {}
+  void HandlePanelUrgencyChange(Panel* panel) {}
   // End overridden PanelContainer methods.
 
  private:

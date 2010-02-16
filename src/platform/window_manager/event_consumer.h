@@ -1,4 +1,4 @@
-// Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -107,6 +107,11 @@ class EventConsumer {
 
   // Handle a focus change on a window.
   virtual bool HandleFocusChange(XWindow xid, bool focus_in) { return false; }
+
+  // Handle a property change.
+  virtual void HandleWindowPropertyChange(Window* win, XAtom xatom) {
+    NOTREACHED() << "Unimplemented HandleWindowPropertyChange() called";
+  }
 };
 
 }  // namespace window_manager

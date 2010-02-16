@@ -5,6 +5,7 @@
 #include "window_manager/panel_manager.h"
 
 #include "base/logging.h"
+#include "window_manager/atom_cache.h"
 #include "window_manager/motion_event_coalescer.h"
 #include "window_manager/panel.h"
 #include "window_manager/panel_bar.h"
@@ -123,6 +124,12 @@ void PanelManager::HandleWindowMap(Window* win) {
                           panel_bar_.get(),
                           PanelContainer::PANEL_SOURCE_NEW,
                           expanded);
+
+      // Ask to get notified when the WM_HINTS property changes on the
+      // content window; it's used to set the urgency hint.
+      wm_->RegisterWindowPropertyListener(panel->content_xid(),
+                                          wm_->GetXAtom(ATOM_WM_HINTS),
+                                          this);
       break;
     }
 
@@ -156,6 +163,9 @@ void PanelManager::HandleWindowUnmap(Window* win) {
        it != input_windows.end(); ++it) {
     CHECK(panel_input_xids_.erase(*it) == 1);
   }
+  wm_->UnregisterWindowPropertyListener(panel->content_xid(),
+                                        wm_->GetXAtom(ATOM_WM_HINTS),
+                                        this);
   CHECK(panels_by_titlebar_xid_.erase(panel->titlebar_xid()) == 1);
   CHECK(panels_.erase(panel->content_xid()) == 1);
 }
@@ -379,6 +389,18 @@ bool PanelManager::HandleFocusChange(XWindow xid, bool focus_in) {
   if (container)
     container->HandlePanelFocusChange(panel, focus_in);
   return true;
+}
+
+void PanelManager::HandleWindowPropertyChange(Window* win, XAtom xatom) {
+  Panel* panel = GetPanelByWindow(*win);
+  DCHECK(panel) << "Got property change for non-panel window "
+                << win->xid_str();
+  if (!panel)
+    return;
+  DCHECK_EQ(wm_->GetXAtom(ATOM_WM_HINTS), xatom);
+  PanelContainer* container = GetContainerForPanel(*panel);
+  if (container)
+    container->HandlePanelUrgencyChange(panel);
 }
 
 void PanelManager::HandlePanelResize(Panel* panel) {

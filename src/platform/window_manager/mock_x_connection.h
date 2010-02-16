@@ -1,4 +1,4 @@
-// Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -246,6 +246,7 @@ class MockXConnection : public XConnection {
   static void InitMapRequestEvent(XEvent* event, const WindowInfo& info);
   static void InitMotionNotifyEvent(XEvent* event, const WindowInfo& info,
                                     int x, int y);
+  static void InitPropertyNotifyEvent(XEvent* event, XWindow xid, XAtom xatom);
   static void InitUnmapEvent(XEvent* event, XWindow xid);
 
  private:

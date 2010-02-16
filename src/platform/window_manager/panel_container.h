@@ -116,6 +116,9 @@ class PanelContainer {
   // Handle the screen being resized.
   virtual void HandleScreenResize() = 0;
 
+  // Handle a (likely) change to a panel's urgency hint.
+  virtual void HandlePanelUrgencyChange(Panel* panel) = 0;
+
   DISALLOW_COPY_AND_ASSIGN(PanelContainer);
 };
 

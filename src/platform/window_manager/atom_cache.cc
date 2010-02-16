@@ -1,4 +1,4 @@
-// Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -47,6 +47,7 @@ static const AtomInfo kAtomInfos[] = {
   { ATOM_NET_WORKAREA,                 "_NET_WORKAREA" },
   { ATOM_PRIMARY,                      "PRIMARY" },
   { ATOM_WM_DELETE_WINDOW,             "WM_DELETE_WINDOW" },
+  { ATOM_WM_HINTS,                     "WM_HINTS" },
   { ATOM_WM_NORMAL_HINTS,              "WM_NORMAL_HINTS" },
   { ATOM_WM_PROTOCOLS,                 "WM_PROTOCOLS" },
   { ATOM_WM_S0,                        "WM_S0" },

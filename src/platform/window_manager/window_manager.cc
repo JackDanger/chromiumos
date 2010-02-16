@@ -1,4 +1,4 @@
-// Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -50,6 +50,13 @@ namespace window_manager {
 
 using chromeos::Closure;
 using chromeos::NewPermanentCallback;
+using std::list;
+using std::make_pair;
+using std::map;
+using std::set;
+using std::string;
+using std::tr1::shared_ptr;
+using std::vector;
 
 const int WindowManager::kPanelBarHeight = 18;
 
@@ -452,7 +459,7 @@ XAtom WindowManager::GetXAtom(Atom atom) {
   return atom_cache_->GetXAtom(atom);
 }
 
-const std::string& WindowManager::GetXAtomName(XAtom xatom) {
+const string& WindowManager::GetXAtomName(XAtom xatom) {
   return atom_cache_->GetName(xatom);
 }
 
@@ -470,8 +477,7 @@ Time WindowManager::GetCurrentTimeFromServer() {
 }
 
 Window* WindowManager::GetWindow(XWindow xid) {
-  return FindWithDefault(client_windows_, xid,
-                         std::tr1::shared_ptr<Window>()).get();
+  return FindWithDefault(client_windows_, xid, shared_ptr<Window>()).get();
 }
 
 Window* WindowManager::GetWindowOrDie(XWindow xid) {
@@ -511,6 +517,32 @@ bool WindowManager::SetActiveWindowProperty(XWindow xid) {
   }
   active_window_xid_ = xid;
   return true;
+}
+
+void WindowManager::RegisterWindowPropertyListener(
+    XWindow xid, XAtom xatom, EventConsumer* event_consumer) {
+  DCHECK(event_consumer);
+  if (!window_property_listeners_[make_pair(xid, xatom)].insert(
+          event_consumer).second) {
+    LOG(WARNING) << "Got request to register already-present window property "
+                 << "listener " << event_consumer << " for window "
+                 << XidStr(xid) << " and atom " << XidStr(xatom) << " ("
+                 << GetXAtomName(xatom) << ")";
+  }
+}
+
+void WindowManager::UnregisterWindowPropertyListener(
+    XWindow xid, XAtom xatom, EventConsumer* event_consumer) {
+  DCHECK(event_consumer);
+  WindowPropertyListenerMap::iterator it =
+      window_property_listeners_.find(make_pair(xid, xatom));
+  if (it == window_property_listeners_.end() ||
+      it->second.erase(event_consumer) != 1) {
+    LOG(WARNING) << "Got request to unregister not-registered window property "
+                 << "listener " << event_consumer << " for window "
+                 << XidStr(xid) << " and atom " << XidStr(xatom) << " ("
+                 << GetXAtomName(xatom) << ")";
+  }
 }
 
 bool WindowManager::GetManagerSelection(
@@ -599,7 +631,7 @@ bool WindowManager::SetEwmhGeneralProperties() {
   success &= xconn_->SetIntProperty(wm_xid_, check_atom, XA_WINDOW, wm_xid_);
 
   // State which parts of EWMH we support.
-  std::vector<int> supported;
+  vector<int> supported;
   supported.push_back(GetXAtom(ATOM_NET_ACTIVE_WINDOW));
   supported.push_back(GetXAtom(ATOM_NET_CLIENT_LIST));
   supported.push_back(GetXAtom(ATOM_NET_CLIENT_LIST_STACKING));
@@ -623,21 +655,21 @@ bool WindowManager::SetEwmhSizeProperties() {
   bool success = true;
 
   // We don't use pseudo-large desktops, so this is just the screen size.
-  std::vector<int> geometry;
+  vector<int> geometry;
   geometry.push_back(width_);
   geometry.push_back(height_);
   success &= xconn_->SetIntArrayProperty(
       root_, GetXAtom(ATOM_NET_DESKTOP_GEOMETRY), XA_CARDINAL, geometry);
 
   // The viewport (top-left corner of the desktop) is just (0, 0) for us.
-  std::vector<int> viewport(2, 0);
+  vector<int> viewport(2, 0);
   success &= xconn_->SetIntArrayProperty(
       root_, GetXAtom(ATOM_NET_DESKTOP_VIEWPORT), XA_CARDINAL, viewport);
 
   // This isn't really applicable to us (EWMH just says that it should be
   // used to determine where desktop icons can be placed), but we set it to
   // the size of the screen minus the panel bar's area.
-  std::vector<int> workarea;
+  vector<int> workarea;
   workarea.push_back(0);  // x
   workarea.push_back(0);  // y
   workarea.push_back(width_);
@@ -662,7 +694,7 @@ ClutterInterface::Actor* WindowManager::CreateActorAbove(
 }
 
 bool WindowManager::ManageExistingWindows() {
-  std::vector<XWindow> windows;
+  vector<XWindow> windows;
   if (!xconn_->GetChildWindows(root_, &windows)) {
     return false;
   }
@@ -690,7 +722,7 @@ Window* WindowManager::TrackWindow(XWindow xid, bool override_redirect) {
   // Don't manage our internal windows.
   if (IsInternalWindow(xid) || stacking_manager_->IsInternalWindow(xid))
     return NULL;
-  for (std::set<EventConsumer*>::const_iterator it = event_consumers_.begin();
+  for (set<EventConsumer*>::const_iterator it = event_consumers_.begin();
        it != event_consumers_.end(); ++it) {
     if ((*it)->IsInputWindow(xid))
       return NULL;
@@ -710,9 +742,8 @@ Window* WindowManager::TrackWindow(XWindow xid, bool override_redirect) {
   if (win) {
     LOG(WARNING) << "Window " << XidStr(xid) << " is already being managed";
   } else {
-    std::tr1::shared_ptr<Window> win_ref(
-        new Window(this, xid, override_redirect));
-    client_windows_.insert(std::make_pair(xid, win_ref));
+    shared_ptr<Window> win_ref(new Window(this, xid, override_redirect));
+    client_windows_.insert(make_pair(xid, win_ref));
     win = win_ref.get();
   }
   return win;
@@ -736,14 +767,14 @@ void WindowManager::HandleMappedWindow(Window* win) {
   if (FLAGS_wm_use_compositing && !win->redirected())
     win->Redirect();
   SetWmStateProperty(win->xid(), 1);  // NormalState
-  for (std::set<EventConsumer*>::iterator it = event_consumers_.begin();
+  for (set<EventConsumer*>::iterator it = event_consumers_.begin();
        it != event_consumers_.end(); ++it) {
     (*it)->HandleWindowMap(win);
   }
 }
 
 bool WindowManager::SetWmStateProperty(XWindow xid, int state) {
-  std::vector<int> values;
+  vector<int> values;
   values.push_back(state);
   values.push_back(None);  // we don't use icons
   XAtom xatom = GetXAtom(ATOM_WM_STATE);
@@ -751,11 +782,11 @@ bool WindowManager::SetWmStateProperty(XWindow xid, int state) {
 }
 
 bool WindowManager::UpdateClientListProperty() {
-  std::vector<int> values;
-  const std::list<XWindow>& xids = mapped_xids_->items();
+  vector<int> values;
+  const list<XWindow>& xids = mapped_xids_->items();
   // We store windows in most-to-least-recently-mapped order, but
   // _NET_CLIENT_LIST is least-to-most-recently-mapped.
-  for (std::list<XWindow>::const_reverse_iterator it = xids.rbegin();
+  for (list<XWindow>::const_reverse_iterator it = xids.rbegin();
        it != xids.rend(); ++it) {
     const Window* win = GetWindow(*it);
     if (!win || !win->mapped() || win->override_redirect()) {
@@ -778,11 +809,11 @@ bool WindowManager::UpdateClientListProperty() {
 }
 
 bool WindowManager::UpdateClientListStackingProperty() {
-  std::vector<int> values;
-  const std::list<XWindow>& xids = stacked_xids_->items();
+  vector<int> values;
+  const list<XWindow>& xids = stacked_xids_->items();
   // We store windows in top-to-bottom stacking order, but
   // _NET_CLIENT_LIST_STACKING is bottom-to-top.
-  for (std::list<XWindow>::const_reverse_iterator it = xids.rbegin();
+  for (list<XWindow>::const_reverse_iterator it = xids.rbegin();
        it != xids.rend(); ++it) {
     const Window* win = GetWindow(*it);
     if (win && win->mapped() && !win->override_redirect())
@@ -803,7 +834,7 @@ bool WindowManager::HandleButtonPress(const XButtonEvent& e) {
           << e.x_root << ", " << e.y_root << ") with button " << e.button;
   // TODO: Also have consumers register the windows that they're interested
   // in, so we don't need to offer the event to all of them here?
-  for (std::set<EventConsumer*>::iterator it = event_consumers_.begin();
+  for (set<EventConsumer*>::iterator it = event_consumers_.begin();
        it != event_consumers_.end(); ++it) {
     if ((*it)->HandleButtonPress(
             e.window, e.x, e.y, e.x_root, e.y_root, e.button, e.time)) {
@@ -817,7 +848,7 @@ bool WindowManager::HandleButtonRelease(const XButtonEvent& e) {
   VLOG(1) << "Handling button release in window " << XidStr(e.window)
           << " at relative (" << e.x << ", " << e.y << "), absolute ("
           << e.x_root << ", " << e.y_root << ") with button " << e.button;
-  for (std::set<EventConsumer*>::iterator it = event_consumers_.begin();
+  for (set<EventConsumer*>::iterator it = event_consumers_.begin();
        it != event_consumers_.end(); ++it) {
     if ((*it)->HandleButtonRelease(
             e.window, e.x, e.y, e.x_root, e.y_root, e.button, e.time)) {
@@ -839,7 +870,7 @@ bool WindowManager::HandleClientMessage(const XClientMessageEvent& e) {
                 << "using version " << wm_ipc_version_;
       return true;
     }
-    for (std::set<EventConsumer*>::iterator it = event_consumers_.begin();
+    for (set<EventConsumer*>::iterator it = event_consumers_.begin();
          it != event_consumers_.end(); ++it) {
       if ((*it)->HandleChromeMessage(msg))
         return true;
@@ -847,7 +878,7 @@ bool WindowManager::HandleClientMessage(const XClientMessageEvent& e) {
     LOG(WARNING) << "Ignoring unhandled WM message of type "
                  << XidStr(msg.type());
   } else {
-    for (std::set<EventConsumer*>::iterator it = event_consumers_.begin();
+    for (set<EventConsumer*>::iterator it = event_consumers_.begin();
          it != event_consumers_.end(); ++it) {
       if ((*it)->HandleClientMessage(e))
         return true;
@@ -981,17 +1012,15 @@ bool WindowManager::HandleConfigureRequest(const XConfigureRequestEvent& e) {
 
   VLOG(1) << "Handling configure request for " << XidStr(e.window)
           << " to pos ("
-          << ((e.value_mask & CWX) ? StringPrintf("%d", e.x) :
-              std::string("undef"))
+          << ((e.value_mask & CWX) ? StringPrintf("%d", e.x) : string("undef"))
           << ", "
-          << ((e.value_mask & CWY) ? StringPrintf("%d", e.y) :
-              std::string("undef"))
+          << ((e.value_mask & CWY) ? StringPrintf("%d", e.y) : string("undef"))
           << ") and size "
           << ((e.value_mask & CWWidth) ?
-                  StringPrintf("%d", e.width) : std::string("undef "))
+                  StringPrintf("%d", e.width) : string("undef "))
           << "x"
           << ((e.value_mask & CWHeight) ?
-                  StringPrintf("%d", e.height) : std::string(" undef"));
+                  StringPrintf("%d", e.height) : string(" undef"));
   if (win->override_redirect()) {
     LOG(WARNING) << "Huh?  Got a ConfigureRequest event for override-redirect "
                  << "window " << win->xid_str();
@@ -1020,7 +1049,7 @@ bool WindowManager::HandleConfigureRequest(const XConfigureRequestEvent& e) {
     if (req_width != win->client_width() || req_height != win->client_height())
       win->ResizeClient(req_width, req_height, Window::GRAVITY_NORTHWEST);
   } else {
-    for (std::set<EventConsumer*>::iterator it = event_consumers_.begin();
+    for (set<EventConsumer*>::iterator it = event_consumers_.begin();
          it != event_consumers_.end(); ++it) {
       if ((*it)->HandleWindowConfigureRequest(
               win, req_x, req_y, req_width, req_height))
@@ -1102,7 +1131,7 @@ bool WindowManager::HandleDestroyNotify(const XDestroyWindowEvent& e) {
 
 bool WindowManager::HandleEnterNotify(const XEnterWindowEvent& e) {
   VLOG(1) << "Handling enter notify for " << XidStr(e.window);
-  for (std::set<EventConsumer*>::iterator it = event_consumers_.begin();
+  for (set<EventConsumer*>::iterator it = event_consumers_.begin();
        it != event_consumers_.end(); ++it) {
     if ((*it)->HandlePointerEnter(
             e.window, e.x, e.y, e.x_root, e.y_root, e.time))
@@ -1135,7 +1164,7 @@ bool WindowManager::HandleFocusChange(const XFocusChangeEvent& e) {
   Window* win = GetWindow(e.window);
   if (win)
     win->set_focused(focus_in);
-  for (std::set<EventConsumer*>::iterator it = event_consumers_.begin();
+  for (set<EventConsumer*>::iterator it = event_consumers_.begin();
        it != event_consumers_.end(); ++it) {
     if ((*it)->HandleFocusChange(e.window, focus_in))
       return true;
@@ -1163,7 +1192,7 @@ bool WindowManager::HandleKeyRelease(const XKeyEvent& e) {
 
 bool WindowManager::HandleLeaveNotify(const XLeaveWindowEvent& e) {
   VLOG(1) << "Handling leave notify for " << XidStr(e.window);
-  for (std::set<EventConsumer*>::iterator it = event_consumers_.begin();
+  for (set<EventConsumer*>::iterator it = event_consumers_.begin();
        it != event_consumers_.end(); ++it) {
     if ((*it)->HandlePointerLeave(
             e.window, e.x, e.y, e.x_root, e.y_root, e.time))
@@ -1207,7 +1236,7 @@ bool WindowManager::HandleMapRequest(const XMapRequestEvent& e) {
     LOG(WARNING) << "Huh?  Got a MapRequest event for override-redirect "
                  << "window " << XidStr(e.window);
   }
-  for (std::set<EventConsumer*>::iterator it = event_consumers_.begin();
+  for (set<EventConsumer*>::iterator it = event_consumers_.begin();
        it != event_consumers_.end(); ++it) {
     if ((*it)->HandleWindowMapRequest(win))
       return true;
@@ -1225,7 +1254,7 @@ bool WindowManager::HandleMappingNotify(const XMappingEvent& e) {
 }
 
 bool WindowManager::HandleMotionNotify(const XMotionEvent& e) {
-  for (std::set<EventConsumer*>::iterator it = event_consumers_.begin();
+  for (set<EventConsumer*>::iterator it = event_consumers_.begin();
        it != event_consumers_.end(); ++it) {
     if ((*it)->HandlePointerMotion(
             e.window, e.x, e.y, e.x_root, e.y_root, e.time))
@@ -1241,34 +1270,38 @@ bool WindowManager::HandlePropertyNotify(const XPropertyEvent& e) {
 
   bool deleted = (e.state == PropertyDelete);
   VLOG(2) << "Handling property notify for " << win->xid_str() << " about "
-          << (deleted ? "deleted" : "added") << " property "
+          << (deleted ? "deleted" : "") << " property "
           << XidStr(e.atom) << " (" << GetXAtomName(e.atom) << ")";
   if (e.atom == GetXAtom(ATOM_NET_WM_NAME)) {
-    std::string title;
-    if (deleted || !xconn_->GetStringProperty(win->xid(), e.atom, &title)) {
+    string title;
+    if (deleted || !xconn_->GetStringProperty(win->xid(), e.atom, &title))
       win->SetTitle("");
-    } else {
+    else
       win->SetTitle(title);
-    }
-    return true;
+  } else if (e.atom == GetXAtom(ATOM_WM_HINTS)) {
+    win->FetchAndApplyWmHints();
   } else if (e.atom == GetXAtom(ATOM_WM_NORMAL_HINTS)) {
     win->FetchAndApplySizeHints();
-    return true;
   } else if (e.atom == GetXAtom(ATOM_WM_TRANSIENT_FOR)) {
     win->FetchAndApplyTransientHint();
-    return true;
   } else if (e.atom == GetXAtom(ATOM_CHROME_WINDOW_TYPE)) {
     win->FetchAndApplyWindowType(true);  // update_shadow
-    return true;
   } else if (e.atom == GetXAtom(ATOM_NET_WM_WINDOW_OPACITY)) {
     win->FetchAndApplyWindowOpacity();
-    return true;
   } else if (e.atom == GetXAtom(ATOM_NET_WM_STATE)) {
     win->FetchAndApplyWmState();
-    return true;
-  } else {
-    return false;
   }
+
+  // Notify any event consumers that were interested in this property.
+  WindowPropertyListenerMap::const_iterator it =
+      window_property_listeners_.find(make_pair(e.window, e.atom));
+  if (it != window_property_listeners_.end()) {
+    for (set<EventConsumer*>::const_iterator ec_it =
+         it->second.begin(); ec_it != it->second.end(); ++ec_it) {
+      (*ec_it)->HandleWindowPropertyChange(win, e.atom);
+    }
+  }
+  return true;
 }
 
 bool WindowManager::HandleReparentNotify(const XReparentEvent& e) {
@@ -1304,7 +1337,7 @@ bool WindowManager::HandleReparentNotify(const XReparentEvent& e) {
       if (win->mapped()) {
         // Make sure that all event consumers know that the window's going
         // away.
-        for (std::set<EventConsumer*>::iterator it = event_consumers_.begin();
+        for (set<EventConsumer*>::iterator it = event_consumers_.begin();
              it != event_consumers_.end(); ++it) {
           (*it)->HandleWindowUnmap(win);
         }
@@ -1371,7 +1404,7 @@ bool WindowManager::HandleUnmapNotify(const XUnmapEvent& e) {
   SetWmStateProperty(e.window, 0);  // WithdrawnState
   win->set_mapped(false);
   win->HideComposited();
-  for (std::set<EventConsumer*>::iterator it = event_consumers_.begin();
+  for (set<EventConsumer*>::iterator it = event_consumers_.begin();
        it != event_consumers_.end(); ++it) {
     (*it)->HandleWindowUnmap(win);
   }
@@ -1389,8 +1422,7 @@ bool WindowManager::HandleUnmapNotify(const XUnmapEvent& e) {
 void WindowManager::LaunchTerminalCallback() {
   LOG(INFO) << "Launching xterm via: " << FLAGS_wm_xterm_command;
 
-  const std::string command = StringPrintf("%s &",
-                                           FLAGS_wm_xterm_command.c_str());
+  const string command = StringPrintf("%s &", FLAGS_wm_xterm_command.c_str());
   if (system(command.c_str()) < 0)
     LOG(WARNING) << "Unable to launch xterm via: " << command;
 }
@@ -1403,7 +1435,7 @@ void WindowManager::ToggleClientWindowDebugging() {
 
   LOG(INFO) << "Clutter actors:\n" << stage_->GetDebugString();
 
-  std::vector<XWindow> xids;
+  vector<XWindow> xids;
   if (!xconn_->GetChildWindows(root_, &xids))
     return;
 
@@ -1411,8 +1443,7 @@ void WindowManager::ToggleClientWindowDebugging() {
   static const ClutterInterface::Color kBgColor(1.f, 1.f, 1.f);
   static const ClutterInterface::Color kFgColor(0.f, 0.f, 0.f);
 
-  for (std::vector<XWindow>::iterator it = xids.begin();
-       it != xids.end(); ++it) {
+  for (vector<XWindow>::iterator it = xids.begin(); it != xids.end(); ++it) {
     XConnection::WindowGeometry geometry;
     if (!xconn_->GetWindowGeometry(*it, &geometry))
       continue;
@@ -1448,11 +1479,11 @@ void WindowManager::ToggleClientWindowDebugging() {
     text->Raise(rect);
 
     client_window_debugging_actors_.push_back(
-        std::tr1::shared_ptr<ClutterInterface::Actor>(group));
+        shared_ptr<ClutterInterface::Actor>(group));
     client_window_debugging_actors_.push_back(
-        std::tr1::shared_ptr<ClutterInterface::Actor>(rect));
+        shared_ptr<ClutterInterface::Actor>(rect));
     client_window_debugging_actors_.push_back(
-        std::tr1::shared_ptr<ClutterInterface::Actor>(text));
+        shared_ptr<ClutterInterface::Actor>(text));
   }
 }
 
@@ -1476,7 +1507,7 @@ void WindowManager::ToggleHotkeyOverlay() {
 }
 
 void WindowManager::TakeScreenshot(bool use_active_window) {
-  std::string message;
+  string message;
 
   XWindow xid = None;
   if (use_active_window) {
@@ -1492,9 +1523,9 @@ void WindowManager::TakeScreenshot(bool use_active_window) {
 
   if (xid != None) {
     // TODO: Include the date and time in the screenshot.
-    std::string filename = StringPrintf("%s/screenshot.png",
-                                        FLAGS_screenshot_output_dir.c_str());
-    const std::string command =
+    string filename =
+        StringPrintf("%s/screenshot.png", FLAGS_screenshot_output_dir.c_str());
+    const string command =
         StringPrintf("%s %s 0x%lx",
                      FLAGS_screenshot_binary.c_str(), filename.c_str(), xid);
     if (system(command.c_str()) < 0) {
@@ -1512,7 +1543,7 @@ void WindowManager::TakeScreenshot(bool use_active_window) {
 }
 
 void WindowManager::QueryKeyboardState() {
-  std::vector<uint8_t> keycodes;
+  vector<uint8_t> keycodes;
   xconn_->QueryKeyboardState(&keycodes);
   hotkey_overlay_->HandleKeyboardState(keycodes);
 }

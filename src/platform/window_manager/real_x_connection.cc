@@ -340,48 +340,35 @@ bool RealXConnection::GetSizeHintsForWindow(XWindow xid, SizeHints* hints_out) {
     return false;
   }
 
-  // Flag values from ICCCM 2.0:
-  enum Flags {
-    FLAG_US_POSITION   = 1,    // User-specified position
-    FLAG_US_SIZE       = 2,    // User-specified width, height
-    FLAG_P_POSITION    = 4,    // Program-specified position
-    FLAG_P_SIZE        = 8,    // Program-specified size
-    FLAG_P_MIN_SIZE    = 16,   // Program-specified minimum size
-    FLAG_P_MAX_SIZE    = 32,   // Program-specified maximum size
-    FLAG_P_RESIZE_INC  = 64,   // Program-specified resize inc
-    FLAG_P_ASPECT_FLAG = 128,  // Program-specified aspect ratios
-    FLAG_P_BASE_SIZE   = 256,  // Program-specified base size
-    FLAG_P_WIN_GRAVITY = 512,  // Program-specified window gravity
-  };
   uint32_t flags = values[0];
 
-  if ((flags & FLAG_US_SIZE) || (flags & FLAG_P_SIZE)) {
+  if ((flags & USSize) || (flags & PSize)) {
     hints_out->width = values[3];
     hints_out->height = values[4];
   }
-  if (flags & FLAG_P_MIN_SIZE) {
+  if (flags & PMinSize) {
     hints_out->min_width = values[5];
     hints_out->min_height = values[6];
   }
-  if (flags & FLAG_P_MAX_SIZE) {
+  if (flags & PMaxSize) {
     hints_out->max_width = values[7];
     hints_out->max_height = values[8];
   }
-  if (flags & FLAG_P_RESIZE_INC) {
+  if (flags & PResizeInc) {
     hints_out->width_increment = values[9];
     hints_out->height_increment = values[10];
   }
-  if (flags & FLAG_P_ASPECT_FLAG) {
+  if (flags & PAspect) {
     hints_out->min_aspect_x = values[11];
     hints_out->min_aspect_y = values[12];
     hints_out->max_aspect_x = values[13];
     hints_out->max_aspect_y = values[14];
   }
-  if ((flags & FLAG_P_BASE_SIZE) && values.size() >= 17) {
+  if ((flags & PBaseSize) && values.size() >= 17) {
     hints_out->base_width = values[15];
     hints_out->base_height = values[16];
   }
-  if ((flags & FLAG_P_WIN_GRAVITY) && values.size() >= 18) {
+  if ((flags & PWinGravity) && values.size() >= 18) {
     hints_out->win_gravity = values[17];
   }
 

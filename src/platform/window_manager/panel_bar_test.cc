@@ -1,4 +1,4 @@
-// Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -645,6 +645,68 @@ TEST_F(PanelBarTest, PackPanelsAfterPanelResize) {
             panel2->right());
   EXPECT_EQ(wm_->width() - 3 * PanelBar::kPixelsBetweenPanels - 200 - 400,
             panel3->right());
+}
+
+TEST_F(PanelBarTest, UrgentPanel) {
+  // Move the pointer to the top of the screen and create a collapsed panel.
+  xconn_->SetPointerPosition(0, 0);
+  Panel* panel = CreatePanel(200, 20, 400, false);
+
+  // Figure out where the top of the panel should be in various states.
+  const int hidden_panel_y =
+      wm_->height() - PanelBar::kHiddenCollapsedPanelHeightPixels;
+  const int shown_panel_y = wm_->height() - panel->titlebar_height();
+  const int expanded_panel_y = wm_->height() - panel->total_height();
+
+  // The panel should be hidden initially.
+  EXPECT_EQ(hidden_panel_y, panel->titlebar_y());
+
+  // Set the urgency hint on the panel's content window, notify the window
+  // manager, and check that the panel is shown now.
+  const XAtom wm_hints_atom = wm_->GetXAtom(ATOM_WM_HINTS);
+  const int urgency_hint = 256;  // UrgencyHint flag from ICCCM 4.1.2.4
+  xconn_->SetIntProperty(panel->content_xid(),
+                         wm_hints_atom,  // atom
+                         wm_hints_atom,  // type
+                         urgency_hint);
+  XEvent notify_event;
+  MockXConnection::InitPropertyNotifyEvent(
+      &notify_event, panel->content_xid(), wm_hints_atom);
+  EXPECT_TRUE(wm_->HandleEvent(&notify_event));
+  EXPECT_EQ(shown_panel_y, panel->titlebar_y());
+
+  // Now unset the hint and check that the panel is hidden again.
+  xconn_->SetIntProperty(panel->content_xid(), wm_hints_atom, wm_hints_atom, 0);
+  EXPECT_TRUE(wm_->HandleEvent(&notify_event));
+  EXPECT_EQ(hidden_panel_y, panel->titlebar_y());
+
+  // Tell the window manager to expand the panel.
+  WmIpc::Message msg(WmIpc::Message::WM_SET_PANEL_STATE);
+  msg.set_param(0, panel->content_xid());
+  msg.set_param(1, 1);
+  XEvent msg_event;
+  wm_->wm_ipc()->FillXEventFromMessage(&msg_event, wm_->wm_xid(), msg);
+  EXPECT_TRUE(wm_->HandleEvent(&msg_event));
+  EXPECT_EQ(expanded_panel_y, panel->titlebar_y());
+
+  // Nothing should happen if we set or unset the hint on an expanded panel.
+  xconn_->SetIntProperty(
+      panel->content_xid(), wm_hints_atom, wm_hints_atom, urgency_hint);
+  EXPECT_TRUE(wm_->HandleEvent(&notify_event));
+  EXPECT_EQ(expanded_panel_y, panel->titlebar_y());
+  xconn_->SetIntProperty(
+      panel->content_xid(), wm_hints_atom, wm_hints_atom, 0);
+  EXPECT_TRUE(wm_->HandleEvent(&notify_event));
+  EXPECT_EQ(expanded_panel_y, panel->titlebar_y());
+
+  // Set the hint again and collapse the panel.  It shouldn't be hidden.
+  xconn_->SetIntProperty(
+      panel->content_xid(), wm_hints_atom, wm_hints_atom, urgency_hint);
+  EXPECT_TRUE(wm_->HandleEvent(&notify_event));
+  msg.set_param(1, 0);
+  wm_->wm_ipc()->FillXEventFromMessage(&msg_event, wm_->wm_xid(), msg);
+  EXPECT_TRUE(wm_->HandleEvent(&msg_event));
+  EXPECT_EQ(shown_panel_y, panel->titlebar_y());
 }
 
 }  // namespace window_manager

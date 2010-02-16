@@ -1,4 +1,4 @@
-// Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -668,6 +668,19 @@ void MockXConnection::InitMotionNotifyEvent(XEvent* event,
   motion_event->x_root = info.x + x;
   motion_event->y_root = info.y + y;
   // Leave everything else blank for now; we don't use it.
+}
+
+// static
+void MockXConnection::InitPropertyNotifyEvent(XEvent* event,
+                                              XWindow xid,
+                                              XAtom xatom) {
+  CHECK(event);
+  XPropertyEvent* property_event = &(event->xproperty);
+  memset(property_event, 0, sizeof(*property_event));
+  property_event->type = PropertyNotify;
+  property_event->window = xid;
+  property_event->atom = xatom;
+  property_event->state = PropertyNewValue;
 }
 
 // static

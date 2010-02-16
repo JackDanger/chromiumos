@@ -1,9 +1,12 @@
-// Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
 #include "window_manager/window.h"
 
+extern "C" {
+#include <X11/Xutil.h>  // for XUrgencyHint #define
+}
 #include <algorithm>
 
 #include <gflags/gflags.h>
@@ -11,7 +14,6 @@
 #include "base/logging.h"
 #include "base/string_util.h"
 #include "chromeos/obsolete_logging.h"
-
 #include "window_manager/atom_cache.h"
 #include "window_manager/shadow.h"
 #include "window_manager/util.h"
@@ -54,7 +56,8 @@ Window::Window(WindowManager* wm, XWindow xid, bool override_redirect)
       wm_state_fullscreen_(false),
       wm_state_maximized_horz_(false),
       wm_state_maximized_vert_(false),
-      wm_state_modal_(false) {
+      wm_state_modal_(false),
+      wm_hint_urgent_(false) {
   // Listen for focus, property, and shape changes on this window.
   wm_->xconn()->SelectInputOnWindow(
       xid_, FocusChangeMask | PropertyChangeMask, true);
@@ -103,27 +106,18 @@ Window::Window(WindowManager* wm, XWindow xid, bool override_redirect)
                     composited_scale_y_ * client_height_, 0);
   }
 
-  // Properties could've been set on this window after it was created but
-  // before we selected on PropertyChangeMask, so we need to query them
-  // here.  Don't create a shadow yet; we still need to check if it's
-  // shaped.
+  // Various properties could've been set on this window after it was
+  // created but before we selected PropertyChangeMask, so we need to query
+  // them here.
   FetchAndApplyWindowType(false);
-
-  // Check if the window is shaped.
   FetchAndApplyShape(true);
-
-  // Check if the client window has set _NET_WM_WINDOW_OPACITY.
   FetchAndApplyWindowOpacity();
-
-  // Apply the size hints, which may resize the actor.
   FetchAndApplySizeHints();
-
-  // Load other properties that might've gotten set before we started
-  // listening for property changes on the window.
   FetchAndApplyWmProtocols();
   FetchAndApplyWmState();
   FetchAndApplyChromeState();
   FetchAndApplyTransientHint();
+  FetchAndApplyWmHints();
 }
 
 Window::~Window() {
@@ -201,6 +195,17 @@ void Window::FetchAndApplyWindowOpacity() {
   // TODO: It'd be nicer if we didn't interrupt any in-progress opacity
   // animations.
   SetCompositedOpacity(composited_opacity_, 0);
+}
+
+void Window::FetchAndApplyWmHints() {
+  std::vector<int> wm_hints;
+  if (!wm_->xconn()->GetIntArrayProperty(
+          xid_, wm_->GetXAtom(ATOM_WM_HINTS), &wm_hints)) {
+    return;
+  }
+
+  const uint32_t flags = wm_hints[0];
+  wm_hint_urgent_ = flags & XUrgencyHint;
 }
 
 void Window::FetchAndApplyWmProtocols() {

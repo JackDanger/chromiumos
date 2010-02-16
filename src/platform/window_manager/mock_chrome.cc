@@ -1,4 +1,4 @@
-// Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -856,6 +856,8 @@ bool Panel::on_key_press_event(GdkEventKey* event) {
     width_ = max(width_ - 10, 1);
     height_ = max(height_ - 10, 1);
     resize(width_, height_);
+  } else if (strcmp(event->string, "u") == 0) {
+    set_urgency_hint(!get_urgency_hint());
   } else {
     VLOG(1) << "Panel " << xid_ << " got key press " << event->string;
   }

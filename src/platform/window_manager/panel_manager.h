@@ -64,7 +64,6 @@ class PanelManager : public EventConsumer {
   // non-panel windows.
   void HandleWindowUnmap(Window* win);
 
-  // Handle a request from a client window to be moved or resized.
   bool HandleWindowConfigureRequest(
       Window* win, int req_x, int req_y, int req_width, int req_height);
 
@@ -97,12 +96,10 @@ class PanelManager : public EventConsumer {
                            int x_root, int y_root,
                            Time timestamp);
 
-  // Handle messages from client apps.
   bool HandleChromeMessage(const WmIpc::Message& msg);
   bool HandleClientMessage(const XClientMessageEvent& e);
-
-  // Handle windows gaining or losing the input focus.
   bool HandleFocusChange(XWindow xid, bool focus_in);
+  void HandleWindowPropertyChange(Window* win, XAtom xatom);
 
   // Note: End overridden EventConsumer methods.
 

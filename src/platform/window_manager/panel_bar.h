@@ -1,4 +1,4 @@
-// Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -68,6 +68,7 @@ class PanelBar : public PanelContainer {
   void HandleFocusPanelMessage(Panel* panel);
   void HandlePanelResize(Panel* panel);
   void HandleScreenResize();
+  void HandlePanelUrgencyChange(Panel* panel);
   // End overridden PanelContainer methods.
 
   // Take the input focus if possible.  Returns 'false' if it doesn't make
@@ -99,7 +100,11 @@ class PanelBar : public PanelContainer {
 
   // PanelBar-specific information about a panel.
   struct PanelInfo {
-    PanelInfo() : is_expanded(false), snapped_right(0) {}
+    PanelInfo()
+        : is_expanded(false),
+          snapped_right(0),
+          is_urgent(false) {
+    }
 
     // Is the panel currently expanded?
     bool is_expanded;
@@ -109,7 +114,14 @@ class PanelBar : public PanelContainer {
     // different from the actual composited position -- we only snap the
     // panels to this position when the drag is complete.
     int snapped_right;
+
+    // Was the content window's urgency hint set the last time that we
+    // looked at it?  If so, we avoid hiding the panel offscreen when it's
+    // collapsed.
+    bool is_urgent;
   };
+
+  typedef std::vector<Panel*> Panels;
 
   // Is 'collapsed_panel_state_' such that collapsed panels are currently
   // hidden offscreen?
@@ -118,14 +130,17 @@ class PanelBar : public PanelContainer {
            collapsed_panel_state_ == COLLAPSED_PANEL_STATE_WAITING_TO_SHOW;
   }
 
-  // Save some typing.
-  typedef std::vector<Panel*> Panels;
-
   // Get the PanelInfo object for a panel, crashing if it's not present.
   PanelInfo* GetPanelInfoOrDie(Panel* panel);
 
   // Get the current number of collapsed panels.
   int GetNumCollapsedPanels();
+
+  // Compute the Y-position where the top of the passed-in panel
+  // should be placed (depending on whether it's expanded or collapsed,
+  // whether collapsed panels are currently hidden, whether the panel's
+  // urgent flag is set, etc.).
+  int ComputePanelY(const Panel& panel, const PanelInfo& info) const;
 
   // Expand a panel.  If 'create_anchor' is true, we additionally create an
   // anchor for it.

@@ -1,4 +1,4 @@
-// Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -86,6 +86,7 @@ class Window {
 
   bool wm_state_fullscreen() const { return wm_state_fullscreen_; }
   bool wm_state_modal() const { return wm_state_modal_; }
+  bool wm_hint_urgent() const { return wm_hint_urgent_; }
 
   // Redirect the client window for compositing.  This should be called once
   // after we're sure that we're going to display the window (i.e. after it's
@@ -104,6 +105,10 @@ class Window {
   // Update the window's opacity in response to the current value of its
   // _NET_WM_WINDOW_OPACITY property.
   void FetchAndApplyWindowOpacity();
+
+  // Fetch the window's WM_HINTS property (ICCCM 4.1.2.4) if it exists and
+  // apply any changes that we see.
+  void FetchAndApplyWmHints();
 
   // Fetch the window's WM_PROTOCOLS property (ICCCM 4.1.2.7) if it exists
   // and update 'supports_wm_take_focus_'.
@@ -349,6 +354,10 @@ class Window {
   bool wm_state_maximized_horz_;
   bool wm_state_maximized_vert_;
   bool wm_state_modal_;
+
+  // Is this window marked urgent, per the ICCCM UrgencyHint flag in its
+  // WM_HINTS property?
+  bool wm_hint_urgent_;
 
   // Chrome window state, as exposed in the window's _CHROME_STATE
   // property.

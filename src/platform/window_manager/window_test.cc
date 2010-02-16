@@ -1,6 +1,9 @@
-// Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+
+#include <utility>
+#include <vector>
 
 #include <gflags/gflags.h>
 #include <gtest/gtest.h>
@@ -19,6 +22,10 @@ DEFINE_bool(logtostderr, false,
             "Print debugging messages to stderr (suppressed otherwise)");
 
 namespace window_manager {
+
+using std::make_pair;
+using std::pair;
+using std::vector;
 
 class WindowTest : public BasicWindowManagerTest {};
 
@@ -187,7 +194,7 @@ TEST_F(WindowTest, WmProtocols) {
 
   // Set its WM_PROTOCOLS property to indicate that it supports both
   // message types.
-  std::vector<int> values;
+  vector<int> values;
   values.push_back(static_cast<int>(wm_->GetXAtom(ATOM_WM_DELETE_WINDOW)));
   values.push_back(static_cast<int>(wm_->GetXAtom(ATOM_WM_TAKE_FOCUS)));
   xconn_->SetIntArrayProperty(xid,
@@ -235,6 +242,32 @@ TEST_F(WindowTest, WmProtocols) {
   EXPECT_TRUE(win.TakeFocus(timestamp));
   EXPECT_EQ(0, info->client_messages.size());
   EXPECT_EQ(xid, xconn_->focused_xid());
+}
+
+TEST_F(WindowTest, WmHints) {
+  // Set the urgency flag on a window and check that it gets loaded correctly.
+  const XAtom wm_hints_atom = wm_->GetXAtom(ATOM_WM_HINTS);
+  XWindow xid = CreateSimpleWindow();
+  xconn_->SetIntProperty(xid,
+                         wm_hints_atom,  // atom
+                         wm_hints_atom,  // type
+                         256);  // UrgencyHint flag from ICCCM 4.1.2.4
+  Window win(wm_.get(), xid, false);
+  EXPECT_TRUE(win.wm_hint_urgent());
+
+  // Now clear the UrgencyHint flag and set another flag that we don't care
+  // about and check that the window loads the change.
+  vector<int> values;
+  values.push_back(2);  // StateHint flag
+  values.push_back(1);  // NormalState
+  xconn_->SetIntArrayProperty(xid, wm_hints_atom, wm_hints_atom, values);
+  win.FetchAndApplyWmHints();
+  EXPECT_FALSE(win.wm_hint_urgent());
+
+  // Set it one more time.
+  xconn_->SetIntProperty(xid, wm_hints_atom, wm_hints_atom, 256);
+  win.FetchAndApplyWmHints();
+  EXPECT_TRUE(win.wm_hint_urgent());
 }
 
 TEST_F(WindowTest, WmState) {
@@ -286,7 +319,7 @@ TEST_F(WindowTest, WmState) {
 
   // Check that the window's _NET_WM_STATE property was updated in response
   // to the messages.
-  std::vector<int> values;
+  vector<int> values;
   ASSERT_TRUE(xconn_->GetIntArrayProperty(xid, wm_state_atom, &values));
   ASSERT_EQ(1, values.size());
   EXPECT_EQ(fullscreen_atom, values[0]);
@@ -312,10 +345,10 @@ TEST_F(WindowTest, WmState) {
 
   // Test that ChangeWmState() works for clearing the modal state and
   // setting both maximized states.
-  std::vector<std::pair<XAtom, bool> > changed_states;
-  changed_states.push_back(std::make_pair(modal_atom, false));
-  changed_states.push_back(std::make_pair(max_horz_atom, true));
-  changed_states.push_back(std::make_pair(max_vert_atom, true));
+  vector<pair<XAtom, bool> > changed_states;
+  changed_states.push_back(make_pair(modal_atom, false));
+  changed_states.push_back(make_pair(max_horz_atom, true));
+  changed_states.push_back(make_pair(max_vert_atom, true));
   EXPECT_TRUE(win.ChangeWmState(changed_states));
   values.clear();
   ASSERT_TRUE(xconn_->GetIntArrayProperty(xid, wm_state_atom, &values));
@@ -342,12 +375,12 @@ TEST_F(WindowTest, ChromeState) {
   Window win(wm_.get(), xid, false);
 
   // Tell the window to set the other atom.
-  std::vector<std::pair<XAtom, bool> > states;
-  states.push_back(std::make_pair(other_atom, true));
+  vector<pair<XAtom, bool> > states;
+  states.push_back(make_pair(other_atom, true));
   EXPECT_TRUE(win.ChangeChromeState(states));
 
   // Check that both atoms are included in the property.
-  std::vector<int> values;
+  vector<int> values;
   ASSERT_TRUE(xconn_->GetIntArrayProperty(xid, state_atom, &values));
   ASSERT_EQ(2, values.size());
   EXPECT_EQ(collapsed_atom, values[0]);
@@ -356,7 +389,7 @@ TEST_F(WindowTest, ChromeState) {
   // Now tell the window to unset the "collapsed" atom, and make sure that
   // only the other atom is present.
   states.clear();
-  states.push_back(std::make_pair(collapsed_atom, false));
+  states.push_back(make_pair(collapsed_atom, false));
   EXPECT_TRUE(win.ChangeChromeState(states));
   values.clear();
   ASSERT_TRUE(xconn_->GetIntArrayProperty(xid, state_atom, &values));
@@ -365,7 +398,7 @@ TEST_F(WindowTest, ChromeState) {
 
   // If we also unset the other atom, the property should be removed.
   states.clear();
-  states.push_back(std::make_pair(other_atom, false));
+  states.push_back(make_pair(other_atom, false));
   EXPECT_TRUE(win.ChangeChromeState(states));
   EXPECT_FALSE(xconn_->GetIntArrayProperty(xid, state_atom, &values));
 }

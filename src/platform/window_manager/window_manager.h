@@ -9,6 +9,7 @@
 #include <set>
 #include <vector>
 #include <tr1/memory>
+#include <utility>
 
 extern "C" {
 #include <X11/extensions/shape.h>
@@ -112,6 +113,19 @@ class WindowManager {
   // currently-active window (in our case, this is the top-level window or
   // panel window that has the focus).
   bool SetActiveWindowProperty(XWindow xid);
+
+  // Register an event consumer as a listener for changes of a particular
+  // property on a particular window.  The consumer's
+  // HandleWindowPropertyChange() method will be invoked whenever we
+  // receive notification that the property has been changed (after we have
+  // already handled the change).
+  // TODO: Use a similar model for most other event consumer notifications.
+  void RegisterWindowPropertyListener(
+      XWindow xid, XAtom xatom, EventConsumer* event_consumer);
+
+  // Unregister an event consumer for property changes.
+  void UnregisterWindowPropertyListener(
+      XWindow xid, XAtom xatom, EventConsumer* event_consumer);
 
  private:
   // Height for the panel bar.
@@ -278,6 +292,12 @@ class WindowManager {
 
   // Things that consume events (e.g. LayoutManager, PanelBar, etc.).
   std::set<EventConsumer*> event_consumers_;
+
+  // Map from (window, atom) pairs to event consumers that will be
+  // notified if the corresponding property is changed.
+  typedef std::map<std::pair<XWindow, XAtom>, std::set<EventConsumer*> >
+      WindowPropertyListenerMap;
+  WindowPropertyListenerMap window_property_listeners_;
 
   // Actors that are currently being used to debug client windows.
   std::vector<std::tr1::shared_ptr<ClutterInterface::Actor> >

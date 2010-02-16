@@ -1,4 +1,4 @@
-// Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -115,6 +115,7 @@ void PanelBar::AddPanel(Panel* panel, PanelSource source, bool expanded) {
   info->is_expanded = expanded;
   info->snapped_right =
       wm_->width() - total_panel_width_ - kPixelsBetweenPanels;
+  info->is_urgent = panel->content_win()->wm_hint_urgent();
   panel_infos_.insert(make_pair(panel, info));
 
   panels_.insert(panels_.begin(), panel);
@@ -129,12 +130,7 @@ void PanelBar::AddPanel(Panel* panel, PanelSource source, bool expanded) {
                            StackingManager::LAYER_DRAGGED_PANEL :
                            StackingManager::LAYER_STATIONARY_PANEL);
 
-  const int final_y = wm_->height() -
-      (expanded ?
-       panel->total_height() :
-       (CollapsedPanelsAreHidden() ?
-        kHiddenCollapsedPanelHeightPixels :
-        panel->titlebar_height()));
+  const int final_y = ComputePanelY(*panel, *(info.get()));
 
   // Now move the panel to its final position.
   switch (source) {
@@ -364,14 +360,29 @@ void PanelBar::HandleScreenResize() {
   // repack them to animate them sliding to their new X positions.
   for (Panels::iterator it = panels_.begin(); it != panels_.end(); ++it) {
     Panel* panel = *it;
-    int new_y = GetPanelInfoOrDie(panel)->is_expanded ?
-        wm_->height() - panel->total_height() :
-        wm_->height() - panel->titlebar_height();
-    (*it)->MoveY(new_y, true, 0);
+    const PanelInfo* info = GetPanelInfoOrDie(panel);
+    (*it)->MoveY(ComputePanelY(*panel, *info), true, 0);
   }
   PackPanels(dragged_panel_);
   if (dragged_panel_)
     ReorderPanel(dragged_panel_);
+}
+
+void PanelBar::HandlePanelUrgencyChange(Panel* panel) {
+  DCHECK(panel);
+  const bool urgent = panel->content_win()->wm_hint_urgent();
+
+  // Check that the hint has changed.
+  PanelInfo* info = GetPanelInfoOrDie(panel);
+  if (urgent == info->is_urgent)
+    return;
+
+  info->is_urgent = urgent;
+  if (!info->is_expanded) {
+    const int computed_y = ComputePanelY(*panel, *info);
+    if (panel->titlebar_y() != computed_y)
+      panel->MoveY(computed_y, true, kHideCollapsedPanelsAnimMs);
+  }
 }
 
 bool PanelBar::TakeFocus() {
@@ -409,6 +420,17 @@ int PanelBar::GetNumCollapsedPanels() {
   return count;
 }
 
+int PanelBar::ComputePanelY(const Panel& panel, const PanelInfo& info) const {
+  if (info.is_expanded) {
+    return wm_->height() - panel.total_height();
+  } else {
+    if (CollapsedPanelsAreHidden() && !info.is_urgent)
+      return wm_->height() - kHiddenCollapsedPanelHeightPixels;
+    else
+      return wm_->height() - panel.titlebar_height();
+  }
+}
+
 void PanelBar::ExpandPanel(Panel* panel, bool create_anchor, int anim_ms) {
   CHECK(panel);
   PanelInfo* info = GetPanelInfoOrDie(panel);
@@ -418,10 +440,10 @@ void PanelBar::ExpandPanel(Panel* panel, bool create_anchor, int anim_ms) {
     return;
   }
 
-  panel->MoveY(wm_->height() - panel->total_height(), true, anim_ms);
+  info->is_expanded = true;
+  panel->MoveY(ComputePanelY(*panel, *info), true, anim_ms);
   panel->SetResizable(true);
   panel->NotifyChromeAboutState(true);
-  info->is_expanded = true;
   if (create_anchor)
     CreateAnchor(panel);
 
@@ -445,13 +467,10 @@ void PanelBar::CollapsePanel(Panel* panel) {
   if (anchor_panel_ == panel)
     DestroyAnchor();
 
-  panel->MoveY(wm_->height() - (CollapsedPanelsAreHidden() ?
-                                kHiddenCollapsedPanelHeightPixels :
-                                panel->titlebar_height()),
-               true, kPanelStateAnimMs);
+  info->is_expanded = false;
+  panel->MoveY(ComputePanelY(*panel, *info), true, kPanelStateAnimMs);
   panel->SetResizable(false);
   panel->NotifyChromeAboutState(false);
-  info->is_expanded = false;
 
   // Give up the focus if this panel had it.
   if (panel->content_win()->focused()) {
@@ -671,10 +690,12 @@ void PanelBar::ShowCollapsedPanels() {
 
   for (Panels::iterator it = panels_.begin(); it != panels_.end(); ++it) {
     Panel* panel = *it;
-    if (GetPanelInfoOrDie(panel)->is_expanded)
+    const PanelInfo* info = GetPanelInfoOrDie(panel);
+    if (info->is_expanded)
       continue;
-    panel->MoveY(wm_->height() - panel->titlebar_height(),
-                 true, kHideCollapsedPanelsAnimMs);
+    const int computed_y = ComputePanelY(*panel, *info);
+    if (panel->titlebar_y() != computed_y)
+      panel->MoveY(computed_y, true, kHideCollapsedPanelsAnimMs);
   }
 
   ConfigureShowCollapsedPanelsInputWindow(false);
@@ -697,10 +718,12 @@ void PanelBar::HideCollapsedPanels() {
   collapsed_panel_state_ = COLLAPSED_PANEL_STATE_HIDDEN;
   for (Panels::iterator it = panels_.begin(); it != panels_.end(); ++it) {
     Panel* panel = *it;
-    if (GetPanelInfoOrDie(panel)->is_expanded)
+    const PanelInfo* info = GetPanelInfoOrDie(panel);
+    if (info->is_expanded)
       continue;
-    panel->MoveY(wm_->height() - kHiddenCollapsedPanelHeightPixels,
-                 true, kHideCollapsedPanelsAnimMs);
+    const int computed_y = ComputePanelY(*panel, *info);
+    if (panel->titlebar_y() != computed_y)
+      panel->MoveY(computed_y, true, kHideCollapsedPanelsAnimMs);
   }
 
   if (GetNumCollapsedPanels() > 0)
