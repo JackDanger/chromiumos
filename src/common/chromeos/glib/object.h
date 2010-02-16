@@ -115,6 +115,11 @@ inline ::GType type_to_gtypeid< ::int64>() {
   return G_TYPE_INT64;
 };
 
+template < >
+inline ::GType type_to_gtypeid< ::int32>() {
+  return G_TYPE_INT;
+};
+
 // \brief Value (and Retrieve) support using std::string as well as const char*
 // by promoting from const char* to the string. promote_from provides a mapping
 // for this promotion (and possibly others in the future).
@@ -158,10 +163,13 @@ template < >
 inline ::uint8 RawCast< ::uint8>(const ::GValue& x) {
   return static_cast< ::uint8>(::g_value_get_uchar(&x));
 }
-
 template < >
 inline ::int64 RawCast< ::int64>(const ::GValue& x) {
   return static_cast< ::int64>(::g_value_get_int64(&x));
+}
+template < >
+inline ::int32 RawCast< ::int32>(const ::GValue& x) {
+  return static_cast< ::int32>(::g_value_get_int(&x));
 }
 
 inline void RawSet(GValue* x, const std::string& v) {
@@ -184,6 +192,9 @@ inline void RawSet(GValue* x, ::uint8 v) {
 }
 inline void RawSet(GValue* x, ::int64 v) {
   ::g_value_set_int64(x, v);
+}
+inline void RawSet(GValue* x, ::int32 v) {
+  ::g_value_set_int(x, v);
 }
 
 // \brief Value is a data type for managing GValues.
