@@ -1,0 +1,7 @@
+This directory contains board specific overlays.
+
+When a board is configured using setup_board --board <name> any overlay that
+matches overlay-<name> and overlay-<name>-* will be added to that boards
+PORTDIR_OVERLAY variable.  The overlay-<name> directory must contain a
+make.conf and a toolchain.conf.
+

@@ -23,7 +23,10 @@
 /src/scripts/shared_user_passwd.txt
 
 # Ignore DEPS
-/src/overlays/
+/src/overlays/overlay-arm-generic/
+/src/overlays/overlay-beagleboard/
+/src/overlays/overlay-st1q/
+/src/overlays/overlay-x86-generic/
 /src/platform/cros/
 /src/platform/login_manager/
 /src/platform/pam_google/
