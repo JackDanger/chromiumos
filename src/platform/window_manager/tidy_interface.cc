@@ -1,4 +1,4 @@
-// Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2009-2010 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -16,6 +16,8 @@
 #include "window_manager/image_container.h"
 #ifdef TIDY_OPENGL
 #include "window_manager/opengl_visitor.h"
+#elif defined(TIDY_OPENGLES)
+#include "window_manager/gles/opengles_visitor.h"
 #endif
 #include "window_manager/util.h"
 
@@ -472,6 +474,9 @@ void TidyInterface::TexturePixmapActor::Reset() {
 #ifdef TIDY_OPENGL
   EraseDrawingData(OpenGlDrawVisitor::PIXMAP_DATA);
 #endif
+#ifdef TIDY_OPENGLES
+  EraseDrawingData(OpenGlesDrawVisitor::kEglImageData);
+#endif
 }
 
 TidyInterface::Actor* TidyInterface::TexturePixmapActor::Clone() {
@@ -489,6 +494,13 @@ void TidyInterface::TexturePixmapActor::Refresh() {
 #ifdef TIDY_OPENGL
   OpenGlPixmapData* data  = dynamic_cast<OpenGlPixmapData*>(
       GetDrawingData(OpenGlDrawVisitor::PIXMAP_DATA).get());
+  if (data)
+    data->Refresh();
+#endif
+  // TODO: Lift common damage and pixmap creation code to TidyInterface
+#ifdef TIDY_OPENGLES
+  OpenGlesEglImageData* data = dynamic_cast<OpenGlesEglImageData*>(
+      GetDrawingData(OpenGlesDrawVisitor::kEglImageData).get());
   if (data)
     data->Refresh();
 #endif
@@ -544,6 +556,10 @@ TidyInterface::TidyInterface(XConnection* xconn,
   draw_visitor_ = new OpenGlDrawVisitor(gl_interface,
                                         this,
                                         default_stage_.get());
+#elif defined(TIDY_OPENGLES)
+  draw_visitor_ = new OpenGlesDrawVisitor(gl_interface,
+                                          this,
+                                          default_stage_.get());
 #endif
 
   // TODO: Remove this lovely hack, and replace it with something that
@@ -552,7 +568,7 @@ TidyInterface::TidyInterface(XConnection* xconn,
 }
 
 TidyInterface::~TidyInterface() {
-#ifdef TIDY_OPENGL
+#ifdef USE_TIDY
   delete draw_visitor_;
 #endif
 }
@@ -578,9 +594,10 @@ TidyInterface::Actor* TidyInterface::CreateImage(
       ImageContainer::CreateContainer(filename));
   if (container.get() &&
       container->LoadImage() == ImageContainer::IMAGE_LOAD_SUCCESS) {
-#ifdef TIDY_OPENGL
+#ifdef USE_TIDY
     draw_visitor_->BindImage(container.get(), actor);
 #endif
+    actor->SetSize(container->width(), container->height());
   } else {
     actor->SetColor(ClutterInterface::Color(1.f, 0.f, 1.f));
   }
@@ -675,7 +692,7 @@ void TidyInterface::Draw() {
   actor_count_ = 0;
   default_stage_->Update(&actor_count_, now_);
   if (dirty_) {
-#ifdef TIDY_OPENGL
+#ifdef USE_TIDY
     default_stage_->Accept(draw_visitor_);
 #endif
     dirty_ = false;

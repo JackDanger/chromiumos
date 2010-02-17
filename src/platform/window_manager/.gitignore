@@ -6,3 +6,4 @@ mock_chrome
 *_test
 *.pb.h
 *.pb.cc
+*.pyc

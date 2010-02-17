@@ -27,6 +27,10 @@
 
 DECLARE_bool(tidy_display_debug_needle);
 
+#ifndef TIDY_OPENGL
+#error Need TIDY_OPENGL defined to compile this file
+#endif
+
 // Turn this on if you want to debug something in this file in depth.
 #undef EXTRA_LOGGING
 

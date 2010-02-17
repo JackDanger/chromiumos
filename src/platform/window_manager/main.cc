@@ -1,4 +1,4 @@
-// Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2009-2010 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -28,7 +28,12 @@ extern "C" {
 #include "window_manager/clutter_interface.h"
 #ifdef USE_TIDY
 #include "window_manager/tidy_interface.h"
+#endif
+#ifdef TIDY_OPENGL
 #include "window_manager/real_gl_interface.h"
+#endif
+#ifdef TIDY_OPENGLES
+#include "window_manager/gles/real_gles2_interface.h"
 #endif
 #include "window_manager/real_x_connection.h"
 #include "window_manager/window_manager.h"
@@ -45,8 +50,6 @@ DEFINE_bool(logtostderr, false,
 DEFINE_string(minidump_dir, ".",
               "Directory where crash minidumps should be written; created if "
               "it doesn't exist.");
-DEFINE_bool(use_tidy, false,
-            "Specify this to turn off clutter and use GL (via tidy) directly.");
 DEFINE_int32(pause_at_start, 0,
              "Specify this to pause for N seconds at startup.");
 
@@ -56,8 +59,11 @@ using window_manager::MockClutterInterface;
 using window_manager::TidyInterface;
 #endif
 using window_manager::RealClutterInterface;
-#ifdef USE_TIDY
+#ifdef TIDY_OPENGL
 using window_manager::RealGLInterface;
+#endif
+#ifdef TIDY_OPENGLES
+using window_manager::RealGles2Interface;
 #endif
 using window_manager::RealXConnection;
 using window_manager::WindowManager;
@@ -85,13 +91,9 @@ int main(int argc, char** argv) {
   }
 
   gdk_init(&argc, &argv);
-#ifdef USE_TIDY
-  if (!FLAGS_use_tidy) {
-#else
-  if (1) {
+#ifdef USE_CLUTTER
+  clutter_init(&argc, &argv);
 #endif
-    clutter_init(&argc, &argv);
-  }
 
   CommandLine::Init(argc, argv);
   if (FLAGS_pause_at_start > 0) {
@@ -133,20 +135,22 @@ int main(int argc, char** argv) {
     xconn.GetCompositingOverlayWindow(root);
   }
 
-#ifdef USE_TIDY
+#ifdef TIDY_OPENGL
   scoped_ptr<RealGLInterface> gl_interface;
+#endif
+#ifdef TIDY_OPENGLES
+  scoped_ptr<RealGles2Interface> gl_interface;
 #endif
   scoped_ptr<ClutterInterface> clutter;
   if (FLAGS_wm_use_compositing) {
-#ifdef USE_TIDY
-    if (!FLAGS_use_tidy) {
-#endif
-      clutter.reset(new RealClutterInterface());
-#ifdef USE_TIDY
-    } else {
-      gl_interface.reset(new RealGLInterface(&xconn));
-      clutter.reset(new TidyInterface(&xconn, gl_interface.get()));
-    }
+#ifdef USE_CLUTTER
+    clutter.reset(new RealClutterInterface());
+#elif defined(TIDY_OPENGL)
+    gl_interface.reset(new RealGLInterface(&xconn));
+    clutter.reset(new TidyInterface(&xconn, gl_interface.get()));
+#elif defined(TIDY_OPENGLES)
+    gl_interface.reset(new RealGles2Interface(&xconn));
+    clutter.reset(new TidyInterface(&xconn, gl_interface.get()));
 #endif
   } else {
     clutter.reset(new MockClutterInterface(&xconn));
@@ -154,16 +158,12 @@ int main(int argc, char** argv) {
   WindowManager wm(&xconn, clutter.get());
   wm.Init();
 
-#ifdef USE_TIDY
-  if (!FLAGS_use_tidy) {
-#endif
-    clutter_main();
-#ifdef USE_TIDY
-  } else {
-    GMainLoop* loop = g_main_loop_ref(g_main_loop_new(NULL, FALSE));
-    g_main_loop_run(loop);
-    g_main_loop_unref(loop);
-  }
+#ifdef USE_CLUTTER
+  clutter_main();
+#elif defined(USE_TIDY)
+  GMainLoop* loop = g_main_loop_ref(g_main_loop_new(NULL, FALSE));
+  g_main_loop_run(loop);
+  g_main_loop_unref(loop);
 #endif
   return 0;
 }

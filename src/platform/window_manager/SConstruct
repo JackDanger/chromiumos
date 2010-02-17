@@ -1,8 +1,11 @@
-# Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+# Copyright (c) 2009-2010 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
 import os
+import itertools
+
+import make_shaders
 
 Help('''\
 Type: 'scons' to build and 'scons -c' to clean\
@@ -55,7 +58,7 @@ for key in Split('CFLAGS CCFLAGS CPPPATH LIBPATH'):
   if value != None:
     base_env[key] = Split(value)
 if not base_env.get('CCFLAGS'):
-  base_env.Append(CCFLAGS=Split('-I.. -Wall -Werror -O3'))
+  base_env.Append(CCFLAGS=Split('-I.. -Wall -Wno-psabi -Werror -O3'))
 
 # Fix issue with scons not passing some vars through the environment.
 for key in Split('PKG_CONFIG_LIBDIR PKG_CONFIG_PATH SYSROOT'):
@@ -79,8 +82,8 @@ screenshot_env = base_env.Clone()
 screenshot_env.ParseConfig('pkg-config --cflags --libs cairo')
 screenshot_env.Program('screenshot', 'screenshot.cc')
 
-# Check for USE_TIDY on the build line
-use_tidy = 'USE_TIDY' in ARGUMENTS
+# Check for BACKEND on the build line
+backend = ARGUMENTS.get('BACKEND', 'OPENGL').lower()
 
 # Start a new environment for the window manager.
 wm_env = base_env.Clone()
@@ -93,6 +96,10 @@ wm_env.Append(LIBS=Split('gflags protobuf'))
 wm_env.ParseConfig('pkg-config --cflags --libs gdk-2.0 libpcrecpp ' +
                    'xcb x11-xcb xcb-composite xcb-randr xcb-shape xcb-damage')
 
+# Add builder for .glsl* files
+if backend == 'opengles':
+  make_shaders.AddBuildRules(wm_env)
+
 if os.system('pkg-config clutter-1.0') == 0:
   wm_env.ParseConfig('pkg-config --cflags --libs clutter-1.0')
 else:
@@ -104,7 +111,7 @@ if os.system('pkg-config --exact-version=0.9.2 clutter-0.9') == 0:
 
 # This is needed so that glext headers include glBindBuffer and
 # related APIs.
-if use_tidy:
+if backend == 'opengl':
   wm_env.Append(CPPDEFINES=['GL_GLEXT_PROTOTYPES'])
 
 wm_env.ProtocolBuffer('system_metrics.pb.cc', 'system_metrics.proto');
@@ -118,7 +125,7 @@ srcs = Split('''\
   wm_ipc.cc
   x_connection.cc
 ''')
-if use_tidy:
+if backend == 'opengl':
   srcs.append(Split('''\
     real_gl_interface.cc
   '''))
@@ -129,14 +136,13 @@ libwm_ipc = wm_env.Library('wm_ipc', srcs)
 # also compiled in different environments here (and hence we just get e.g.
 # atom_cache.cc and util.cc via libwm_ipc).
 srcs = Split('''\
-  clutter_interface.cc
   hotkey_overlay.cc
   image_container.cc
   key_bindings.cc
   layout_manager.cc
   metrics_reporter.cc
+  mock_clutter_interface.cc
   motion_event_coalescer.cc
-  tidy_interface.cc
   panel.cc
   panel_bar.cc
   panel_dock.cc
@@ -147,9 +153,24 @@ srcs = Split('''\
   window.cc
   window_manager.cc
 ''')
-if use_tidy:
+if backend == 'clutter':
   srcs.append(Split('''\
+    clutter_interface.cc
+  '''))
+elif backend == 'opengl':
+  srcs.append(Split('''\
+    gl_interface_base.cc
     opengl_visitor.cc
+  tidy_interface.cc
+  '''))
+elif backend == 'opengles':
+  srcs.append(Split('''\
+    gl_interface_base.cc
+    tidy_interface.cc
+    gles/opengles_visitor.cc
+    gles/shader_base.cc
+    gles/shaders.cc
+    gles/real_gles2_interface.cc
   '''))
 libwm_core = wm_env.Library('wm_core', srcs)
 
@@ -165,8 +186,10 @@ wm_env.Append(LIBS=[libwm_core, libwm_ipc])
 if 'USE_BREAKPAD' in ARGUMENTS:
   wm_env.Append(CPPDEFINES=['USE_BREAKPAD'], LIBS=['libbreakpad'])
 
-if use_tidy:
-  wm_env.Append(CPPDEFINES=['USE_TIDY'])
+backend_defines = {'clutter': ['USE_CLUTTER'],
+                   'opengl': ['TIDY_OPENGL', 'USE_TIDY'],
+                   'opengles': ['TIDY_OPENGLES', 'USE_TIDY']}
+wm_env.Append(CPPDEFINES=backend_defines[backend])
 
 wm_env.Program('wm', 'main.cc')
 
@@ -176,12 +199,14 @@ test_env.Append(LIBS=['gtest'])
 test_env.Prepend(LIBS=[libtest])
 tests = []
 
-# These are tests that only get built when we use tidy.
-tidy_tests = ['tidy_interface_test.cc',
-              'opengl_visitor_test.cc']
-
+# These are tests that only get built when we use particular backends
+backend_tests = {'clutter': [],
+                 'opengl': ['tidy_interface_test.cc',
+                            'opengl_visitor_test.cc'],
+                 'opengles': []}
+all_backend_tests = set(itertools.chain(*backend_tests.values()))
 for test_src in Glob('*_test.cc', strings=True):
-  if test_src in tidy_tests and not use_tidy:
+  if test_src in all_backend_tests and test_src not in backend_tests[backend]:
     continue
   tests += test_env.Program(test_src)
 # Create a 'tests' target that will build all tests.

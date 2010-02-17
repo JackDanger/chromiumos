@@ -1,5 +1,5 @@
 #!/bin/sh
-# Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+# Copyright (c) 2009-2010 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -36,4 +36,4 @@ $script_dir/wm --logtostderr                                            \
   --wm_background_image="${IMAGES}/background_1024x600.png"             \
   --lm_new_overview_mode=true                                           \
   --lm_overview_gradient_image="${IMAGES}/window_overview_gradient.png" \
-  --use_tidy "$@"
+  "$@"

@@ -1,4 +1,4 @@
-// Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2009-2010 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -21,13 +21,14 @@
 #include "window_manager/x_connection.h"
 #include "window_manager/gl_interface_base.h"
 
-#ifdef USE_TIDY
-#define TIDY_OPENGL 1
+#if !(defined(TIDY_OPENGL) || defined(TIDY_OPENGLES))
+#error TIDY_OPENGL or TIDY_OPENGLES must be defined
 #endif
 
 namespace window_manager {
 
 class OpenGlDrawVisitor;
+class OpenGlesDrawVisitor;
 
 class TidyInterface : public ClutterInterface {
  public:
@@ -526,6 +527,8 @@ class TidyInterface : public ClutterInterface {
 
 #ifdef TIDY_OPENGL
   OpenGlDrawVisitor* draw_visitor_;
+#elif defined(TIDY_OPENGLES)
+  OpenGlesDrawVisitor* draw_visitor_;
 #endif
 
   DISALLOW_COPY_AND_ASSIGN(TidyInterface);
