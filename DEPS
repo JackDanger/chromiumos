@@ -124,7 +124,7 @@ deps = {
     _third_party_base + "kernel/files": "/kernel.git",
 
     # ARM kernel
-    _third_party_base + "kernel-qualcomm": "/kernel.git@origin/qualcomm-2.6.31.5",
+    _third_party_base + "kernel-qualcomm": "/kernel.git@origin/qualcomm-2.6.31.12",
 
     # flimflam
     _third_party_base + "flimflam": "/flimflam.git",
