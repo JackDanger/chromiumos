@@ -1,5 +1,0 @@
-autotest (1.0-1) unstable; urgency=low
-
-  * Enable Debian style packaging for autotest.
-
- -- The Chromium OS Authors <chromium-os-dev@googlegroups.com>  Wed, 11 Nov 2009 17:14:09 -0800
