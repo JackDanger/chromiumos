@@ -33,9 +33,6 @@ vars = {
 }
 
 deps = {
-    # chromiumos-build
-    "tools/chromiumos-build": "/chromiumos-build.git",
-
     # cros
     _platform_base + "cros": "/cros.git",
 
@@ -69,27 +66,12 @@ deps = {
     # multilingual support libraries
     _third_party_base + "m17n-lib": "/m17n-lib.git",
 
-    # gflags 1.1
-    _third_party_base + "gflags/files":
-        "http://google-gflags.googlecode.com/svn/trunk@31",
-
     # google-breakpad
     _third_party_base + "google-breakpad/files":
         "http://google-breakpad.googlecode.com/svn/trunk@400",
 
-    # gtest 1.3.0
-    _third_party_base + "gtest/files":
-        "http://googletest.googlecode.com/svn/trunk@327",
-
-    # googlemock 1.4
-    _third_party_base + "gmock/files":
-        "http://googlemock.googlecode.com/svn/trunk@221",
-
     # gtk+2.0 - branch at 2.18.3, need to fix our clone somehow.
     _third_party_base + "gtk+2.0": "/gtkplus2.0.git",
-
-    # hostap
-    _third_party_base + "wpa_supplicant/hostap.git": "/hostap.git",
 
     # pam-dev
     _third_party_base + "pam-dev": "/pam-dev.git",
@@ -141,12 +123,6 @@ deps = {
     # curl
     _third_party_base + "curl": "/curl.git",
 
-    # openssh
-    _third_party_base + "openssh": "/openssh.git",
-
-    # openssl
-    _third_party_base + "openssl": "/openssl.git",
-
     # tzdata
     _third_party_base + "tzdata": "/tzdata.git",
 
@@ -161,15 +137,6 @@ deps = {
 
     # xserver-xorg-core
     _third_party_base + "xserver-xorg-core": "/xserver-xorg-core.git",
-
-    # dhcp3
-    _third_party_base + "dhcp3": "/dhcp3.git",
-
-    # rsyslog
-    _third_party_base + "rsyslog": "/rsyslog.git",
-
-    # vim
-    _third_party_base + "vim": "/vim.git",
 
     # dhcpcd
     _third_party_base + "dhcpcd/dhcpcd": "/dhcpcd.git",
