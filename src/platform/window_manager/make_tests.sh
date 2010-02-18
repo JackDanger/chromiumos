@@ -10,7 +10,6 @@ SCRIPT_DIR=`dirname "$0"`
 SCRIPT_DIR=`readlink -f "$SCRIPT_DIR"`
 
 BUILD_ROOT=${BUILD_ROOT:-${SCRIPT_DIR}/../../../src/build}
-OUT_DIR=${BUILD_ROOT}/x86/tests
 mkdir -p $OUT_DIR
 
 pushd $SCRIPT_DIR

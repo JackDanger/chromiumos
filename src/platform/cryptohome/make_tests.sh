@@ -10,8 +10,6 @@
 COMMON_SH="$(dirname "$0")/../../scripts/common.sh"
 . "$COMMON_SH"
 
-
-OUT_DIR=${DEFAULT_BUILD_ROOT}/x86/tests
 mkdir -p ${OUT_DIR}
 TARGET=${OUT_DIR}/cryptohome_tests
 
