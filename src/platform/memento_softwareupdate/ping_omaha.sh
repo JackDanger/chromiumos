@@ -15,7 +15,7 @@ source `dirname "$0"`/memento_updater_logging.sh
 # userid="{706F576A-ACF9-4611-B608-E5528EAC106A}">
 #     <o:os version="MacOSX" platform="mac" sp="10.5.6_i486"></o:os>
 #     <o:app appid="com.google.GoogleAppEngineLauncher" version="1.2.2.380" \
-# lang="en-us" brand="GGLG">
+# lang="en-us" brand="GGLG" board="x86-generic">
 #         <o:ping active="0"></o:ping>
 #         <o:updatecheck></o:updatecheck>
 #     </o:app>
@@ -44,6 +44,7 @@ OS=Memento
 PLATFORM=memento
 APP_ID={87efface-864d-49a5-9bb3-4b050a7c227a}
 APP_VERSION="$1"
+APP_BOARD="$2"
 OS_VERSION=${APP_VERSION}_$(uname -m)
 LANG=en-us
 BRAND=GGLG
@@ -73,13 +74,19 @@ then
 fi
 USER_ID=$MACHINE_ID
 AU_VERSION=MementoSoftwareUpdate-0.1.0.0
-APP_TRACK=$(grep ^CHROMEOS_RELEASE_TRACK /mnt/stateful_partition/etc/lsb-release | \
+
+for dir in /mnt/stateful_partition /; do
+    value=$(grep ^CHROMEOS_RELEASE_TRACK $dir/etc/lsb-release | \
             cut -d = -f 2-)
-if [ "x" = "x$APP_TRACK" ]
-then
-  # look in the main file
-  APP_TRACK=$(grep ^CHROMEOS_RELEASE_TRACK /etc/lsb-release | cut -d = -f 2-)
-fi
+    if [ -z "$APP_TRACK" -a -n "$value" ]; then
+        APP_TRACK="$value"
+    fi
+    value=$(grep ^CHROMEOS_RELEASE_BOARD $dir/etc/lsb-release | \
+            cut -d = -f 2-)
+    if [ -z "$APP_BOARD" -a -n "$value" ]; then
+        APP_BOARD="$value"
+    fi
+done
 
 AUSERVER_URL=$(grep ^CHROMEOS_AUSERVER /etc/lsb-release | cut -d = -f 2-) 
 
@@ -96,6 +103,8 @@ fi
 # APP_ID=com.google.GoogleAppEngineLauncher
 # #APP_VERSION=0.0.0.0
 # APP_VERSION=1.2.2.380
+# #APP_BOARD=arm-generic
+# APP_BOARD=x86-generic
 # LANG=en-us
 # BRAND=GGLG
 # MACHINE_ID={177255303f3cc519182a103069489327}
@@ -111,7 +120,7 @@ version="$AU_VERSION" protocol="2.0" machineid="$MACHINE_ID" \
 ismachine="0" userid="$USER_ID">
     <o:os version="$OS" platform="$PLATFORM" sp="$OS_VERSION"></o:os>
     <o:app appid="$APP_ID" version="$APP_VERSION" lang="$LANG" brand="$BRAND" \
-track="$APP_TRACK">
+track="$APP_TRACK" board="$APP_BOARD">
         <o:ping active="0"></o:ping>
         <o:updatecheck></o:updatecheck>
     </o:app>
