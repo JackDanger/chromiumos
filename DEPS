@@ -166,6 +166,9 @@ deps = {
     # chromiumos-overlay
     _third_party_base + "chromiumos-overlay": "/chromiumos-overlay.git",
 
+    # laptop mode tools
+    _third_party_base + "laptop-mode-tools": "/laptop-mode-tools.git",
+
     # board overlays, please keep sorted alphabetically
     _overlays_base + "overlay-arm-generic": "/overlay-arm-generic.git",
     _overlays_base + "overlay-beagleboard": "/overlay-beagleboard.git",
