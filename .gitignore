@@ -61,6 +61,7 @@
 /src/third_party/ibus/files/
 /src/third_party/kernel/files/
 /src/third_party/kernel-qualcomm/
+/src/third_party/laptop-mode-tools/
 /src/third_party/m17n-lib/
 /src/third_party/openssh/
 /src/third_party/openssl/
