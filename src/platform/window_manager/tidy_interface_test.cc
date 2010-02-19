@@ -14,9 +14,10 @@
 #include "base/scoped_ptr.h"
 #include "base/logging.h"
 #include "window_manager/clutter_interface.h"
-#include "window_manager/tidy_interface.h"
 #include "window_manager/mock_gl_interface.h"
 #include "window_manager/mock_x_connection.h"
+#include "window_manager/test_lib.h"
+#include "window_manager/tidy_interface.h"
 #include "window_manager/util.h"
 
 DEFINE_bool(logtostderr, false,
@@ -59,11 +60,14 @@ class TidyTest : public ::testing::Test {
     interface_.reset(NULL);  // Must explicitly delete so that we get
                              // the order right.
   }
+
   TidyInterface* interface() { return interface_.get(); }
+  MockXConnection* x_connection() { return x_connection_.get(); }
+
  private:
   scoped_ptr<TidyInterface> interface_;
   scoped_ptr<GLInterface> gl_interface_;
-  scoped_ptr<XConnection> x_connection_;
+  scoped_ptr<MockXConnection> x_connection_;
 };
 
 class TidyTestTree : public TidyTest {
@@ -503,17 +507,75 @@ TEST_F(TidyTestTree, CloneTest) {
   EXPECT_EQ(200, clone->height());
 }
 
+// Test TidyInterface's handling of X events concerning composited windows.
+TEST_F(TidyTest, HandleXEvents) {
+  // Draw once initially to make sure that the interface isn't dirty.
+  interface()->Draw();
+  EXPECT_FALSE(interface()->dirty());
+
+  // Now create an texture pixmap actor and add it to the stage.
+  scoped_ptr<ClutterInterface::TexturePixmapActor> actor(
+      interface()->CreateTexturePixmap());
+  TidyInterface::TexturePixmapActor* cast_actor =
+      dynamic_cast<TidyInterface::TexturePixmapActor*>(actor.get());
+  CHECK(cast_actor);
+  EXPECT_FALSE(cast_actor->HasPixmapDrawingData());
+  actor->SetVisibility(true);
+  interface()->GetDefaultStage()->AddActor(actor.get());
+  EXPECT_TRUE(interface()->dirty());
+  interface()->Draw();
+  EXPECT_FALSE(interface()->dirty());
+
+  XWindow xid = x_connection()->CreateWindow(
+      x_connection()->GetRootWindow(),  // parent
+      0, 0,      // x, y
+      400, 300,  // width, height
+      false,     // override_redirect=false
+      false,     // input_only=false
+      0);        // event_mask
+  MockXConnection::WindowInfo* info =
+      x_connection()->GetWindowInfoOrDie(xid);
+  info->compositing_pixmap = 123;  // arbitrary
+
+  // After we bind the actor to our window, the window should be
+  // redirected and the interface should be marked dirty.
+  EXPECT_TRUE(actor->SetTexturePixmapWindow(xid));
+  EXPECT_TRUE(info->redirected);
+  EXPECT_TRUE(interface()->dirty());
+
+  // We should pick up the window's pixmap the next time we draw.
+  interface()->Draw();
+  EXPECT_TRUE(cast_actor->HasPixmapDrawingData());
+  EXPECT_FALSE(interface()->dirty());
+
+  // Now resize the window.  The pixmap should get thrown away.
+  info->width = 640;
+  info->height = 480;
+  XEvent event;
+  MockXConnection::InitConfigureNotifyEvent(&event, *info);
+  EXPECT_FALSE(interface()->HandleEvent(&event));
+  EXPECT_TRUE(interface()->dirty());
+  EXPECT_FALSE(cast_actor->HasPixmapDrawingData());
+
+  // A new pixmap should be loaded the next time we draw.
+  interface()->Draw();
+  EXPECT_TRUE(cast_actor->HasPixmapDrawingData());
+  EXPECT_FALSE(interface()->dirty());
+
+  // TODO: Test that we refresh textures when we see damage events.
+
+  // We should throw away the pixmap and un-redirect the window after
+  // seeing the window get destroyed.
+  MockXConnection::InitDestroyWindowEvent(&event, xid);
+  EXPECT_FALSE(interface()->HandleEvent(&event));
+  EXPECT_FALSE(info->redirected);
+  EXPECT_EQ(None, cast_actor->texture_pixmap_window());
+  EXPECT_FALSE(cast_actor->HasPixmapDrawingData());
+  EXPECT_TRUE(interface()->dirty());
+}
+
 }  // end namespace window_manager
 
 int main(int argc, char **argv) {
-  google::ParseCommandLineFlags(&argc, &argv, true);
-  CommandLine::Init(argc, argv);
-  logging::InitLogging(NULL,
-                       FLAGS_logtostderr ?
-                       logging::LOG_ONLY_TO_SYSTEM_DEBUG_LOG :
-                       logging::LOG_NONE,
-                       logging::DONT_LOCK_LOG_FILE,
-                       logging::APPEND_TO_OLD_LOG_FILE);
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
+  window_manager::InitAndRunTests(&argc, argv, &FLAGS_logtostderr);
 }

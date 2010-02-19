@@ -11,6 +11,7 @@
 #include <sys/time.h>
 
 #include "base/basictypes.h"
+#include "base/hash_tables.h"
 #include "base/logging.h"
 #include "base/string_util.h"
 
@@ -182,6 +183,17 @@ class ByteMap {
 template<class K, class V>
 V FindWithDefault(const std::map<K, V>& the_map, const K& key, const V& def) {
   typename std::map<K, V>::const_iterator it = the_map.find(key);
+  if (it == the_map.end()) {
+    return def;
+  }
+  return it->second;
+}
+
+template<class K, class V>
+V FindWithDefault(const base::hash_map<K, V>& the_map,
+                  const K& key,
+                  const V& def) {
+  typename base::hash_map<K, V>::const_iterator it = the_map.find(key);
   if (it == the_map.end()) {
     return def;
   }

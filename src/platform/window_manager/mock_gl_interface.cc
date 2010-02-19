@@ -86,7 +86,9 @@ static __GLXFBConfigRec kConfigRec;
 
 namespace window_manager {
 
-MockGLInterface::MockGLInterface() : mock_context_(&kContextRec) {
+MockGLInterface::MockGLInterface()
+    : mock_context_(&kContextRec),
+      next_glx_pixmap_id_(1) {
   mock_configs_ = new GLXFBConfig[1];
   kConfigRec.depthBits = 32;
   kConfigRec.redBits = 8;
@@ -99,13 +101,13 @@ MockGLInterface::MockGLInterface() : mock_context_(&kContextRec) {
 }
 
 MockGLInterface::~MockGLInterface() {
-  delete [] mock_configs_;
+  delete[] mock_configs_;
 }
 
 GLXPixmap MockGLInterface::CreateGlxPixmap(GLXFBConfig config,
                                            XPixmap pixmap,
                                            const int* attrib_list) {
-  return None;
+  return next_glx_pixmap_id_++;
 }
 
 GLXContext MockGLInterface::CreateGlxContext(XVisualInfo* vis) {

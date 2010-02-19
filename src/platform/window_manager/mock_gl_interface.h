@@ -90,6 +90,9 @@ class MockGLInterface : public GLInterface {
   GLXFBConfig* mock_configs_;
   GLXContext mock_context_;
   DISALLOW_COPY_AND_ASSIGN(MockGLInterface);
+
+  // Next ID to hand out in CreateGlxPixmap().
+  GLXPixmap next_glx_pixmap_id_;
 };
 
 }  // namespace window_manager

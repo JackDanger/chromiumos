@@ -404,13 +404,30 @@ class TidyInterface : public ClutterInterface {
       return true;
     }
     void ClearAlphaMask() { NOTIMPLEMENTED(); }
-    void Refresh();
+
+    // Refresh the current pixmap.
+    void RefreshPixmap();
+
+    // Stop monitoring the current window, if any, for changes and destroy
+    // the current pixmap.
     void Reset();
 
+    // Throw out the current pixmap.  A new one will be created
+    // automatically when needed.
+    void DestroyPixmap();
+
     virtual Actor* Clone();
+
    protected:
     void CloneImpl(TexturePixmapActor* clone);
+
    private:
+    FRIEND_TEST(TidyTest, HandleXEvents);
+
+    // Is there currently any pixmap drawing data?  Tests use this to
+    // check that old pixmaps get thrown away when needed.
+    bool HasPixmapDrawingData();
+
     // This is the XWindow that this actor is associated with.
     XWindow window_;
 
@@ -476,6 +493,7 @@ class TidyInterface : public ClutterInterface {
   AnimationBase::AnimationTime GetCurrentTime() { return now_; }
   bool HandleEvent(XEvent* event);
   int actor_count() { return actor_count_; }
+  bool dirty() const { return dirty_; }
 
   void Draw();
 

@@ -235,6 +235,13 @@ bool MockXConnection::UnredirectWindowForCompositing(XWindow xid) {
   return true;
 }
 
+XPixmap MockXConnection::GetCompositingPixmapForWindow(XWindow xid) {
+  WindowInfo* info = GetWindowInfo(xid);
+  if (!info)
+    return false;
+  return info->compositing_pixmap;
+}
+
 XWindow MockXConnection::CreateWindow(
     XWindow parent,
     int x, int y,
@@ -494,7 +501,8 @@ MockXConnection::WindowInfo::WindowInfo(XWindow xid, XWindow parent)
       shape(NULL),
       shape_events_selected(false),
       randr_events_selected(false),
-      changed(false) {
+      changed(false),
+      compositing_pixmap(None) {
 }
 
 MockXConnection::WindowInfo::~WindowInfo() {}

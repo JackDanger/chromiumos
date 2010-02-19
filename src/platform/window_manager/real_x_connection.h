@@ -48,7 +48,7 @@ class RealXConnection : public XConnection {
   bool RedirectWindowForCompositing(XWindow xid);
   bool UnredirectWindowForCompositing(XWindow xid);
   XWindow GetCompositingOverlayWindow(XWindow root);
-  XPixmap GetCompositingPixmapForWindow(XWindow window);
+  XPixmap GetCompositingPixmapForWindow(XWindow xid);
   bool FreePixmap(XPixmap pixmap);
   XWindow GetRootWindow() { return root_; }
   XWindow CreateWindow(XWindow parent, int x, int y, int width, int height,

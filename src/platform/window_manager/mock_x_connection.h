@@ -56,7 +56,7 @@ class MockXConnection : public XConnection {
   bool RedirectWindowForCompositing(XWindow xid);
   bool UnredirectWindowForCompositing(XWindow xid);
   XWindow GetCompositingOverlayWindow(XWindow root) { return overlay_; }
-  XPixmap GetCompositingPixmapForWindow(XWindow window) { return None; }
+  XPixmap GetCompositingPixmapForWindow(XWindow xid);
   bool FreePixmap(XPixmap pixmap) { return true; }
   XWindow GetRootWindow() { return root_; }
   XWindow CreateWindow(XWindow parent, int x, int y, int width, int height,
@@ -155,6 +155,9 @@ class MockXConnection : public XConnection {
     // Information about button grabs installed on this window, keyed by
     // button.
     std::map<int, ButtonGrabInfo> button_grabs;
+
+    // XComposite offscreen pixmap with this window's contents.
+    XPixmap compositing_pixmap;
 
    private:
     DISALLOW_COPY_AND_ASSIGN(WindowInfo);

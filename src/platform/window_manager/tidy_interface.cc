@@ -467,10 +467,14 @@ bool TidyInterface::TexturePixmapActor::SetTexturePixmapWindow(
 }
 
 void TidyInterface::TexturePixmapActor::Reset() {
-  if (window_) {
+  if (window_)
     interface()->StopMonitoringWindowForChanges(window_, this);
-  }
+  window_ = None;
+  DestroyPixmap();
+  set_dirty();
+}
 
+void TidyInterface::TexturePixmapActor::DestroyPixmap() {
 #ifdef TIDY_OPENGL
   EraseDrawingData(OpenGlDrawVisitor::PIXMAP_DATA);
 #endif
@@ -490,7 +494,16 @@ void TidyInterface::TexturePixmapActor::CloneImpl(TexturePixmapActor* clone) {
   clone->window_ = window_;
 }
 
-void TidyInterface::TexturePixmapActor::Refresh() {
+bool TidyInterface::TexturePixmapActor::HasPixmapDrawingData() {
+#ifdef TIDY_OPENGL
+  return GetDrawingData(OpenGlDrawVisitor::PIXMAP_DATA) != NULL;
+#endif
+#ifdef TIDY_OPENGLES
+  return GetDrawingData(OpenGlesDrawVisitor::kEglImageData) != NULL;
+#endif
+}
+
+void TidyInterface::TexturePixmapActor::RefreshPixmap() {
 #ifdef TIDY_OPENGL
   OpenGlPixmapData* data  = dynamic_cast<OpenGlPixmapData*>(
       GetDrawingData(OpenGlDrawVisitor::PIXMAP_DATA).get());
@@ -645,24 +658,37 @@ static GdkFilterReturn FilterEvent(GdkXEvent* xevent,
 }
 
 bool TidyInterface::HandleEvent(XEvent* xevent) {
-  if (xevent->type != DestroyNotify &&
-      xevent->type != ConfigureNotify &&
-      xevent->type != x_conn()->damage_event_base() + XDamageNotify) {
+  static int damage_notify = x_conn()->damage_event_base() + XDamageNotify;
+
+  if (xevent->type == ConfigureNotify) {
+    TexturePixmapActor* actor =
+        FindWithDefault(texture_pixmaps_,
+                        xevent->xconfigure.window,
+                        static_cast<TexturePixmapActor*>(NULL));
+    // Get a new pixmap with a new size.
+    if (actor) {
+      actor->DestroyPixmap();
+      actor->set_dirty();
+    }
     return false;
-  }
-  XIDToTexturePixmapActorMap::iterator iterator =
-      texture_pixmaps_.find(xevent->xany.window);
-  if (iterator == texture_pixmaps_.end())
+  } else if (xevent->type == DestroyNotify) {
+    TexturePixmapActor* actor =
+        FindWithDefault(texture_pixmaps_,
+                        xevent->xdestroywindow.window,
+                        static_cast<TexturePixmapActor*>(NULL));
+    if (actor)
+      actor->Reset();
     return false;
-  TexturePixmapActor* actor = iterator->second;
-  if (!actor)
+  } else if (xevent->type == damage_notify) {
+    TexturePixmapActor* actor =
+        FindWithDefault(texture_pixmaps_,
+                        reinterpret_cast<XDamageNotifyEvent*>(xevent)->drawable,
+                        static_cast<TexturePixmapActor*>(NULL));
+    if (actor)
+      actor->RefreshPixmap();
+    return (actor != NULL);;
+  } else {
     return false;
-  if (xevent->type == DestroyNotify || xevent->type == ConfigureNotify) {
-    actor->Reset();
-    return false;  // Let the window manager continue to receive these events.
-  } else {  // This must be an XDamageNotify event.
-    actor->Refresh();
-    return true;
   }
 }
 

@@ -247,7 +247,7 @@ class XConnection {
   virtual XWindow GetCompositingOverlayWindow(XWindow root) = 0;
 
   // Get a pixmap referring to a redirected window's offscreen storage.
-  virtual XPixmap GetCompositingPixmapForWindow(XWindow window) = 0;
+  virtual XPixmap GetCompositingPixmapForWindow(XWindow xid) = 0;
 
   // Free a pixmap.
   virtual bool FreePixmap(XPixmap pixmap) = 0;

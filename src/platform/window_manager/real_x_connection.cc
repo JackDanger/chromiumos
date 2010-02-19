@@ -455,12 +455,12 @@ XWindow RealXConnection::GetCompositingOverlayWindow(XWindow root) {
   return reply->overlay_win;
 }
 
-XPixmap RealXConnection::GetCompositingPixmapForWindow(XWindow window) {
+XPixmap RealXConnection::GetCompositingPixmapForWindow(XWindow xid) {
   const xcb_pixmap_t pixmap = xcb_generate_id(xcb_conn_);
   xcb_void_cookie_t cookie = xcb_composite_name_window_pixmap_checked(
-      xcb_conn_, window, pixmap);
+      xcb_conn_, xid, pixmap);
   CheckForXcbError(cookie, "in GetCompositingPixmapForWindow "
-                   "(window=0x%08x, pixmap=0x%08x)", static_cast<int>(window),
+                   "(xid=0x%08x, pixmap=0x%08x)", static_cast<int>(xid),
                    static_cast<int>(pixmap));
   return pixmap;
 }

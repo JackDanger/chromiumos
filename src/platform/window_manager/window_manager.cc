@@ -138,9 +138,8 @@ static GdkFilterReturn FilterEvent(GdkXEvent* xevent,
                                    GdkEvent* event,
                                    gpointer data) {
   WindowManager* wm = reinterpret_cast<WindowManager*>(data);
-  return wm->HandleEvent(reinterpret_cast<XEvent*>(xevent)) ?
-      GDK_FILTER_REMOVE :
-      GDK_FILTER_CONTINUE;
+  wm->HandleEvent(reinterpret_cast<XEvent*>(xevent));
+  return GDK_FILTER_CONTINUE;
 }
 
 // Callback for a GTK timer that will attempt to send metrics to
