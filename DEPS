@@ -63,15 +63,9 @@ deps = {
     # IBus input method for many languages (e.g. Thai)
     _third_party_base + "ibus-m17n/files": "/ibus-m17n.git",
 
-    # multilingual support libraries
-    _third_party_base + "m17n-lib": "/m17n-lib.git",
-
     # google-breakpad
     _third_party_base + "google-breakpad/files":
         "http://google-breakpad.googlecode.com/svn/trunk@400",
-
-    # gtk+2.0 - branch at 2.18.3, need to fix our clone somehow.
-    _third_party_base + "gtk+2.0": "/gtkplus2.0.git",
 
     # pam-dev
     _third_party_base + "pam-dev": "/pam-dev.git",
@@ -83,9 +77,6 @@ deps = {
     # shunit2 2.1.5
     _third_party_base + "shunit2/files":
         "http://shunit2.googlecode.com/svn/tags/source/2.1.5@294",
-
-    # syslinux
-    _third_party_base + "syslinux/files": "/syslinux.git",
 
     # tpm-emulator
     _third_party_base + "tpm-emulator/files":
@@ -114,41 +105,17 @@ deps = {
     # gpt
     _third_party_base + "gpt": "/gpt.git",
 
-    # cairo - branch at 1.8.8, need to fix our clone somehow.
-    _third_party_base + "cairo": "/cairo.git",
-
-    # gconf - branch at 2.28.0, need to fix our clone somehow.
-    _third_party_base + "gconf": "/gconf.git",
-
-    # curl
-    _third_party_base + "curl": "/curl.git",
-
-    # tzdata
-    _third_party_base + "tzdata": "/tzdata.git",
-
     # xf86-video-msm from codeaurora.org
     _third_party_base + "xf86-video-msm": "/xf86-video-msm.git",
 
-    # pango (i18n text rendering)
-    _third_party_base + "pango": "/pango.git",
-
     # upstart
     _third_party_base + "upstart/files": "/upstart.git",
-
-    # xserver-xorg-core
-    _third_party_base + "xserver-xorg-core": "/xserver-xorg-core.git",
 
     # dhcpcd
     _third_party_base + "dhcpcd/dhcpcd": "/dhcpcd.git",
 
     # dhcpcd-dbus
     _third_party_base + "dhcpcd/dhcpcd-dbus": "/dhcpcd-dbus.git",
-
-    # anthy - japanese input
-    _third_party_base + "anthy": "/anthy.git",
-
-    # alsa-lib
-    _third_party_base + "alsa-lib": "/alsa-lib.git",
 
     # u-boot
     _third_party_base + "u-boot/files": "/u-boot.git",
