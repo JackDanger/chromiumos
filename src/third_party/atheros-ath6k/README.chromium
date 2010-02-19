@@ -1,0 +1,12 @@
+URL: http://www.atheros.com
+
+Version: AR6K_GPL_SDK.build_sw.63
+License: GPL v2
+License File: <missing>
+
+Version: AR6K_FW.build_sw.66
+License: Limited patent license. Atheros Communications, Inc.
+License File: files/target/License.txt
+
+Description:
+  Vendor drop of AR6003 support (awaiting push upstream).
