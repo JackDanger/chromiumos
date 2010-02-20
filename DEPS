@@ -79,8 +79,7 @@ deps = {
         "http://shunit2.googlecode.com/svn/tags/source/2.1.5@294",
 
     # tpm-emulator
-    _third_party_base + "tpm-emulator/files":
-        "http://svn.berlios.de/svnroot/repos/tpm-emulator/trunk@341",
+    _third_party_base + "tpm-emulator": "/tpm-emulator.git",
 
     # trousers
     _third_party_base + "trousers": "/trousers.git",
