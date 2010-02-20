@@ -10,7 +10,9 @@
 
 #include "base/logging.h"
 #include "window_manager/clutter_interface.h"
+#include "window_manager/event_consumer_registrar.h"
 #include "window_manager/panel.h"
+#include "window_manager/panel_manager.h"
 #include "window_manager/pointer_position_watcher.h"
 #include "window_manager/stacking_manager.h"
 #include "window_manager/util.h"
@@ -65,40 +67,50 @@ static const int kHideCollapsedPanelsAnimMs = 100;
 // moves the pointer down to the bottom row of pixels?
 static const int kShowCollapsedPanelsDelayMs = 200;
 
-PanelBar::PanelBar(WindowManager* wm)
-    : wm_(wm),
+PanelBar::PanelBar(PanelManager* panel_manager)
+    : panel_manager_(panel_manager),
       total_panel_width_(0),
       dragged_panel_(NULL),
-      anchor_input_xid_(wm_->CreateInputWindow(-1, -1, 1, 1, ButtonPressMask)),
+      anchor_input_xid_(wm()->CreateInputWindow(-1, -1, 1, 1, ButtonPressMask)),
       anchor_panel_(NULL),
-      anchor_actor_(wm_->clutter()->CreateImage(FLAGS_panel_anchor_image)),
+      anchor_actor_(wm()->clutter()->CreateImage(FLAGS_panel_anchor_image)),
       desired_panel_to_focus_(NULL),
       collapsed_panel_state_(COLLAPSED_PANEL_STATE_HIDDEN),
       show_collapsed_panels_input_xid_(
-          wm_->CreateInputWindow(-1, -1, 1, 1,
-                                 EnterWindowMask | LeaveWindowMask)),
-      show_collapsed_panels_timer_id_(0) {
+          wm()->CreateInputWindow(-1, -1, 1, 1,
+                                  EnterWindowMask | LeaveWindowMask)),
+      show_collapsed_panels_timer_id_(0),
+      event_consumer_registrar_(
+          new EventConsumerRegistrar(wm(), panel_manager)) {
+  event_consumer_registrar_->RegisterForWindowEvents(anchor_input_xid_);
+  event_consumer_registrar_->RegisterForWindowEvents(
+      show_collapsed_panels_input_xid_);
+
   anchor_actor_->SetName("panel anchor");
   anchor_actor_->SetOpacity(0, 0);
-  wm_->stage()->AddActor(anchor_actor_.get());
-  wm_->stacking_manager()->StackActorAtTopOfLayer(
+  wm()->stage()->AddActor(anchor_actor_.get());
+  wm()->stacking_manager()->StackActorAtTopOfLayer(
       anchor_actor_.get(), StackingManager::LAYER_PANEL_BAR_INPUT_WINDOW);
 
   // Stack the anchor input window above the show-collapsed-panels one so
   // we won't get spurious leave events in the former.
-  wm_->stacking_manager()->StackXidAtTopOfLayer(
+  wm()->stacking_manager()->StackXidAtTopOfLayer(
       show_collapsed_panels_input_xid_,
       StackingManager::LAYER_PANEL_BAR_INPUT_WINDOW);
-  wm_->stacking_manager()->StackXidAtTopOfLayer(
+  wm()->stacking_manager()->StackXidAtTopOfLayer(
       anchor_input_xid_, StackingManager::LAYER_PANEL_BAR_INPUT_WINDOW);
 }
 
 PanelBar::~PanelBar() {
   DisableShowCollapsedPanelsTimer();
-  wm_->xconn()->DestroyWindow(anchor_input_xid_);
+  wm()->xconn()->DestroyWindow(anchor_input_xid_);
   anchor_input_xid_ = None;
-  wm_->xconn()->DestroyWindow(show_collapsed_panels_input_xid_);
+  wm()->xconn()->DestroyWindow(show_collapsed_panels_input_xid_);
   show_collapsed_panels_input_xid_ = None;
+}
+
+WindowManager* PanelBar::wm() {
+  return panel_manager_->wm();
 }
 
 void PanelBar::GetInputWindows(vector<XWindow>* windows_out) {
@@ -113,7 +125,7 @@ void PanelBar::AddPanel(Panel* panel, PanelSource source) {
 
   shared_ptr<PanelInfo> info(new PanelInfo);
   info->snapped_right =
-      wm_->width() - total_panel_width_ - kPixelsBetweenPanels;
+      wm()->width() - total_panel_width_ - kPixelsBetweenPanels;
   info->is_urgent = panel->content_win()->wm_hint_urgent();
   panel_infos_.insert(make_pair(panel, info));
 
@@ -135,7 +147,7 @@ void PanelBar::AddPanel(Panel* panel, PanelSource source) {
   switch (source) {
     case PANEL_SOURCE_NEW:
       // Make newly-created panels animate in from offscreen.
-      panel->Move(info->snapped_right, wm_->height(), false, 0);
+      panel->Move(info->snapped_right, wm()->height(), false, 0);
       panel->MoveY(final_y, true, kPanelStateAnimMs);
       break;
     case PANEL_SOURCE_DRAGGED:
@@ -156,7 +168,7 @@ void PanelBar::AddPanel(Panel* panel, PanelSource source) {
   // 'desired_panel_to_focus_'.
   if (panel->is_expanded() &&
       (source == PANEL_SOURCE_NEW || panel->content_win()->focused())) {
-    FocusPanel(panel, false, wm_->GetCurrentTimeFromServer());
+    FocusPanel(panel, false, wm()->GetCurrentTimeFromServer());
   } else {
     panel->AddButtonGrab();
   }
@@ -205,7 +217,7 @@ bool PanelBar::ShouldAddDraggedPanel(const Panel* panel,
                                      int drag_x,
                                      int drag_y) {
   return drag_y + panel->total_height() >
-         wm_->height() - kPanelAttachThresholdPixels;
+         wm()->height() - kPanelAttachThresholdPixels;
 }
 
 void PanelBar::HandleInputWindowButtonPress(XWindow xid,
@@ -233,7 +245,7 @@ void PanelBar::HandleInputWindowPointerEnter(XWindow xid,
                                              Time timestamp) {
   if (xid == show_collapsed_panels_input_xid_) {
     VLOG(1) << "Got mouse enter in show-collapsed-panels window";
-    if (x_root >= wm_->width() - total_panel_width_) {
+    if (x_root >= wm()->width() - total_panel_width_) {
       // If the user moves the pointer down quickly to the bottom of the
       // screen, it's possible that it could end up below a collapsed panel
       // without us having received an enter event in the panel's titlebar.
@@ -310,7 +322,7 @@ bool PanelBar::HandleNotifyPanelDraggedMessage(Panel* panel,
           << " to (" << drag_x << ", " << drag_y << ")";
 
   const int y_threshold =
-      wm_->height() - panel->total_height() - kPanelDetachThresholdPixels;
+      wm()->height() - panel->total_height() - kPanelDetachThresholdPixels;
   if (panel->is_expanded() && drag_y <= y_threshold)
     return false;
 
@@ -326,7 +338,7 @@ bool PanelBar::HandleNotifyPanelDraggedMessage(Panel* panel,
     panel->StackAtTopOfLayer(StackingManager::LAYER_DRAGGED_PANEL);
   }
 
-  dragged_panel_->MoveX((wm_->wm_ipc_version() >= 1) ?
+  dragged_panel_->MoveX((wm()->wm_ipc_version() >= 1) ?
                           drag_x :
                           drag_x + dragged_panel_->titlebar_width(),
                         false, 0);
@@ -344,7 +356,7 @@ void PanelBar::HandleFocusPanelMessage(Panel* panel) {
   DCHECK(panel);
   if (!panel->is_expanded())
     ExpandPanel(panel, false, kPanelStateAnimMs);
-  FocusPanel(panel, false, wm_->GetCurrentTimeFromServer());
+  FocusPanel(panel, false, wm()->GetCurrentTimeFromServer());
 }
 
 void PanelBar::HandlePanelResize(Panel* panel) {
@@ -383,7 +395,7 @@ void PanelBar::HandlePanelUrgencyChange(Panel* panel) {
 }
 
 bool PanelBar::TakeFocus() {
-  Time timestamp = wm_->GetCurrentTimeFromServer();
+  Time timestamp = wm()->GetCurrentTimeFromServer();
 
   // If we already decided on a panel to focus, use it.
   if (desired_panel_to_focus_) {
@@ -417,14 +429,14 @@ int PanelBar::GetNumCollapsedPanels() {
   return count;
 }
 
-int PanelBar::ComputePanelY(const Panel& panel, const PanelInfo& info) const {
+int PanelBar::ComputePanelY(const Panel& panel, const PanelInfo& info) {
   if (panel.is_expanded()) {
-    return wm_->height() - panel.total_height();
+    return wm()->height() - panel.total_height();
   } else {
     if (CollapsedPanelsAreHidden() && !info.is_urgent)
-      return wm_->height() - kHiddenCollapsedPanelHeightPixels;
+      return wm()->height() - kHiddenCollapsedPanelHeightPixels;
     else
-      return wm_->height() - panel.titlebar_height();
+      return wm()->height() - panel.titlebar_height();
   }
 }
 
@@ -471,8 +483,8 @@ void PanelBar::CollapsePanel(Panel* panel) {
   if (panel->content_win()->focused()) {
     desired_panel_to_focus_ = panel_to_focus;
     if (!TakeFocus()) {
-      wm_->SetActiveWindowProperty(None);
-      wm_->TakeFocus();
+      wm()->SetActiveWindowProperty(None);
+      wm()->TakeFocus();
     }
   }
 
@@ -485,7 +497,7 @@ void PanelBar::FocusPanel(Panel* panel,
                           Time timestamp) {
   CHECK(panel);
   panel->RemoveButtonGrab(true);  // remove_pointer_grab
-  wm_->SetActiveWindowProperty(panel->content_win()->xid());
+  wm()->SetActiveWindowProperty(panel->content_win()->xid());
   panel->content_win()->TakeFocus(timestamp);
   desired_panel_to_focus_ = panel;
 }
@@ -520,8 +532,8 @@ void PanelBar::HandlePanelDragComplete(Panel* panel) {
     // If the user moved the pointer up from the bottom of the screen while
     // they were dragging the panel...
     int pointer_y = 0;
-    wm_->xconn()->QueryPointerPosition(NULL, &pointer_y);
-    if (pointer_y < wm_->height() - kHideCollapsedPanelsDistancePixels) {
+    wm()->xconn()->QueryPointerPosition(NULL, &pointer_y);
+    if (pointer_y < wm()->height() - kHideCollapsedPanelsDistancePixels) {
       // Hide the panels if they didn't move the pointer back down again
       // before releasing the button.
       HideCollapsedPanels();
@@ -582,7 +594,7 @@ void PanelBar::PackPanels(Panel* fixed_panel) {
     PanelInfo* info = GetPanelInfoOrDie(panel);
 
     info->snapped_right =
-        wm_->width() - total_panel_width_ - kPixelsBetweenPanels;
+        wm()->width() - total_panel_width_ - kPixelsBetweenPanels;
     if (panel != fixed_panel && panel->right() != info->snapped_right)
       panel->MoveX(info->snapped_right, true, kPanelArrangeAnimMs);
 
@@ -592,15 +604,15 @@ void PanelBar::PackPanels(Panel* fixed_panel) {
 
 void PanelBar::CreateAnchor(Panel* panel) {
   int pointer_x = 0;
-  wm_->xconn()->QueryPointerPosition(&pointer_x, NULL);
+  wm()->xconn()->QueryPointerPosition(&pointer_x, NULL);
 
   const int width = anchor_actor_->GetWidth();
   const int height = anchor_actor_->GetHeight();
   const int x = min(max(static_cast<int>(pointer_x - 0.5 * width), 0),
-                    wm_->width() - width);
-  const int y = wm_->height() - height;
+                    wm()->width() - width);
+  const int y = wm()->height() - height;
 
-  wm_->ConfigureInputWindow(anchor_input_xid_, x, y, width, height);
+  wm()->ConfigureInputWindow(anchor_input_xid_, x, y, width, height);
   anchor_panel_ = panel;
   anchor_actor_->Move(x, y, 0);
   anchor_actor_->SetOpacity(1, kAnchorFadeAnimMs);
@@ -615,14 +627,14 @@ void PanelBar::CreateAnchor(Panel* panel) {
   // we slide a panel up.
   anchor_pointer_watcher_.reset(
       new PointerPositionWatcher(
-          wm_->xconn(),
+          wm()->xconn(),
           NewPermanentCallback(this, &PanelBar::DestroyAnchor),
           false,  // watch_for_entering_target=false
           x, y, width, height));
 }
 
 void PanelBar::DestroyAnchor() {
-  wm_->xconn()->ConfigureWindowOffscreen(anchor_input_xid_);
+  wm()->xconn()->ConfigureWindowOffscreen(anchor_input_xid_);
   anchor_actor_->SetOpacity(0, kAnchorFadeAnimMs);
   anchor_panel_ = NULL;
   anchor_pointer_watcher_.reset();
@@ -659,23 +671,23 @@ void PanelBar::ConfigureShowCollapsedPanelsInputWindow(bool move_onscreen) {
           << XidStr(show_collapsed_panels_input_xid_)
           << " for showing collapsed panels";
   if (move_onscreen) {
-    wm_->ConfigureInputWindow(
+    wm()->ConfigureInputWindow(
         show_collapsed_panels_input_xid_,
-        0, wm_->height() - kShowCollapsedPanelsDistancePixels,
-        wm_->width(), kShowCollapsedPanelsDistancePixels);
+        0, wm()->height() - kShowCollapsedPanelsDistancePixels,
+        wm()->width(), kShowCollapsedPanelsDistancePixels);
   } else {
-    wm_->xconn()->ConfigureWindowOffscreen(show_collapsed_panels_input_xid_);
+    wm()->xconn()->ConfigureWindowOffscreen(show_collapsed_panels_input_xid_);
   }
 }
 
 void PanelBar::StartHideCollapsedPanelsWatcher() {
   hide_collapsed_panels_pointer_watcher_.reset(
       new PointerPositionWatcher(
-          wm_->xconn(),
+          wm()->xconn(),
           NewPermanentCallback(this, &PanelBar::HideCollapsedPanels),
           false,  // watch_for_entering_target=false
-          0, wm_->height() - kHideCollapsedPanelsDistancePixels,
-          wm_->width(), kHideCollapsedPanelsDistancePixels));
+          0, wm()->height() - kHideCollapsedPanelsDistancePixels,
+          wm()->width(), kHideCollapsedPanelsDistancePixels));
 }
 
 void PanelBar::ShowCollapsedPanels() {

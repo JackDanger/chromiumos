@@ -12,6 +12,7 @@ extern "C" {
 #include "chromeos/obsolete_logging.h"
 
 #include "window_manager/atom_cache.h"
+#include "window_manager/event_consumer_registrar.h"
 #include "window_manager/panel_manager.h"
 #include "window_manager/util.h"
 #include "window_manager/window.h"
@@ -87,9 +88,25 @@ Panel::Panel(PanelManager* panel_manager,
       drag_orig_width_(1),
       drag_orig_height_(1),
       drag_last_width_(1),
-      drag_last_height_(1) {
+      drag_last_height_(1),
+      event_consumer_registrar_(
+          new EventConsumerRegistrar(wm(), panel_manager)) {
   CHECK(content_win_);
   CHECK(titlebar_win_);
+
+  // Register the PanelManager to receive events about the content,
+  // titlebar, and input windows, and also to be notified when the WM_HINTS
+  // property changes on the content window (it's used to set the urgency
+  // hint).
+  event_consumer_registrar_->RegisterForWindowEvents(content_xid());
+  event_consumer_registrar_->RegisterForWindowEvents(titlebar_xid());
+  event_consumer_registrar_->RegisterForWindowEvents(top_input_xid_);
+  event_consumer_registrar_->RegisterForWindowEvents(top_left_input_xid_);
+  event_consumer_registrar_->RegisterForWindowEvents(top_right_input_xid_);
+  event_consumer_registrar_->RegisterForWindowEvents(left_input_xid_);
+  event_consumer_registrar_->RegisterForWindowEvents(right_input_xid_);
+  event_consumer_registrar_->RegisterForPropertyChanges(
+      content_xid(), wm()->GetXAtom(ATOM_WM_HINTS));
 
   wm()->xconn()->SelectInputOnWindow(titlebar_win_->xid(),
                                      EnterWindowMask,
@@ -170,7 +187,7 @@ void Panel::HandleInputWindowButtonPress(
   if (button != 1)
     return;
   DCHECK(drag_xid_ == None)
-      << "Panel " << xid_str() << " got button press in " << xid
+      << "Panel " << xid_str() << " got button press in " << XidStr(xid)
       << " but already has drag XID " << XidStr(drag_xid_);
 
   drag_xid_ = xid;

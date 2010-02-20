@@ -6,6 +6,7 @@
 
 #include "base/logging.h"
 #include "window_manager/atom_cache.h"
+#include "window_manager/event_consumer_registrar.h"
 #include "window_manager/motion_event_coalescer.h"
 #include "window_manager/panel.h"
 #include "window_manager/panel_bar.h"
@@ -32,7 +33,7 @@ static const int kDetachPanelAnimMs = 100;
 // Width of panel docks, chosen because 1280 - 256 = 1024.
 static const int kPanelDockWidth = 256;
 
-PanelManager::PanelManager(WindowManager* wm, int panel_bar_height)
+PanelManager::PanelManager(WindowManager* wm)
     : wm_(wm),
       dragged_panel_(NULL),
       dragged_panel_event_coalescer_(
@@ -40,12 +41,20 @@ PanelManager::PanelManager(WindowManager* wm, int panel_bar_height)
               NewPermanentCallback(
                   this, &PanelManager::HandlePeriodicPanelDragMotion),
               kDraggedPanelUpdateMs)),
-      panel_bar_(new PanelBar(wm_)),
+      panel_bar_(new PanelBar(this)),
       left_panel_dock_(
           new PanelDock(this, PanelDock::DOCK_TYPE_LEFT, kPanelDockWidth)),
       right_panel_dock_(
           new PanelDock(this, PanelDock::DOCK_TYPE_RIGHT, kPanelDockWidth)),
-      saw_map_request_(false) {
+      saw_map_request_(false),
+      event_consumer_registrar_(new EventConsumerRegistrar(wm_, this)) {
+  event_consumer_registrar_->RegisterForChromeMessages(
+      WmIpc::Message::WM_SET_PANEL_STATE);
+  event_consumer_registrar_->RegisterForChromeMessages(
+      WmIpc::Message::WM_NOTIFY_PANEL_DRAGGED);
+  event_consumer_registrar_->RegisterForChromeMessages(
+      WmIpc::Message::WM_NOTIFY_PANEL_DRAG_COMPLETE);
+
   RegisterContainer(panel_bar_.get());
   RegisterContainer(left_panel_dock_.get());
   RegisterContainer(right_panel_dock_.get());
@@ -129,12 +138,6 @@ void PanelManager::HandleWindowMap(Window* win) {
       AddPanelToContainer(panel.get(),
                           panel_bar_.get(),
                           PanelContainer::PANEL_SOURCE_NEW);
-
-      // Ask to get notified when the WM_HINTS property changes on the
-      // content window; it's used to set the urgency hint.
-      wm_->RegisterWindowPropertyListener(panel->content_xid(),
-                                          wm_->GetXAtom(ATOM_WM_HINTS),
-                                          this);
       break;
     }
 
@@ -168,23 +171,20 @@ void PanelManager::HandleWindowUnmap(Window* win) {
        it != input_windows.end(); ++it) {
     CHECK(panel_input_xids_.erase(*it) == 1);
   }
-  wm_->UnregisterWindowPropertyListener(panel->content_xid(),
-                                        wm_->GetXAtom(ATOM_WM_HINTS),
-                                        this);
+
   CHECK(panels_by_titlebar_xid_.erase(panel->titlebar_xid()) == 1);
   CHECK(panels_.erase(panel->content_xid()) == 1);
 }
 
-bool PanelManager::HandleWindowConfigureRequest(
+void PanelManager::HandleWindowConfigureRequest(
     Window* win, int req_x, int req_y, int req_width, int req_height) {
   Panel* panel = GetPanelByWindow(*win);
   if (!panel)
-    return false;
+    return;
   panel->HandleWindowConfigureRequest(win, req_x, req_y, req_width, req_height);
-  return true;
 }
 
-bool PanelManager::HandleButtonPress(XWindow xid,
+void PanelManager::HandleButtonPress(XWindow xid,
                                      int x, int y,
                                      int x_root, int y_root,
                                      int button,
@@ -195,7 +195,7 @@ bool PanelManager::HandleButtonPress(XWindow xid,
   if (container) {
     container->HandleInputWindowButtonPress(
         xid, x, y, x_root, y_root, button, timestamp);
-    return true;
+    return;
   }
 
   // If this is a panel's input window, notify the panel.
@@ -203,7 +203,7 @@ bool PanelManager::HandleButtonPress(XWindow xid,
       panel_input_xids_, xid, static_cast<Panel*>(NULL));
   if (panel) {
     panel->HandleInputWindowButtonPress(xid, x, y, button, timestamp);
-    return true;
+    return;
   }
 
   // If it's a panel's content window, notify the panel's container.
@@ -214,14 +214,12 @@ bool PanelManager::HandleButtonPress(XWindow xid,
       container = GetContainerForPanel(*panel);
       if (container)
         container->HandlePanelButtonPress(panel, button, timestamp);
-      return true;
+      return;
     }
   }
-
-  return false;
 }
 
-bool PanelManager::HandleButtonRelease(XWindow xid,
+void PanelManager::HandleButtonRelease(XWindow xid,
                                        int x, int y,
                                        int x_root, int y_root,
                                        int button,
@@ -234,26 +232,18 @@ bool PanelManager::HandleButtonRelease(XWindow xid,
   if (container) {
     container->HandleInputWindowButtonRelease(
         xid, x, y, x_root, y_root, button, timestamp);
-    return true;
+    return;
   }
 
   Panel* panel = FindWithDefault(
       panel_input_xids_, xid, static_cast<Panel*>(NULL));
   if (panel) {
     panel->HandleInputWindowButtonRelease(xid, x, y, button, timestamp);
-    return true;
+    return;
   }
-
-  // Save other event consumers the trouble of looking at the event if it
-  // happened in a panel.
-  Window* win = wm_->GetWindow(xid);
-  if (win && GetPanelByWindow(*win))
-    return true;
-
-  return false;
 }
 
-bool PanelManager::HandlePointerEnter(XWindow xid,
+void PanelManager::HandlePointerEnter(XWindow xid,
                                       int x, int y,
                                       int x_root, int y_root,
                                       Time timestamp) {
@@ -262,7 +252,7 @@ bool PanelManager::HandlePointerEnter(XWindow xid,
   if (container) {
     container->HandleInputWindowPointerEnter(
         xid, x, y, x_root, y_root, timestamp);
-    return true;
+    return;
   }
 
   // If it's a panel's titlebar window, notify the panel's container.
@@ -273,41 +263,33 @@ bool PanelManager::HandlePointerEnter(XWindow xid,
       container = GetContainerForPanel(*panel);
       if (container && xid == panel->titlebar_xid())
         container->HandlePanelTitlebarPointerEnter(panel, timestamp);
-      return true;
+      return;
     }
   }
-
-  return false;
 }
 
-bool PanelManager::HandlePointerLeave(XWindow xid,
+void PanelManager::HandlePointerLeave(XWindow xid,
                                       int x, int y,
                                       int x_root, int y_root,
                                       Time timestamp) {
   PanelContainer* container = FindWithDefault(
       container_input_xids_, xid, static_cast<PanelContainer*>(NULL));
-  if (container) {
+  if (container)
     container->HandleInputWindowPointerLeave(
         xid, x, y, x_root, y_root, timestamp);
-    return true;
-  }
-  return false;
 }
 
-bool PanelManager::HandlePointerMotion(XWindow xid,
+void PanelManager::HandlePointerMotion(XWindow xid,
                                        int x, int y,
                                        int x_root, int y_root,
                                        Time timestamp) {
   Panel* panel = FindWithDefault(
       panel_input_xids_, xid, static_cast<Panel*>(NULL));
-  if (panel) {
+  if (panel)
     panel->HandleInputWindowPointerMotion(xid, x, y);
-    return true;
-  }
-  return false;
 }
 
-bool PanelManager::HandleChromeMessage(const WmIpc::Message& msg) {
+void PanelManager::HandleChromeMessage(const WmIpc::Message& msg) {
   switch (msg.type()) {
     case WmIpc::Message::WM_SET_PANEL_STATE: {
       XWindow xid = msg.param(0);
@@ -315,7 +297,7 @@ bool PanelManager::HandleChromeMessage(const WmIpc::Message& msg) {
       if (!panel) {
         LOG(WARNING) << "Ignoring WM_SET_PANEL_STATE message for non-panel "
                      << "window " << xid;
-        return true;
+        return;
       }
       PanelContainer* container = GetContainerForPanel(*panel);
       if (container)
@@ -328,7 +310,7 @@ bool PanelManager::HandleChromeMessage(const WmIpc::Message& msg) {
       if (!panel) {
         LOG(WARNING) << "Ignoring WM_NOTIFY_PANEL_DRAGGED message for "
                      << "non-panel window " << XidStr(xid);
-        return true;
+        return;
       }
       if (dragged_panel_ && panel != dragged_panel_)
         HandlePanelDragComplete(dragged_panel_, false);  // removed=false
@@ -344,7 +326,7 @@ bool PanelManager::HandleChromeMessage(const WmIpc::Message& msg) {
       if (!panel) {
         LOG(WARNING) << "Ignoring WM_NOTIFY_PANEL_DRAG_COMPLETE message for "
                      << "non-panel window " << XidStr(xid);
-        return true;
+        return;
       }
       HandlePanelDragComplete(panel, false);  // removed=false
       break;
@@ -352,28 +334,26 @@ bool PanelManager::HandleChromeMessage(const WmIpc::Message& msg) {
     case WmIpc::Message::WM_FOCUS_WINDOW: {
       XWindow xid = msg.param(0);
       Panel* panel = GetPanelByXid(xid);
-      // If it's not a panel, maybe it's a top-level window.
       if (!panel)
-        return false;
+        return;
       PanelContainer* container = GetContainerForPanel(*panel);
       if (container)
         container->HandleFocusPanelMessage(panel);
       break;
     }
     default:
-      return false;
+      return;
   }
-  return true;
 }
 
-bool PanelManager::HandleClientMessage(const XClientMessageEvent& e) {
+void PanelManager::HandleClientMessage(const XClientMessageEvent& e) {
   Panel* panel = GetPanelByXid(e.window);
   if (!panel)
-    return false;
+    return;
 
   if (e.message_type == wm_->GetXAtom(ATOM_NET_ACTIVE_WINDOW)) {
     if (e.format != XConnection::kLongFormat)
-      return true;
+      return;
     VLOG(1) << "Got _NET_ACTIVE_WINDOW request to focus " << XidStr(e.window)
             << " (requestor says its currently-active window is "
             << XidStr(e.data.l[2]) << "; real active window is "
@@ -381,25 +361,21 @@ bool PanelManager::HandleClientMessage(const XClientMessageEvent& e) {
     PanelContainer* container = GetContainerForPanel(*panel);
     if (container)
       container->HandleFocusPanelMessage(panel);
-    return true;
   }
-  return false;
 }
 
-bool PanelManager::HandleFocusChange(XWindow xid, bool focus_in) {
+void PanelManager::HandleFocusChange(XWindow xid, bool focus_in) {
   Panel* panel = GetPanelByXid(xid);
   if (!panel)
-    return false;
+    return;
   PanelContainer* container = GetContainerForPanel(*panel);
   if (container)
     container->HandlePanelFocusChange(panel, focus_in);
-  return true;
 }
 
-void PanelManager::HandleWindowPropertyChange(Window* win, XAtom xatom) {
-  Panel* panel = GetPanelByWindow(*win);
-  DCHECK(panel) << "Got property change for non-panel window "
-                << win->xid_str();
+void PanelManager::HandleWindowPropertyChange(XWindow xid, XAtom xatom) {
+  Panel* panel = GetPanelByXid(xid);
+  DCHECK(panel) << "Got property change for non-panel window " << XidStr(xid);
   if (!panel)
     return;
   DCHECK_EQ(wm_->GetXAtom(ATOM_WM_HINTS), xatom);

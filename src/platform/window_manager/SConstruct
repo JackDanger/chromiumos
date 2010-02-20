@@ -136,6 +136,7 @@ libwm_ipc = wm_env.Library('wm_ipc', srcs)
 # also compiled in different environments here (and hence we just get e.g.
 # atom_cache.cc and util.cc via libwm_ipc).
 srcs = Split('''\
+  event_consumer_registrar.cc
   hotkey_overlay.cc
   image_container.cc
   key_bindings.cc

@@ -20,6 +20,7 @@ typedef ::Window XWindow;
 
 namespace window_manager {
 
+class EventConsumerRegistrar;
 class Panel;
 class PanelManager;
 class Shadow;
@@ -42,7 +43,7 @@ class PanelDock : public PanelContainer {
   // Is the dock currently visible?
   bool IsVisible() const { return !panels_.empty(); }
 
-  // Begin overridden PanelContainer methods.
+  // Begin PanelContainer implementation.
   void GetInputWindows(std::vector<XWindow>* windows_out);
   void AddPanel(Panel* panel, PanelSource source);
   void RemovePanel(Panel* panel);
@@ -75,7 +76,7 @@ class PanelDock : public PanelContainer {
   void HandlePanelResize(Panel* panel) {}
   void HandleScreenResize();
   void HandlePanelUrgencyChange(Panel* panel) {}
-  // End overridden PanelContainer methods.
+  // End PanelContainer implementation.
 
  private:
   WindowManager* wm();
@@ -122,6 +123,9 @@ class PanelDock : public PanelContainer {
   // An input window at the same position as the dock.  Currently just used
   // to catch and discard input events so they don't fall through.
   XWindow bg_input_xid_;
+
+  // PanelManager event registrations related to the dock's input windows.
+  scoped_ptr<EventConsumerRegistrar> event_consumer_registrar_;
 
   DISALLOW_COPY_AND_ASSIGN(PanelDock);
 };

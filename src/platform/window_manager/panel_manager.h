@@ -25,6 +25,7 @@ typedef ::Window XWindow;
 
 namespace window_manager {
 
+class EventConsumerRegistrar;
 class MotionEventCoalescer;
 class Panel;
 class PanelBar;
@@ -37,12 +38,12 @@ class WindowManager;
 // between containers, etc.
 class PanelManager : public EventConsumer {
  public:
-  PanelManager(WindowManager* wm, int panel_bar_height);
+  PanelManager(WindowManager* wm);
   ~PanelManager();
 
   WindowManager* wm() { return wm_; }
 
-  // Note: Begin overridden EventConsumer methods.
+  // Note: Begin EventConsumer implementation.
 
   // Checks whether the passed-in window is an input window belonging to
   // one of our Panels or PanelContainers.
@@ -53,9 +54,9 @@ class PanelManager : public EventConsumer {
   bool HandleWindowMapRequest(Window* win);
 
   // Handle a window being mapped.  When a content window is mapped, its
-  // titlebar (which must've previously been mapped) is looked up and a new
-  // Panel object is created and added to a container.  Does nothing when
-  // passed non-content windows.
+  // titlebar (which must have previously been mapped) is looked up and a
+  // new Panel object is created and added to a container.  Does nothing
+  // when passed non-content windows.
   void HandleWindowMap(Window* win);
 
   // Handle the removal of a window by removing its panel from its
@@ -64,7 +65,7 @@ class PanelManager : public EventConsumer {
   // non-panel windows.
   void HandleWindowUnmap(Window* win);
 
-  bool HandleWindowConfigureRequest(
+  void HandleWindowConfigureRequest(
       Window* win, int req_x, int req_y, int req_width, int req_height);
 
   // Handle events for windows.  If the event occurred in an input window,
@@ -73,35 +74,35 @@ class PanelManager : public EventConsumer {
   // titlebar window, it just passed directly to the PanelContainer that
   // currently contains the panel via
   // PanelContainer::HandlePanelButtonPress().
-  bool HandleButtonPress(XWindow xid,
+  void HandleButtonPress(XWindow xid,
                          int x, int y,
                          int x_root, int y_root,
                          int button,
                          Time timestamp);
-  bool HandleButtonRelease(XWindow xid,
+  void HandleButtonRelease(XWindow xid,
                            int x, int y,
                            int x_root, int y_root,
                            int button,
                            Time timestamp);
-  bool HandlePointerEnter(XWindow xid,
+  void HandlePointerEnter(XWindow xid,
                           int x, int y,
                           int x_root, int y_root,
                           Time timestamp);
-  bool HandlePointerLeave(XWindow xid,
+  void HandlePointerLeave(XWindow xid,
                           int x, int y,
                           int x_root, int y_root,
                           Time timestamp);
-  bool HandlePointerMotion(XWindow xid,
+  void HandlePointerMotion(XWindow xid,
                            int x, int y,
                            int x_root, int y_root,
                            Time timestamp);
 
-  bool HandleChromeMessage(const WmIpc::Message& msg);
-  bool HandleClientMessage(const XClientMessageEvent& e);
-  bool HandleFocusChange(XWindow xid, bool focus_in);
-  void HandleWindowPropertyChange(Window* win, XAtom xatom);
+  void HandleChromeMessage(const WmIpc::Message& msg);
+  void HandleClientMessage(const XClientMessageEvent& e);
+  void HandleFocusChange(XWindow xid, bool focus_in);
+  void HandleWindowPropertyChange(XWindow xid, XAtom xatom);
 
-  // Note: End overridden EventConsumer methods.
+  // Note: End EventConsumer implementation.
 
   // Handle notification from a panel that it's been resized.  We just
   // forward this through to its container, if any.
@@ -205,6 +206,10 @@ class PanelManager : public EventConsumer {
 
   // Have we already seen a MapRequest event?
   bool saw_map_request_;
+
+  // Event registrations for Chrome message types that the panel manager
+  // needs to receive.
+  scoped_ptr<EventConsumerRegistrar> event_consumer_registrar_;
 
   DISALLOW_COPY_AND_ASSIGN(PanelManager);
 };

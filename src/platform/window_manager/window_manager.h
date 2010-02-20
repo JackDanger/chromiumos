@@ -1,4 +1,4 @@
-// Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -22,6 +22,7 @@ extern "C" {
 #include "base/scoped_ptr.h"
 #include "window_manager/atom_cache.h"  // for Atom enum
 #include "window_manager/clutter_interface.h"
+#include "window_manager/wm_ipc.h"
 
 typedef ::Atom XAtom;
 typedef ::Window XWindow;
@@ -73,10 +74,8 @@ class WindowManager {
   // WindowManager object is created.
   bool Init();
 
-  // Handle an event from the X server.  Returns true if the event was
-  // processed and should be removed from GDK's event stream or false
-  // otherwise.
-  bool HandleEvent(XEvent* event);
+  // Handle an event from the X server.
+  void HandleEvent(XEvent* event);
 
   // Create a new X window for receiving input.
   XWindow CreateInputWindow(
@@ -117,23 +116,32 @@ class WindowManager {
   // display toplevel windows.
   void HandleLayoutManagerAreaChange(int x, int y, int width, int height);
 
+  // Register an event consumer as being interested in non-property-change
+  // events on a particular window.
+  void RegisterEventConsumerForWindowEvents(
+      XWindow xid, EventConsumer* event_consumer);
+  void UnregisterEventConsumerForWindowEvents(
+      XWindow xid, EventConsumer* event_consumer);
+
   // Register an event consumer as a listener for changes of a particular
   // property on a particular window.  The consumer's
   // HandleWindowPropertyChange() method will be invoked whenever we
   // receive notification that the property has been changed (after we have
   // already handled the change).
-  // TODO: Use a similar model for most other event consumer notifications.
-  void RegisterWindowPropertyListener(
+  void RegisterEventConsumerForPropertyChanges(
+      XWindow xid, XAtom xatom, EventConsumer* event_consumer);
+  void UnregisterEventConsumerForPropertyChanges(
       XWindow xid, XAtom xatom, EventConsumer* event_consumer);
 
-  // Unregister an event consumer for property changes.
-  void UnregisterWindowPropertyListener(
-      XWindow xid, XAtom xatom, EventConsumer* event_consumer);
+  // Register an event consumer as being interested in a particular type of
+  // WmIpc message from Chrome.  The consumer's HandleChromeMessage()
+  // method will be passed all messages of this type.
+  void RegisterEventConsumerForChromeMessages(
+      WmIpc::Message::Type message_type, EventConsumer* event_consumer);
+  void UnregisterEventConsumerForChromeMessages(
+      WmIpc::Message::Type message_type, EventConsumer* event_consumer);
 
  private:
-  // Height for the panel bar.
-  static const int kPanelBarHeight;
-
   friend class BasicWindowManagerTest;
   friend class LayoutManagerTest;         // uses 'layout_manager_'
   friend class PanelTest;                 // uses 'panel_manager_'
@@ -144,6 +152,12 @@ class WindowManager {
   FRIEND_TEST(WindowManagerTest, RegisterExistence);
   FRIEND_TEST(WindowManagerTest, EventConsumer);
   FRIEND_TEST(WindowManagerTest, RandR);
+
+  typedef std::map<XWindow, std::set<EventConsumer*> > WindowEventConsumerMap;
+  typedef std::map<std::pair<XWindow, XAtom>, std::set<EventConsumer*> >
+      PropertyChangeEventConsumerMap;
+  typedef std::map<WmIpc::Message::Type, std::set<EventConsumer*> >
+      ChromeMessageEventConsumerMap;
 
   // Is this one of our internally-created windows?
   bool IsInternalWindow(XWindow xid) {
@@ -202,27 +216,27 @@ class WindowManager {
   bool UpdateClientListStackingProperty();
 
   // Handlers for various X events.
-  bool HandleButtonPress(const XButtonEvent& e);
-  bool HandleButtonRelease(const XButtonEvent& e);
-  bool HandleClientMessage(const XClientMessageEvent& e);
-  bool HandleConfigureNotify(const XConfigureEvent& e);
-  bool HandleConfigureRequest(const XConfigureRequestEvent& e);
-  bool HandleCreateNotify(const XCreateWindowEvent& e);
-  bool HandleDestroyNotify(const XDestroyWindowEvent& e);
-  bool HandleEnterNotify(const XEnterWindowEvent& e);
-  bool HandleFocusChange(const XFocusChangeEvent& e);
-  bool HandleKeyPress(const XKeyEvent& e);
-  bool HandleKeyRelease(const XKeyEvent& e);
-  bool HandleLeaveNotify(const XLeaveWindowEvent& e);
-  bool HandleMapNotify(const XMapEvent& e);
-  bool HandleMapRequest(const XMapRequestEvent& e);
-  bool HandleMappingNotify(const XMappingEvent& e);
-  bool HandleMotionNotify(const XMotionEvent& e);
-  bool HandlePropertyNotify(const XPropertyEvent& e);
-  bool HandleReparentNotify(const XReparentEvent& e);
-  bool HandleRRScreenChangeNotify(const XRRScreenChangeNotifyEvent& e);
-  bool HandleShapeNotify(const XShapeEvent& e);
-  bool HandleUnmapNotify(const XUnmapEvent& e);
+  void HandleButtonPress(const XButtonEvent& e);
+  void HandleButtonRelease(const XButtonEvent& e);
+  void HandleClientMessage(const XClientMessageEvent& e);
+  void HandleConfigureNotify(const XConfigureEvent& e);
+  void HandleConfigureRequest(const XConfigureRequestEvent& e);
+  void HandleCreateNotify(const XCreateWindowEvent& e);
+  void HandleDestroyNotify(const XDestroyWindowEvent& e);
+  void HandleEnterNotify(const XEnterWindowEvent& e);
+  void HandleFocusChange(const XFocusChangeEvent& e);
+  void HandleKeyPress(const XKeyEvent& e);
+  void HandleKeyRelease(const XKeyEvent& e);
+  void HandleLeaveNotify(const XLeaveWindowEvent& e);
+  void HandleMapNotify(const XMapEvent& e);
+  void HandleMapRequest(const XMapRequestEvent& e);
+  void HandleMappingNotify(const XMappingEvent& e);
+  void HandleMotionNotify(const XMotionEvent& e);
+  void HandlePropertyNotify(const XPropertyEvent& e);
+  void HandleReparentNotify(const XReparentEvent& e);
+  void HandleRRScreenChangeNotify(const XRRScreenChangeNotifyEvent& e);
+  void HandleShapeNotify(const XShapeEvent& e);
+  void HandleUnmapNotify(const XUnmapEvent& e);
 
   // Callback when the hotkey for launching an xterm is pressed.
   void LaunchTerminal();
@@ -299,14 +313,20 @@ class WindowManager {
   // override-redirect) windows from this list.
   scoped_ptr<Stacker<XWindow> > stacked_xids_;
 
-  // Things that consume events (e.g. LayoutManager, PanelBar, etc.).
+  // Things that consume events (e.g. LayoutManager, PanelManager, etc.).
   std::set<EventConsumer*> event_consumers_;
+
+  // Map from windows to event consumers that will be notified if events
+  // are received.
+  WindowEventConsumerMap window_event_consumers_;
 
   // Map from (window, atom) pairs to event consumers that will be
   // notified if the corresponding property is changed.
-  typedef std::map<std::pair<XWindow, XAtom>, std::set<EventConsumer*> >
-      WindowPropertyListenerMap;
-  WindowPropertyListenerMap window_property_listeners_;
+  PropertyChangeEventConsumerMap property_change_event_consumers_;
+
+  // Map from Chrome message types to event consumers that will receive
+  // copies of the messages.
+  ChromeMessageEventConsumerMap chrome_message_event_consumers_;
 
   // Actors that are currently being used to debug client windows.
   std::vector<std::tr1::shared_ptr<ClutterInterface::Actor> >

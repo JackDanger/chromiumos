@@ -8,6 +8,7 @@
 
 #include <gflags/gflags.h>
 
+#include "window_manager/event_consumer_registrar.h"
 #include "window_manager/panel.h"
 #include "window_manager/panel_manager.h"
 #include "window_manager/shadow.h"
@@ -54,7 +55,11 @@ PanelDock::PanelDock(PanelManager* panel_manager, DockType type, int width)
                     FLAGS_panel_dock_background_image)),
       bg_shadow_(new Shadow(wm()->clutter())),
       bg_input_xid_(wm()->CreateInputWindow(
-                        -1, -1, 1, 1, ButtonPressMask|ButtonReleaseMask)) {
+                        -1, -1, 1, 1, ButtonPressMask|ButtonReleaseMask)),
+      event_consumer_registrar_(
+          new EventConsumerRegistrar(wm(), panel_manager_)) {
+  event_consumer_registrar_->RegisterForWindowEvents(bg_input_xid_);
+
   wm()->stacking_manager()->StackXidAtTopOfLayer(
       bg_input_xid_, StackingManager::LAYER_PANEL_DOCK);
 

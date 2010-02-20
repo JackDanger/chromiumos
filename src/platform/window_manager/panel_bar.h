@@ -23,7 +23,9 @@ typedef ::Window XWindow;
 
 namespace window_manager {
 
+class EventConsumerRegistrar;
 class Panel;
+class PanelManager;
 class PointerPositionWatcher;
 class Shadow;
 class Window;
@@ -33,10 +35,12 @@ class WindowManager;
 // screen.
 class PanelBar : public PanelContainer {
  public:
-  PanelBar(WindowManager* wm);
+  PanelBar(PanelManager* panel_manager);
   ~PanelBar();
 
-  // Begin overridden PanelContainer methods.
+  WindowManager* wm();
+
+  // Begin PanelContainer implementation.
   void GetInputWindows(std::vector<XWindow>* windows_out);
   void AddPanel(Panel* panel, PanelSource source);
   void RemovePanel(Panel* panel);
@@ -69,7 +73,7 @@ class PanelBar : public PanelContainer {
   void HandlePanelResize(Panel* panel);
   void HandleScreenResize();
   void HandlePanelUrgencyChange(Panel* panel);
-  // End overridden PanelContainer methods.
+  // End PanelContainer implementation.
 
   // Take the input focus if possible.  Returns 'false' if it doesn't make
   // sense to take the focus (currently, we only take the focus if there's
@@ -132,7 +136,7 @@ class PanelBar : public PanelContainer {
   // should be placed (depending on whether it's expanded or collapsed,
   // whether collapsed panels are currently hidden, whether the panel's
   // urgent flag is set, etc.).
-  int ComputePanelY(const Panel& panel, const PanelInfo& info) const;
+  int ComputePanelY(const Panel& panel, const PanelInfo& info);
 
   // Expand a panel.  If 'create_anchor' is true, we additionally create an
   // anchor for it.
@@ -208,7 +212,7 @@ class PanelBar : public PanelContainer {
   }
   gboolean HandleShowCollapsedPanelsTimer();
 
-  WindowManager* wm_;  // not owned
+  PanelManager* panel_manager_;  // not owned
 
   // Total width of all panels (including padding between them).
   int total_panel_width_;
@@ -271,6 +275,10 @@ class PanelBar : public PanelContainer {
   // panels so that we'll know to hide them when the pointer far enough
   // away.
   scoped_ptr<PointerPositionWatcher> hide_collapsed_panels_pointer_watcher_;
+
+  // PanelManager event registrations related to the panel bar's input
+  // windows.
+  scoped_ptr<EventConsumerRegistrar> event_consumer_registrar_;
 
   DISALLOW_COPY_AND_ASSIGN(PanelBar);
 };

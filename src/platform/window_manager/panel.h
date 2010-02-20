@@ -24,6 +24,7 @@ typedef ::Window XWindow;
 
 namespace window_manager {
 
+class EventConsumerRegistrar;
 class PanelManager;
 class WindowManager;
 
@@ -228,6 +229,9 @@ class Panel {
   // Most-recent content window size during a resize.
   int drag_last_width_;
   int drag_last_height_;
+
+  // PanelManager event registrations related to this panel's windows.
+  scoped_ptr<EventConsumerRegistrar> event_consumer_registrar_;
 
   DISALLOW_COPY_AND_ASSIGN(Panel);
 };

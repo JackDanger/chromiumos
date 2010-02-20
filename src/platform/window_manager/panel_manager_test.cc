@@ -143,15 +143,15 @@ TEST_F(PanelManagerTest, DragFocusedPanel) {
   XEvent event;
   ASSERT_TRUE(xconn_->DestroyWindow(content_xid));
   MockXConnection::InitUnmapEvent(&event, content_xid);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
   MockXConnection::InitDestroyWindowEvent(&event, content_xid);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
 
   ASSERT_TRUE(xconn_->DestroyWindow(titlebar_xid));
   MockXConnection::InitUnmapEvent(&event, titlebar_xid);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
   MockXConnection::InitDestroyWindowEvent(&event, titlebar_xid);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
 
   // The first panel should be focused now.
   ASSERT_EQ(old_content_xid, xconn_->focused_xid());
@@ -172,7 +172,7 @@ TEST_F(PanelManagerTest, ChromeInitiatedPanelResize) {
   XEvent event;
   MockXConnection::InitConfigureRequestEvent(
       &event, panel->titlebar_xid(), 0, 0, 300, 30);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
   EXPECT_EQ(200, panel->width());
   EXPECT_EQ(20, panel->titlebar_height());
   EXPECT_EQ(400, panel->content_height());
@@ -182,7 +182,7 @@ TEST_F(PanelManagerTest, ChromeInitiatedPanelResize) {
   // A request to resize the content to 300x500 should be honored, though.
   MockXConnection::InitConfigureRequestEvent(
       &event, panel->content_xid(), 0, 0, 300, 500);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
   EXPECT_EQ(300, panel->width());
   EXPECT_EQ(20, panel->titlebar_height());
   EXPECT_EQ(500, panel->content_height());
@@ -193,7 +193,7 @@ TEST_F(PanelManagerTest, ChromeInitiatedPanelResize) {
   // Test that shrinking the content works too.
   MockXConnection::InitConfigureRequestEvent(
       &event, panel->content_xid(), 0, 0, 100, 300);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
   EXPECT_EQ(100, panel->width());
   EXPECT_EQ(20, panel->titlebar_height());
   EXPECT_EQ(300, panel->content_height());
@@ -205,14 +205,14 @@ TEST_F(PanelManagerTest, ChromeInitiatedPanelResize) {
   MockXConnection::WindowInfo* input_info =
       xconn_->GetWindowInfoOrDie(input_xid);
   MockXConnection::InitButtonPressEvent(&event, *input_info, 0, 0, 1);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
   MockXConnection::InitMotionNotifyEvent(&event, *input_info, -200, -200);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
 
   // We should have the same values as before.
   MockXConnection::InitConfigureRequestEvent(
       &event, panel->content_xid(), 0, 0, 200, 400);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
   EXPECT_EQ(100, panel->width());
   EXPECT_EQ(20, panel->titlebar_height());
   EXPECT_EQ(300, panel->content_height());
@@ -221,7 +221,7 @@ TEST_F(PanelManagerTest, ChromeInitiatedPanelResize) {
 
   // Finish the user-initiated resize and check that it's applied.
   MockXConnection::InitButtonReleaseEvent(&event, *input_info, -200, -200, 1);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
   EXPECT_EQ(300, panel->width());
   EXPECT_EQ(20, panel->titlebar_height());
   EXPECT_EQ(500, panel->content_height());

@@ -32,6 +32,7 @@ class SystemMetrics;
 
 namespace window_manager {
 
+class EventConsumerRegistrar;
 class MotionEventCoalescer;
 class Window;
 class WindowManager;
@@ -88,58 +89,49 @@ class LayoutManager : public EventConsumer {
   // relevant user metrics.
   Metrics* GetMetrics() { return &metrics_; }
 
-  // Note: Begin overridden EventConsumer methods.
-
-  // Is the passed-in window an input window?
-  bool IsInputWindow(XWindow xid) ;
+  // Note: Begin EventConsumer implementation.
+  bool IsInputWindow(XWindow xid);
 
   // Handle a window's map request.  In most cases, we just restack the
   // window, move it offscreen, and map it (info bubbles don't get moved,
   // though).
   bool HandleWindowMapRequest(Window* win);
 
-  // Handle a new window.  This method takes care of moving the client
-  // window offscreen so it doesn't get input events and of redrawing the
-  // layout if necessary.
+  // Handle a new window.  This method takes care of rearranging windows
+  // for the current layout if necessary.
   void HandleWindowMap(Window* win);
 
-  // Handle the removal of a window.
   void HandleWindowUnmap(Window* win);
-
-  // Handle a client window's request to get moved or resized.
-  bool HandleWindowConfigureRequest(
-      Window* win, int req_x, int req_y, int req_width, int req_height);
-
-  // Handle events received by windows.
-  bool HandleButtonPress(XWindow xid,
+  void HandleWindowConfigureRequest(Window* win,
+                                    int req_x, int req_y,
+                                    int req_width, int req_height);
+  void HandleButtonPress(XWindow xid,
                          int x, int y,
                          int x_root, int y_root,
                          int button,
                          Time timestamp);
-  bool HandleButtonRelease(XWindow xid,
+  void HandleButtonRelease(XWindow xid,
                            int x, int y,
                            int x_root, int y_root,
                            int button,
                            Time timestamp);
-  bool HandlePointerEnter(XWindow xid,
+  void HandlePointerEnter(XWindow xid,
                           int x, int y,
                           int x_root, int y_root,
                           Time timestamp);
-  bool HandlePointerLeave(XWindow xid,
+  void HandlePointerLeave(XWindow xid,
                           int x, int y,
                           int x_root, int y_root,
-                          Time timestamp);
-  bool HandlePointerMotion(XWindow xid,
+                          Time timestamp) {}
+  void HandlePointerMotion(XWindow xid,
                            int x, int y,
                            int x_root, int y_root,
                            Time timestamp);
-  bool HandleFocusChange(XWindow xid, bool focus_in);
-
-  // Handle messages from client apps.
-  bool HandleChromeMessage(const WmIpc::Message& msg);
-  bool HandleClientMessage(const XClientMessageEvent& e);
-
-  // Note: End overridden EventConsumer methods.
+  void HandleFocusChange(XWindow xid, bool focus_in);
+  void HandleChromeMessage(const WmIpc::Message& msg);
+  void HandleClientMessage(const XClientMessageEvent& e);
+  void HandleWindowPropertyChange(XWindow xid, XAtom xatom) {}
+  // Note: End EventConsumer implementation.
 
   // Return a pointer to an arbitrary Chrome toplevel window, if one
   // exists.  Returns NULL if there is no such window.
@@ -312,6 +304,7 @@ class LayoutManager : public EventConsumer {
 
    private:
     // A transient window belonging to a toplevel window.
+    // TODO: Make this into a class that uses EventConsumerRegistrar.
     struct TransientWindow {
      public:
       TransientWindow(Window* win)
@@ -428,6 +421,10 @@ class LayoutManager : public EventConsumer {
     // Transient window that should be focused when TakeFocus() is called,
     // or NULL if the toplevel window should be focused.
     TransientWindow* transient_to_focus_;
+
+    // LayoutManager event registrations for this toplevel window and its
+    // input window.
+    scoped_ptr<EventConsumerRegistrar> event_consumer_registrar_;
 
     DISALLOW_COPY_AND_ASSIGN(ToplevelWindow);
   };
@@ -643,6 +640,9 @@ class LayoutManager : public EventConsumer {
   // something more elegant if/when we're sharing an X connection with
   // Clutter and can safely grab the server at startup.
   bool saw_map_request_;
+
+  // Event registrations for the layout manager itself.
+  scoped_ptr<EventConsumerRegistrar> event_consumer_registrar_;
 
   DISALLOW_COPY_AND_ASSIGN(LayoutManager);
 };

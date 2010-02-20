@@ -17,6 +17,7 @@ extern "C" {
 #include "base/string_util.h"
 #include "base/logging.h"
 #include "window_manager/atom_cache.h"
+#include "window_manager/event_consumer_registrar.h"
 #include "window_manager/motion_event_coalescer.h"
 #include "window_manager/stacking_manager.h"
 #include "window_manager/system_metrics.pb.h"
@@ -121,13 +122,20 @@ LayoutManager::LayoutManager
                   this, &LayoutManager::UpdateOverviewPanningForMotion),
               kOverviewDragUpdateMs)),
       overview_drag_last_x_(-1),
-      saw_map_request_(false) {
+      saw_map_request_(false),
+      event_consumer_registrar_(new EventConsumerRegistrar(wm, this)) {
+  event_consumer_registrar_->RegisterForChromeMessages(
+      WmIpc::Message::WM_MOVE_FLOATING_TAB);
+  event_consumer_registrar_->RegisterForChromeMessages(
+      WmIpc::Message::WM_SWITCH_TO_OVERVIEW_MODE);
+
   MoveAndResize(x, y, width, height);
 
   if (FLAGS_lm_new_overview_mode) {
     int event_mask = ButtonPressMask | ButtonReleaseMask | PointerMotionMask;
     wm_->xconn()->AddButtonGrabOnWindow(
         wm_->background_xid(), 1, event_mask, false);
+    event_consumer_registrar_->RegisterForWindowEvents(wm_->background_xid());
   }
 
   KeyBindings* kb = wm_->key_bindings();
@@ -455,13 +463,13 @@ void LayoutManager::HandleWindowUnmap(Window* win) {
   }
 }
 
-bool LayoutManager::HandleWindowConfigureRequest(
+void LayoutManager::HandleWindowConfigureRequest(
     Window* win, int req_x, int req_y, int req_width, int req_height) {
   ToplevelWindow* toplevel_owner = GetToplevelWindowOwningTransientWindow(*win);
   if (toplevel_owner) {
     toplevel_owner->HandleTransientWindowConfigureRequest(
         win, req_x, req_y, req_width, req_height);
-    return true;
+    return;
   }
 
   // Let toplevel windows resize themselves to work around issue 449, where
@@ -475,13 +483,11 @@ bool LayoutManager::HandleWindowConfigureRequest(
       toplevel->win()->ResizeClient(
           req_width, req_height, Window::GRAVITY_NORTHWEST);
     }
-    return true;
+    return;
   }
-
-  return false;
 }
 
-bool LayoutManager::HandleButtonPress(XWindow xid,
+void LayoutManager::HandleButtonPress(XWindow xid,
                                       int x, int y,
                                       int x_root, int y_root,
                                       int button,
@@ -489,6 +495,12 @@ bool LayoutManager::HandleButtonPress(XWindow xid,
   ToplevelWindow* toplevel = GetToplevelWindowByInputXid(xid);
   if (toplevel) {
     if (button == 1) {
+      if (mode_ != MODE_OVERVIEW) {
+        LOG(WARNING) << "Got a click in input window " << XidStr(xid)
+                     << " for toplevel window " << toplevel->win()->xid_str()
+                     << " while not in overview mode";
+        return;
+      }
       if (FLAGS_lm_new_overview_mode && toplevel != magnified_toplevel_) {
         SetMagnifiedToplevelWindow(toplevel);
         LayoutToplevelWindowsForOverviewMode(std::max(x_root - x_, 0));
@@ -497,37 +509,35 @@ bool LayoutManager::HandleButtonPress(XWindow xid,
         SetMode(MODE_ACTIVE);
       }
     }
-    return true;
+    return;
   }
 
   if (xid == wm_->background_xid() && button == 1) {
     overview_drag_last_x_ = x;
     overview_background_event_coalescer_->Start();
-    return true;
+    return;
   }
 
   // Otherwise, it probably means that the user previously focused a panel
   // and then clicked back on a toplevel or transient window.
   Window* win = wm_->GetWindow(xid);
   if (!win)
-    return false;
+    return;
   toplevel = GetToplevelWindowOwningTransientWindow(*win);
   if (!toplevel)
     toplevel = GetToplevelWindowByWindow(*win);
   if (!toplevel)
-    return false;
-
+    return;
   toplevel->HandleButtonPress(win, timestamp);
-  return true;
 }
 
-bool LayoutManager::HandleButtonRelease(XWindow xid,
+void LayoutManager::HandleButtonRelease(XWindow xid,
                                         int x, int y,
                                         int x_root, int y_root,
                                         int button,
                                         Time timestamp) {
   if (xid != wm_->background_xid() || button != 1)
-    return false;
+    return;
 
   // The X server automatically removes our asynchronous pointer grab when
   // the mouse buttons are released.
@@ -537,38 +547,41 @@ bool LayoutManager::HandleButtonRelease(XWindow xid,
   // positions, which we didn't bother doing while panning.
   ConfigureWindowsForOverviewMode(false);
 
-  return true;
+  return;
 }
 
-bool LayoutManager::HandlePointerEnter(XWindow xid,
+void LayoutManager::HandlePointerEnter(XWindow xid,
                                        int x, int y,
                                        int x_root, int y_root,
                                        Time timestamp) {
   ToplevelWindow* toplevel = GetToplevelWindowByInputXid(xid);
   if (!toplevel)
-    return false;
-  if (mode_ != MODE_OVERVIEW)
-    return true;
+    return;
+  if (mode_ != MODE_OVERVIEW) {
+    LOG(WARNING) << "Got pointer enter in input window " << XidStr(xid)
+                 << " for toplevel window " << toplevel->win()->xid_str()
+                 << " while not in overview mode";
+    return;
+  }
   if (!FLAGS_lm_new_overview_mode && toplevel != magnified_toplevel_) {
     SetMagnifiedToplevelWindow(toplevel);
     LayoutToplevelWindowsForOverviewMode(-1);
     SendTabSummaryMessage(toplevel, true);
   }
-  return true;
 }
 
-bool LayoutManager::HandlePointerLeave(XWindow xid,
-                                       int x, int y,
-                                       int x_root, int y_root,
-                                       Time timestamp) {
-  // TODO: Decide if we want to unmagnify the window here or not.
-  return (GetToplevelWindowByInputXid(xid) != NULL);
+void LayoutManager::HandlePointerMotion(XWindow xid,
+                                        int x, int y,
+                                        int x_root, int y_root,
+                                        Time timestamp) {
+  if (xid == wm_->background_xid())
+    overview_background_event_coalescer_->StorePosition(x, y);
 }
 
-bool LayoutManager::HandleFocusChange(XWindow xid, bool focus_in) {
+void LayoutManager::HandleFocusChange(XWindow xid, bool focus_in) {
   Window* win = wm_->GetWindow(xid);
   if (!win)
-    return false;
+    return;
 
   ToplevelWindow* toplevel = GetToplevelWindowOwningTransientWindow(*win);
   if (!toplevel)
@@ -577,7 +590,7 @@ bool LayoutManager::HandleFocusChange(XWindow xid, bool focus_in) {
   // If this is neither a toplevel nor transient window, we don't care
   // about the focus change.
   if (!toplevel)
-    return false;
+    return;
   toplevel->HandleFocusChange(win, focus_in);
 
   // Announce that the new window is the "active" window (in the
@@ -585,22 +598,9 @@ bool LayoutManager::HandleFocusChange(XWindow xid, bool focus_in) {
   // window or a transient.
   if (focus_in)
     wm_->SetActiveWindowProperty(win->xid());
-
-  return true;
 }
 
-bool LayoutManager::HandlePointerMotion(XWindow xid,
-                                        int x, int y,
-                                        int x_root, int y_root,
-                                        Time timestamp) {
-  if (xid != wm_->background_xid())
-    return false;
-
-  overview_background_event_coalescer_->StorePosition(x, y);
-  return true;
-}
-
-bool LayoutManager::HandleChromeMessage(const WmIpc::Message& msg) {
+void LayoutManager::HandleChromeMessage(const WmIpc::Message& msg) {
   switch (msg.type()) {
     case WmIpc::Message::WM_MOVE_FLOATING_TAB: {
       XWindow xid = msg.param(0);
@@ -610,6 +610,7 @@ bool LayoutManager::HandleChromeMessage(const WmIpc::Message& msg) {
         LOG(WARNING) << "Ignoring request to move unknown floating tab "
                      << XidStr(xid) << " (current is "
                      << XidStr(floating_tab_ ? floating_tab_->xid() : 0) << ")";
+        return;
       } else {
         floating_tab_event_coalescer_->StorePosition(x, y);
       }
@@ -619,11 +620,11 @@ bool LayoutManager::HandleChromeMessage(const WmIpc::Message& msg) {
       XWindow xid = msg.param(0);
       Window* win = wm_->GetWindow(xid);
       if (!win)
-        return false;
+        return;
 
       ToplevelWindow* toplevel = GetToplevelWindowByWindow(*win);
       if (!toplevel)
-        return false;
+        return;
 
       active_toplevel_ = toplevel;
       SetMode(MODE_ACTIVE);
@@ -636,7 +637,7 @@ bool LayoutManager::HandleChromeMessage(const WmIpc::Message& msg) {
         LOG(WARNING) << "Ignoring request to magnify unknown window "
                      << XidStr(msg.param(0))
                      << " while switching to overview mode";
-        return true;
+        return;
       }
 
       ToplevelWindow* toplevel = GetToplevelWindowByWindow(*win);
@@ -644,7 +645,7 @@ bool LayoutManager::HandleChromeMessage(const WmIpc::Message& msg) {
         LOG(WARNING) << "Ignoring request to magnify non-toplevel window "
                      << XidStr(msg.param(0))
                      << " while switching to overview mode";
-        return true;
+        return;
       }
 
       SetMagnifiedToplevelWindow(toplevel);
@@ -653,28 +654,25 @@ bool LayoutManager::HandleChromeMessage(const WmIpc::Message& msg) {
       break;
     }
     default:
-      return false;
+      return;
   }
-  return true;
 }
 
-bool LayoutManager::HandleClientMessage(const XClientMessageEvent& e) {
+void LayoutManager::HandleClientMessage(const XClientMessageEvent& e) {
   Window* win = wm_->GetWindow(e.window);
   if (!win)
-    return false;
+    return;
 
   if (e.message_type == wm_->GetXAtom(ATOM_NET_WM_STATE)) {
     win->HandleWmStateMessage(e);
-    return true;
-  }
-
-  if (e.message_type == wm_->GetXAtom(ATOM_NET_ACTIVE_WINDOW)) {
+  } else if (e.message_type == wm_->GetXAtom(ATOM_NET_ACTIVE_WINDOW)) {
     if (e.format != XConnection::kLongFormat)
-      return true;
+      return;
     VLOG(1) << "Got _NET_ACTIVE_WINDOW request to focus " << XidStr(e.window)
             << " (requestor says its currently-active window is "
             << XidStr(e.data.l[2]) << "; real active window is "
             << XidStr(wm_->active_window_xid()) << ")";
+
     // If we got a _NET_ACTIVE_WINDOW request for a transient, switch to
     // its owner instead.
     ToplevelWindow* toplevel = GetToplevelWindowOwningTransientWindow(*win);
@@ -685,7 +683,7 @@ bool LayoutManager::HandleClientMessage(const XClientMessageEvent& e) {
 
     // If we don't know anything about this window, give up.
     if (!toplevel)
-      return false;
+      return;
 
     if (mode_ == MODE_ACTIVE) {
       if (toplevel != active_toplevel_) {
@@ -699,10 +697,7 @@ bool LayoutManager::HandleClientMessage(const XClientMessageEvent& e) {
       active_toplevel_ = toplevel;
       SetMode(MODE_ACTIVE);
     }
-    return true;
   }
-
-  return false;
 }
 
 Window* LayoutManager::GetChromeWindow() {
@@ -871,7 +866,12 @@ LayoutManager::ToplevelWindow::ToplevelWindow(Window* win,
       overview_height_(0),
       overview_scale_(1.0),
       stacked_transients_(new Stacker<TransientWindow*>),
-      transient_to_focus_(NULL) {
+      transient_to_focus_(NULL),
+      event_consumer_registrar_(
+          new EventConsumerRegistrar(wm(), layout_manager_)) {
+  event_consumer_registrar_->RegisterForWindowEvents(win_->xid());
+  event_consumer_registrar_->RegisterForWindowEvents(input_xid_);
+
   if (FLAGS_lm_new_overview_mode && !static_gradient_texture_) {
     static_gradient_texture_ = wm()->clutter()->CreateImage(
         FLAGS_lm_overview_gradient_image);
@@ -914,6 +914,8 @@ LayoutManager::ToplevelWindow::ToplevelWindow(Window* win,
 }
 
 LayoutManager::ToplevelWindow::~ToplevelWindow() {
+  while (!transients_.empty())
+    RemoveTransientWindow(transients_.begin()->second->win);
   wm()->xconn()->DestroyWindow(input_xid_);
   win_->RemoveButtonGrab();
   win_ = NULL;
@@ -1206,6 +1208,8 @@ void LayoutManager::ToplevelWindow::AddTransientWindow(
     return;
   }
 
+  wm()->RegisterEventConsumerForWindowEvents(transient_win->xid(),
+                                             layout_manager_);
   shared_ptr<TransientWindow> transient(new TransientWindow(transient_win));
   transients_[transient_win->xid()] = transient;
 
@@ -1258,6 +1262,9 @@ void LayoutManager::ToplevelWindow::RemoveTransientWindow(
                << transient_win->xid_str() << " from " << win_->xid_str();
     return;
   }
+
+  wm()->UnregisterEventConsumerForWindowEvents(transient_win->xid(),
+                                               layout_manager_);
   stacked_transients_->Remove(transient);
   CHECK(transients_.erase(transient_win->xid()) == 1);
   transient_win->RemoveButtonGrab();

@@ -80,7 +80,7 @@ void BasicWindowManagerTest::SetUp() {
   msg.set_param(0, 1);
   XEvent event;
   wm_->wm_ipc()->FillXEventFromMessage(&event, wm_->wm_xid(), msg);
-  CHECK(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
 
   // Make the PanelManager's event coalescer run in synchronous mode; its
   // timer will never get triggered from within a test.
@@ -140,15 +140,15 @@ void BasicWindowManagerTest::SendInitialEventsForWindow(XWindow xid) {
   MockXConnection::WindowInfo* info = xconn_->GetWindowInfoOrDie(xid);
   XEvent event;
   MockXConnection::InitCreateWindowEvent(&event, *info);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
   if (!info->override_redirect) {
     MockXConnection::InitMapRequestEvent(&event, *info);
-    EXPECT_TRUE(wm_->HandleEvent(&event));
+    wm_->HandleEvent(&event);
     EXPECT_TRUE(info->mapped);
   }
   if (info->mapped) {
     MockXConnection::InitMapEvent(&event, xid);
-    EXPECT_TRUE(wm_->HandleEvent(&event));
+    wm_->HandleEvent(&event);
   }
 }
 
@@ -160,13 +160,13 @@ void BasicWindowManagerTest::SendFocusEvents(XWindow out_xid, XWindow in_xid) {
     MockXConnection::InitFocusOutEvent(
         &event, out_xid, NotifyNormal,
         (in_xid == root_xid) ? NotifyAncestor : NotifyNonlinear);
-    EXPECT_TRUE(wm_->HandleEvent(&event));
+    wm_->HandleEvent(&event);
   }
   if (in_xid != None && in_xid != root_xid) {
     MockXConnection::InitFocusInEvent(
         &event, in_xid, NotifyNormal,
         (out_xid == root_xid) ? NotifyAncestor : NotifyNonlinear);
-    EXPECT_TRUE(wm_->HandleEvent(&event));
+    wm_->HandleEvent(&event);
   }
 }
 
@@ -178,7 +178,7 @@ void BasicWindowManagerTest::SendPanelDraggedMessage(
   msg.set_param(2, y);
   XEvent event;
   wm_->wm_ipc()->FillXEventFromMessage(&event, wm_->wm_xid(), msg);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
 }
 
 void BasicWindowManagerTest::SendPanelDragCompleteMessage(Panel* panel) {
@@ -186,7 +186,7 @@ void BasicWindowManagerTest::SendPanelDragCompleteMessage(Panel* panel) {
   msg.set_param(0, panel->content_xid());
   XEvent event;
   wm_->wm_ipc()->FillXEventFromMessage(&event, wm_->wm_xid(), msg);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
 }
 
 XWindow BasicWindowManagerTest::GetActiveWindowProperty() {

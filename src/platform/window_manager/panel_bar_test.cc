@@ -75,7 +75,7 @@ TEST_F(PanelBarTest, Basic) {
   XEvent event;
   MockXConnection::InitButtonPressEvent(
       &event, *toplevel_info, 0, 0, 1);  // x, y, button
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
   EXPECT_EQ(None, xconn_->pointer_grab_xid());
   EXPECT_EQ(toplevel_xid, xconn_->focused_xid());
   SendFocusEvents(content_xid, toplevel_xid);
@@ -124,7 +124,7 @@ TEST_F(PanelBarTest, Basic) {
   xconn_->set_pointer_grab_xid(content_xid);
   MockXConnection::InitButtonPressEvent(
       &event, *content_info, 0, 0, 1);  // x, y, button
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
   EXPECT_EQ(None, xconn_->pointer_grab_xid());
   EXPECT_EQ(content_xid, xconn_->focused_xid());
   EXPECT_FALSE(content_info->button_is_grabbed(AnyButton));
@@ -190,7 +190,7 @@ TEST_F(PanelBarTest, ActiveWindowMessage) {
       CurrentTime,
       None,                  // currently-active window
       None);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
   EXPECT_TRUE(panel->is_expanded());
   EXPECT_EQ(panel->content_xid(), xconn_->focused_xid());
   EXPECT_EQ(panel->content_xid(), GetActiveWindowProperty());
@@ -221,7 +221,7 @@ TEST_F(PanelBarTest, FocusNewPanel) {
   // it anymore.
   XEvent event;
   MockXConnection::InitUnmapEvent(&event, content_xid);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
   EXPECT_TRUE(panel_bar_->panels_.empty());
   EXPECT_EQ(NULL, panel_bar_->desired_panel_to_focus_);
 }
@@ -274,7 +274,7 @@ TEST_F(PanelBarTest, HideCollapsedPanels) {
   xconn_->SetPointerPosition(0, wm_->height() - 1);
   XEvent event;
   MockXConnection::InitEnterWindowEvent(&event, *input_info, 0, 0);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
 
   // The panel should still be hidden, but we should be waiting to show it.
   EXPECT_EQ(PanelBar::COLLAPSED_PANEL_STATE_WAITING_TO_SHOW,
@@ -296,7 +296,7 @@ TEST_F(PanelBarTest, HideCollapsedPanels) {
   xconn_->SetPointerPosition(
       0, wm_->height() - PanelBar::kShowCollapsedPanelsDistancePixels - 1);
   MockXConnection::InitLeaveWindowEvent(&event, *input_info, 0, 0);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
 
   // The timer should be cancelled.
   EXPECT_EQ(PanelBar::COLLAPSED_PANEL_STATE_HIDDEN,
@@ -315,7 +315,7 @@ TEST_F(PanelBarTest, HideCollapsedPanels) {
   // Now move the pointer into the panel's titlebar.
   xconn_->SetPointerPosition(panel->titlebar_x(), panel->titlebar_y());
   MockXConnection::InitEnterWindowEvent(&event, *titlebar_info, 0, 0);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
 
   // The panel should be shown immediately, and we should now be monitoring
   // the pointer's position so we can hide the panel if the pointer moves up.
@@ -370,7 +370,7 @@ TEST_F(PanelBarTest, HideCollapsedPanels) {
   xconn_->SetPointerPosition(input_x + input_width - 4, wm_->height() - 1);
   MockXConnection::InitEnterWindowEvent(
       &event, *input_info, input_width - 4, 0);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
 
   // We should show the panel immediately in this case instead of using a timer.
   EXPECT_EQ(PanelBar::COLLAPSED_PANEL_STATE_SHOWN,
@@ -395,7 +395,7 @@ TEST_F(PanelBarTest, DeferHidingDraggedCollapsedPanel) {
   xconn_->SetPointerPosition(panel->titlebar_x(), panel->titlebar_y());
   XEvent event;
   MockXConnection::InitEnterWindowEvent(&event, *titlebar_info, 0, 0);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
   EXPECT_EQ(PanelBar::COLLAPSED_PANEL_STATE_SHOWN,
             panel_bar_->collapsed_panel_state_);
   EXPECT_EQ(shown_panel_y, panel->titlebar_y());
@@ -443,7 +443,7 @@ TEST_F(PanelBarTest, DeferHidingDraggedCollapsedPanel) {
   // Show the panel again.
   xconn_->SetPointerPosition(panel->titlebar_x(), panel->titlebar_y());
   MockXConnection::InitEnterWindowEvent(&event, *titlebar_info, 0, 0);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
   EXPECT_EQ(PanelBar::COLLAPSED_PANEL_STATE_SHOWN,
             panel_bar_->collapsed_panel_state_);
   EXPECT_EQ(shown_panel_y, panel->titlebar_y());
@@ -630,11 +630,11 @@ TEST_F(PanelBarTest, PackPanelsAfterPanelResize) {
       xconn_->GetWindowInfoOrDie(input_xid);
   XEvent event;
   MockXConnection::InitButtonPressEvent(&event, *input_info, 0, 0, 1);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
   MockXConnection::InitMotionNotifyEvent(&event, *input_info, -200, -200);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
   MockXConnection::InitButtonReleaseEvent(&event, *input_info, -200, -200, 1);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
   EXPECT_EQ(400, panel2->width());
   EXPECT_EQ(600, panel2->content_height());
 
@@ -672,12 +672,12 @@ TEST_F(PanelBarTest, UrgentPanel) {
   XEvent notify_event;
   MockXConnection::InitPropertyNotifyEvent(
       &notify_event, panel->content_xid(), wm_hints_atom);
-  EXPECT_TRUE(wm_->HandleEvent(&notify_event));
+  wm_->HandleEvent(&notify_event);
   EXPECT_EQ(shown_panel_y, panel->titlebar_y());
 
   // Now unset the hint and check that the panel is hidden again.
   xconn_->SetIntProperty(panel->content_xid(), wm_hints_atom, wm_hints_atom, 0);
-  EXPECT_TRUE(wm_->HandleEvent(&notify_event));
+  wm_->HandleEvent(&notify_event);
   EXPECT_EQ(hidden_panel_y, panel->titlebar_y());
 
   // Tell the window manager to expand the panel.
@@ -686,26 +686,26 @@ TEST_F(PanelBarTest, UrgentPanel) {
   msg.set_param(1, 1);
   XEvent msg_event;
   wm_->wm_ipc()->FillXEventFromMessage(&msg_event, wm_->wm_xid(), msg);
-  EXPECT_TRUE(wm_->HandleEvent(&msg_event));
+  wm_->HandleEvent(&msg_event);
   EXPECT_EQ(expanded_panel_y, panel->titlebar_y());
 
   // Nothing should happen if we set or unset the hint on an expanded panel.
   xconn_->SetIntProperty(
       panel->content_xid(), wm_hints_atom, wm_hints_atom, urgency_hint);
-  EXPECT_TRUE(wm_->HandleEvent(&notify_event));
+  wm_->HandleEvent(&notify_event);
   EXPECT_EQ(expanded_panel_y, panel->titlebar_y());
   xconn_->SetIntProperty(
       panel->content_xid(), wm_hints_atom, wm_hints_atom, 0);
-  EXPECT_TRUE(wm_->HandleEvent(&notify_event));
+  wm_->HandleEvent(&notify_event);
   EXPECT_EQ(expanded_panel_y, panel->titlebar_y());
 
   // Set the hint again and collapse the panel.  It shouldn't be hidden.
   xconn_->SetIntProperty(
       panel->content_xid(), wm_hints_atom, wm_hints_atom, urgency_hint);
-  EXPECT_TRUE(wm_->HandleEvent(&notify_event));
+  wm_->HandleEvent(&notify_event);
   msg.set_param(1, 0);
   wm_->wm_ipc()->FillXEventFromMessage(&msg_event, wm_->wm_xid(), msg);
-  EXPECT_TRUE(wm_->HandleEvent(&msg_event));
+  wm_->HandleEvent(&msg_event);
   EXPECT_EQ(shown_panel_y, panel->titlebar_y());
 }
 

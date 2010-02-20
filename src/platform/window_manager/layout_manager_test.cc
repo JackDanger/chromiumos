@@ -118,14 +118,14 @@ TEST_F(LayoutManagerTest, Focus) {
   // Send a CreateNotify event to the window manager.
   XEvent event;
   MockXConnection::InitCreateWindowEvent(&event, *info);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
   EXPECT_EQ(None, xconn_->focused_xid());
   EXPECT_TRUE(lm_->active_toplevel_ == NULL);
 
   // The layout manager should activate and focus the window when it gets
   // mapped.
   MockXConnection::InitMapEvent(&event, xid);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
   EXPECT_EQ(xid, xconn_->focused_xid());
   ASSERT_TRUE(lm_->active_toplevel_ != NULL);
   EXPECT_EQ(xid, lm_->active_toplevel_->win()->xid());
@@ -143,14 +143,14 @@ TEST_F(LayoutManagerTest, Focus) {
 
   // When the second window is created, the first should still be active.
   MockXConnection::InitCreateWindowEvent(&event, *info2);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
   EXPECT_EQ(xid, xconn_->focused_xid());
   ASSERT_TRUE(lm_->active_toplevel_ != NULL);
   EXPECT_EQ(xid, lm_->active_toplevel_->win()->xid());
 
   // When the second window is mapped, it should become the active window.
   MockXConnection::InitMapEvent(&event, xid2);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
   EXPECT_EQ(xid2, xconn_->focused_xid());
   EXPECT_EQ(xid2, GetActiveWindowProperty());
   ASSERT_TRUE(lm_->active_toplevel_ != NULL);
@@ -173,7 +173,7 @@ TEST_F(LayoutManagerTest, Focus) {
       CurrentTime,
       xid2,  // currently-active window
       None);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
   EXPECT_EQ(xid, xconn_->focused_xid());
   ASSERT_TRUE(lm_->active_toplevel_ != NULL);
   EXPECT_EQ(xid, lm_->active_toplevel_->win()->xid());
@@ -186,7 +186,7 @@ TEST_F(LayoutManagerTest, Focus) {
 
   // Unmap the first window and check that the second window gets focused.
   MockXConnection::InitUnmapEvent(&event, xid);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
   EXPECT_EQ(xid2, xconn_->focused_xid());
   ASSERT_TRUE(lm_->active_toplevel_ != NULL);
   EXPECT_EQ(xid2, lm_->active_toplevel_->win()->xid());
@@ -205,7 +205,7 @@ TEST_F(LayoutManagerTest, ConfigureTransient) {
       xconn_->GetWindowInfoOrDie(owner_xid);
   SendInitialEventsForWindow(owner_xid);
   MockXConnection::InitConfigureNotifyEvent(&event, *owner_info);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
 
   EXPECT_EQ(0, owner_info->x);
   EXPECT_EQ(0, owner_info->y);
@@ -231,13 +231,13 @@ TEST_F(LayoutManagerTest, ConfigureTransient) {
   EXPECT_EQ(owner_info->y + 0.5 * (owner_info->height - transient_info->height),
             transient_info->y);
   MockXConnection::InitConfigureNotifyEvent(&event, *owner_info);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
 
   // Now resize the transient window and make sure that it gets re-centered.
   MockXConnection::InitConfigureRequestEvent(
       &event, transient_xid, 0, 0, 400, 300);
   event.xconfigurerequest.value_mask = CWWidth | CWHeight;
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
   EXPECT_EQ(400, transient_info->width);
   EXPECT_EQ(300, transient_info->height);
   EXPECT_EQ(owner_info->x + 0.5 * (owner_info->width - transient_info->width),
@@ -249,7 +249,7 @@ TEST_F(LayoutManagerTest, ConfigureTransient) {
   // and make sure that it gets applied.
   MockXConnection::InitConfigureRequestEvent(
       &event, transient_xid, owner_info->x + 20, owner_info->y + 10, 200, 150);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
   EXPECT_EQ(owner_info->x + 20, transient_info->x);
   EXPECT_EQ(owner_info->y + 10, transient_info->y);
   EXPECT_EQ(200, transient_info->width);
@@ -260,7 +260,7 @@ TEST_F(LayoutManagerTest, ConfigureTransient) {
   MockXConnection::InitConfigureRequestEvent(
       &event, transient_xid, 0, 0, 40, 30);
   event.xconfigurerequest.value_mask = CWWidth | CWHeight;
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
   EXPECT_EQ(owner_info->x + 20, transient_info->x);
   EXPECT_EQ(owner_info->y + 10, transient_info->y);
   EXPECT_EQ(40, transient_info->width);
@@ -287,7 +287,7 @@ TEST_F(LayoutManagerTest, ConfigureTransient) {
   EXPECT_EQ(bubble_x, bubble_info->x);
   EXPECT_EQ(bubble_y, bubble_info->y);
   MockXConnection::InitConfigureNotifyEvent(&event, *owner_info);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
 }
 
 TEST_F(LayoutManagerTest, FocusTransient) {
@@ -333,7 +333,7 @@ TEST_F(LayoutManagerTest, FocusTransient) {
   xconn_->set_pointer_grab_xid(xid);
   MockXConnection::InitButtonPressEvent(
       &event, *info, 0, 0, 1);  // x, y, button
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
 
   // LayoutManager should remove the active pointer grab and try to focus
   // the owner window.
@@ -352,7 +352,7 @@ TEST_F(LayoutManagerTest, FocusTransient) {
   // Give the focus back to the transient window.
   xconn_->set_pointer_grab_xid(transient_xid);
   MockXConnection::InitButtonPressEvent(&event, *transient_info, 0, 0, 1);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
   EXPECT_EQ(transient_xid, xconn_->focused_xid());
   SendFocusEvents(xid, transient_xid);
   EXPECT_EQ(transient_xid, GetActiveWindowProperty());
@@ -363,13 +363,13 @@ TEST_F(LayoutManagerTest, FocusTransient) {
   MockXConnection::InitClientMessageEvent(
       &event, transient_xid, wm_->GetXAtom(ATOM_NET_WM_STATE),
       1, wm_->GetXAtom(ATOM_NET_WM_STATE_MODAL), None, None);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
 
   // Since it's modal, the transient window should still keep the focus
   // after a button press in the owner window.
   xconn_->set_pointer_grab_xid(xid);
   MockXConnection::InitButtonPressEvent(&event, *info, 0, 0, 1);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
   EXPECT_EQ(transient_xid, xconn_->focused_xid());
   EXPECT_EQ(transient_xid, GetActiveWindowProperty());
   EXPECT_FALSE(wm_->GetWindowOrDie(xid)->focused());
@@ -409,7 +409,7 @@ TEST_F(LayoutManagerTest, FocusTransient) {
   MockXConnection::InitClientMessageEvent(
       &event, transient_xid, wm_->GetXAtom(ATOM_NET_WM_STATE),
       0, wm_->GetXAtom(ATOM_NET_WM_STATE_MODAL), None, None);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
 
   // Now send a _NET_ACTIVE_WINDOW message asking to focus the transient.
   // We should switch back to the first toplevel, and the transient should
@@ -417,14 +417,14 @@ TEST_F(LayoutManagerTest, FocusTransient) {
   MockXConnection::InitClientMessageEvent(
       &event, transient_xid, wm_->GetXAtom(ATOM_NET_ACTIVE_WINDOW),
       1, 21321, 0, None);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
   EXPECT_EQ(transient_xid, xconn_->focused_xid());
   MockXConnection::InitFocusOutEvent(
       &event, xid2, NotifyNormal, NotifyNonlinear);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
   MockXConnection::InitFocusInEvent(
       &event, transient_xid, NotifyNormal, NotifyNonlinear);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
   EXPECT_EQ(transient_xid, GetActiveWindowProperty());
   EXPECT_FALSE(wm_->GetWindowOrDie(xid)->focused());
   EXPECT_TRUE(wm_->GetWindowOrDie(transient_xid)->focused());
@@ -437,10 +437,10 @@ TEST_F(LayoutManagerTest, FocusTransient) {
   EXPECT_EQ(xconn_->GetRootWindow(), xconn_->focused_xid());
   MockXConnection::InitFocusOutEvent(
       &event, transient_xid, NotifyWhileGrabbed, NotifyNonlinear);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
   MockXConnection::InitFocusInEvent(
       &event, transient_xid, NotifyWhileGrabbed, NotifyPointer);
-  EXPECT_FALSE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
   EXPECT_EQ(None, GetActiveWindowProperty());
   EXPECT_FALSE(wm_->GetWindowOrDie(xid)->focused());
   EXPECT_FALSE(wm_->GetWindowOrDie(transient_xid)->focused());
@@ -503,7 +503,7 @@ TEST_F(LayoutManagerTest, MultipleTransients) {
   // the top of the stack.
   xconn_->set_pointer_grab_xid(first_transient_xid);
   MockXConnection::InitButtonPressEvent(&event, *first_transient_info, 0, 0, 1);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
   EXPECT_EQ(first_transient_xid, xconn_->focused_xid());
   SendFocusEvents(second_transient_xid, first_transient_xid);
   EXPECT_LT(stage->GetStackingIndex(first_transient_win->actor()),
@@ -517,14 +517,14 @@ TEST_F(LayoutManagerTest, MultipleTransients) {
 
   // Unmap the first transient.  The second transient should be focused.
   MockXConnection::InitUnmapEvent(&event, first_transient_xid);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
   EXPECT_EQ(second_transient_xid, xconn_->focused_xid());
   MockXConnection::InitFocusOutEvent(
       &event, first_transient_xid, NotifyNormal, NotifyNonlinear);
-  EXPECT_FALSE(wm_->HandleEvent(&event));  // false because window was unmapped
+  wm_->HandleEvent(&event);
   MockXConnection::InitFocusInEvent(
       &event, second_transient_xid, NotifyNormal, NotifyNonlinear);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
   EXPECT_LT(stage->GetStackingIndex(second_transient_win->actor()),
             stage->GetStackingIndex(owner_win->actor()));
   EXPECT_LT(xconn_->stacked_xids().GetIndex(second_transient_xid),
@@ -532,14 +532,14 @@ TEST_F(LayoutManagerTest, MultipleTransients) {
 
   // After we unmap the second transient, the owner should get the focus.
   MockXConnection::InitUnmapEvent(&event, second_transient_xid);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
   EXPECT_EQ(owner_xid, xconn_->focused_xid());
   MockXConnection::InitFocusOutEvent(
       &event, second_transient_xid, NotifyNormal, NotifyNonlinear);
-  EXPECT_FALSE(wm_->HandleEvent(&event));  // false because window was unmapped
+  wm_->HandleEvent(&event);
   MockXConnection::InitFocusInEvent(
       &event, owner_xid, NotifyNormal, NotifyNonlinear);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
 }
 
 TEST_F(LayoutManagerTest, SetWmStateMaximized) {
@@ -610,7 +610,7 @@ TEST_F(LayoutManagerTest, ConfigureToplevel) {
   XEvent event;
   MockXConnection::InitConfigureRequestEvent(
       &event, xid, new_x, new_y, new_width, new_height);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
 
   // The position change should be ignored, but the window should be
   // resized.
@@ -654,12 +654,12 @@ TEST_F(LayoutManagerTest, OverviewFocus) {
   XEvent event;
   MockXConnection::InitFocusOutEvent(
       &event, xid2, NotifyWhileGrabbed, NotifyVirtual);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
   // This FocusIn event with detail NotifyPointer is odd, but appears to be
   // what happens in actuality.
   MockXConnection::InitFocusInEvent(
       &event, xid2, NotifyWhileGrabbed, NotifyPointer);
-  EXPECT_FALSE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
   EXPECT_EQ(None, GetActiveWindowProperty());
   EXPECT_TRUE(info->button_is_grabbed(AnyButton));
   EXPECT_TRUE(info2->button_is_grabbed(AnyButton));
@@ -668,7 +668,7 @@ TEST_F(LayoutManagerTest, OverviewFocus) {
   XWindow input_xid = lm_->GetInputXidForWindow(*(wm_->GetWindowOrDie(xid)));
   MockXConnection::InitButtonPressEvent(
       &event, *xconn_->GetWindowInfoOrDie(input_xid), 0, 0, 1);  // x, y, button
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
 
   // The first window should be focused and set as the active window, and
   // only the second window should still have a button grab.
@@ -817,7 +817,7 @@ TEST_F(LayoutManagerTest, ActiveWindowHintOnTransientUnmap) {
   // focused.
   XEvent event;
   MockXConnection::InitUnmapEvent(&event, transient_xid);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
   EXPECT_EQ(toplevel_xid, xconn_->focused_xid());
   EXPECT_EQ(toplevel_xid, GetActiveWindowProperty());
 
@@ -825,10 +825,10 @@ TEST_F(LayoutManagerTest, ActiveWindowHintOnTransientUnmap) {
   // event since the window has already been unmapped.
   MockXConnection::InitFocusOutEvent(
       &event, transient_xid, NotifyNormal, NotifyNonlinear);
-  EXPECT_FALSE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
   MockXConnection::InitFocusInEvent(
       &event, toplevel_xid, NotifyNormal, NotifyNonlinear);
-  EXPECT_TRUE(wm_->HandleEvent(&event));
+  wm_->HandleEvent(&event);
 
   // The active window property should've only been updated once.
   EXPECT_EQ(1, counter.num_calls());
