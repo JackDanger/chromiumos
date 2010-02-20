@@ -331,16 +331,6 @@ void PanelManager::HandleChromeMessage(const WmIpc::Message& msg) {
       HandlePanelDragComplete(panel, false);  // removed=false
       break;
     }
-    case WmIpc::Message::WM_FOCUS_WINDOW: {
-      XWindow xid = msg.param(0);
-      Panel* panel = GetPanelByXid(xid);
-      if (!panel)
-        return;
-      PanelContainer* container = GetContainerForPanel(*panel);
-      if (container)
-        container->HandleFocusPanelMessage(panel);
-      break;
-    }
     default:
       return;
   }

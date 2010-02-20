@@ -616,20 +616,6 @@ void LayoutManager::HandleChromeMessage(const WmIpc::Message& msg) {
       }
       break;
     }
-    case WmIpc::Message::WM_FOCUS_WINDOW: {
-      XWindow xid = msg.param(0);
-      Window* win = wm_->GetWindow(xid);
-      if (!win)
-        return;
-
-      ToplevelWindow* toplevel = GetToplevelWindowByWindow(*win);
-      if (!toplevel)
-        return;
-
-      active_toplevel_ = toplevel;
-      SetMode(MODE_ACTIVE);
-      break;
-    }
     case WmIpc::Message::WM_SWITCH_TO_OVERVIEW_MODE: {
       SetMode(MODE_OVERVIEW);
       Window* win = wm_->GetWindow(msg.param(0));

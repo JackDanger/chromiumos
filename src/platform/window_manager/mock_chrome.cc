@@ -215,10 +215,7 @@ bool TabSummary::on_button_press_event(GdkEventButton* event) {
     parent_win_->ActivateTab(index);
   }
   Draw();
-  WmIpc::Message msg(WmIpc::Message::WM_FOCUS_WINDOW);
-  msg.set_param(0, parent_win_->xid());
-  CHECK(parent_win_->chrome()->wm_ipc()->SendMessage(
-            parent_win_->chrome()->wm_ipc()->wm_window(), msg));
+  parent_win_->present();
   return true;
 }
 
@@ -773,12 +770,8 @@ bool PanelTitlebar::on_button_release_event(GdkEventButton* event) {
               panel_->chrome()->wm_ipc()->wm_window(), msg));
 
     // If the panel is getting expanded, tell the WM to focus it.
-    if (!panel_->expanded()) {
-      WmIpc::Message focus_msg(WmIpc::Message::WM_FOCUS_WINDOW);
-      focus_msg.set_param(0, panel_->xid());
-      CHECK(panel_->chrome()->wm_ipc()->SendMessage(
-                panel_->chrome()->wm_ipc()->wm_window(), focus_msg));
-    }
+    if (!panel_->expanded())
+      panel_->present();
   } else {
     WmIpc::Message msg(WmIpc::Message::WM_NOTIFY_PANEL_DRAG_COMPLETE);
     msg.set_param(0, panel_->xid());
