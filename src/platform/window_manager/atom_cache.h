@@ -8,24 +8,20 @@
 #include <map>
 #include <string>
 
-extern "C" {
-#include <X11/Xlib.h>
-}
-
 #include "base/basictypes.h"
+#include "window_manager/x_types.h"
 
 namespace window_manager {
 
 class XConnection;  // from x_connection.h
-
-typedef ::Atom XAtom;
 
 // Atom names with "_" prefixes (if any) stripped.
 //
 // When adding a new value, also insert a mapping to its actual name in
 // kAtomInfos in atom_cache.cc.
 enum Atom {
-  ATOM_CHROME_GET_SERVER_TIME = 0,
+  ATOM_ATOM = 0,
+  ATOM_CHROME_GET_SERVER_TIME,
   ATOM_CHROME_STATE,
   ATOM_CHROME_STATE_COLLAPSED_PANEL,
   ATOM_CHROME_WINDOW_TYPE,

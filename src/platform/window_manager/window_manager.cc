@@ -485,7 +485,7 @@ const string& WindowManager::GetXAtomName(XAtom xatom) {
   return atom_cache_->GetName(xatom);
 }
 
-Time WindowManager::GetCurrentTimeFromServer() {
+XTime WindowManager::GetCurrentTimeFromServer() {
   // Just set a bogus property on our window and wait for the
   // PropertyNotify event so we can get its timestamp.
   CHECK(xconn_->SetIntProperty(
@@ -493,9 +493,9 @@ Time WindowManager::GetCurrentTimeFromServer() {
             GetXAtom(ATOM_CHROME_GET_SERVER_TIME),    // atom
             XA_ATOM,                                  // type
             GetXAtom(ATOM_CHROME_GET_SERVER_TIME)));  // value
-  XEvent event;
-  xconn_->WaitForEvent(wm_xid_, PropertyChangeMask, &event);
-  return event.xproperty.time;
+  XTime timestamp = 0;
+  xconn_->WaitForPropertyChange(wm_xid_, &timestamp);
+  return timestamp;
 }
 
 Window* WindowManager::GetWindow(XWindow xid) {
@@ -617,7 +617,7 @@ void WindowManager::UnregisterEventConsumerForChromeMessages(
 }
 
 bool WindowManager::GetManagerSelection(
-    XAtom atom, XWindow manager_win, Time timestamp) {
+    XAtom atom, XWindow manager_win, XTime timestamp) {
   // Find the current owner of the selection and select events on it so
   // we'll know when it's gone away.
   XWindow current_manager = xconn_->GetSelectionOwner(atom);
@@ -633,27 +633,17 @@ bool WindowManager::GetManagerSelection(
   }
 
   // Announce that we're here.
-  XClientMessageEvent msg;
-  msg.type = ClientMessage;
-  msg.window = root_;
-  msg.message_type = GetXAtom(ATOM_MANAGER);
-  msg.format = XConnection::kLongFormat;
-  msg.data.l[0] = timestamp;
-  msg.data.l[1] = atom;
-  msg.data.l[2] = manager_win;
-  msg.data.l[3] = None;
-  msg.data.l[4] = None;
-  CHECK(xconn_->SendEvent(root_,
-                          reinterpret_cast<XEvent*>(&msg),
-                          StructureNotifyMask));
+  long data[5];
+  memset(data, 0, sizeof(data));
+  data[0] = timestamp;
+  data[1] = atom;
+  data[2] = manager_win;
+  CHECK(xconn_->SendClientMessageEvent(
+            root_, root_, GetXAtom(ATOM_MANAGER), data, StructureNotifyMask));
 
   // If there was an old manager running, wait for its window to go away.
-  if (current_manager != None) {
-    XEvent event;
-    do {
-      CHECK(xconn_->WaitForEvent(current_manager, StructureNotifyMask, &event));
-    } while (event.type != DestroyNotify);
-  }
+  if (current_manager != None)
+    CHECK(xconn_->WaitForWindowToBeDestroyed(current_manager));
 
   return true;
 }
@@ -675,9 +665,8 @@ bool WindowManager::RegisterExistence() {
   // timestamp from the server.
   CHECK(xconn_->SetStringProperty(
             wm_xid_, GetXAtom(ATOM_NET_WM_NAME), GetWmName()));
-  XEvent event;
-  xconn_->WaitForEvent(wm_xid_, PropertyChangeMask, &event);
-  Time timestamp = event.xproperty.time;
+  XTime timestamp = 0;
+  xconn_->WaitForPropertyChange(wm_xid_, &timestamp);
 
   if (!GetManagerSelection(GetXAtom(ATOM_WM_S0), wm_xid_, timestamp) ||
       !GetManagerSelection(GetXAtom(ATOM_NET_WM_CM_S0), wm_xid_, timestamp)) {
@@ -924,7 +913,7 @@ void WindowManager::HandleClientMessage(const XClientMessageEvent& e) {
           << " with type " << XidStr(e.message_type) << " ("
           << GetXAtomName(e.message_type) << ") and format " << e.format;
   WmIpc::Message msg;
-  if (wm_ipc_->GetMessage(e, &msg)) {
+  if (wm_ipc_->GetMessage(e.message_type, e.format, e.data.l, &msg)) {
     if (msg.type() == WmIpc::Message::WM_NOTIFY_IPC_VERSION) {
       wm_ipc_version_ = msg.param(0);
       LOG(INFO) << "Got WM_NOTIFY_IPC_VERSION message saying that Chrome is "
@@ -936,7 +925,7 @@ void WindowManager::HandleClientMessage(const XClientMessageEvent& e) {
     }
   } else {
     if (static_cast<XAtom>(e.message_type) == GetXAtom(ATOM_MANAGER) &&
-        e.format == 32 &&
+        e.format == XConnection::kLongFormat &&
         (static_cast<XAtom>(e.data.l[1]) == GetXAtom(ATOM_WM_S0) ||
          static_cast<XAtom>(e.data.l[1]) == GetXAtom(ATOM_NET_WM_CM_S0))) {
       if (static_cast<XWindow>(e.data.l[2]) != wm_xid_) {
@@ -946,9 +935,15 @@ void WindowManager::HandleClientMessage(const XClientMessageEvent& e) {
       }
       return;
     }
-    FOR_EACH_EVENT_CONSUMER(window_event_consumers_,
-                            e.window,
-                            HandleClientMessage(e));
+    if (e.format == XConnection::kLongFormat) {
+      FOR_EACH_EVENT_CONSUMER(window_event_consumers_,
+                              e.window,
+                              HandleClientMessage(
+                                  e.window, e.message_type, e.data.l));
+    } else {
+      LOG(WARNING) << "Ignoring client message event with unsupported format "
+                   << e.format << " (we only handle 32-bit data currently)";
+    }
   }
 }
 

@@ -9,10 +9,6 @@
 #include <tr1/memory>
 #include <vector>
 
-extern "C" {
-#include <X11/Xlib.h>
-}
-
 #include <gtest/gtest_prod.h>  // for FRIEND_TEST() macro
 
 #include "base/basictypes.h"
@@ -20,8 +16,7 @@ extern "C" {
 #include "window_manager/event_consumer.h"
 #include "window_manager/panel_container.h"  // for PanelSource enum
 #include "window_manager/util.h"
-
-typedef ::Window XWindow;
+#include "window_manager/x_types.h"
 
 namespace window_manager {
 
@@ -78,27 +73,27 @@ class PanelManager : public EventConsumer {
                          int x, int y,
                          int x_root, int y_root,
                          int button,
-                         Time timestamp);
+                         XTime timestamp);
   void HandleButtonRelease(XWindow xid,
                            int x, int y,
                            int x_root, int y_root,
                            int button,
-                           Time timestamp);
+                           XTime timestamp);
   void HandlePointerEnter(XWindow xid,
                           int x, int y,
                           int x_root, int y_root,
-                          Time timestamp);
+                          XTime timestamp);
   void HandlePointerLeave(XWindow xid,
                           int x, int y,
                           int x_root, int y_root,
-                          Time timestamp);
+                          XTime timestamp);
   void HandlePointerMotion(XWindow xid,
                            int x, int y,
                            int x_root, int y_root,
-                           Time timestamp);
+                           XTime timestamp);
 
   void HandleChromeMessage(const WmIpc::Message& msg);
-  void HandleClientMessage(const XClientMessageEvent& e);
+  void HandleClientMessage(XWindow xid, XAtom message_type, const long data[5]);
   void HandleFocusChange(XWindow xid, bool focus_in);
   void HandleWindowPropertyChange(XWindow xid, XAtom xatom);
 

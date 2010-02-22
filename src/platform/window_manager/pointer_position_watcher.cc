@@ -4,6 +4,8 @@
 
 #include "window_manager/pointer_position_watcher.h"
 
+#include <glib.h>
+
 #include "window_manager/x_connection.h"
 
 namespace window_manager {

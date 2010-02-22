@@ -1,4 +1,4 @@
-// Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -89,15 +89,32 @@ void RealGLInterface::DestroyGlxPixmap(GLXPixmap pixmap) {
   }
 }
 
-GLXContext RealGLInterface::CreateGlxContext(XVisualInfo* vis) {
-  xconn_->TrapErrors();
-  GLXContext context = glXCreateContext(xconn_->GetDisplay(),
-                                        vis, NULL, True);
-  if (int error = xconn_->UntrapErrors()) {
-    LOG(WARNING) << "Got X error while creating a GL context: "
-                 << xconn_->GetErrorText(error);
-    return None;
+GLXContext RealGLInterface::CreateGlxContext() {
+  XConnection::WindowAttributes attributes;
+  xconn_->GetWindowAttributes(xconn_->GetRootWindow(), &attributes);
+
+  XVisualInfo visual_info_template;
+  visual_info_template.visualid = attributes.visual_id;
+  int visual_info_count = 0;
+  XVisualInfo* visual_info_list = xconn_->GetVisualInfo(VisualIDMask,
+                                                        &visual_info_template,
+                                                        &visual_info_count);
+  CHECK(visual_info_list);
+  CHECK(visual_info_count > 0);
+
+  GLXContext context = None;
+  for (int i = 0; i < visual_info_count; ++i) {
+    xconn_->TrapErrors();
+    context = glXCreateContext(
+        xconn_->GetDisplay(), visual_info_list + i, NULL, True);
+    if (int error = xconn_->UntrapErrors()) {
+      LOG(WARNING) << "Got X error while creating a GL context: "
+                   << xconn_->GetErrorText(error);
+    } else if (context) {
+      break;
+    }
   }
+  xconn_->Free(visual_info_list);
   return context;
 }
 

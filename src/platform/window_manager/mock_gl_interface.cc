@@ -1,4 +1,4 @@
-// Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -110,7 +110,7 @@ GLXPixmap MockGLInterface::CreateGlxPixmap(GLXFBConfig config,
   return next_glx_pixmap_id_++;
 }
 
-GLXContext MockGLInterface::CreateGlxContext(XVisualInfo* vis) {
+GLXContext MockGLInterface::CreateGlxContext() {
   return mock_context_;
 }
 

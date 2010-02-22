@@ -12,6 +12,8 @@
 #include <utility>
 
 extern "C" {
+// TODO: Move the event-handling methods (all private) into a separate
+// header so that these includes can be removed.
 #include <X11/extensions/shape.h>
 #include <X11/extensions/Xrandr.h>
 #include <X11/Xlib.h>
@@ -23,9 +25,7 @@ extern "C" {
 #include "window_manager/atom_cache.h"  // for Atom enum
 #include "window_manager/clutter_interface.h"
 #include "window_manager/wm_ipc.h"
-
-typedef ::Atom XAtom;
-typedef ::Window XWindow;
+#include "window_manager/x_types.h"
 
 namespace window_manager {
 
@@ -95,7 +95,7 @@ class WindowManager {
   // Get the current time from the server.  This can be useful for e.g.
   // getting a timestamp to pass to XSetInputFocus() when triggered by an
   // event that doesn't contain a timestamp.
-  Time GetCurrentTimeFromServer();
+  XTime GetCurrentTimeFromServer();
 
   // Look up a window in 'client_windows_'.  The first version returns NULL
   // if the window doesn't exist, while the second crashes.
@@ -168,7 +168,7 @@ class WindowManager {
   // the selection to take, 'manager_win' is the window acquiring the
   // selection, and 'timestamp' is the current time.
   bool GetManagerSelection(
-      XAtom atom, XWindow manager_win, Time timestamp);
+      XAtom atom, XWindow manager_win, XTime timestamp);
 
   // Tell the previous window and compositing managers to exit and register
   // ourselves as the new managers.
@@ -262,9 +262,9 @@ class WindowManager {
   // Helper method called repeatedly by a GLib timeout while the hotkey
   // overlay is being displayed to query the current keyboard state from
   // the X server and pass it to the overlay.
-  static gboolean QueryKeyboardStateThunk(gpointer data) {
+  static int QueryKeyboardStateThunk(void* data) {
     reinterpret_cast<WindowManager*>(data)->QueryKeyboardState();
-    return TRUE;  // keep the timeout alive
+    return 1;  // keep the timeout alive
   }
   void QueryKeyboardState();
 
@@ -343,7 +343,7 @@ class WindowManager {
   scoped_ptr<MetricsReporter> metrics_reporter_;
 
   // GLib source ID for the timer that calls QueryKeyboardStateThunk().
-  guint query_keyboard_state_timer_;
+  unsigned int query_keyboard_state_timer_;
 
   // Is the hotkey overlay currently being shown?
   bool showing_hotkey_overlay_;

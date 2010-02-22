@@ -5,17 +5,12 @@
 #ifndef WINDOW_MANAGER_EVENT_CONSUMER_REGISTRAR_H_
 #define WINDOW_MANAGER_EVENT_CONSUMER_REGISTRAR_H_
 
-extern "C" {
-#include <X11/Xlib.h>
-}
 #include <utility>
 #include <vector>
 
 #include "base/basictypes.h"
 #include "window_manager/wm_ipc.h"
-
-typedef ::Atom XAtom;
-typedef ::Window XWindow;
+#include "window_manager/x_types.h"
 
 namespace window_manager {
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -9,21 +9,9 @@
 #include <map>
 #include <string>
 
-extern "C" {
-#include <clutter/clutter.h>
-#if __arm__
-#include <clutter/eglx/clutter-eglx-egl-image.h>
-#else  // x86
-#include <clutter/glx/clutter-glx.h>
-#endif
-#include <clutter/x11/clutter-x11.h>
-#include <X11/Xlib.h>
-}
-
 #include "base/basictypes.h"
 #include "base/scoped_ptr.h"
-
-typedef ::Window XWindow;
+#include "window_manager/x_types.h"
 
 namespace window_manager {
 
@@ -148,155 +136,6 @@ class ClutterInterface {
   DISALLOW_COPY_AND_ASSIGN(ClutterInterface);
 };
 
-// Implementation of ClutterInterface that uses Clutter.
-class RealClutterInterface : public ClutterInterface {
- public:
-  // The Actor class's behavior is tricky.  The C API's ClutterActor is
-  // based on GObject and does its own memory management:
-  //
-  // - clutter_*_new() returns a floating reference to a new ClutterActor
-  // - clutter_container_add_actor() sinks the reference
-  // - destroying the container also destroys its children
-  // - destroying a child directly will remove it from its container
-  //
-  // Rather than trying to replicate this behavior in this code (or base
-  // this code on GLib), we just hold a weak reference to the underlying
-  // ClutterActor.  If its container is destroyed and GLib destroys the
-  // ClutterActor, our reference gets set to NULL.  The
-  // RealClutterInterface::Actor is no longer usable at this point, but it
-  // must still be manually deleted.  If the RealClutterInterface::Actor
-  // object gets destroyed before its underlying ClutterActor, the
-  // ClutterActor gets destroyed along with it.
-  //
-  // In other words, all objects created with RealClutterInterface's
-  // Create() methods must be destroyed using 'delete', but their actual
-  // usable lifetime may be shorter: it matches the lifetime of the
-  // underlying ClutterActor object, which gets destroyed when the
-  // ClutterActor's container is destroyed or when the
-  // RealClutterInterface::Actor object is destroyed, whichever comes
-  // first.
-  class Actor : virtual public ClutterInterface::Actor {
-   public:
-    explicit Actor(ClutterActor* clutter_actor);
-    virtual ~Actor();
-
-    ClutterActor* clutter_actor() { return clutter_actor_; }
-
-    // Begin ClutterInterface::Actor methods
-    void SetName(const std::string& name);
-    int GetWidth();
-    int GetHeight();
-    int GetX();
-    int GetY();
-    int GetXScale();
-    int GetYScale();
-    void SetVisibility(bool visible);
-    void SetSize(int width, int height);
-    void Move(int x, int y, int anim_ms);
-    void MoveX(int x, int anim_ms);
-    void MoveY(int y, int anim_ms);
-    void Scale(double scale_x, double scale_y, int anim_ms);
-    void SetOpacity(double opacity, int anim_ms);
-    void SetClip(int x, int y, int width, int height);
-    void Raise(ClutterInterface::Actor* other);
-    void Lower(ClutterInterface::Actor* other);
-    void RaiseToTop();
-    void LowerToBottom();
-    // End ClutterInterface::Actor methods
-
-   protected:
-    // This is a GObject weak pointer.  When the underlying ClutterActor
-    // object is destroyed ("finalized" in GLib parlance), this pointer
-    // will automatically be set to NULL and the Actor object will become
-    // unusable (but must still be deleted).
-    ClutterActor* clutter_actor_;
-
-   private:
-    DISALLOW_COPY_AND_ASSIGN(Actor);
-  };
-
-  class ContainerActor : public RealClutterInterface::Actor,
-                         virtual public ClutterInterface::ContainerActor {
-   public:
-    explicit ContainerActor(ClutterActor* clutter_actor)
-        : RealClutterInterface::Actor(clutter_actor) {
-    }
-    virtual ~ContainerActor() {}
-    void AddActor(ClutterInterface::Actor* actor);
-   private:
-    DISALLOW_COPY_AND_ASSIGN(ContainerActor);
-  };
-
-  class StageActor : public RealClutterInterface::ContainerActor,
-                     public ClutterInterface::StageActor {
-   public:
-    explicit StageActor(ClutterActor* clutter_actor)
-        : RealClutterInterface::ContainerActor(clutter_actor) {
-    }
-    virtual ~StageActor() {}
-    XWindow GetStageXWindow();
-    void SetStageColor(const Color& color);
-    std::string GetDebugString();
-   private:
-    // Recursive method called by GetDebugString().
-    static std::string GetDebugStringInternal(
-        ClutterActor* actor, int indent_level);
-    DISALLOW_COPY_AND_ASSIGN(StageActor);
-  };
-
-  class TexturePixmapActor : public RealClutterInterface::Actor,
-                             public ClutterInterface::TexturePixmapActor {
-   public:
-    explicit TexturePixmapActor(ClutterActor* clutter_actor)
-        : RealClutterInterface::Actor(clutter_actor),
-          alpha_mask_texture_(COGL_INVALID_HANDLE) {
-    }
-    virtual ~TexturePixmapActor();
-    bool SetTexturePixmapWindow(XWindow xid);
-    bool IsUsingTexturePixmapExtension();
-    bool SetAlphaMask(const unsigned char* bytes, int width, int height);
-    void ClearAlphaMask();
-
-   private:
-    // Layer index used for attaching 'alpha_mask_texture_' to the
-    // texture's material.
-    static const int kAlphaMaskLayerIndex;
-
-    // 8-bit COGL texture containing a mask of this texture's shape, or
-    // COGL_INVALID_HANDLE if the texture is unshaped.
-    CoglHandle alpha_mask_texture_;
-
-    DISALLOW_COPY_AND_ASSIGN(TexturePixmapActor);
-  };
-
-  RealClutterInterface();
-  ~RealClutterInterface();
-
-  // Begin ClutterInterface methods
-  ContainerActor* CreateGroup();
-  Actor* CreateRectangle(const ClutterInterface::Color& color,
-                         const ClutterInterface::Color& border_color,
-                         int border_width);
-  Actor* CreateImage(const std::string& filename);
-  TexturePixmapActor* CreateTexturePixmap();
-  Actor* CreateText(const std::string& font_name,
-                    const std::string& text,
-                    const ClutterInterface::Color& color);
-  Actor* CloneActor(ClutterInterface::Actor* orig);
-  StageActor* GetDefaultStage() { return default_stage_.get(); }
-  // End ClutterInterface methods
-
-  // Convert a Color to a ClutterColor.  Used by assorted *Actor
-  // classes.  The returned ClutterColor has an alpha value that is
-  // fully opaque.
-  static ClutterColor ConvertColor(const ClutterInterface::Color& color);
-
- private:
-  scoped_ptr<StageActor> default_stage_;
-
-  DISALLOW_COPY_AND_ASSIGN(RealClutterInterface);
-};
-
 // Mock implementation of ClutterInterface that can be used without calling
 // clutter_init().
 class MockClutterInterface : public ClutterInterface {
@@ -398,7 +237,7 @@ class MockClutterInterface : public ClutterInterface {
    public:
     StageActor() {}
     virtual ~StageActor() {}
-    XWindow GetStageXWindow() { return None; }
+    XWindow GetStageXWindow() { return 0; }
     void SetStageColor(const ClutterInterface::Color& color) {}
     std::string GetDebugString() { return ""; }
    private:
@@ -411,7 +250,7 @@ class MockClutterInterface : public ClutterInterface {
     TexturePixmapActor(XConnection* xconn)
         : xconn_(xconn),
           alpha_mask_bytes_(NULL),
-          xid_(None) {}
+          xid_(0) {}
     virtual ~TexturePixmapActor() {
       ClearAlphaMask();
     }

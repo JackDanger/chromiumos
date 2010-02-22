@@ -1,4 +1,4 @@
-// Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -78,9 +78,7 @@ void BasicWindowManagerTest::SetUp() {
   // of panels in drag messages.
   WmIpc::Message msg(WmIpc::Message::WM_NOTIFY_IPC_VERSION);
   msg.set_param(0, 1);
-  XEvent event;
-  wm_->wm_ipc()->FillXEventFromMessage(&event, wm_->wm_xid(), msg);
-  wm_->HandleEvent(&event);
+  SendWmIpcMessage(msg);
 
   // Make the PanelManager's event coalescer run in synchronous mode; its
   // timer will never get triggered from within a test.
@@ -170,23 +168,44 @@ void BasicWindowManagerTest::SendFocusEvents(XWindow out_xid, XWindow in_xid) {
   }
 }
 
+void BasicWindowManagerTest::SendWmIpcMessage(const WmIpc::Message& msg) {
+  MockXConnection::WindowInfo* info = xconn_->GetWindowInfoOrDie(wm_->wm_xid());
+  const size_t orig_num_messages = info->client_messages.size();
+
+  // First, send the message using WmIpc.
+  ASSERT_TRUE(wm_->wm_ipc()->SendMessage(wm_->wm_xid(), msg));
+
+  // Next, copy it from where MockXConnection saved it and pass it to the
+  // window manager.
+  XEvent event;
+  CHECK_EQ(info->client_messages.size(), orig_num_messages + 1);
+  memcpy(&(event.xclient),
+         &(info->client_messages.back()),
+         sizeof(XClientMessageEvent));
+  wm_->HandleEvent(&event);
+}
+
+void BasicWindowManagerTest::SendSetPanelStateMessage(Panel* panel,
+                                                      bool expanded) {
+  WmIpc::Message msg(WmIpc::Message::WM_SET_PANEL_STATE);
+  msg.set_param(0, panel->content_xid());
+  msg.set_param(1, expanded);
+  SendWmIpcMessage(msg);
+}
+
 void BasicWindowManagerTest::SendPanelDraggedMessage(
     Panel* panel, int x, int y) {
   WmIpc::Message msg(WmIpc::Message::WM_NOTIFY_PANEL_DRAGGED);
   msg.set_param(0, panel->content_xid());
   msg.set_param(1, x);
   msg.set_param(2, y);
-  XEvent event;
-  wm_->wm_ipc()->FillXEventFromMessage(&event, wm_->wm_xid(), msg);
-  wm_->HandleEvent(&event);
+  SendWmIpcMessage(msg);
 }
 
 void BasicWindowManagerTest::SendPanelDragCompleteMessage(Panel* panel) {
   WmIpc::Message msg(WmIpc::Message::WM_NOTIFY_PANEL_DRAG_COMPLETE);
   msg.set_param(0, panel->content_xid());
-  XEvent event;
-  wm_->wm_ipc()->FillXEventFromMessage(&event, wm_->wm_xid(), msg);
-  wm_->HandleEvent(&event);
+  SendWmIpcMessage(msg);
 }
 
 XWindow BasicWindowManagerTest::GetActiveWindowProperty() {

@@ -1,4 +1,4 @@
-// Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -491,7 +491,7 @@ void LayoutManager::HandleButtonPress(XWindow xid,
                                       int x, int y,
                                       int x_root, int y_root,
                                       int button,
-                                      Time timestamp) {
+                                      XTime timestamp) {
   ToplevelWindow* toplevel = GetToplevelWindowByInputXid(xid);
   if (toplevel) {
     if (button == 1) {
@@ -535,7 +535,7 @@ void LayoutManager::HandleButtonRelease(XWindow xid,
                                         int x, int y,
                                         int x_root, int y_root,
                                         int button,
-                                        Time timestamp) {
+                                        XTime timestamp) {
   if (xid != wm_->background_xid() || button != 1)
     return;
 
@@ -553,7 +553,7 @@ void LayoutManager::HandleButtonRelease(XWindow xid,
 void LayoutManager::HandlePointerEnter(XWindow xid,
                                        int x, int y,
                                        int x_root, int y_root,
-                                       Time timestamp) {
+                                       XTime timestamp) {
   ToplevelWindow* toplevel = GetToplevelWindowByInputXid(xid);
   if (!toplevel)
     return;
@@ -573,7 +573,7 @@ void LayoutManager::HandlePointerEnter(XWindow xid,
 void LayoutManager::HandlePointerMotion(XWindow xid,
                                         int x, int y,
                                         int x_root, int y_root,
-                                        Time timestamp) {
+                                        XTime timestamp) {
   if (xid == wm_->background_xid())
     overview_background_event_coalescer_->StorePosition(x, y);
 }
@@ -644,19 +644,19 @@ void LayoutManager::HandleChromeMessage(const WmIpc::Message& msg) {
   }
 }
 
-void LayoutManager::HandleClientMessage(const XClientMessageEvent& e) {
-  Window* win = wm_->GetWindow(e.window);
+void LayoutManager::HandleClientMessage(XWindow xid,
+                                        XAtom message_type,
+                                        const long data[5]) {
+  Window* win = wm_->GetWindow(xid);
   if (!win)
     return;
 
-  if (e.message_type == wm_->GetXAtom(ATOM_NET_WM_STATE)) {
-    win->HandleWmStateMessage(e);
-  } else if (e.message_type == wm_->GetXAtom(ATOM_NET_ACTIVE_WINDOW)) {
-    if (e.format != XConnection::kLongFormat)
-      return;
-    VLOG(1) << "Got _NET_ACTIVE_WINDOW request to focus " << XidStr(e.window)
+  if (message_type == wm_->GetXAtom(ATOM_NET_WM_STATE)) {
+    win->HandleWmStateMessage(data);
+  } else if (message_type == wm_->GetXAtom(ATOM_NET_ACTIVE_WINDOW)) {
+    VLOG(1) << "Got _NET_ACTIVE_WINDOW request to focus " << XidStr(xid)
             << " (requestor says its currently-active window is "
-            << XidStr(e.data.l[2]) << "; real active window is "
+            << XidStr(data[2]) << "; real active window is "
             << XidStr(wm_->active_window_xid()) << ")";
 
     // If we got a _NET_ACTIVE_WINDOW request for a transient, switch to
@@ -677,7 +677,7 @@ void LayoutManager::HandleClientMessage(const XClientMessageEvent& e) {
                                 ToplevelWindow::STATE_ACTIVE_MODE_IN_FADE,
                                 ToplevelWindow::STATE_ACTIVE_MODE_OUT_FADE);
       } else {
-        toplevel->TakeFocus(e.data.l[1]);
+        toplevel->TakeFocus(data[1]);
       }
     } else {
       active_toplevel_ = toplevel;
@@ -1132,7 +1132,7 @@ void LayoutManager::ToplevelWindow::UpdateOverviewScaling(int max_width,
   overview_scale_  = tmp_scale;
 }
 
-void LayoutManager::ToplevelWindow::TakeFocus(Time timestamp) {
+void LayoutManager::ToplevelWindow::TakeFocus(XTime timestamp) {
   // We'll get an inactive/active flicker in the toplevel window if we let
   // the window manager set the active window property to None when the
   // transient is unmapped and we then set it back to another transient or
@@ -1312,7 +1312,7 @@ void LayoutManager::ToplevelWindow::HandleFocusChange(
 }
 
 void LayoutManager::ToplevelWindow::HandleButtonPress(
-    Window* button_win, Time timestamp) {
+    Window* button_win, XTime timestamp) {
   SetPreferredTransientWindowToFocus(
       GetTransientWindow(*button_win) ? button_win : NULL);
   TakeFocus(timestamp);

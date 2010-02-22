@@ -1,4 +1,4 @@
-// Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -29,13 +29,13 @@ using std::vector;
 // Maximum property size in bytes (both for reading and setting).
 static const size_t kMaxPropertySize = 1024;
 
-static int (*old_error_handler)(Display*, XErrorEvent*) = NULL;
+static int (*old_error_handler)(XDisplay*, XErrorEvent*) = NULL;
 
 static int last_trapped_error_code = 0;
 static int last_trapped_request_code = 0;
 static int last_trapped_minor_code = 0;
 
-static int HandleXError(Display* display, XErrorEvent* event) {
+static int HandleXError(XDisplay* display, XErrorEvent* event) {
   last_trapped_error_code = event->error_code;
   last_trapped_request_code = event->request_code;
   last_trapped_minor_code = event->minor_code;
@@ -50,7 +50,7 @@ static int HandleXError(Display* display, XErrorEvent* event) {
   return 0;
 }
 
-RealXConnection::RealXConnection(Display* display)
+RealXConnection::RealXConnection(XDisplay* display)
     : display_(display),
       xcb_conn_(NULL),
       root_(XCB_NONE),
@@ -75,16 +75,6 @@ RealXConnection::~RealXConnection() {
        it != cursors_.end(); ++it) {
     xcb_free_cursor(xcb_conn_, it->second);
   }
-}
-
-void RealXConnection::Free(void* item) {
-  XFree(item);
-}
-
-XVisualInfo* RealXConnection::GetVisualInfo(long mask,
-                                            XVisualInfo* visual_template,
-                                            int* item_count) {
-  return XGetVisualInfo(display_, mask, visual_template, item_count);
 }
 
 bool RealXConnection::GetWindowGeometry(XDrawable xid,
@@ -152,7 +142,7 @@ bool RealXConnection::RaiseWindow(XWindow xid) {
   return true;
 }
 
-bool RealXConnection::FocusWindow(XWindow xid, Time event_time) {
+bool RealXConnection::FocusWindow(XWindow xid, XTime event_time) {
   VLOG(1) << "Focusing window " << XidStr(xid);
   xcb_set_input_focus(xcb_conn_, XCB_INPUT_FOCUS_PARENT, xid, event_time);
   return true;
@@ -250,7 +240,7 @@ bool RealXConnection::RemoveButtonGrabOnWindow(XWindow xid, int button) {
 
 bool RealXConnection::AddPointerGrabForWindow(XWindow xid,
                                               int event_mask,
-                                              Time timestamp) {
+                                              XTime timestamp) {
   xcb_grab_pointer_cookie_t cookie =
       xcb_grab_pointer(xcb_conn_,
                        0,                    // owner_events
@@ -278,7 +268,7 @@ bool RealXConnection::AddPointerGrabForWindow(XWindow xid,
   return true;
 }
 
-bool RealXConnection::RemovePointerGrab(bool replay_events, Time timestamp) {
+bool RealXConnection::RemovePointerGrab(bool replay_events, XTime timestamp) {
   if (replay_events)
     xcb_allow_events(xcb_conn_, XCB_ALLOW_REPLAY_POINTER, timestamp);
   else
@@ -723,32 +713,58 @@ bool RealXConnection::DeletePropertyIfExists(XWindow xid, XAtom xatom) {
   return true;
 }
 
-bool RealXConnection::SendEvent(XWindow xid, XEvent* event, int event_mask) {
-  CHECK(event);
+bool RealXConnection::SendClientMessageEvent(XWindow dest_xid,
+                                             XWindow xid,
+                                             XAtom message_type,
+                                             long data[5],
+                                             int event_mask) {
+  XEvent event;
+  XClientMessageEvent* client_event = &(event.xclient);
+  client_event->type = ClientMessage;
+  client_event->window = xid;
+  client_event->message_type = message_type;
+  client_event->format = XConnection::kLongFormat;
+  memcpy(client_event->data.l, data, sizeof(client_event->data.l));
+
   TrapErrors();
   XSendEvent(display_,
-             xid,
+             dest_xid,
              False,  // propagate
              event_mask,
-             event);
+             &event);
   if (int error = UntrapErrors()) {
     LOG(WARNING) << "Got X error while sending message to window "
-                 << XidStr(xid) << ": " << GetErrorText(error);
+                 << XidStr(dest_xid) << ": " << GetErrorText(error);
     return false;
   }
   return true;
 }
 
-bool RealXConnection::WaitForEvent(
-    XWindow xid, int event_mask, XEvent* event_out) {
-  CHECK(event_out);
+bool RealXConnection::WaitForWindowToBeDestroyed(XWindow xid) {
+  XEvent event;
   TrapErrors();
-  XWindowEvent(display_, xid, event_mask, event_out);
+  do {
+    XWindowEvent(display_, xid, StructureNotifyMask, &event);
+  } while (event.type != DestroyNotify);
   if (int error = UntrapErrors()) {
-    LOG(WARNING) << "Got X error while waiting for event on window "
+    LOG(WARNING) << "Got X error while waiting for window " << XidStr(xid)
+                 << " to be destroyed: " << GetErrorText(error);
+    return false;
+  }
+  return true;
+}
+
+bool RealXConnection::WaitForPropertyChange(XWindow xid, XTime* timestamp_out) {
+  XEvent event;
+  TrapErrors();
+  XWindowEvent(display_, xid, PropertyChangeMask, &event);
+  if (int error = UntrapErrors()) {
+    LOG(WARNING) << "Got X error while waiting for property change on window "
                  << XidStr(xid) << ": " << GetErrorText(error);
     return false;
   }
+  if (timestamp_out)
+    *timestamp_out = event.xproperty.time;
   return true;
 }
 
@@ -768,7 +784,7 @@ XWindow RealXConnection::GetSelectionOwner(XAtom atom) {
 }
 
 bool RealXConnection::SetSelectionOwner(
-    XAtom atom, XWindow xid, Time timestamp) {
+    XAtom atom, XWindow xid, XTime timestamp) {
   xcb_set_selection_owner(xcb_conn_, xid, atom, timestamp);
   return true;
 }
@@ -844,8 +860,8 @@ void RealXConnection::DestroyDamage(XDamage damage) {
 }
 
 void RealXConnection::SubtractRegionFromDamage(XDamage damage,
-                                               XserverRegion repair,
-                                               XserverRegion parts) {
+                                               XServerRegion repair,
+                                               XServerRegion parts) {
   xcb_damage_subtract(xcb_conn_, damage, repair, parts);
 }
 
@@ -887,6 +903,45 @@ bool RealXConnection::QueryPointerPosition(int* x_root, int* y_root) {
   if (y_root)
     *y_root = reply->root_y;
   return true;
+}
+
+void RealXConnection::Free(void* item) {
+  XFree(item);
+}
+
+XVisualInfo* RealXConnection::GetVisualInfo(long mask,
+                                            XVisualInfo* visual_template,
+                                            int* item_count) {
+  return XGetVisualInfo(display_, mask, visual_template, item_count);
+}
+
+void RealXConnection::TrapErrors() {
+  CHECK(!old_error_handler) << "X errors are already being trapped";
+  old_error_handler = XSetErrorHandler(&HandleXError);
+  // Sync to process any errors in the queue from XCB requests.
+  XSync(display_, False);
+  last_trapped_error_code = 0;
+  last_trapped_request_code = 0;
+  last_trapped_minor_code = 0;
+}
+
+int RealXConnection::UntrapErrors() {
+  CHECK(old_error_handler) << "X errors aren't being trapped";
+  // Sync in case we sent a request that didn't require a reply.
+  XSync(display_, False);
+  XSetErrorHandler(old_error_handler);
+  old_error_handler = NULL;
+  return last_trapped_error_code;
+}
+
+int RealXConnection::GetLastErrorCode() {
+  return last_trapped_error_code;
+}
+
+string RealXConnection::GetErrorText(int error_code) {
+  char str[1024];
+  XGetErrorText(display_, error_code, str, sizeof(str));
+  return string(str);
 }
 
 bool RealXConnection::GrabServerImpl() {
@@ -982,35 +1037,6 @@ xcb_cursor_t RealXConnection::GetCursorInternal(uint32 shape) {
     cursors_[shape] = cursor;
   }
   return cursor;
-}
-
-void RealXConnection::TrapErrors() {
-  CHECK(!old_error_handler) << "X errors are already being trapped";
-  old_error_handler = XSetErrorHandler(&HandleXError);
-  // Sync to process any errors in the queue from XCB requests.
-  XSync(display_, False);
-  last_trapped_error_code = 0;
-  last_trapped_request_code = 0;
-  last_trapped_minor_code = 0;
-}
-
-int RealXConnection::UntrapErrors() {
-  CHECK(old_error_handler) << "X errors aren't being trapped";
-  // Sync in case we sent a request that didn't require a reply.
-  XSync(display_, False);
-  XSetErrorHandler(old_error_handler);
-  old_error_handler = NULL;
-  return last_trapped_error_code;
-}
-
-int RealXConnection::GetLastErrorCode() {
-  return last_trapped_error_code;
-}
-
-string RealXConnection::GetErrorText(int error_code) {
-  char str[1024];
-  XGetErrorText(display_, error_code, str, sizeof(str));
-  return string(str);
 }
 
 bool RealXConnection::CheckForXcbError(

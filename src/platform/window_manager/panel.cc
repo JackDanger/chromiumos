@@ -1,4 +1,4 @@
-// Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -183,7 +183,7 @@ void Panel::GetInputWindows(vector<XWindow>* windows_out) {
 }
 
 void Panel::HandleInputWindowButtonPress(
-    XWindow xid, int x, int y, int button, Time timestamp) {
+    XWindow xid, int x, int y, int button, XTime timestamp) {
   if (button != 1)
     return;
   DCHECK(drag_xid_ == None)
@@ -217,7 +217,7 @@ void Panel::HandleInputWindowButtonPress(
 }
 
 void Panel::HandleInputWindowButtonRelease(
-    XWindow xid, int x, int y, int button, Time timestamp) {
+    XWindow xid, int x, int y, int button, XTime timestamp) {
   if (button != 1)
     return;
   if (xid != drag_xid_) {

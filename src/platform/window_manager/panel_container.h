@@ -5,14 +5,10 @@
 #ifndef WINDOW_MANAGER_PANEL_CONTAINER_H_
 #define WINDOW_MANAGER_PANEL_CONTAINER_H_
 
-extern "C" {
-#include <X11/Xlib.h>
-}
 #include <vector>
 
 #include "base/basictypes.h"
-
-typedef ::Window XWindow;
+#include "window_manager/x_types.h"
 
 namespace window_manager {
 
@@ -67,27 +63,27 @@ class PanelContainer {
                                             int x, int y,
                                             int x_root, int y_root,
                                             int button,
-                                            Time timestamp) = 0;
+                                            XTime timestamp) = 0;
   virtual void HandleInputWindowButtonRelease(XWindow xid,
                                               int x, int y,
                                               int x_root, int y_root,
                                               int button,
-                                              Time timestamp) = 0;
+                                              XTime timestamp) = 0;
   virtual void HandleInputWindowPointerEnter(XWindow xid,
                                              int x, int y,
                                              int x_root, int y_root,
-                                             Time timestamp) = 0;
+                                             XTime timestamp) = 0;
   virtual void HandleInputWindowPointerLeave(XWindow xid,
                                              int x, int y,
                                              int x_root, int y_root,
-                                             Time timestamp) = 0;
+                                             XTime timestamp) = 0;
 
   // Handle a button press or pointer enter in a panel.
   virtual void HandlePanelButtonPress(Panel* panel,
                                       int button,
-                                      Time timestamp) = 0;
+                                      XTime timestamp) = 0;
   virtual void HandlePanelTitlebarPointerEnter(Panel* panel,
-                                               Time timestamp) = 0;
+                                               XTime timestamp) = 0;
 
   // Handle a panel gaining or losing the input focus.
   virtual void HandlePanelFocusChange(Panel* panel, bool focus_in) = 0;

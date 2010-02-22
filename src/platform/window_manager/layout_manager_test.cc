@@ -1,4 +1,4 @@
-// Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -172,6 +172,7 @@ TEST_F(LayoutManagerTest, Focus) {
       1,     // source indication: client app
       CurrentTime,
       xid2,  // currently-active window
+      None,
       None);
   wm_->HandleEvent(&event);
   EXPECT_EQ(xid, xconn_->focused_xid());
@@ -362,7 +363,7 @@ TEST_F(LayoutManagerTest, FocusTransient) {
   // Set the transient window as modal.
   MockXConnection::InitClientMessageEvent(
       &event, transient_xid, wm_->GetXAtom(ATOM_NET_WM_STATE),
-      1, wm_->GetXAtom(ATOM_NET_WM_STATE_MODAL), None, None);
+      1, wm_->GetXAtom(ATOM_NET_WM_STATE_MODAL), None, None, None);
   wm_->HandleEvent(&event);
 
   // Since it's modal, the transient window should still keep the focus
@@ -408,7 +409,7 @@ TEST_F(LayoutManagerTest, FocusTransient) {
   // Make the transient window non-modal.
   MockXConnection::InitClientMessageEvent(
       &event, transient_xid, wm_->GetXAtom(ATOM_NET_WM_STATE),
-      0, wm_->GetXAtom(ATOM_NET_WM_STATE_MODAL), None, None);
+      0, wm_->GetXAtom(ATOM_NET_WM_STATE_MODAL), None, None, None);
   wm_->HandleEvent(&event);
 
   // Now send a _NET_ACTIVE_WINDOW message asking to focus the transient.
@@ -416,7 +417,7 @@ TEST_F(LayoutManagerTest, FocusTransient) {
   // get the focus.
   MockXConnection::InitClientMessageEvent(
       &event, transient_xid, wm_->GetXAtom(ATOM_NET_ACTIVE_WINDOW),
-      1, 21321, 0, None);
+      1, 21321, 0, None, None);
   wm_->HandleEvent(&event);
   EXPECT_EQ(transient_xid, xconn_->focused_xid());
   MockXConnection::InitFocusOutEvent(

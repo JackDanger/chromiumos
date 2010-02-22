@@ -1,8 +1,10 @@
-// Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
 #include "window_manager/motion_event_coalescer.h"
+
+#include <glib.h>
 
 #include "chromeos/obsolete_logging.h"
 

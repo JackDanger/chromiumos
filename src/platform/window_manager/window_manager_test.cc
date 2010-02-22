@@ -1,4 +1,4 @@
-// Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -53,28 +53,30 @@ class TestEventConsumer : public EventConsumer {
                          int x, int y,
                          int x_root, int y_root,
                          int button,
-                         Time timestamp) {
+                         XTime timestamp) {
     num_button_presses_++;
   }
   void HandleButtonRelease(XWindow xid,
                            int x, int y,
                            int x_root, int y_root,
                            int button,
-                           Time timestamp) {}
+                           XTime timestamp) {}
   void HandlePointerEnter(XWindow xid,
                           int x, int y,
                           int x_root, int y_root,
-                          Time timestamp) {}
+                          XTime timestamp) {}
   void HandlePointerLeave(XWindow xid,
                           int x, int y,
                           int x_root, int y_root,
-                          Time timestamp) {}
+                          XTime timestamp) {}
   void HandlePointerMotion(XWindow xid,
                            int x, int y,
                            int x_root, int y_root,
-                           Time timestamp) {}
+                           XTime timestamp) {}
   void HandleChromeMessage(const WmIpc::Message& msg) {}
-  void HandleClientMessage(const XClientMessageEvent& e) {}
+  void HandleClientMessage(XWindow xid,
+                           XAtom message_type,
+                           const long data[5]) {}
   void HandleFocusChange(XWindow xid, bool focus_in) {}
   void HandleWindowPropertyChange(XWindow xid, XAtom xatom) {}
   // End overridden EventConsumer virtual methods.
@@ -717,9 +719,7 @@ TEST_F(WindowManagerTest, WmIpcVersion) {
   // Now send the WM a message telling it that Chrome is using version 3.
   WmIpc::Message msg(WmIpc::Message::WM_NOTIFY_IPC_VERSION);
   msg.set_param(0, 3);
-  XEvent event;
-  wm_->wm_ipc()->FillXEventFromMessage(&event, wm_->wm_xid(), msg);
-  wm_->HandleEvent(&event);
+  SendWmIpcMessage(msg);
   EXPECT_EQ(3, wm_->wm_ipc_version());
 }
 

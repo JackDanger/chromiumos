@@ -1,4 +1,4 @@
-// Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -112,9 +112,8 @@ ClutterInterface::Actor* StackingManager::GetActorForLayer(Layer layer) {
 }
 
 XWindow StackingManager::GetXidForLayer(Layer layer) {
-  XWindow xid = FindWithDefault(
-      layer_to_xid_, layer, static_cast<XWindow>(None));
-  CHECK(xid != None) << "Invalid layer " << layer;
+  XWindow xid = FindWithDefault(layer_to_xid_, layer, static_cast<XWindow>(0));
+  CHECK(xid) << "Invalid layer " << layer;
   return xid;
 }
 

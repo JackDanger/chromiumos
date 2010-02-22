@@ -1,4 +1,4 @@
-// Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -211,28 +211,7 @@ OpenGlDrawVisitor::OpenGlDrawVisitor(GLInterfaceBase* gl_interface,
       context_(0),
       num_frames_drawn_(0) {
   CHECK(gl_interface_);
-
-  XWindow root = x_conn_->GetRootWindow();
-  XConnection::WindowAttributes attributes;
-  x_conn_->GetWindowAttributes(root, &attributes);
-  XVisualInfo visual_info_template;
-  visual_info_template.visualid = attributes.visual_id;
-  int visual_info_count = 0;
-  XVisualInfo* visual_info_list =
-      x_conn_->GetVisualInfo(VisualIDMask,
-                             &visual_info_template,
-                             &visual_info_count);
-  CHECK(visual_info_list);
-  CHECK(visual_info_count > 0);
-  context_ = 0;
-  for (int i = 0; i < visual_info_count; ++i) {
-    context_ = gl_interface_->CreateGlxContext(visual_info_list + i);
-    if (context_) {
-      break;
-    }
-  }
-
-  x_conn_->Free(visual_info_list);
+  context_ = gl_interface_->CreateGlxContext();
   CHECK(context_) << "Unable to create a context from the available visuals.";
 
   gl_interface_->MakeGlxCurrent(stage->GetStageXWindow(), context_);

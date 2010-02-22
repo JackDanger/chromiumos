@@ -1,13 +1,9 @@
-// Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
 #ifndef WINDOW_MANAGER_PANEL_H_
 #define WINDOW_MANAGER_PANEL_H_
-
-extern "C" {
-#include <X11/Xlib.h>
-}
 
 #include <vector>
 
@@ -19,8 +15,7 @@ extern "C" {
 #include "window_manager/motion_event_coalescer.h"
 #include "window_manager/stacking_manager.h"
 #include "window_manager/window.h"  // for Window::Gravity
-
-typedef ::Window XWindow;
+#include "window_manager/x_types.h"
 
 namespace window_manager {
 
@@ -83,9 +78,9 @@ class Panel {
 
   // Handle events occurring in one of our input windows.
   void HandleInputWindowButtonPress(
-      XWindow xid, int x, int y, int button, Time timestamp);
+      XWindow xid, int x, int y, int button, XTime timestamp);
   void HandleInputWindowButtonRelease(
-      XWindow xid, int x, int y, int button, Time timestamp);
+      XWindow xid, int x, int y, int button, XTime timestamp);
   void HandleInputWindowPointerMotion(XWindow xid, int x, int y);
 
   // Handle a configure request for the titlebar or content window.

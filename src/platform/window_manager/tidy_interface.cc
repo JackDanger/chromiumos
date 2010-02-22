@@ -1,8 +1,12 @@
-// Copyright (c) 2009-2010 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
 #include "window_manager/tidy_interface.h"
+
+extern "C" {
+#include <X11/extensions/Xdamage.h>
+}
 
 #include <gdk/gdkx.h>
 #include <gflags/gflags.h>
@@ -13,6 +17,7 @@
 #include <string>
 
 #include "base/logging.h"
+#include "window_manager/gl_interface_base.h"
 #include "window_manager/image_container.h"
 #ifdef TIDY_OPENGL
 #include "window_manager/opengl_visitor.h"
@@ -20,6 +25,7 @@
 #include "window_manager/gles/opengles_visitor.h"
 #endif
 #include "window_manager/util.h"
+#include "window_manager/x_connection.h"
 
 using std::tr1::shared_ptr;
 
@@ -581,9 +587,7 @@ TidyInterface::TidyInterface(XConnection* xconn,
 }
 
 TidyInterface::~TidyInterface() {
-#ifdef USE_TIDY
   delete draw_visitor_;
-#endif
 }
 
 TidyInterface::ContainerActor* TidyInterface::CreateGroup() {
@@ -607,9 +611,7 @@ TidyInterface::Actor* TidyInterface::CreateImage(
       ImageContainer::CreateContainer(filename));
   if (container.get() &&
       container->LoadImage() == ImageContainer::IMAGE_LOAD_SUCCESS) {
-#ifdef USE_TIDY
     draw_visitor_->BindImage(container.get(), actor);
-#endif
     actor->SetSize(container->width(), container->height());
   } else {
     actor->SetColor(ClutterInterface::Color(1.f, 0.f, 1.f));
@@ -718,9 +720,7 @@ void TidyInterface::Draw() {
   actor_count_ = 0;
   default_stage_->Update(&actor_count_, now_);
   if (dirty_) {
-#ifdef USE_TIDY
     default_stage_->Accept(draw_visitor_);
-#endif
     dirty_ = false;
   }
 }

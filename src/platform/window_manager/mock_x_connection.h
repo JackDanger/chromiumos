@@ -5,6 +5,9 @@
 #ifndef WINDOW_MANAGER_MOCK_X_CONNECTION_H_
 #define WINDOW_MANAGER_MOCK_X_CONNECTION_H_
 
+extern "C" {
+#include <X11/Xlib.h>
+}
 #include <map>
 #include <set>
 #include <string>
@@ -23,10 +26,6 @@ class MockXConnection : public XConnection {
   MockXConnection();
   ~MockXConnection();
 
-  void Free(void* item) {}
-  XVisualInfo* GetVisualInfo(long mask,
-                             XVisualInfo* visual_template,
-                             int* item_count);
   bool GetWindowGeometry(XWindow xid, WindowGeometry* geom_out);
   bool MapWindow(XWindow xid);
   bool UnmapWindow(XWindow xid);
@@ -36,7 +35,7 @@ class MockXConnection : public XConnection {
     return (MoveWindow(xid, x, y) && ResizeWindow(xid, width, height));
   }
   bool RaiseWindow(XWindow xid);
-  bool FocusWindow(XWindow xid, Time event_time);
+  bool FocusWindow(XWindow xid, XTime event_time);
   bool StackWindow(XWindow xid, XWindow other, bool above);
   bool ReparentWindow(XWindow xid, XWindow parent, int x, int y) {
     return true;
@@ -47,8 +46,8 @@ class MockXConnection : public XConnection {
   bool AddButtonGrabOnWindow(
       XWindow xid, int button, int event_mask, bool synchronous);
   bool RemoveButtonGrabOnWindow(XWindow xid, int button);
-  bool AddPointerGrabForWindow(XWindow xid, int event_mask, Time timestamp);
-  bool RemovePointerGrab(bool replay_events, Time timestamp);
+  bool AddPointerGrabForWindow(XWindow xid, int event_mask, XTime timestamp);
+  bool RemovePointerGrab(bool replay_events, XTime timestamp);
   bool RemoveInputRegionFromWindow(XWindow xid) { return true; }
   bool GetSizeHintsForWindow(XWindow xid, SizeHints* hints_out);
   bool GetTransientHintForWindow(XWindow xid, XWindow* owner_out);
@@ -75,12 +74,15 @@ class MockXConnection : public XConnection {
   bool GetStringProperty(XWindow xid, XAtom xatom, std::string* out);
   bool SetStringProperty(XWindow xid, XAtom xatom, const std::string& value);
   bool DeletePropertyIfExists(XWindow xid, XAtom xatom);
-  bool SendEvent(XWindow xid, XEvent* event, int event_mask);
-  bool WaitForEvent(XWindow xid, int event_mask, XEvent* event_out) {
-    return true;
-  }
+  bool SendClientMessageEvent(XWindow dest_xid,
+                              XWindow xid,
+                              XAtom message_type,
+                              long data[5],
+                              int event_mask);
+  bool WaitForWindowToBeDestroyed(XWindow xid) { return true; }
+  bool WaitForPropertyChange(XWindow xid, XTime* timestamp_out) { return true; }
   XWindow GetSelectionOwner(XAtom atom);
-  bool SetSelectionOwner(XAtom atom, XWindow xid, Time timestamp);
+  bool SetSelectionOwner(XAtom atom, XWindow xid, XTime timestamp);
   bool SetWindowCursor(XWindow xid, uint32 shape);
   bool GetChildWindows(XWindow xid, std::vector<XWindow>* children_out);
   // Treat keycodes and keysyms as equivalent for key_bindings_test.
@@ -91,8 +93,9 @@ class MockXConnection : public XConnection {
   bool UngrabKey(KeyCode keycode, uint32 modifiers);
   XDamage CreateDamage(XDrawable drawable, int level) { return None; }
   void DestroyDamage(XDamage damage) {}
-  void SubtractRegionFromDamage(XDamage damage, XserverRegion repair,
-                                XserverRegion parts) {}
+  void SubtractRegionFromDamage(XDamage damage,
+                                XServerRegion repair,
+                                XServerRegion parts) {}
   bool SetDetectableKeyboardAutoRepeat(bool detectable) { return true; }
   bool QueryKeyboardState(std::vector<uint8_t>* keycodes_out) { return true; }
   bool QueryPointerPosition(int* x_root, int* y_root);
@@ -214,7 +217,7 @@ class MockXConnection : public XConnection {
   // This just creates a message with 32-bit values.
   static void InitClientMessageEvent(
       XEvent* event, XWindow xid, XAtom type,
-      long arg1, long arg2, long arg3, long arg4);
+      long arg1, long arg2, long arg3, long arg4, long arg5);
   static void InitConfigureNotifyEvent(XEvent* event, const WindowInfo& info);
   static void InitConfigureRequestEvent(
       XEvent* event, XWindow xid, int x, int y, int width, int height);

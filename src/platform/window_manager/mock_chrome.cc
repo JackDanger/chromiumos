@@ -86,6 +86,17 @@ Glib::RefPtr<Gdk::Pixbuf> ChromeWindow::image_tab_right_none_left_nohl_;
 int ChromeWindow::kTabHeight = 0;
 int ChromeWindow::kNavHeight = 0;
 
+// Copy a GdkEventClient struct into an XEvent.
+static bool GetWmIpcMessage(const GdkEventClient& event,
+                            WmIpc* wm_ipc,
+                            WmIpc::Message* msg_out) {
+  return wm_ipc->GetMessage(
+      gdk_x11_atom_to_xatom(event.message_type),
+      event.data_format,
+      event.data.l,
+      msg_out);
+}
+
 static void DrawImage(Glib::RefPtr<Gdk::Pixbuf>& image,
                       Gtk::Widget* widget,
                       int dest_x, int dest_y,
@@ -226,9 +237,8 @@ bool TabSummary::on_expose_event(GdkEventExpose* event) {
 
 bool TabSummary::on_client_event(GdkEventClient* event) {
   WmIpc::Message msg;
-  if (!parent_win_->chrome()->wm_ipc()->GetMessageGdk(*event, &msg)) {
+  if (!GetWmIpcMessage(*event, parent_win_->chrome()->wm_ipc(), &msg))
     return false;
-  }
 
   VLOG(2) << "Got message of type " << msg.type();
   switch (msg.type()) {
@@ -633,9 +643,8 @@ bool ChromeWindow::on_expose_event(GdkEventExpose* event) {
 
 bool ChromeWindow::on_client_event(GdkEventClient* event) {
   WmIpc::Message msg;
-  if (!chrome_->wm_ipc()->GetMessageGdk(*event, &msg)) {
+  if (!GetWmIpcMessage(*event, chrome_->wm_ipc(), &msg))
     return false;
-  }
 
   VLOG(2) << "Got message of type " << msg.type();
   switch (msg.type()) {
@@ -859,9 +868,8 @@ bool Panel::on_key_press_event(GdkEventKey* event) {
 
 bool Panel::on_client_event(GdkEventClient* event) {
   WmIpc::Message msg;
-  if (!chrome_->wm_ipc()->GetMessageGdk(*event, &msg)) {
+  if (!GetWmIpcMessage(*event, chrome_->wm_ipc(), &msg))
     return false;
-  }
 
   VLOG(2) << "Got message of type " << msg.type();
   switch (msg.type()) {

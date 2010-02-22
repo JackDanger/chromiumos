@@ -1,4 +1,4 @@
-// Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,15 +7,10 @@
 
 #include <gtest/gtest.h>
 
-extern "C" {
-#include <X11/Xlib.h>
-}
-
 #include "base/scoped_ptr.h"
 #include "base/logging.h"
-
-typedef ::Atom XAtom;
-typedef ::Window XWindow;
+#include "window_manager/wm_ipc.h"
+#include "window_manager/x_types.h"
 
 namespace window_manager {
 
@@ -79,6 +74,15 @@ class BasicWindowManagerTest : public ::testing::Test {
   // focus was passed from 'out_xid' to 'in_xid'.  Events are only sent for
   // windows that are neither None nor the root window.
   void SendFocusEvents(XWindow out_xid, XWindow in_xid);
+
+  // Send a WmIpc message.
+  void SendWmIpcMessage(const WmIpc::Message& msg);
+
+  // Send a WM_NOTIFY_IPC_VERSION message.
+  void SendNotifyIpcVersionMessage(int version);
+
+  // Send a WM_SET_PANEL_STATE message.
+  void SendSetPanelStateMessage(Panel* panel, bool expanded);
 
   // Send a WM_NOTIFY_PANEL_DRAGGED message.
   void SendPanelDraggedMessage(Panel* panel, int x, int y);

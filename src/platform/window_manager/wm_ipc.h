@@ -1,28 +1,21 @@
-// Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
 #ifndef WINDOW_MANAGER_WM_IPC_H_
 #define WINDOW_MANAGER_WM_IPC_H_
 
-#include <gdk/gdk.h>  // for GdkEventClient
-extern "C" {
-#include <X11/Xlib.h>
-}
-
 #include <vector>
 
 #include "base/basictypes.h"
 #include "base/logging.h"
 #include "chromeos/obsolete_logging.h"
-
-typedef ::Atom XAtom;
-typedef ::Window XWindow;
+#include "window_manager/x_types.h"
 
 namespace window_manager {
 
-class AtomCache;    // from atom_cache.h
-class XConnection;  // from x_connection.h
+class AtomCache;
+class XConnection;
 
 // This class simplifies window-manager-to-client-app communication.  It
 // consists primarily of utility methods to set and read properties on
@@ -90,6 +83,11 @@ class WmIpc {
   // and l[0] set to a value from the MessageType enum.  The remaining four
   // values in the 'l' array contain data specific to the type of message
   // being sent.
+  // TODO: It'll require a protocol change, but it'd be good to change the
+  // implementation so that messages that need to pass a window ID (that
+  // is, most of them) do so in the 'window' field of the ClientMessage
+  // event.  This will free up another data field for the payload and is
+  // more consistent with many ICCCM and EWMH messages.
   struct Message {
    public:
     // NOTE: Don't remove values from this enum; it is shared between
@@ -244,21 +242,14 @@ class WmIpc {
     long params_[4];
   };
 
-  // Check whether an event received from the X server contains a
-  // ClientMessageEvent for us.  If it does, the message is copied to 'msg'
-  // and true is returned; otherwise, false is returned and the caller
-  // should continue processing the event.
-  bool GetMessage(const XClientMessageEvent& e, Message* msg);
-
-  // Convenience method that copies a GdkEventClient into an XEvent and
-  // passes it to GetMessage().  Call GetMessage() directly instead if
-  // possible.
-  bool GetMessageGdk(const GdkEventClient& e, Message* msg);
-
-  // Fill the passed-in Xlib event with the passed-in message.
-  void FillXEventFromMessage(XEvent* event,
-                             XWindow xid,
-                             const Message& msg);
+  // Check whether the contents of a ClientMessage event from the X server
+  // belong to us.  If they do, the message is copied to 'msg' and true is
+  // returned; otherwise, false is returned and the caller should continue
+  // processing the event.
+  bool GetMessage(XAtom message_type,
+                  int format,
+                  const long data[5],
+                  Message* msg_out);
 
   // Send a message to a window.  false is returned if an error occurs.
   bool SendMessage(XWindow xid, const Message& msg);

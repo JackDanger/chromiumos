@@ -1,4 +1,4 @@
-// Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -23,7 +23,7 @@ class RealGLInterface : public GLInterface {
                           XPixmap pixmap,
                           const int* attrib_list);
   void DestroyGlxPixmap(GLXPixmap pixmap);
-  GLXContext CreateGlxContext(XVisualInfo* vis);
+  GLXContext CreateGlxContext();
   void DestroyGlxContext(GLXContext context);
   void SwapGlxBuffers(GLXDrawable drawable);
   Bool MakeGlxCurrent(GLXDrawable drawable,

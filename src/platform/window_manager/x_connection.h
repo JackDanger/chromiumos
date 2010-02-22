@@ -1,4 +1,4 @@
-// Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -9,26 +9,12 @@
 #include <string>
 #include <vector>
 
-extern "C" {
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
-#include <X11/extensions/Xdamage.h>
-}
-
 #include "base/basictypes.h"
 #include "base/logging.h"
 #include "base/scoped_ptr.h"
+#include "window_manager/x_types.h"
 
 namespace window_manager {
-
-typedef ::Atom XAtom;
-typedef ::Damage XDamage;
-typedef ::Display XDisplay;
-typedef ::Drawable XDrawable;
-typedef ::Pixmap XPixmap;
-typedef ::Visual XVisual;
-typedef ::VisualID XVisualID;
-typedef ::Window XWindow;
 
 class ByteMap;  // from util.h
 template<class T> class Stacker;  // from util.h
@@ -43,14 +29,6 @@ class XConnection {
         server_grabbed_(false) {
   }
   virtual ~XConnection() {}
-
-  virtual void Free(void* item) = 0;
-
-  // Caller assumes ownership of the memory returned from this
-  // function which must be freed by calling Free(), above.
-  virtual XVisualInfo* GetVisualInfo(long mask,
-                                     XVisualInfo* visual_template,
-                                     int* item_count) = 0;
 
   // Get the base event ID for extension events.
   int damage_event_base() const { return damage_event_base_; }
@@ -103,7 +81,7 @@ class XConnection {
   // Give keyboard focus to a window.  'event_time' should be the
   // server-supplied time of the event that caused the window to be
   // focused.
-  virtual bool FocusWindow(XWindow xid, Time event_time) = 0;
+  virtual bool FocusWindow(XWindow xid, XTime event_time) = 0;
 
   // Reparent a window in another window.
   virtual bool ReparentWindow(XWindow xid, XWindow parent, int x, int y) = 0;
@@ -145,13 +123,13 @@ class XConnection {
   // false if an error occurs or if the grab fails (e.g. because it's
   // already grabbed by another client).
   virtual bool AddPointerGrabForWindow(
-      XWindow xid, int event_mask, Time timestamp) = 0;
+      XWindow xid, int event_mask, XTime timestamp) = 0;
 
   // Remove a pointer grab, possibly also replaying the pointer events that
   // occurred during it if it was synchronous and 'replay_events' is true
   // (sending them to the original window instead of just to the grabbing
   // client).
-  virtual bool RemovePointerGrab(bool replay_events, Time timestamp) = 0;
+  virtual bool RemovePointerGrab(bool replay_events, XTime timestamp) = 0;
 
   // Remove the input region from a window, so that events fall through it.
   virtual bool RemoveInputRegionFromWindow(XWindow xid) = 0;
@@ -322,20 +300,29 @@ class XConnection {
   // Delete a property on a window if it exists.
   virtual bool DeletePropertyIfExists(XWindow xid, XAtom xatom) = 0;
 
-  // Send an event to a window.  If 'event_mask' is 0, the event is sent to
-  // the client that created the window; otherwise the event is sent to all
-  // clients selecting any of the event types included in the mask.
-  virtual bool SendEvent(XWindow xid, XEvent* event, int event_mask) = 0;
+  // Send a ClientMessage event with 32-bit data to a window.  If
+  // 'event_mask' is 0, the event is sent to the client that created
+  // 'dest_xid'; otherwise the event is sent to all clients selecting any
+  // of the event types included in the mask.
+  virtual bool SendClientMessageEvent(XWindow dest_xid,
+                                      XWindow xid,
+                                      XAtom message_type,
+                                      long data[5],
+                                      int event_mask) = 0;
 
-  // Search the event queue for a particular type of event for the
-  // passed-in window, and then remove and return the event.  Blocks if a
-  // matching event hasn't yet been received.
-  virtual bool WaitForEvent(XWindow xid, int event_mask, XEvent* event_out) = 0;
+  // Block until 'xid' is gone.  (You must select StructureNotify on the
+  // window first.)
+  virtual bool WaitForWindowToBeDestroyed(XWindow xid) = 0;
+
+  // Wait for the next PropertyNotify event on the passed-in window.  If
+  // 'timestamp_out' is non-NULL, the timestamp from the event is copied
+  // there.
+  virtual bool WaitForPropertyChange(XWindow xid, XTime* timestamp_out) = 0;
 
   // Get the window owning the passed-in selection, or set the owner for a
   // selection.
   virtual XWindow GetSelectionOwner(XAtom atom) = 0;
-  virtual bool SetSelectionOwner(XAtom atom, XWindow xid, Time timestamp) = 0;
+  virtual bool SetSelectionOwner(XAtom atom, XWindow xid, XTime timestamp) = 0;
 
   // Change the cursor for a window.  'shape' is a definition from
   // Xlib's cursorfont.h header.
@@ -363,8 +350,9 @@ class XConnection {
   // Manage damage regions.
   virtual XDamage CreateDamage(XDrawable drawable, int level) = 0;
   virtual void DestroyDamage(XDamage damage) = 0;
-  virtual void SubtractRegionFromDamage(XDamage damage, XserverRegion repair,
-                                        XserverRegion parts) = 0;
+  virtual void SubtractRegionFromDamage(XDamage damage,
+                                        XServerRegion repair,
+                                        XServerRegion parts) = 0;
 
   // When auto-repeating a key combo, the X Server may send:
   //   KeyPress   @ time_0    <-- Key pressed down

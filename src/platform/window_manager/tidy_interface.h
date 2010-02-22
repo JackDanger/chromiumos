@@ -1,25 +1,27 @@
-// Copyright (c) 2009-2010 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
 #ifndef WINDOW_MANAGER_TIDY_INTERFACE_H_
 #define WINDOW_MANAGER_TIDY_INTERFACE_H_
 
-#include <math.h>
-
+#include <cmath>
 #include <list>
 #include <string>
 #include <tr1/memory>
 #include <vector>
 
+extern "C" {
+// TODO: Remove this after making the class not take raw X events.
+#include <X11/Xlib.h>
+}
 #include <gtest/gtest_prod.h>  // for FRIEND_TEST() macro
 
 #include "base/hash_tables.h"
 #include "base/logging.h"
 #include "base/scoped_ptr.h"
 #include "window_manager/clutter_interface.h"
-#include "window_manager/x_connection.h"
-#include "window_manager/gl_interface_base.h"
+#include "window_manager/x_types.h"
 
 #if !(defined(TIDY_OPENGL) || defined(TIDY_OPENGLES))
 #error TIDY_OPENGL or TIDY_OPENGLES must be defined
@@ -27,8 +29,10 @@
 
 namespace window_manager {
 
+class GLInterfaceBase;
 class OpenGlDrawVisitor;
 class OpenGlesDrawVisitor;
+class XConnection;
 
 class TidyInterface : public ClutterInterface {
  public:

@@ -4,9 +4,6 @@
 
 #include "window_manager/window.h"
 
-extern "C" {
-#include <X11/Xutil.h>  // for XUrgencyHint #define
-}
 #include <algorithm>
 
 #include <gflags/gflags.h>
@@ -205,7 +202,7 @@ void Window::FetchAndApplyWmHints() {
   }
 
   const uint32_t flags = wm_hints[0];
-  wm_hint_urgent_ = flags & XUrgencyHint;
+  wm_hint_urgent_ = flags & (1L << 8);  // XUrgencyHint from Xutil.h
 }
 
 void Window::FetchAndApplyWmProtocols() {
@@ -318,23 +315,17 @@ bool Window::FetchMapState() {
   return (attr.map_state != XConnection::WindowAttributes::MAP_STATE_UNMAPPED);
 }
 
-bool Window::HandleWmStateMessage(const XClientMessageEvent& event) {
-  XAtom wm_state_atom = wm_->GetXAtom(ATOM_NET_WM_STATE);
-  if (event.message_type != wm_state_atom ||
-      event.format != XConnection::kLongFormat) {
-    return false;
-  }
-
+bool Window::HandleWmStateMessage(const long data[5]) {
   XAtom fullscreen_atom = wm_->GetXAtom(ATOM_NET_WM_STATE_FULLSCREEN);
-  if (static_cast<XAtom>(event.data.l[1]) == fullscreen_atom ||
-      static_cast<XAtom>(event.data.l[2]) == fullscreen_atom) {
-    SetWmStateInternal(event.data.l[0], &wm_state_fullscreen_);
+  if (static_cast<XAtom>(data[1]) == fullscreen_atom ||
+      static_cast<XAtom>(data[2]) == fullscreen_atom) {
+    SetWmStateInternal(data[0], &wm_state_fullscreen_);
   }
 
   XAtom modal_atom = wm_->GetXAtom(ATOM_NET_WM_STATE_MODAL);
-  if (static_cast<XAtom>(event.data.l[1]) == modal_atom ||
-      static_cast<XAtom>(event.data.l[2]) == modal_atom) {
-    SetWmStateInternal(event.data.l[0], &wm_state_modal_);
+  if (static_cast<XAtom>(data[1]) == modal_atom ||
+      static_cast<XAtom>(data[2]) == modal_atom) {
+    SetWmStateInternal(data[0], &wm_state_modal_);
   }
 
   // We don't let clients toggle their maximized state currently.
@@ -376,19 +367,17 @@ bool Window::ChangeChromeState(
 }
 
 
-bool Window::TakeFocus(Time timestamp) {
+bool Window::TakeFocus(XTime timestamp) {
   VLOG(2) << "Focusing " << xid_str() << " using time " << timestamp;
   if (supports_wm_take_focus_) {
-    XEvent event;
-    XClientMessageEvent* client_event = &(event.xclient);
-    client_event->type = ClientMessage;
-    client_event->window = xid_;
-    client_event->message_type = wm_->GetXAtom(ATOM_WM_PROTOCOLS);
-    client_event->format = XConnection::kLongFormat;
-    client_event->data.l[0] = wm_->GetXAtom(ATOM_WM_TAKE_FOCUS);
-    client_event->data.l[1] = timestamp;
-    if (!wm_->xconn()->SendEvent(xid_, &event, 0))
+    long data[5];
+    memset(data, 0, sizeof(data));
+    data[0] = wm_->GetXAtom(ATOM_WM_TAKE_FOCUS);
+    data[1] = timestamp;
+    if (!wm_->xconn()->SendClientMessageEvent(
+             xid_, xid_, wm_->GetXAtom(ATOM_WM_PROTOCOLS), data, 0)) {
       return false;
+    }
   } else {
     if (!wm_->xconn()->FocusWindow(xid_, timestamp))
       return false;
@@ -397,21 +386,18 @@ bool Window::TakeFocus(Time timestamp) {
   return true;
 }
 
-bool Window::SendDeleteRequest(Time timestamp) {
+bool Window::SendDeleteRequest(XTime timestamp) {
   VLOG(2) << "Maybe asking " << xid_str() << " to delete itself with time "
           << timestamp;
   if (!supports_wm_delete_window_)
     return false;
 
-  XEvent event;
-  XClientMessageEvent* client_event = &(event.xclient);
-  client_event->type = ClientMessage;
-  client_event->window = xid_;
-  client_event->message_type = wm_->GetXAtom(ATOM_WM_PROTOCOLS);
-  client_event->format = XConnection::kLongFormat;
-  client_event->data.l[0] = wm_->GetXAtom(ATOM_WM_DELETE_WINDOW);
-  client_event->data.l[1] = timestamp;
-  return wm_->xconn()->SendEvent(xid_, &event, 0);
+  long data[5];
+  memset(data, 0, sizeof(data));
+  data[0] = wm_->GetXAtom(ATOM_WM_DELETE_WINDOW);
+  data[1] = timestamp;
+  return wm_->xconn()->SendClientMessageEvent(
+            xid_, xid_, wm_->GetXAtom(ATOM_WM_PROTOCOLS), data, 0);
 }
 
 bool Window::AddButtonGrab() {
@@ -738,7 +724,7 @@ bool Window::UpdateWmStateProperty() {
   XAtom wm_state_atom = wm_->GetXAtom(ATOM_NET_WM_STATE);
   if (!values.empty()) {
     return wm_->xconn()->SetIntArrayProperty(
-        xid_, wm_state_atom, XA_ATOM, values);
+        xid_, wm_state_atom, wm_->GetXAtom(ATOM_ATOM), values);
   } else {
     return wm_->xconn()->DeletePropertyIfExists(xid_, wm_state_atom);
   }
@@ -754,7 +740,7 @@ bool Window::UpdateChromeStateProperty() {
   XAtom state_xatom = wm_->GetXAtom(ATOM_CHROME_STATE);
   if (!values.empty()) {
     return wm_->xconn()->SetIntArrayProperty(
-        xid_, state_xatom, XA_ATOM, values);
+        xid_, state_xatom, wm_->GetXAtom(ATOM_ATOM), values);
   } else {
     return wm_->xconn()->DeletePropertyIfExists(xid_, state_xatom);
   }

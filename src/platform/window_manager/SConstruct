@@ -1,4 +1,4 @@
-# Copyright (c) 2009-2010 The Chromium OS Authors. All rights reserved.
+# Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -100,19 +100,11 @@ wm_env.ParseConfig('pkg-config --cflags --libs gdk-2.0 libpcrecpp ' +
 if backend == 'opengles':
   make_shaders.AddBuildRules(wm_env)
 
-if os.system('pkg-config clutter-1.0') == 0:
-  wm_env.ParseConfig('pkg-config --cflags --libs clutter-1.0')
-else:
-  wm_env.ParseConfig('pkg-config --cflags --libs clutter-0.9')
-# Make us still produce a usable binary (for now, at least) on Jaunty
-# systems that are stuck at Clutter 0.9.2.
-if os.system('pkg-config --exact-version=0.9.2 clutter-0.9') == 0:
-  wm_env.Append(CPPDEFINES=['CLUTTER_0_9_2'])
-
 # This is needed so that glext headers include glBindBuffer and
 # related APIs.
 if backend == 'opengl':
   wm_env.Append(CPPDEFINES=['GL_GLEXT_PROTOTYPES'])
+  wm_env.ParseConfig('pkg-config --cflags --libs gl')
 
 wm_env.ProtocolBuffer('system_metrics.pb.cc', 'system_metrics.proto');
 
@@ -154,11 +146,7 @@ srcs = Split('''\
   window.cc
   window_manager.cc
 ''')
-if backend == 'clutter':
-  srcs.append(Split('''\
-    clutter_interface.cc
-  '''))
-elif backend == 'opengl':
+if backend == 'opengl':
   srcs.append(Split('''\
     gl_interface_base.cc
     opengl_visitor.cc
@@ -187,9 +175,8 @@ wm_env.Append(LIBS=[libwm_core, libwm_ipc])
 if 'USE_BREAKPAD' in ARGUMENTS:
   wm_env.Append(CPPDEFINES=['USE_BREAKPAD'], LIBS=['libbreakpad'])
 
-backend_defines = {'clutter': ['USE_CLUTTER'],
-                   'opengl': ['TIDY_OPENGL', 'USE_TIDY'],
-                   'opengles': ['TIDY_OPENGLES', 'USE_TIDY']}
+backend_defines = {'opengl': ['TIDY_OPENGL'],
+                   'opengles': ['TIDY_OPENGLES']}
 wm_env.Append(CPPDEFINES=backend_defines[backend])
 
 wm_env.Program('wm', 'main.cc')
@@ -201,8 +188,7 @@ test_env.Prepend(LIBS=[libtest])
 tests = []
 
 # These are tests that only get built when we use particular backends
-backend_tests = {'clutter': [],
-                 'opengl': ['tidy_interface_test.cc',
+backend_tests = {'opengl': ['tidy_interface_test.cc',
                             'opengl_visitor_test.cc'],
                  'opengles': []}
 all_backend_tests = set(itertools.chain(*backend_tests.values()))

@@ -199,14 +199,14 @@ TEST_F(WindowTest, WmProtocols) {
   values.push_back(static_cast<int>(wm_->GetXAtom(ATOM_WM_TAKE_FOCUS)));
   xconn_->SetIntArrayProperty(xid,
                               wm_->GetXAtom(ATOM_WM_PROTOCOLS),  // atom
-                              XA_ATOM,                           // type
+                              wm_->GetXAtom(ATOM_ATOM),          // type
                               values);
 
   Window win(wm_.get(), xid, false);
 
   // Send a WM_DELETE_WINDOW message to the window and check that its
   // contents are correct.
-  Time timestamp = 43;  // arbitrary
+  XTime timestamp = 43;  // arbitrary
   EXPECT_TRUE(win.SendDeleteRequest(timestamp));
   ASSERT_EQ(1, info->client_messages.size());
   const XClientMessageEvent& delete_msg = info->client_messages[0];
@@ -282,8 +282,8 @@ TEST_F(WindowTest, WmState) {
   // constructor.
   XWindow xid = CreateSimpleWindow();
   xconn_->SetIntProperty(xid,
-                         wm_state_atom,  // atom
-                         XA_ATOM,        // type
+                         wm_state_atom,             // atom
+                         wm_->GetXAtom(ATOM_ATOM),  // type
                          modal_atom);
   Window win(wm_.get(), xid, false);
   EXPECT_FALSE(win.wm_state_fullscreen());
@@ -291,29 +291,18 @@ TEST_F(WindowTest, WmState) {
 
   // Now make the Window object handle a message removing the modal
   // state...
-  XEvent event;
-  MockXConnection::InitClientMessageEvent(
-      &event,
-      xid,            // window
-      wm_state_atom,  // type
-      0,              // arg1: remove
-      modal_atom,     // arg2
-      None,           // arg3
-      None);          // arg4
-  EXPECT_TRUE(win.HandleWmStateMessage(event.xclient));
+  long data[5];
+  memset(data, 0, sizeof(data));
+  data[0] = 0;  // remove
+  data[1] = modal_atom;
+  EXPECT_TRUE(win.HandleWmStateMessage(data));
   EXPECT_FALSE(win.wm_state_fullscreen());
   EXPECT_FALSE(win.wm_state_modal());
 
   // ... and one adding the fullscreen state.
-  MockXConnection::InitClientMessageEvent(
-      &event,
-      xid,              // window
-      wm_state_atom,    // type
-      1,                // arg1: add
-      fullscreen_atom,  // arg2
-      None,             // arg3
-      None);            // arg4
-  EXPECT_TRUE(win.HandleWmStateMessage(event.xclient));
+  data[0] = 1;  // add
+  data[1] = fullscreen_atom;
+  EXPECT_TRUE(win.HandleWmStateMessage(data));
   EXPECT_TRUE(win.wm_state_fullscreen());
   EXPECT_FALSE(win.wm_state_modal());
 
@@ -326,15 +315,10 @@ TEST_F(WindowTest, WmState) {
 
   // Test that we can toggle states (and that we process messages listing
   // multiple states correctly).
-  MockXConnection::InitClientMessageEvent(
-      &event,
-      xid,              // window
-      wm_state_atom,    // type
-      2,                // arg1: toggle
-      fullscreen_atom,  // arg2
-      modal_atom,       // arg2
-      None);            // arg4
-  EXPECT_TRUE(win.HandleWmStateMessage(event.xclient));
+  data[0] = 2;  // toggle
+  data[1] = fullscreen_atom;
+  data[2] = modal_atom;
+  EXPECT_TRUE(win.HandleWmStateMessage(data));
   EXPECT_FALSE(win.wm_state_fullscreen());
   EXPECT_TRUE(win.wm_state_modal());
 
@@ -369,8 +353,8 @@ TEST_F(WindowTest, ChromeState) {
   // the initial property in its constructor.
   XWindow xid = CreateSimpleWindow();
   xconn_->SetIntProperty(xid,
-                         state_atom,  // atom
-                         XA_ATOM,     // type
+                         state_atom,                // atom
+                         wm_->GetXAtom(ATOM_ATOM),  // type
                          collapsed_atom);
   Window win(wm_.get(), xid, false);
 

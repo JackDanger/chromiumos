@@ -1,4 +1,4 @@
-// Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,6 +7,7 @@
 #include <set>
 
 extern "C" {
+#include <X11/X.h>
 #include <X11/Xutil.h>
 }
 #include <gflags/gflags.h>
@@ -21,6 +22,14 @@ namespace window_manager {
 using chromeos::Closure;
 using std::set;
 using std::string;
+
+const uint32 KeyBindings::kShiftMask   = ShiftMask;
+const uint32 KeyBindings::kControlMask = ControlMask;
+const uint32 KeyBindings::kAltMask     = Mod1Mask;
+const uint32 KeyBindings::kMetaMask    = Mod2Mask;  // TODO: Verify
+const uint32 KeyBindings::kNumLockMask = Mod3Mask;  // TODO: Verify
+const uint32 KeyBindings::kSuperMask   = Mod4Mask;
+const uint32 KeyBindings::kHyperMask   = Mod5Mask;  // TODO: Verify
 
 KeyBindings::KeyCombo::KeyCombo(KeySym key_param, uint32 modifiers_param) {
   KeySym upper_keysym = None, lower_keysym = None;

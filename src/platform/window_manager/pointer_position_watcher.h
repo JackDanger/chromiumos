@@ -5,8 +5,6 @@
 #ifndef WINDOW_MANAGER_POINTER_POSITION_WATCHER_H_
 #define WINDOW_MANAGER_POINTER_POSITION_WATCHER_H_
 
-#include <glib.h>  // for gboolean and gint
-
 #include "base/scoped_ptr.h"
 #include "chromeos/callback.h"
 
@@ -46,10 +44,10 @@ class PointerPositionWatcher {
   void TriggerTimeout();
 
  private:
-  static gboolean HandleTimerThunk(gpointer self) {
+  static int HandleTimerThunk(void* self) {
     return reinterpret_cast<PointerPositionWatcher*>(self)->HandleTimer();
   }
-  gboolean HandleTimer();
+  int HandleTimer();
 
   XConnection* xconn_;  // not owned
 
@@ -68,7 +66,7 @@ class PointerPositionWatcher {
   int target_height_;
 
   // ID of the timer's GLib event source, or 0 if the timer isn't active.
-  guint timer_id_;
+  unsigned int timer_id_;
 };
 
 }  // namespace window_manager

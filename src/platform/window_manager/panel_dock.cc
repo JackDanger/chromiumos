@@ -164,7 +164,7 @@ bool PanelDock::ShouldAddDraggedPanel(const Panel* panel,
 
 void PanelDock::HandlePanelButtonPress(Panel* panel,
                                        int button,
-                                       Time timestamp) {
+                                       XTime timestamp) {
   FocusPanel(panel, true, timestamp);
 }
 
@@ -326,7 +326,7 @@ void PanelDock::PackPanels(Panel* starting_panel) {
 
 void PanelDock::FocusPanel(Panel* panel,
                            bool remove_pointer_grab,
-                           Time timestamp) {
+                           XTime timestamp) {
   DCHECK(panel);
   panel->RemoveButtonGrab(remove_pointer_grab);
   wm()->SetActiveWindowProperty(panel->content_win()->xid());

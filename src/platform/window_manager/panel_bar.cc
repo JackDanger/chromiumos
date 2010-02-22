@@ -7,6 +7,7 @@
 #include <algorithm>
 
 #include <gflags/gflags.h>
+#include <glib.h>
 
 #include "base/logging.h"
 #include "window_manager/clutter_interface.h"
@@ -224,7 +225,7 @@ void PanelBar::HandleInputWindowButtonPress(XWindow xid,
                                             int x, int y,
                                             int x_root, int y_root,
                                             int button,
-                                            Time timestamp) {
+                                            XTime timestamp) {
   CHECK_EQ(xid, anchor_input_xid_);
   if (button != 1)
     return;
@@ -242,7 +243,7 @@ void PanelBar::HandleInputWindowButtonPress(XWindow xid,
 void PanelBar::HandleInputWindowPointerEnter(XWindow xid,
                                              int x, int y,
                                              int x_root, int y_root,
-                                             Time timestamp) {
+                                             XTime timestamp) {
   if (xid == show_collapsed_panels_input_xid_) {
     VLOG(1) << "Got mouse enter in show-collapsed-panels window";
     if (x_root >= wm()->width() - total_panel_width_) {
@@ -270,7 +271,7 @@ void PanelBar::HandleInputWindowPointerEnter(XWindow xid,
 void PanelBar::HandleInputWindowPointerLeave(XWindow xid,
                                              int x, int y,
                                              int x_root, int y_root,
-                                             Time timestamp) {
+                                             XTime timestamp) {
   if (xid == show_collapsed_panels_input_xid_) {
     VLOG(1) << "Got mouse leave in show-collapsed-panels window";
     if (collapsed_panel_state_ == COLLAPSED_PANEL_STATE_WAITING_TO_SHOW) {
@@ -281,7 +282,7 @@ void PanelBar::HandleInputWindowPointerLeave(XWindow xid,
 }
 
 void PanelBar::HandlePanelButtonPress(
-    Panel* panel, int button, Time timestamp) {
+    Panel* panel, int button, XTime timestamp) {
   DCHECK(panel);
   VLOG(1) << "Got button press in panel " << panel->xid_str()
           << "; giving it the focus";
@@ -290,7 +291,7 @@ void PanelBar::HandlePanelButtonPress(
   FocusPanel(panel, true, timestamp);  // remove_pointer_grab=true
 }
 
-void PanelBar::HandlePanelTitlebarPointerEnter(Panel* panel, Time timestamp) {
+void PanelBar::HandlePanelTitlebarPointerEnter(Panel* panel, XTime timestamp) {
   DCHECK(panel);
   VLOG(1) << "Got pointer enter in panel " << panel->xid_str() << "'s titlebar";
   if (collapsed_panel_state_ != COLLAPSED_PANEL_STATE_SHOWN &&
@@ -395,7 +396,7 @@ void PanelBar::HandlePanelUrgencyChange(Panel* panel) {
 }
 
 bool PanelBar::TakeFocus() {
-  Time timestamp = wm()->GetCurrentTimeFromServer();
+  XTime timestamp = wm()->GetCurrentTimeFromServer();
 
   // If we already decided on a panel to focus, use it.
   if (desired_panel_to_focus_) {
@@ -494,7 +495,7 @@ void PanelBar::CollapsePanel(Panel* panel) {
 
 void PanelBar::FocusPanel(Panel* panel,
                           bool remove_pointer_grab,
-                          Time timestamp) {
+                          XTime timestamp) {
   CHECK(panel);
   panel->RemoveButtonGrab(true);  // remove_pointer_grab
   wm()->SetActiveWindowProperty(panel->content_win()->xid());

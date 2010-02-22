@@ -1,4 +1,4 @@
-// Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -10,13 +10,10 @@
 #include <tr1/memory>
 #include <vector>
 
-extern "C" {
-#include <X11/Xlib.h>
-}
-
 #include "base/basictypes.h"
 #include "base/scoped_ptr.h"
 #include "window_manager/clutter_interface.h"
+#include "window_manager/x_types.h"
 
 namespace window_manager {
 

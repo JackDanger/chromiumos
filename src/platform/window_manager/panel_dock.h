@@ -7,16 +7,11 @@
 
 #include <vector>
 
-extern "C" {
-#include <X11/Xlib.h>
-}
-
 #include "base/basictypes.h"
 #include "base/scoped_ptr.h"
 #include "window_manager/clutter_interface.h"
 #include "window_manager/panel_container.h"
-
-typedef ::Window XWindow;
+#include "window_manager/x_types.h"
 
 namespace window_manager {
 
@@ -52,22 +47,22 @@ class PanelDock : public PanelContainer {
                                     int x, int y,
                                     int x_root, int y_root,
                                     int button,
-                                    Time timestamp) {}
+                                    XTime timestamp) {}
   void HandleInputWindowButtonRelease(XWindow xid,
                                       int x, int y,
                                       int x_root, int y_root,
                                       int button,
-                                      Time timestamp) {}
+                                      XTime timestamp) {}
   void HandleInputWindowPointerEnter(XWindow xid,
                                      int x, int y,
                                      int x_root, int y_root,
-                                     Time timestamp) {}
+                                     XTime timestamp) {}
   void HandleInputWindowPointerLeave(XWindow xid,
                                      int x, int y,
                                      int x_root, int y_root,
-                                     Time timestamp) {}
-  void HandlePanelButtonPress(Panel* panel, int button, Time timestamp);
-  void HandlePanelTitlebarPointerEnter(Panel* panel, Time timestamp) {}
+                                     XTime timestamp) {}
+  void HandlePanelButtonPress(Panel* panel, int button, XTime timestamp);
+  void HandlePanelTitlebarPointerEnter(Panel* panel, XTime timestamp) {}
   void HandlePanelFocusChange(Panel* panel, bool focus_in);
   void HandleSetPanelStateMessage(Panel* panel, bool expand);
   bool HandleNotifyPanelDraggedMessage(Panel* panel, int drag_x, int drag_y);
@@ -91,7 +86,7 @@ class PanelDock : public PanelContainer {
   void PackPanels(Panel* starting_panel);
 
   // Focus a panel.
-  void FocusPanel(Panel* panel, bool remove_pointer_grab, Time timestamp);
+  void FocusPanel(Panel* panel, bool remove_pointer_grab, XTime timestamp);
 
   // Get the expanded panel that's nearest (in terms of number of
   // intervening collapsed panels) to the passed-in panel, or NULL if

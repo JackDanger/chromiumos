@@ -1,15 +1,11 @@
-// Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
 #ifndef WINDOW_MANAGER_LAYOUT_MANAGER_H_
 #define WINDOW_MANAGER_LAYOUT_MANAGER_H_
 
-extern "C" {
-#include <X11/Xlib.h>
-}
 #include <deque>
-#include <glib.h>  // for guint
 #include <map>
 #include <string>
 #include <tr1/memory>
@@ -23,8 +19,7 @@ extern "C" {
 #include "window_manager/key_bindings.h"
 #include "window_manager/window.h"
 #include "window_manager/wm_ipc.h"  // for WmIpc::Message
-
-typedef ::Window XWindow;
+#include "window_manager/x_types.h"
 
 namespace chrome_os_pb {
 class SystemMetrics;
@@ -109,27 +104,27 @@ class LayoutManager : public EventConsumer {
                          int x, int y,
                          int x_root, int y_root,
                          int button,
-                         Time timestamp);
+                         XTime timestamp);
   void HandleButtonRelease(XWindow xid,
                            int x, int y,
                            int x_root, int y_root,
                            int button,
-                           Time timestamp);
+                           XTime timestamp);
   void HandlePointerEnter(XWindow xid,
                           int x, int y,
                           int x_root, int y_root,
-                          Time timestamp);
+                          XTime timestamp);
   void HandlePointerLeave(XWindow xid,
                           int x, int y,
                           int x_root, int y_root,
-                          Time timestamp) {}
+                          XTime timestamp) {}
   void HandlePointerMotion(XWindow xid,
                            int x, int y,
                            int x_root, int y_root,
-                           Time timestamp);
+                           XTime timestamp);
   void HandleFocusChange(XWindow xid, bool focus_in);
   void HandleChromeMessage(const WmIpc::Message& msg);
-  void HandleClientMessage(const XClientMessageEvent& e);
+  void HandleClientMessage(XWindow xid, XAtom message_type, const long data[5]);
   void HandleWindowPropertyChange(XWindow xid, XAtom xatom) {}
   // Note: End EventConsumer implementation.
 
@@ -263,7 +258,7 @@ class LayoutManager : public EventConsumer {
 
     // Focus 'transient_to_focus_' if non-NULL or 'win_' otherwise.  Also
     // raises the transient window to the top of the stacking order.
-    void TakeFocus(Time timestamp);
+    void TakeFocus(XTime timestamp);
 
     // Set the window to be focused the next time that TakeFocus() is
     // called.  NULL can be passed to indicate that the toplevel window
@@ -300,7 +295,7 @@ class LayoutManager : public EventConsumer {
     // itself or one of its transients) getting a button press.  We remove
     // the active pointer grab and try to assign the focus to the
     // clicked-on window.
-    void HandleButtonPress(Window* button_win, Time timestamp);
+    void HandleButtonPress(Window* button_win, XTime timestamp);
 
    private:
     // A transient window belonging to a toplevel window.

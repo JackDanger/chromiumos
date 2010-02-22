@@ -188,7 +188,7 @@ void PanelManager::HandleButtonPress(XWindow xid,
                                      int x, int y,
                                      int x_root, int y_root,
                                      int button,
-                                     Time timestamp) {
+                                     XTime timestamp) {
   // If this is a container's input window, notify the container.
   PanelContainer* container = FindWithDefault(
       container_input_xids_, xid, static_cast<PanelContainer*>(NULL));
@@ -223,7 +223,7 @@ void PanelManager::HandleButtonRelease(XWindow xid,
                                        int x, int y,
                                        int x_root, int y_root,
                                        int button,
-                                       Time timestamp) {
+                                       XTime timestamp) {
   // We only care if button releases happened in container or panel input
   // windows -- there's no current need to notify containers about button
   // releases in their panels.
@@ -246,7 +246,7 @@ void PanelManager::HandleButtonRelease(XWindow xid,
 void PanelManager::HandlePointerEnter(XWindow xid,
                                       int x, int y,
                                       int x_root, int y_root,
-                                      Time timestamp) {
+                                      XTime timestamp) {
   PanelContainer* container = FindWithDefault(
       container_input_xids_, xid, static_cast<PanelContainer*>(NULL));
   if (container) {
@@ -271,7 +271,7 @@ void PanelManager::HandlePointerEnter(XWindow xid,
 void PanelManager::HandlePointerLeave(XWindow xid,
                                       int x, int y,
                                       int x_root, int y_root,
-                                      Time timestamp) {
+                                      XTime timestamp) {
   PanelContainer* container = FindWithDefault(
       container_input_xids_, xid, static_cast<PanelContainer*>(NULL));
   if (container)
@@ -282,7 +282,7 @@ void PanelManager::HandlePointerLeave(XWindow xid,
 void PanelManager::HandlePointerMotion(XWindow xid,
                                        int x, int y,
                                        int x_root, int y_root,
-                                       Time timestamp) {
+                                       XTime timestamp) {
   Panel* panel = FindWithDefault(
       panel_input_xids_, xid, static_cast<Panel*>(NULL));
   if (panel)
@@ -336,17 +336,17 @@ void PanelManager::HandleChromeMessage(const WmIpc::Message& msg) {
   }
 }
 
-void PanelManager::HandleClientMessage(const XClientMessageEvent& e) {
-  Panel* panel = GetPanelByXid(e.window);
+void PanelManager::HandleClientMessage(XWindow xid,
+                                       XAtom message_type,
+                                       const long data[5]) {
+  Panel* panel = GetPanelByXid(xid);
   if (!panel)
     return;
 
-  if (e.message_type == wm_->GetXAtom(ATOM_NET_ACTIVE_WINDOW)) {
-    if (e.format != XConnection::kLongFormat)
-      return;
-    VLOG(1) << "Got _NET_ACTIVE_WINDOW request to focus " << XidStr(e.window)
+  if (message_type == wm_->GetXAtom(ATOM_NET_ACTIVE_WINDOW)) {
+    VLOG(1) << "Got _NET_ACTIVE_WINDOW request to focus " << XidStr(xid)
             << " (requestor says its currently-active window is "
-            << XidStr(e.data.l[2]) << "; real active window is "
+            << XidStr(data[2]) << "; real active window is "
             << XidStr(wm_->active_window_xid()) << ")";
     PanelContainer* container = GetContainerForPanel(*panel);
     if (container)

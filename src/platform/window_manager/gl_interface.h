@@ -1,4 +1,4 @@
-// Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -32,7 +32,7 @@ class GLInterface : virtual public GLInterfaceBase {
                                     XPixmap pixmap,
                                     const int* attrib_list) = 0;
   virtual void DestroyGlxPixmap(GLXPixmap pixmap) = 0;
-  virtual GLXContext CreateGlxContext(XVisualInfo* vis) = 0;
+  virtual GLXContext CreateGlxContext() = 0;
   virtual void DestroyGlxContext(GLXContext context) = 0;
   virtual void SwapGlxBuffers(GLXDrawable drawable) = 0;
   virtual Bool MakeGlxCurrent(GLXDrawable drawable,

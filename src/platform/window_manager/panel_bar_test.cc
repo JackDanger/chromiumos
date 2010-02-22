@@ -189,6 +189,7 @@ TEST_F(PanelBarTest, ActiveWindowMessage) {
       1,                     // source indication: client app
       CurrentTime,
       None,                  // currently-active window
+      None,
       None);
   wm_->HandleEvent(&event);
   EXPECT_TRUE(panel->is_expanded());
@@ -681,12 +682,7 @@ TEST_F(PanelBarTest, UrgentPanel) {
   EXPECT_EQ(hidden_panel_y, panel->titlebar_y());
 
   // Tell the window manager to expand the panel.
-  WmIpc::Message msg(WmIpc::Message::WM_SET_PANEL_STATE);
-  msg.set_param(0, panel->content_xid());
-  msg.set_param(1, 1);
-  XEvent msg_event;
-  wm_->wm_ipc()->FillXEventFromMessage(&msg_event, wm_->wm_xid(), msg);
-  wm_->HandleEvent(&msg_event);
+  SendSetPanelStateMessage(panel, true);
   EXPECT_EQ(expanded_panel_y, panel->titlebar_y());
 
   // Nothing should happen if we set or unset the hint on an expanded panel.
@@ -703,9 +699,7 @@ TEST_F(PanelBarTest, UrgentPanel) {
   xconn_->SetIntProperty(
       panel->content_xid(), wm_hints_atom, wm_hints_atom, urgency_hint);
   wm_->HandleEvent(&notify_event);
-  msg.set_param(1, 0);
-  wm_->wm_ipc()->FillXEventFromMessage(&msg_event, wm_->wm_xid(), msg);
-  wm_->HandleEvent(&msg_event);
+  SendSetPanelStateMessage(panel, false);
   EXPECT_EQ(shown_panel_y, panel->titlebar_y());
 }
 

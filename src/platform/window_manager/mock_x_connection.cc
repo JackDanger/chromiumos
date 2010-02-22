@@ -40,13 +40,6 @@ MockXConnection::MockXConnection()
 
 MockXConnection::~MockXConnection() {}
 
-XVisualInfo* MockXConnection::GetVisualInfo(long mask,
-                                            XVisualInfo* visual_template,
-                                            int* item_count) {
-  *item_count = 1;
-  return visual_template;
-}
-
 bool MockXConnection::GetWindowGeometry(XWindow xid, WindowGeometry* geom_out) {
   CHECK(geom_out);
   WindowInfo* info = GetWindowInfo(xid);
@@ -109,7 +102,7 @@ bool MockXConnection::RaiseWindow(XWindow xid) {
   return true;
 }
 
-bool MockXConnection::FocusWindow(XWindow xid, Time event_time) {
+bool MockXConnection::FocusWindow(XWindow xid, XTime event_time) {
   WindowInfo* info = GetWindowInfo(xid);
   if (!info)
     return false;
@@ -165,7 +158,7 @@ bool MockXConnection::RemoveButtonGrabOnWindow(XWindow xid, int button) {
 }
 
 bool MockXConnection::AddPointerGrabForWindow(
-    XWindow xid, int event_mask, Time timestamp) {
+    XWindow xid, int event_mask, XTime timestamp) {
   WindowInfo* info = GetWindowInfo(xid);
   if (!info)
     return false;
@@ -178,7 +171,7 @@ bool MockXConnection::AddPointerGrabForWindow(
   return true;
 }
 
-bool MockXConnection::RemovePointerGrab(bool replay_events, Time timestamp) {
+bool MockXConnection::RemovePointerGrab(bool replay_events, XTime timestamp) {
   pointer_grab_xid_ = None;
   return true;
 }
@@ -405,13 +398,23 @@ bool MockXConnection::DeletePropertyIfExists(XWindow xid, XAtom xatom) {
   return true;
 }
 
-bool MockXConnection::SendEvent(XWindow xid, XEvent* event, int event_mask) {
-  WindowInfo* info = GetWindowInfo(xid);
+bool MockXConnection::SendClientMessageEvent(XWindow dest_xid,
+                                             XWindow xid,
+                                             XAtom message_type,
+                                             long data[5],
+                                             int event_mask) {
+  WindowInfo* info = GetWindowInfo(dest_xid);
   if (!info)
     return false;
 
-  if (event->type == ClientMessage)
-    info->client_messages.push_back(event->xclient);
+  XEvent event;
+  XClientMessageEvent* client_event = &(event.xclient);
+  client_event->type = ClientMessage;
+  client_event->window = xid;
+  client_event->message_type = message_type;
+  client_event->format = XConnection::kLongFormat;
+  memcpy(client_event->data.l, data, sizeof(client_event->data.l));
+  info->client_messages.push_back(event.xclient);
   return true;
 }
 
@@ -430,7 +433,7 @@ XWindow MockXConnection::GetSelectionOwner(XAtom atom) {
 }
 
 bool MockXConnection::SetSelectionOwner(
-    XAtom atom, XWindow xid, Time timestamp) {
+    XAtom atom, XWindow xid, XTime timestamp) {
   selection_owners_[atom] = xid;
   return true;
 }
@@ -543,7 +546,8 @@ void MockXConnection::InitClientMessageEvent(XEvent* event,
                                              long arg1,
                                              long arg2,
                                              long arg3,
-                                             long arg4) {
+                                             long arg4,
+                                             long arg5) {
   CHECK(event);
   XClientMessageEvent* client_event = &(event->xclient);
   memset(client_event, 0, sizeof(*client_event));
@@ -555,6 +559,7 @@ void MockXConnection::InitClientMessageEvent(XEvent* event,
   client_event->data.l[1] = arg2;
   client_event->data.l[2] = arg3;
   client_event->data.l[3] = arg4;
+  client_event->data.l[4] = arg5;
 }
 
 // static

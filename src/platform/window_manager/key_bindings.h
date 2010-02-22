@@ -1,4 +1,4 @@
-// Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -29,16 +29,9 @@
 #include <set>
 #include <string>
 
-extern "C" {
-#include <X11/keysym.h>
-#include <X11/X.h>
-#include <X11/Xlib.h>
-}
-
 #include "base/basictypes.h"
 #include "chromeos/callback.h"
-
-typedef ::Window XWindow;
+#include "window_manager/x_types.h"
 
 namespace window_manager {
 
@@ -49,13 +42,13 @@ class KeyBindings {
  public:
   // Set of possible modifer mask bits. OR these together to create a KeyCombo
   // modifiers value.
-  static const uint32 kShiftMask = ShiftMask;
-  static const uint32 kControlMask = ControlMask;
-  static const uint32 kAltMask = Mod1Mask;
-  static const uint32 kMetaMask = Mod2Mask;     // TODO: Verify
-  static const uint32 kNumLockMask = Mod3Mask;  // TODO: Verify
-  static const uint32 kSuperMask = Mod4Mask;
-  static const uint32 kHyperMask = Mod5Mask;    // TODO: Verify
+  static const uint32 kShiftMask;
+  static const uint32 kControlMask;
+  static const uint32 kAltMask;
+  static const uint32 kMetaMask;
+  static const uint32 kNumLockMask;
+  static const uint32 kSuperMask;
+  static const uint32 kHyperMask;
 
   // A key and modifier combination, such as (XK_Tab, kAltMask) for alt-tab.
   struct KeyCombo {

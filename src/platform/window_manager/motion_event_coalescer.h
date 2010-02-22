@@ -1,11 +1,9 @@
-// Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
 #ifndef WINDOW_MANAGER_MOTION_EVENT_COALESCER_H_
 #define WINDOW_MANAGER_MOTION_EVENT_COALESCER_H_
-
-#include <glib.h>  // for gboolean and gint
 
 #include "base/scoped_ptr.h"
 #include "chromeos/callback.h"
@@ -49,13 +47,13 @@ class MotionEventCoalescer {
   // parts of the owning class have already been destroyed).
   void StopInternal(bool maybe_run_callback);
 
-  static gboolean HandleTimerThunk(gpointer self) {
+  static int HandleTimerThunk(void* self) {
     return reinterpret_cast<MotionEventCoalescer*>(self)->HandleTimer();
   }
-  gboolean HandleTimer();
+  int HandleTimer();
 
   // ID of the timer's GLib event source, or 0 if the timer isn't active.
-  guint timer_id_;
+  unsigned int timer_id_;
 
   // Frequency for invoking the callback, in milliseconds.
   int timeout_ms_;

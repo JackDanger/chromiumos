@@ -1,4 +1,4 @@
-// Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -66,73 +66,57 @@ bool WmIpc::SetSystemMetricsProperty(XWindow xid, const std::string& metrics) {
       xid, atom_cache_->GetXAtom(ATOM_WM_SYSTEM_METRICS), metrics);
 }
 
-bool WmIpc::GetMessage(const XClientMessageEvent& e, Message* msg) {
-  CHECK(msg);
+bool WmIpc::GetMessage(XAtom message_type,
+                       int format,
+                       const long data[5],
+                       Message* msg_out) {
+  CHECK(msg_out);
 
   // Skip other types of client messages.
-  if (e.message_type != atom_cache_->GetXAtom(ATOM_CHROME_WM_MESSAGE)) {
+  if (message_type != atom_cache_->GetXAtom(ATOM_CHROME_WM_MESSAGE)) {
     return false;
   }
 
-  if (e.format != XConnection::kLongFormat) {
-    LOG(WARNING) << "Ignoring Chrome OS ClientEventMessage with invalid bit "
-                 << "format " << e.format << " (expected 32-bit values)";
+  if (format != XConnection::kLongFormat) {
+    LOG(WARNING) << "Ignoring Chrome OS ClientEvent message with invalid bit "
+                 << "format " << format << " (expected 32-bit values)";
     return false;
   }
 
-  msg->set_type(static_cast<Message::Type>(e.data.l[0]));
-  if (msg->type() < 0 || msg->type() >= Message::kNumTypes) {
+  msg_out->set_type(static_cast<Message::Type>(data[0]));
+  if (msg_out->type() < 0 || msg_out->type() >= Message::kNumTypes) {
     LOG(WARNING) << "Ignoring Chrome OS ClientEventMessage with invalid "
-                 << "message type " << msg->type();
+                 << "message type " << msg_out->type();
     return false;
   }
 
-  // XClientMessageEvent only gives us five 32-bit items, and we're using
-  // the first one for our message type.
-  CHECK_LE(msg->max_params(), 4);
-  for (int i = 0; i < msg->max_params(); ++i) {
-    msg->set_param(i, e.data.l[i+1]);  // l[0] contains message type
+  // ClientMessage events only have five 32-bit items, and we're using the
+  // first one for our message type.
+  CHECK_LE(msg_out->max_params(), 4);
+  for (int i = 0; i < msg_out->max_params(); ++i) {
+    msg_out->set_param(i, data[i+1]);  // l[0] contains message type
   }
   return true;
 }
 
-bool WmIpc::GetMessageGdk(const GdkEventClient& e, Message* msg) {
-  XEvent xe;
-  xe.xclient.type = ClientMessage;
-  xe.xclient.serial = 0;  // not provided by GDK
-  xe.xclient.send_event = e.send_event;
-  xe.xclient.display = GDK_DISPLAY();
-  xe.xclient.window = GDK_WINDOW_XWINDOW(e.window);
-  xe.xclient.message_type = gdk_x11_atom_to_xatom(e.message_type);
-  xe.xclient.format = e.data_format;
-  CHECK_EQ(sizeof(e.data.l), sizeof(xe.xclient.data.l));
-  memcpy(xe.xclient.data.l, e.data.l, sizeof(xe.xclient.data.l));
-  return GetMessage(xe.xclient, msg);
-}
+bool WmIpc::SendMessage(XWindow xid, const Message& msg) {
+  VLOG(2) << "Sending message of type " << msg.type() << " to " << XidStr(xid);
 
-void WmIpc::FillXEventFromMessage(XEvent* event,
-                                  XWindow xid,
-                                  const Message& msg) {
-  CHECK(event);
-
-  event->xclient.type = ClientMessage;
-  event->xclient.window = xid;
-  event->xclient.message_type = atom_cache_->GetXAtom(ATOM_CHROME_WM_MESSAGE);
-  event->xclient.format = XConnection::kLongFormat;  // 32-bit values
-  event->xclient.data.l[0] = msg.type();
-
+  long data[5];
+  memset(data, 0, sizeof(data));
+  data[0] = msg.type();
   // XClientMessageEvent only gives us five 32-bit items, and we're using
   // the first one for our message type.
   CHECK_LE(msg.max_params(), 4);
   for (int i = 0; i < msg.max_params(); ++i)
-    event->xclient.data.l[i+1] = msg.param(i);
-}
+    data[i+1] = msg.param(i);
 
-bool WmIpc::SendMessage(XWindow xid, const Message& msg) {
-  VLOG(2) << "Sending message of type " << msg.type() << " to " << XidStr(xid);
-  XEvent event;
-  FillXEventFromMessage(&event, xid, msg);
-  return xconn_->SendEvent(xid, &event, 0);  // empty event mask
+  return xconn_->SendClientMessageEvent(
+             xid,  // destination window
+             xid,  // window field in event
+             atom_cache_->GetXAtom(ATOM_CHROME_WM_MESSAGE),
+             data,
+             0);   // event_mask
 }
 
 }  // namespace window_manager

@@ -5,13 +5,8 @@
 #ifndef WINDOW_MANAGER_EVENT_CONSUMER_H_
 #define WINDOW_MANAGER_EVENT_CONSUMER_H_
 
-extern "C" {
-#include <X11/Xlib.h>
-}
-
 #include "window_manager/wm_ipc.h"  // for WmIpc::Message
-
-typedef ::Window XWindow;
+#include "window_manager/x_types.h"
 
 namespace window_manager {
 
@@ -87,26 +82,26 @@ class EventConsumer {
                                  int x, int y,
                                  int x_root, int y_root,
                                  int button,
-                                 Time timestamp) = 0;
+                                 XTime timestamp) = 0;
   virtual void HandleButtonRelease(XWindow xid,
                                    int x, int y,
                                    int x_root, int y_root,
                                    int button,
-                                   Time timestamp) = 0;
+                                   XTime timestamp) = 0;
 
   // Handle the pointer entering, leaving, or moving within an input window.
   virtual void HandlePointerEnter(XWindow xid,
                                   int x, int y,
                                   int x_root, int y_root,
-                                  Time timestamp) = 0;
+                                  XTime timestamp) = 0;
   virtual void HandlePointerLeave(XWindow xid,
                                   int x, int y,
                                   int x_root, int y_root,
-                                  Time timestamp) = 0;
+                                  XTime timestamp) = 0;
   virtual void HandlePointerMotion(XWindow xid,
                                    int x, int y,
                                    int x_root, int y_root,
-                                   Time timestamp) = 0;
+                                   XTime timestamp) = 0;
 
   // Handle a Chrome-specific message sent by a client app.  Messages are
   // sent to consumers that have expressed interest in the messages' types
@@ -116,7 +111,9 @@ class EventConsumer {
   // Handle a regular X ClientMessage event from a client app.
   // These events are sent to consumers that have expressed interest in
   // events on the window referenced in the event's 'window' field.
-  virtual void HandleClientMessage(const XClientMessageEvent& e) = 0;
+  virtual void HandleClientMessage(XWindow xid,
+                                   XAtom message_type,
+                                   const long data[5]) = 0;
 
   // Handle a focus change on a window.
   virtual void HandleFocusChange(XWindow xid, bool focus_in) = 0;

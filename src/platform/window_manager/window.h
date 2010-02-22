@@ -5,9 +5,6 @@
 #ifndef WINDOW_MANAGER_WINDOW_H_
 #define WINDOW_MANAGER_WINDOW_H_
 
-extern "C" {
-#include <X11/Xlib.h>
-}
 #include <gtest/gtest_prod.h>  // for FRIEND_TEST() macro
 #include <set>
 #include <string>
@@ -21,6 +18,7 @@ extern "C" {
 #include "window_manager/clutter_interface.h"
 #include "window_manager/wm_ipc.h"
 #include "window_manager/x_connection.h"
+#include "window_manager/x_types.h"
 
 namespace window_manager {
 
@@ -134,9 +132,10 @@ class Window {
   // at startup; use mapped() after that.
   bool FetchMapState();
 
-  // Handle a _NET_WM_STATE message about this window.  Updates our internal
-  // copy of the state and the window's _NET_WM_STATE property.
-  bool HandleWmStateMessage(const XClientMessageEvent& event);
+  // Handle a _NET_WM_STATE message about this window.  The passed-in data
+  // is from the ClientMessage event.  Updates our internal copy of the
+  // state and the window's _NET_WM_STATE property.
+  bool HandleWmStateMessage(const long data[5]);
 
   // Set or unset _NET_WM_STATE values for this window.  Note that this is
   // for WM-initiated state changes -- client-initiated changes come in
@@ -152,11 +151,11 @@ class Window {
   // message if the client supports it or a SetInputFocus request
   // otherwise.  (Note that the client doesn't necessarily need to accept
   // the focus if WM_TAKE_FOCUS is used; see ICCCM 4.1.7.)
-  bool TakeFocus(Time timestamp);
+  bool TakeFocus(XTime timestamp);
 
   // If the window supports WM_DELETE_WINDOW messages, ask it to delete
   // itself.  Just does nothing and returns false otherwise.
-  bool SendDeleteRequest(Time timestamp);
+  bool SendDeleteRequest(XTime timestamp);
 
   // Add or remove passive a passive grab on button presses within this
   // window.  When any button is pressed, a _synchronous_ active pointer

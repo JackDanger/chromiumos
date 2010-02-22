@@ -5,21 +5,16 @@
 #ifndef WINDOW_MANAGER_PANEL_BAR_H_
 #define WINDOW_MANAGER_PANEL_BAR_H_
 
-extern "C" {
-#include <X11/Xlib.h>
-}
 #include <map>
 #include <tr1/memory>
 
-#include <glib.h>  // for gboolean and gint
 #include <gtest/gtest_prod.h>  // for FRIEND_TEST() macro
 
 #include "base/basictypes.h"
 #include "base/scoped_ptr.h"
 #include "window_manager/clutter_interface.h"
 #include "window_manager/panel_container.h"
-
-typedef ::Window XWindow;
+#include "window_manager/x_types.h"
 
 namespace window_manager {
 
@@ -49,22 +44,22 @@ class PanelBar : public PanelContainer {
                                     int x, int y,
                                     int x_root, int y_root,
                                     int button,
-                                    Time timestamp);
+                                    XTime timestamp);
   void HandleInputWindowButtonRelease(XWindow xid,
                                       int x, int y,
                                       int x_root, int y_root,
                                       int button,
-                                      Time timestamp) {}
+                                      XTime timestamp) {}
   void HandleInputWindowPointerEnter(XWindow xid,
                                      int x, int y,
                                      int x_root, int y_root,
-                                     Time timestamp);
+                                     XTime timestamp);
   void HandleInputWindowPointerLeave(XWindow xid,
                                      int x, int y,
                                      int x_root, int y_root,
-                                     Time timestamp);
-  void HandlePanelButtonPress(Panel* panel, int button, Time timestamp);
-  void HandlePanelTitlebarPointerEnter(Panel* panel, Time timestamp);
+                                     XTime timestamp);
+  void HandlePanelButtonPress(Panel* panel, int button, XTime timestamp);
+  void HandlePanelTitlebarPointerEnter(Panel* panel, XTime timestamp);
   void HandlePanelFocusChange(Panel* panel, bool focus_in);
   void HandleSetPanelStateMessage(Panel* panel, bool expand);
   bool HandleNotifyPanelDraggedMessage(Panel* panel, int drag_x, int drag_y);
@@ -150,7 +145,7 @@ class PanelBar : public PanelContainer {
   // 'remove_pointer_grab' is true, removes the active pointer grab and
   // replays any grabbed events (this is used when the panel is being
   // focused in response to a grabbed click).
-  void FocusPanel(Panel* panel, bool remove_pointer_grab, Time timestamp);
+  void FocusPanel(Panel* panel, bool remove_pointer_grab, XTime timestamp);
 
   // Get the panel with the passed-in content or titlebar window.
   // Returns NULL for unknown windows.
@@ -207,10 +202,10 @@ class PanelBar : public PanelContainer {
   void DisableShowCollapsedPanelsTimer();
 
   // Stop 'show_collapsed_panels_timer_id_' and invoke ShowCollapsedPanels().
-  static gboolean HandleShowCollapsedPanelsTimerThunk(gpointer self) {
+  static int HandleShowCollapsedPanelsTimerThunk(void* self) {
     return reinterpret_cast<PanelBar*>(self)->HandleShowCollapsedPanelsTimer();
   }
-  gboolean HandleShowCollapsedPanelsTimer();
+  int HandleShowCollapsedPanelsTimer();
 
   PanelManager* panel_manager_;  // not owned
 
@@ -269,7 +264,7 @@ class PanelBar : public PanelContainer {
 
   // ID of a timer that we use to delay calling ShowCollapsedPanels() after
   // the pointer enters 'show_collapsed_panels_input_xid_', or 0 if unset.
-  gint show_collapsed_panels_timer_id_;
+  unsigned int show_collapsed_panels_timer_id_;
 
   // Used to monitor the pointer position when we're showing collapsed
   // panels so that we'll know to hide them when the pointer far enough

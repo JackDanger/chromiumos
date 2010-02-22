@@ -21,6 +21,7 @@ struct AtomInfo {
 
 // Each value from the Atom enum must be present here.
 static const AtomInfo kAtomInfos[] = {
+  { ATOM_ATOM,                         "ATOM" },
   { ATOM_CHROME_GET_SERVER_TIME,       "_CHROME_GET_SERVER_TIME" },
   { ATOM_CHROME_STATE,                 "_CHROME_STATE" },
   { ATOM_CHROME_STATE_COLLAPSED_PANEL, "_CHROME_STATE_COLLAPSED_PANEL" },
