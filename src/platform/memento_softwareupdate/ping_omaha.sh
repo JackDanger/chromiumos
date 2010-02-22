@@ -39,6 +39,17 @@ source `dirname "$0"`/memento_updater_logging.sh
 # Launcher-1.2.2.dmg" hash="vv8ifTj79KivBMTsCDsgKPpsmOo=" needsadmin="false" \
 # size="4018650" status="ok"/></app></gupdate>
 
+# Get local version
+APP_VERSION=$(grep ^CHROMEOS_RELEASE_VERSION \
+              /mnt/stateful_partition/etc/lsb-release | \
+              cut -d = -f 2-)
+if [ "x" = "x$APP_VERSION" ]
+then
+  # look in the main file
+  APP_VERSION=$(grep ^CHROMEOS_RELEASE_VERSION \
+                /etc/lsb-release | cut -d = -f 2-)
+fi
+
 # Parameters of the update request:
 OS=Memento
 PLATFORM=memento
@@ -46,6 +57,10 @@ APP_ID={87efface-864d-49a5-9bb3-4b050a7c227a}
 APP_VERSION="$1"
 APP_BOARD="$2"
 OS_VERSION=${APP_VERSION}_$(uname -m)
+PING_APP_VERSION="$APP_VERSION"
+if [ ! -z "$1" ]; then
+  PING_APP_VERSION="$1"
+fi
 LANG=en-us
 BRAND=GGLG
 
@@ -119,8 +134,8 @@ cat > "/tmp/memento_au_post_file" << EOF
 version="$AU_VERSION" protocol="2.0" machineid="$MACHINE_ID" \
 ismachine="0" userid="$USER_ID">
     <o:os version="$OS" platform="$PLATFORM" sp="$OS_VERSION"></o:os>
-    <o:app appid="$APP_ID" version="$APP_VERSION" lang="$LANG" brand="$BRAND" \
-track="$APP_TRACK" board="$APP_BOARD">
+    <o:app appid="$APP_ID" version="$PING_APP_VERSION" lang="$LANG" \
+brand="$BRAND" track="$APP_TRACK" board="$APP_BOARD">
         <o:ping active="0"></o:ping>
         <o:updatecheck></o:updatecheck>
     </o:app>
@@ -166,3 +181,5 @@ fi
 echo URL=$CODEBASE
 echo HASH=$HASH
 echo SIZE=$SIZE
+echo APP_VERSION=$APP_VERSION
+echo NEW_VERSION=TODO

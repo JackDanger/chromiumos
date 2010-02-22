@@ -66,17 +66,6 @@ fi
 
 log Memento AutoUpdate starting
 
-# Get local version
-APP_VERSION=$(grep ^CHROMEOS_RELEASE_VERSION \
-              /mnt/stateful_partition/etc/lsb-release | \
-              cut -d = -f 2-)
-if [ "x" = "x$APP_VERSION" ]
-then
-  # look in the main file
-  APP_VERSION=$(grep ^CHROMEOS_RELEASE_VERSION \
-                /etc/lsb-release | cut -d = -f 2-)
-fi
-
 # See if we're forcing an update from a specific URL
 if [ "x" = "x$1" ]
 then
@@ -93,7 +82,7 @@ then
   if [ "$ForceUpdate" = "yes" ]; then
     OMAHA_CHECK_OUTPUT=$(`dirname "$0"`/ping_omaha.sh "ForcedUpdate")
   else
-    OMAHA_CHECK_OUTPUT=$(`dirname "$0"`/ping_omaha.sh $APP_VERSION)
+    OMAHA_CHECK_OUTPUT=$(`dirname "$0"`/ping_omaha.sh)
   fi
   IMG_URL=$(echo "$OMAHA_CHECK_OUTPUT" | grep '^URL=' | cut -d = -f 2-)
   CHECKSUM=$(echo "$OMAHA_CHECK_OUTPUT" | grep '^HASH=' | cut -d = -f 2-)
@@ -102,6 +91,9 @@ else
   IMG_URL="$1"
   CHECKSUM="$2"
 fi
+
+APP_VERSION=$(echo "$OMAHA_CHECK_OUTPUT" | grep '^APP_VERSION=' | \
+  cut -d = -f 2-)
 
 if [[ -z "$IMG_URL" || -z "$CHECKSUM" ]]
 then
@@ -290,3 +282,4 @@ touch "$UPDATED_COMPLETED_FILE"
 
 # tell user to reboot
 log Autoupdate applied. You should now reboot
+echo UPDATED
