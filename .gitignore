@@ -20,6 +20,7 @@
 
 # User files
 /src/scripts/.chromeos_dev
+/src/scripts/.default_board
 /src/scripts/shared_user_passwd.txt
 
 # Ignore DEPS
