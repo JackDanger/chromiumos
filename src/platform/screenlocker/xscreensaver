@@ -19,5 +19,5 @@ account	requisite			pam_deny.so
 account	required			pam_permit.so
 
 
-@include common-password
-@include common-session
+password include system-auth
+session include system-auth
