@@ -193,6 +193,7 @@ WindowManager::WindowManager(XConnection* xconn, ClutterInterface* clutter)
       layout_manager_height_(1) {
   CHECK(xconn_);
   CHECK(clutter_);
+  clutter_->SetEventSource(this);
 }
 
 WindowManager::~WindowManager() {
@@ -200,6 +201,18 @@ WindowManager::~WindowManager() {
     xconn_->DestroyWindow(wm_xid_);
   if (background_xid_)
     xconn_->DestroyWindow(background_xid_);
+}
+
+void WindowManager::StartSendingEventsForWindowToCompositor(XWindow xid) {
+  bool added = xids_tracked_by_compositor_.insert(xid).second;
+  DCHECK(added) << "Got request to start sending compositor events about "
+                << "already-registered window " << XidStr(xid);
+}
+
+void WindowManager::StopSendingEventsForWindowToCompositor(XWindow xid) {
+  int num_removed = xids_tracked_by_compositor_.erase(xid);
+  DCHECK_EQ(num_removed, 1) << "Got request to stop sending compositor events "
+                            << "about unregistered window " << XidStr(xid);
 }
 
 bool WindowManager::Init() {
@@ -396,6 +409,10 @@ void WindowManager::HandleEvent(XEvent* event) {
               << " event (" << event->type << ") in window manager.";
   }
 #endif
+  static int damage_notify = xconn_->damage_event_base() + XDamageNotify;
+  static int shape_notify = xconn_->shape_event_base() + ShapeNotify;
+  static int randr_notify = xconn_->randr_event_base() + RRScreenChangeNotify;
+
   switch (event->type) {
     case ButtonPress:
       HandleButtonPress(event->xbutton); break;
@@ -437,10 +454,11 @@ void WindowManager::HandleEvent(XEvent* event) {
     case UnmapNotify:
       HandleUnmapNotify(event->xunmap); break;
     default:
-      if (event->type == xconn_->shape_event_base() + ShapeNotify) {
+      if (event->type == damage_notify) {
+        HandleDamageNotify(*(reinterpret_cast<XDamageNotifyEvent*>(event)));
+      } else if (event->type == shape_notify) {
         HandleShapeNotify(*(reinterpret_cast<XShapeEvent*>(event)));
-      } else if (event->type ==
-                 xconn_->randr_event_base() + RRScreenChangeNotify) {
+      } else if (event->type == randr_notify) {
         HandleRRScreenChangeNotify(
             *(reinterpret_cast<XRRScreenChangeNotifyEvent*>(event)));
       }
@@ -1049,6 +1067,9 @@ void WindowManager::HandleConfigureNotify(const XConfigureEvent& e) {
       UpdateClientListStackingProperty();
     }
   }
+
+  if (xids_tracked_by_compositor_.count(e.window))
+    clutter_->HandleWindowConfigured(e.window);
 }
 
 void WindowManager::HandleConfigureRequest(const XConfigureRequestEvent& e) {
@@ -1146,6 +1167,11 @@ void WindowManager::HandleCreateNotify(const XCreateWindowEvent& e) {
   TrackWindow(e.window, e.override_redirect);
 }
 
+void WindowManager::HandleDamageNotify(const XDamageNotifyEvent& e) {
+  if (xids_tracked_by_compositor_.count(e.drawable))
+    clutter_->HandleWindowDamaged(e.drawable);
+}
+
 void WindowManager::HandleDestroyNotify(const XDestroyWindowEvent& e) {
   VLOG(1) << "Handling destroy notify for " << XidStr(e.window);
 
@@ -1171,6 +1197,9 @@ void WindowManager::HandleDestroyNotify(const XDestroyWindowEvent& e) {
   // windows from 'client_windows_' directly to simulate windows being
   // destroyed.
   client_windows_.erase(e.window);
+
+  if (xids_tracked_by_compositor_.count(e.window))
+    clutter_->HandleWindowDestroyed(e.window);
 }
 
 void WindowManager::HandleEnterNotify(const XEnterWindowEvent& e) {

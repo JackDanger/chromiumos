@@ -5,16 +5,12 @@
 #ifndef WINDOW_MANAGER_TIDY_INTERFACE_H_
 #define WINDOW_MANAGER_TIDY_INTERFACE_H_
 
-#include <cmath>
 #include <list>
+#include <map>
 #include <string>
 #include <tr1/memory>
 #include <vector>
 
-extern "C" {
-// TODO: Remove this after making the class not take raw X events.
-#include <X11/Xlib.h>
-}
 #include <gtest/gtest_prod.h>  // for FRIEND_TEST() macro
 
 #include "base/hash_tables.h"
@@ -29,6 +25,7 @@ extern "C" {
 
 namespace window_manager {
 
+class CompositorEventSource;
 class GLInterfaceBase;
 class OpenGlDrawVisitor;
 class OpenGlesDrawVisitor;
@@ -478,6 +475,7 @@ class TidyInterface : public ClutterInterface {
   ~TidyInterface();
 
   // Begin ClutterInterface methods
+  void SetEventSource(CompositorEventSource* source) { event_source_ = source; }
   ContainerActor* CreateGroup();
   Actor* CreateRectangle(const ClutterInterface::Color& color,
                          const ClutterInterface::Color& border_color,
@@ -489,13 +487,15 @@ class TidyInterface : public ClutterInterface {
                     const ClutterInterface::Color& color);
   Actor* CloneActor(ClutterInterface::Actor* orig);
   StageActor* GetDefaultStage() { return default_stage_.get(); }
+  void HandleWindowConfigured(XWindow xid);
+  void HandleWindowDestroyed(XWindow xid);
+  void HandleWindowDamaged(XWindow xid);
   // End ClutterInterface methods
 
   void AddActor(Actor* actor) { actors_.push_back(actor); }
   void RemoveActor(Actor* actor);
 
   AnimationBase::AnimationTime GetCurrentTime() { return now_; }
-  bool HandleEvent(XEvent* event);
   int actor_count() { return actor_count_; }
   bool dirty() const { return dirty_; }
 
@@ -519,6 +519,12 @@ class TidyInterface : public ClutterInterface {
   // This is called when we stop monitoring for changes, and removes
   // the redirection for the supplied window.
   void StopMonitoringWindowForChanges(XWindow xid, TexturePixmapActor* actor);
+
+  // The source that will be sending us X events related to windows used
+  // for TexturePixmapActors (typically WindowManager).  We need to be able
+  // to tell the source when we're interested or uninterested in receiving
+  // events about a particular window.
+  CompositorEventSource* event_source_;  // not owned and NULL if unset
 
   // This indicates if the interface is dirty and needs to be redrawn.
   bool dirty_;

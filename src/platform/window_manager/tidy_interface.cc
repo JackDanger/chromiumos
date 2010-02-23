@@ -4,19 +4,17 @@
 
 #include "window_manager/tidy_interface.h"
 
-extern "C" {
-#include <X11/extensions/Xdamage.h>
-}
-
-#include <gdk/gdkx.h>
-#include <gflags/gflags.h>
-#include <sys/time.h>
-#include <time.h>
-
 #include <algorithm>
+#include <cmath>
+#include <ctime>
 #include <string>
 
+#include <gflags/gflags.h>
+#include <glib.h>
+#include <sys/time.h>
+
 #include "base/logging.h"
+#include "window_manager/compositor_event_source.h"
 #include "window_manager/gl_interface_base.h"
 #include "window_manager/image_container.h"
 #ifdef TIDY_OPENGL
@@ -558,7 +556,8 @@ static gboolean DrawInterface(void* data) {
 
 TidyInterface::TidyInterface(XConnection* xconn,
                              GLInterfaceBase* gl_interface)
-    : dirty_(true),
+    : event_source_(NULL),
+      dirty_(true),
       xconn_(xconn),
       actor_count_(0) {
   CHECK(xconn_);
@@ -643,6 +642,36 @@ TidyInterface::Actor* TidyInterface::CloneActor(
   return actor->Clone();
 }
 
+void TidyInterface::HandleWindowConfigured(XWindow xid) {
+  TexturePixmapActor* actor =
+      FindWithDefault(texture_pixmaps_,
+                      xid,
+                      static_cast<TexturePixmapActor*>(NULL));
+  // Get a new pixmap with a new size.
+  if (actor) {
+    actor->DestroyPixmap();
+    actor->set_dirty();
+  }
+}
+
+void TidyInterface::HandleWindowDestroyed(XWindow xid) {
+  TexturePixmapActor* actor =
+      FindWithDefault(texture_pixmaps_,
+                      xid,
+                      static_cast<TexturePixmapActor*>(NULL));
+  if (actor)
+    actor->Reset();
+}
+
+void TidyInterface::HandleWindowDamaged(XWindow xid) {
+  TexturePixmapActor* actor =
+      FindWithDefault(texture_pixmaps_,
+                      xid,
+                      static_cast<TexturePixmapActor*>(NULL));
+  if (actor)
+    actor->RefreshPixmap();
+}
+
 void TidyInterface::RemoveActor(Actor* actor) {
   ActorVector::iterator iterator = std::find(actors_.begin(), actors_.end(),
                                              actor);
@@ -651,68 +680,20 @@ void TidyInterface::RemoveActor(Actor* actor) {
   }
 }
 
-static GdkFilterReturn FilterEvent(GdkXEvent* xevent,
-                                   GdkEvent* event,
-                                   gpointer data) {
-  TidyInterface* interface = static_cast<TidyInterface*>(data);
-  return interface->HandleEvent(reinterpret_cast<XEvent*>(xevent)) ?
-      GDK_FILTER_REMOVE : GDK_FILTER_CONTINUE;
-}
-
-bool TidyInterface::HandleEvent(XEvent* xevent) {
-  static int damage_notify = x_conn()->damage_event_base() + XDamageNotify;
-
-  if (xevent->type == ConfigureNotify) {
-    TexturePixmapActor* actor =
-        FindWithDefault(texture_pixmaps_,
-                        xevent->xconfigure.window,
-                        static_cast<TexturePixmapActor*>(NULL));
-    // Get a new pixmap with a new size.
-    if (actor) {
-      actor->DestroyPixmap();
-      actor->set_dirty();
-    }
-    return false;
-  } else if (xevent->type == DestroyNotify) {
-    TexturePixmapActor* actor =
-        FindWithDefault(texture_pixmaps_,
-                        xevent->xdestroywindow.window,
-                        static_cast<TexturePixmapActor*>(NULL));
-    if (actor)
-      actor->Reset();
-    return false;
-  } else if (xevent->type == damage_notify) {
-    TexturePixmapActor* actor =
-        FindWithDefault(texture_pixmaps_,
-                        reinterpret_cast<XDamageNotifyEvent*>(xevent)->drawable,
-                        static_cast<TexturePixmapActor*>(NULL));
-    if (actor)
-      actor->RefreshPixmap();
-    return (actor != NULL);;
-  } else {
-    return false;
-  }
-}
-
 void TidyInterface::StartMonitoringWindowForChanges(
     XWindow xid, TexturePixmapActor* actor) {
-  if (texture_pixmaps_.empty()) {
-    gdk_window_add_filter(NULL, FilterEvent, this);
-  }
-
+  DCHECK(event_source_);
+  event_source_->StartSendingEventsForWindowToCompositor(xid);
   texture_pixmaps_[xid] = actor;
-
   x_conn()->RedirectWindowForCompositing(xid);
 }
 
 void TidyInterface::StopMonitoringWindowForChanges(
     XWindow xid, TexturePixmapActor* actor) {
   x_conn()->UnredirectWindowForCompositing(xid);
-
   texture_pixmaps_.erase(xid);
-  if (texture_pixmaps_.empty()) {
-    gdk_window_remove_filter(NULL, FilterEvent, this);
-  }
+  DCHECK(event_source_);
+  event_source_->StopSendingEventsForWindowToCompositor(xid);
 }
 
 void TidyInterface::Draw() {

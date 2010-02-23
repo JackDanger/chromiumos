@@ -15,6 +15,7 @@ extern "C" {
 // TODO: Move the event-handling methods (all private) into a separate
 // header so that these includes can be removed.
 #include <X11/extensions/shape.h>
+#include <X11/extensions/Xdamage.h>
 #include <X11/extensions/Xrandr.h>
 #include <X11/Xlib.h>
 }
@@ -24,6 +25,7 @@ extern "C" {
 #include "base/scoped_ptr.h"
 #include "window_manager/atom_cache.h"  // for Atom enum
 #include "window_manager/clutter_interface.h"
+#include "window_manager/compositor_event_source.h"
 #include "window_manager/wm_ipc.h"
 #include "window_manager/x_types.h"
 
@@ -41,7 +43,7 @@ class WmIpc;
 class XConnection;
 template<class T> class Stacker;
 
-class WindowManager {
+class WindowManager : public CompositorEventSource {
  public:
   WindowManager(XConnection* xconn, ClutterInterface* clutter);
   ~WindowManager();
@@ -65,6 +67,11 @@ class WindowManager {
   KeyBindings* key_bindings() { return key_bindings_.get(); }
   WmIpc* wm_ipc() { return wm_ipc_.get(); }
   int wm_ipc_version() const { return wm_ipc_version_; }
+
+  // Begin CompositorEventSource implementation.
+  void StartSendingEventsForWindowToCompositor(XWindow xid);
+  void StopSendingEventsForWindowToCompositor(XWindow xid);
+  // End CompositorEventSource implementation.
 
   // Get the title for the window that we create to take ownership of management
   // selections.  This is also used to name our log files.
@@ -222,6 +229,7 @@ class WindowManager {
   void HandleConfigureNotify(const XConfigureEvent& e);
   void HandleConfigureRequest(const XConfigureRequestEvent& e);
   void HandleCreateNotify(const XCreateWindowEvent& e);
+  void HandleDamageNotify(const XDamageNotifyEvent& e);
   void HandleDestroyNotify(const XDestroyWindowEvent& e);
   void HandleEnterNotify(const XEnterWindowEvent& e);
   void HandleFocusChange(const XFocusChangeEvent& e);
@@ -327,6 +335,9 @@ class WindowManager {
   // Map from Chrome message types to event consumers that will receive
   // copies of the messages.
   ChromeMessageEventConsumerMap chrome_message_event_consumers_;
+
+  // Windows about which the compositor has asked us to send events.
+  std::set<XWindow> xids_tracked_by_compositor_;
 
   // Actors that are currently being used to debug client windows.
   std::vector<std::tr1::shared_ptr<ClutterInterface::Actor> >
