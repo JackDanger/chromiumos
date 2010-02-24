@@ -140,4 +140,7 @@ deps = {
     _overlays_base + "overlay-beagleboard": "/overlay-beagleboard.git",
     _overlays_base + "overlay-st1q":        "/overlay-st1q.git",
     _overlays_base + "overlay-x86-generic": "/overlay-x86-generic.git",
+
+    # ModemManager
+    _third_party_base + "modemmanager": "/modemmanager.git",
 }
