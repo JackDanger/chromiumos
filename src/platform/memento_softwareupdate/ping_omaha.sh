@@ -40,13 +40,13 @@ source `dirname "$0"`/memento_updater_logging.sh
 # size="4018650" status="ok"/></app></gupdate>
 
 # Get local version
-APP_VERSION=$(grep ^CHROMEOS_RELEASE_VERSION \
+LOCAL_VERSION=$(grep ^CHROMEOS_RELEASE_VERSION \
               /mnt/stateful_partition/etc/lsb-release | \
               cut -d = -f 2-)
-if [ "x" = "x$APP_VERSION" ]
+if [ "x" = "x$LOCAL_VERSION" ]
 then
   # look in the main file
-  APP_VERSION=$(grep ^CHROMEOS_RELEASE_VERSION \
+  LOCAL_VERSION=$(grep ^CHROMEOS_RELEASE_VERSION \
                 /etc/lsb-release | cut -d = -f 2-)
 fi
 
@@ -54,7 +54,7 @@ fi
 OS=Memento
 PLATFORM=memento
 APP_ID={87efface-864d-49a5-9bb3-4b050a7c227a}
-APP_VERSION="$1"
+APP_VERSION=${1:-$LOCAL_VERSION}
 APP_BOARD="$2"
 OS_VERSION=${APP_VERSION}_$(uname -m)
 PING_APP_VERSION="$APP_VERSION"
