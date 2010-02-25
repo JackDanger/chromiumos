@@ -5,6 +5,7 @@
 #ifndef WINDOW_MANAGER_GLES_GLES_VISITOR_H_
 #define WINDOW_MANAGER_GLES_GLES_VISITOR_H_
 
+#include <GLES2/gl2.h>
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 

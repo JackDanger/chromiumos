@@ -96,9 +96,10 @@ wm_env.Append(LIBS=Split('gflags protobuf'))
 wm_env.ParseConfig('pkg-config --cflags --libs gdk-2.0 libpcrecpp ' +
                    'xcb x11-xcb xcb-composite xcb-randr xcb-shape xcb-damage')
 
-# Add builder for .glsl* files
+# Add builder for .glsl* files, and GLESv2 libraries
 if backend == 'opengles':
   make_shaders.AddBuildRules(wm_env)
+  wm_env.Append(LIBS=['EGL', 'GLESv2'])
 
 # This is needed so that glext headers include glBindBuffer and
 # related APIs.

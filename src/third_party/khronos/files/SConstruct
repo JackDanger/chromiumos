@@ -17,12 +17,12 @@ mk_stub_builder = Builder(emitter=MkStubEmitter,
                           src_suffix=".in", suffix="")
 
 env = Environment()
-env.Append(BUILDERS={"MkStub": mk_stub_builder},
-           CCFLAGS=["-Iinclude", "-Wall"])
 for key in Split('CC CXX AR RANLIB LD NM CFLAGS CCFLAGS'):
   value = os.environ.get(key)
   if value != None:
-    env[key] = value
+    env[key] = Split(value)
+env.Append(BUILDERS={"MkStub": mk_stub_builder},
+           CCFLAGS=["-Iinclude", "-Wall"])
 
 # Build Rules
 env.MkStub(['gles2_stub.c.in'])
