@@ -28,6 +28,7 @@
 /src/overlays/overlay-beagleboard/
 /src/overlays/overlay-st1q/
 /src/overlays/overlay-x86-generic/
+/src/overlays/overlay-tegra2-dev-board/
 /src/platform/cros/
 /src/platform/login_manager/
 /src/platform/pam_google/

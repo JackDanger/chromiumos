@@ -136,10 +136,11 @@ deps = {
     _third_party_base + "laptop-mode-tools": "/laptop-mode-tools.git",
 
     # board overlays, please keep sorted alphabetically
-    _overlays_base + "overlay-arm-generic": "/overlay-arm-generic.git",
-    _overlays_base + "overlay-beagleboard": "/overlay-beagleboard.git",
-    _overlays_base + "overlay-st1q":        "/overlay-st1q.git",
-    _overlays_base + "overlay-x86-generic": "/overlay-x86-generic.git",
+    _overlays_base + "overlay-arm-generic":      "/overlay-arm-generic.git",
+    _overlays_base + "overlay-beagleboard":      "/overlay-beagleboard.git",
+    _overlays_base + "overlay-st1q":             "/overlay-st1q.git",
+    _overlays_base + "overlay-tegra2-dev-board": "/overlay-tegra2-dev-board.git",
+    _overlays_base + "overlay-x86-generic":      "/overlay-x86-generic.git",
 
     # ModemManager
     _third_party_base + "modemmanager": "/modemmanager.git",
