@@ -1,0 +1,14 @@
+#!/bin/sh
+# Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+#
+# Wrapper script to allow dbus-daemon to be run from upstart while logging
+# its pid and bus address for use later.  This is meant specifically for
+# session buses only, not the system bus.
+umask 007
+session_dir="${DBUS_SESSION_DIR:-/var/run/dbus-session}"
+# TODO(yusuke,wad) make sure this is safe across logout.
+exec 4>"${session_dir}/address"
+exec 5>"${session_dir}/pid"
+exec /bin/dbus-daemon --print-address=4 --print-pid=5 --session
