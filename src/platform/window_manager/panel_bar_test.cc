@@ -703,6 +703,71 @@ TEST_F(PanelBarTest, UrgentPanel) {
   EXPECT_EQ(shown_panel_y, panel->titlebar_y());
 }
 
+TEST_F(PanelBarTest, DragPanelVertically) {
+  // Create an expanded panel.
+  Panel* panel = CreatePanel(200, 20, 400, true);
+
+  const int right_edge = wm_->width() - PanelBar::kPixelsBetweenPanels;
+  EXPECT_EQ(right_edge, panel->right());
+  const int expanded_y = wm_->height() - panel->total_height();
+  EXPECT_EQ(expanded_y, panel->titlebar_y());
+  const int hidden_y =
+      wm_->height() - PanelBar::kHiddenCollapsedPanelHeightPixels;
+
+  // Drag the panel a bit to the left and further down.  We should start a
+  // vertical drag and ignore the horizontal change.
+  SendPanelDraggedMessage(panel, right_edge - 6, expanded_y + 10);
+  EXPECT_EQ(right_edge, panel->right());
+  EXPECT_EQ(expanded_y + 10, panel->titlebar_y());
+
+  // As long as we're in the drag, we should ignore horizontal movement.
+  SendPanelDraggedMessage(panel, right_edge + 30, expanded_y + 15);
+  EXPECT_EQ(right_edge, panel->right());
+  EXPECT_EQ(expanded_y + 15, panel->titlebar_y());
+
+  // When the drag ends, the panel should snap back to the expanded position.
+  SendPanelDragCompleteMessage(panel);
+  EXPECT_EQ(right_edge, panel->right());
+  EXPECT_EQ(expanded_y, panel->titlebar_y());
+  EXPECT_TRUE(panel->is_expanded());
+
+  // Now drag it more than halfway down and check that we collapse the
+  // panel when the drag ends.
+  SendPanelDraggedMessage(panel, right_edge,
+                          expanded_y + 0.5 * panel->total_height() + 1);
+  SendPanelDragCompleteMessage(panel);
+  EXPECT_EQ(right_edge, panel->right());
+  EXPECT_EQ(hidden_y, panel->titlebar_y());
+  EXPECT_FALSE(panel->is_expanded());
+
+  // Check that we can expand the panel by dragging it up, too.
+  SendPanelDraggedMessage(panel, right_edge,
+                          expanded_y + 0.5 * panel->total_height() - 1);
+  SendPanelDragCompleteMessage(panel);
+  EXPECT_EQ(right_edge, panel->right());
+  EXPECT_EQ(expanded_y, panel->titlebar_y());
+  EXPECT_TRUE(panel->is_expanded());
+
+  // Drag the panel up to the top of the screen to detach it (center it
+  // horizontally to make sure that other panel containers, namely
+  // PanelDock, don't swallow the panel).
+  const int drag_x = 0.5 * (wm_->width() + panel->width());
+  SendPanelDraggedMessage(panel, drag_x, 0);
+  EXPECT_EQ(drag_x, panel->right());
+  EXPECT_EQ(0, panel->titlebar_y());
+
+  // Now drag the panel straight down, a bit below the expanded position.
+  // It should stop at the expanded position, since we always enter a
+  // horizontal drag as soon as we attach.
+  SendPanelDraggedMessage(panel, drag_x, expanded_y + 20);
+  EXPECT_EQ(drag_x, panel->right());
+  EXPECT_EQ(expanded_y, panel->titlebar_y());
+  SendPanelDraggedMessage(panel, drag_x + 20, expanded_y + 30);
+  EXPECT_EQ(drag_x + 20, panel->right());
+  EXPECT_EQ(expanded_y, panel->titlebar_y());
+  SendPanelDragCompleteMessage(panel);
+}
+
 }  // namespace window_manager
 
 int main(int argc, char **argv) {

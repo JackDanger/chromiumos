@@ -72,6 +72,7 @@ PanelBar::PanelBar(PanelManager* panel_manager)
     : panel_manager_(panel_manager),
       total_panel_width_(0),
       dragged_panel_(NULL),
+      dragging_panel_horizontally_(false),
       anchor_input_xid_(wm()->CreateInputWindow(-1, -1, 1, 1, ButtonPressMask)),
       anchor_panel_(NULL),
       anchor_actor_(wm()->clutter()->CreateImage(FLAGS_panel_anchor_image)),
@@ -135,8 +136,12 @@ void PanelBar::AddPanel(Panel* panel, PanelSource source) {
 
   // If the panel is being dragged, move it to the correct position within
   // 'panels_' and repack all other panels.
-  if (source == PANEL_SOURCE_DRAGGED)
+  if (source == PANEL_SOURCE_DRAGGED) {
     ReorderPanel(panel);
+    DCHECK(!dragged_panel_);
+    dragged_panel_ = panel;
+    dragging_panel_horizontally_ = true;
+  }
 
   panel->StackAtTopOfLayer(source == PANEL_SOURCE_DRAGGED ?
                            StackingManager::LAYER_DRAGGED_PANEL :
@@ -235,7 +240,7 @@ void PanelBar::HandleInputWindowButtonPress(XWindow xid,
   Panel* panel = anchor_panel_;
   DestroyAnchor();
   if (panel)
-    CollapsePanel(panel);
+    CollapsePanel(panel, kPanelStateAnimMs);
   else
     LOG(WARNING) << "Anchor panel no longer exists";
 }
@@ -311,20 +316,19 @@ void PanelBar::HandleSetPanelStateMessage(Panel* panel, bool expand) {
   if (expand)
     ExpandPanel(panel, true, kPanelStateAnimMs);
   else
-    CollapsePanel(panel);
+    CollapsePanel(panel, kPanelStateAnimMs);
 }
 
 bool PanelBar::HandleNotifyPanelDraggedMessage(Panel* panel,
                                                int drag_x,
                                                int drag_y) {
   DCHECK(panel);
-
   VLOG(2) << "Notified about drag of panel " << panel->xid_str()
           << " to (" << drag_x << ", " << drag_y << ")";
 
   const int y_threshold =
       wm()->height() - panel->total_height() - kPanelDetachThresholdPixels;
-  if (panel->is_expanded() && drag_y <= y_threshold)
+  if (drag_y <= y_threshold)
     return false;
 
   if (dragged_panel_ != panel) {
@@ -336,15 +340,22 @@ bool PanelBar::HandleNotifyPanelDraggedMessage(Panel* panel,
 
     VLOG(2) << "Starting drag of panel " << panel->xid_str();
     dragged_panel_ = panel;
+    dragging_panel_horizontally_ =
+        (abs(drag_x - panel->right()) > abs(drag_y - panel->titlebar_y()));
     panel->StackAtTopOfLayer(StackingManager::LAYER_DRAGGED_PANEL);
   }
 
-  dragged_panel_->MoveX((wm()->wm_ipc_version() >= 1) ?
-                          drag_x :
-                          drag_x + dragged_panel_->titlebar_width(),
-                        false, 0);
-
-  ReorderPanel(dragged_panel_);
+  if (dragging_panel_horizontally_) {
+    panel->MoveX(drag_x, false, 0);
+  } else {
+    // Cap the Y value between the lowest and highest positions that the
+    // panel can take while in the bar.
+    const int capped_y =
+        max(min(drag_y, wm()->height() - panel->titlebar_height()),
+            wm()->height() - panel->total_height());
+    panel->MoveY(capped_y, false, 0);
+  }
+  ReorderPanel(panel);
   return true;
 }
 
@@ -460,7 +471,7 @@ void PanelBar::ExpandPanel(Panel* panel, bool create_anchor, int anim_ms) {
     ConfigureShowCollapsedPanelsInputWindow(false);
 }
 
-void PanelBar::CollapsePanel(Panel* panel) {
+void PanelBar::CollapsePanel(Panel* panel, int anim_ms) {
   CHECK(panel);
   if (!panel->is_expanded()) {
     LOG(WARNING) << "Ignoring request to collapse already-collapsed panel "
@@ -477,7 +488,7 @@ void PanelBar::CollapsePanel(Panel* panel) {
 
   panel->SetExpandedState(false);
   const PanelInfo* info = GetPanelInfoOrDie(panel);
-  panel->MoveY(ComputePanelY(*panel, *info), true, kPanelStateAnimMs);
+  panel->MoveY(ComputePanelY(*panel, *info), true, anim_ms);
   panel->SetResizable(false);
 
   // Give up the focus if this panel had it.
@@ -524,9 +535,29 @@ void PanelBar::HandlePanelDragComplete(Panel* panel) {
   if (dragged_panel_ != panel)
     return;
 
+  PanelInfo* info = GetPanelInfoOrDie(panel);
+
+  if (dragging_panel_horizontally_) {
+    panel->MoveX(info->snapped_right, true, kPanelArrangeAnimMs);
+  } else {
+    // Move the panel back to the correct Y position, expanding or collapsing
+    // it if needed.
+    const bool mostly_visible =
+        panel->titlebar_y() < wm()->height() - 0.5 * panel->total_height();
+    // Cut the regular expanding/collapsing animation time in half; we're
+    // already at least halfway to the final position.
+    const int anim_ms = 0.5 * kPanelStateAnimMs;
+    if (mostly_visible && !panel->is_expanded()) {
+      ExpandPanel(panel, false, anim_ms);
+      FocusPanel(panel, false, wm()->GetCurrentTimeFromServer());
+    } else if (!mostly_visible && panel->is_expanded()) {
+      CollapsePanel(panel, anim_ms);
+    } else {
+      panel->MoveY(ComputePanelY(*panel, *info), true, anim_ms);
+    }
+  }
+
   panel->StackAtTopOfLayer(StackingManager::LAYER_STATIONARY_PANEL_IN_BAR);
-  panel->MoveX(GetPanelInfoOrDie(panel)->snapped_right,
-               true, kPanelArrangeAnimMs);
   dragged_panel_ = NULL;
 
   if (collapsed_panel_state_ == COLLAPSED_PANEL_STATE_WAITING_TO_HIDE) {

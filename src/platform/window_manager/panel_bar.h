@@ -138,7 +138,7 @@ class PanelBar : public PanelContainer {
   void ExpandPanel(Panel* panel, bool create_anchor, int anim_ms);
 
   // Collapse a panel.
-  void CollapsePanel(Panel* panel);
+  void CollapsePanel(Panel* panel, int anim_ms);
 
   // Focus the passed-in panel's content window.  Also removes its passive
   // button grab and updates 'desired_panel_to_focus_'.  If
@@ -221,6 +221,10 @@ class PanelBar : public PanelContainer {
 
   // The panel that's currently being dragged, or NULL if none is.
   Panel* dragged_panel_;
+
+  // Is 'dragged_panel_' being dragged horizontally (as opposed to
+  // vertically)?
+  bool dragging_panel_horizontally_;
 
   // Input window used to receive events for the anchor displayed under
   // panels after they're expanded.

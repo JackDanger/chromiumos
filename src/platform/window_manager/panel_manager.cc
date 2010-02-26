@@ -317,7 +317,12 @@ void PanelManager::HandleChromeMessage(const WmIpc::Message& msg) {
       dragged_panel_ = panel;
       if (!dragged_panel_event_coalescer_->IsRunning())
         dragged_panel_event_coalescer_->Start();
-      dragged_panel_event_coalescer_->StorePosition(msg.param(1), msg.param(2));
+      // We want the right edge of the panel, but pre-IPC-version-1 Chrome
+      // sends us the left edge of the titlebar instead.
+      int drag_x = (wm()->wm_ipc_version() >= 1) ?
+                   msg.param(1) : msg.param(1) + panel->titlebar_width();
+      int drag_y = msg.param(2);
+      dragged_panel_event_coalescer_->StorePosition(drag_x, drag_y);
       break;
     }
     case WmIpc::Message::WM_NOTIFY_PANEL_DRAG_COMPLETE: {
